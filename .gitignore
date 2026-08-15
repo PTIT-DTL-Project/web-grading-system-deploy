@@ -30,3 +30,5 @@ replay_pid*
 
 **/.env
 **/.env.observability
+
+**/frontend-src/**
