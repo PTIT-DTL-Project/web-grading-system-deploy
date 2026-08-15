@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: api-gateway
+  namespace: web-grading
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: web-dev1-api.vucongtuanduong.dpdns.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: grading-api-gateway
+                port:
+                  number: 8080

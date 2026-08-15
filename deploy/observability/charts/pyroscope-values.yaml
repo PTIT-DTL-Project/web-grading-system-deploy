@@ -1,0 +1,48 @@
+# =============================================================================
+# Pyroscope Helm Values
+# Chart: grafana/pyroscope v2.2.1
+# Continuous profiling server. Receives profiles from Pyroscope SDKs and
+# backends' Pyroscope agents. Single replica for k3s dev.
+# =============================================================================
+
+pyroscope:
+  replicaCount: 1
+  image:
+    repository: grafana/pyroscope
+    tag: "2.2.1"
+    pullPolicy: IfNotPresent
+
+  # Expose HTTP API for OTLP + native profiling push from backends
+  service:
+    type: ClusterIP
+    port: 4100
+    port_name: http2
+    annotations: {}
+
+  resources:
+    limits: { cpu: 300m, memory: 512Mi }
+    requests: { cpu: 100m, memory: 256Mi }
+
+  persistence:
+    enabled: true
+    storageClassName: local-path
+    size: 5Gi
+
+  extraArgs:
+    log.level: info
+
+  # Auto-instrument itself (optional for dev)
+  podAnnotations:
+    profiles.grafana.com/memory.scrape: "false"
+    profiles.grafana.com/cpu.scrape: "false"
+    profiles.grafana.com/goroutine.scrape: "false"
+
+grafana:
+  enabled: true
+  createDataSource: true
+  createDashboard: true
+  datasource:
+    uid: pyroscope
+    name: Pyroscope
+  dashboard:
+    folder: "Profiling"

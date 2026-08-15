@@ -1,0 +1,290 @@
+# =============================================================================
+# kube-prometheus-stack Helm Values
+# Chart: prometheus-community/kube-prometheus-stack v72.6.2
+# Provides: Prometheus (metrics TSDB), Grafana (UI), Node Exporter (host
+# metrics, DaemonSet), kube-state-metrics (k8s object metrics), Alertmanager.
+# Grafana is ENABLED here — it becomes the single Grafana for the whole stack
+# (Loki, Tempo, Prometheus datasources are provisioned below).
+# =============================================================================
+
+# --- Alert rules ---
+# Disable ALL stock alert rules shipped by the chart (PrometheusDown,
+# AlertmanagerDown, NodeExporterDown, KubeStateMetricsDown, Watchdog, ...).
+# Those fire when the observability stack itself is unhealthy. We only want
+# alerts when the backend services misbehave, so the only rules in the cluster
+# are the custom backend-service rules in additionalPrometheusRulesMap below.
+defaultRules:
+  create: false
+
+# --- Alerts: backend services only (the ONLY rules in the cluster) ---
+# Combined with defaultRules.create: false above, Alertmanager only ever
+# receives alerts about backend-service operational problems, never about the
+# health of the observability stack itself (Prometheus, Alertmanager, ...).
+additionalPrometheusRulesMap:
+  backend-service-alerts:
+    groups:
+      - name: backend-services
+        rules:
+          - alert: BackendServiceDown
+            expr: up{job="backend-services"} == 0
+            for: 2m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Backend service {{ $labels.pod }} down ({{ $labels.instance }})"
+              description: "Scraping {{ $labels.instance }} in namespace {{ $labels.namespace }} has been failing for more than 2 minutes."
+          - alert: AllBackendServicesDown
+            expr: absent(up{job="backend-services"})
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "All backend services are down"
+              description: "No backend service target from the web-grading namespace is being scraped at all."
+          - alert: BackendServiceHighErrorRate
+            expr: |
+              (sum(rate(http_server_requests_seconds_count{job="backend-services", status=~"5.."}[5m])) by (namespace, pod)
+                / clamp_min(sum(rate(http_server_requests_seconds_count{job="backend-services"}[5m])) by (namespace, pod), 1e-6)) > 0.05
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High 5xx error rate on {{ $labels.pod }}"
+              description: "More than 5% of requests to {{ $labels.pod }} returned 5xx over the last 5 minutes."
+          - alert: BackendServiceNoTraffic
+            expr: absent(sum(rate(http_server_requests_seconds_count{job="backend-services"}[5m])) by (pod))
+            for: 15m
+            labels:
+              severity: warning
+            annotations:
+              summary: "No HTTP traffic captured from backend services"
+              description: "No http_server_requests samples from job backend-services in the last 15 minutes. Prometheus may be scraping, but no backend service is serving requests."
+
+# --- Grafana (single pane of glass for metrics, logs + traces) ---
+grafana:
+  enabled: true
+  defaultDashboardsEnabled: false
+  # Let the chart auto-provision the Prometheus datasource (it knows its own
+  # service URL). We only need to add Loki + Tempo explicitly.
+  defaultDatasourcesEnabled: true
+
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1"
+      searchNamespace: ALL
+    datasources:
+      enabled: true   # sidecar loads Loki/Tempo ConfigMaps defined below
+
+  persistence:
+    enabled: true
+    size: 2Gi
+    storageClassName: local-path
+
+  resources:
+    limits: { cpu: 500m, memory: 512Mi }
+    requests: { cpu: 100m, memory: 256Mi }
+
+  adminUser: admin
+  # adminPassword is injected at install time via --set (see install.sh).
+  # Don't hardcode it here.
+
+  grafana.ini:
+    server:
+      root_url: "%(protocol)s://%(domain)s/"
+      serve_from_sub_path: true
+      domain: "${GRAFANA_DOMAIN:-web-dev1-grafana.vucongtuanduong.dpdns.org}"
+    auth:
+      anonymous:
+        enabled: false
+    users:
+      allow_sign_up: false
+
+  # --- Datasource provisioning (Prometheus auto-provisioned by the chart) ---
+  additionalDataSources:
+    # Logs: Loki (single-binary).
+    - name: Loki
+      type: loki
+      access: proxy
+      url: http://loki.observability.svc.cluster.local:3100
+      isDefault: false
+      editable: true
+      jsonData:
+        maxLines: 1000
+
+    # Traces: Tempo (HTTP query port is 3100 in the chart's Service).
+    - name: Tempo
+      type: tempo
+      access: proxy
+      url: http://tempo.observability.svc.cluster.local:3100
+      editable: true
+      jsonData:
+        tracesToMetrics:
+          datasourceUid: Prometheus
+          queries:
+            - name: "Request rate"
+              query: "sum(rate(traces_span_metrics_calls_total{$$__tags}[5m])) by (service_name)"
+            - name: "Error rate"
+              query: "sum(rate(traces_span_metrics_calls_total{$$__tags, status_code=\"STATUS_CODE_ERROR\"}[5m])) by (service_name)"
+            - name: "Duration (P99)"
+              query: "histogram_quantile(0.99, sum(rate(traces_span_metrics_latency_bucket{$$__tags}[5m])) by (le, service_name))"
+        serviceMap:
+          datasourceUid: Tempo
+
+    # Profiling: Pyroscope (continuous profiling).
+    # NOTE: no jsonData.endpoints here — the pyroscope chart's default
+    # `pyroscope-server` hostname does not exist in this cluster (the service
+    # is named `pyroscope`). The `url` below is the only query endpoint.
+    - name: Pyroscope
+      type: grafana-pyroscope-datasource
+      access: proxy
+      url: http://pyroscope.observability.svc.cluster.local:4100
+      editable: true
+
+  # Default dashboards from the chart (Loki, Node, etc.). Keep useful ones.
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: "default"
+          orgId: 1
+          folder: ""
+          type: file
+          options:
+            path: /var/lib/grafana/dashboards/default
+
+# --- Prometheus ---
+prometheus:
+  enabled: true
+  prometheusSpec:
+    enableRemoteWriteReceiver: true
+    storageClassName: local-path
+    size: 8Gi
+    retention: 7d
+    # Scrape Spring Boot backend services in the web-grading namespace.
+    # Each backend pod exposes /actuator/prometheus on its (single) HTTP
+    # container port. Pod-SD + the prometheus ServiceAccount token discover
+    # them; the token + cluster CA are mounted by the chart automatically.
+    additionalScrapeConfigs: |
+      - job_name: "backend-services"
+        metrics_path: "/actuator/prometheus"
+        scheme: http
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - web-grading
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_phase]
+            regex: Running
+            action: keep
+          - source_labels: [__meta_kubernetes_pod_container_port_number]
+            regex: .+
+            action: keep
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+        honor_labels: true
+
+      # Alloy OTLP metrics (exported as Prometheus metrics on :8889)
+      - job_name: "alloy-metrics"
+        scrape_interval: 15s
+        honor_labels: true
+        static_configs:
+          - targets:
+              - alloy.observability.svc.cluster.local:8889
+
+    service:
+      enabled: true
+      type: ClusterIP
+
+# --- Node Exporter (host metrics DaemonSet) ---
+prometheus-node-exporter:
+  enabled: true
+  hostRootFs: false
+  hostNetwork: true
+
+# --- kube-state-metrics (k8s objects: pods, deployments, nodes, ...) ---
+kube-state-metrics:
+  enabled: true
+
+# --- Alertmanager ---
+alertmanager:
+  enabled: true
+  alertmanagerSpec:
+    storage:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: local-path
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 2Gi
+    resources:
+      limits: { cpu: 200m, memory: 256Mi }
+      requests: { cpu: 50m, memory: 128Mi }
+
+  config:
+    global:
+      resolve_timeout: 5m
+
+    route:
+      group_by: ['alertname', 'namespace', 'service']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
+      receiver: 'default-receiver'
+      routes:
+        - match:
+            severity: critical
+          receiver: 'critical-receiver'
+          repeat_interval: 1h
+        - match:
+            severity: warning
+          receiver: 'default-receiver'
+          repeat_interval: 4h
+
+    receivers:
+      - name: 'default-receiver'
+        email_configs:
+          - to: 'your-email@example.com'
+            from: 'alertmanager@example.com'
+            smarthost: 'smtp.example.com:587'
+            auth_username: 'alertmanager@example.com'
+            auth_password: 'CHANGE_ME'
+            require_tls: true
+        discord_configs:
+          - webhook_url: 'https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN'
+            title: '{{ .CommonAnnotations.summary }}'
+            message: '{{ .CommonAnnotations.description }}'
+        webhook_configs:
+          - url: 'http://your-webhook-endpoint:9999/alerts'
+            send_resolved: true
+
+      - name: 'critical-receiver'
+        email_configs:
+          - to: 'your-email@example.com'
+            from: 'alertmanager@example.com'
+            smarthost: 'smtp.example.com:587'
+            auth_username: 'alertmanager@example.com'
+            auth_password: 'CHANGE_ME'
+            require_tls: true
+        discord_configs:
+          - webhook_url: 'https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN'
+            title: '🔴 CRITICAL: {{ .CommonAnnotations.summary }}'
+            message: '{{ .CommonAnnotations.description }}'
+        webhook_configs:
+          - url: 'http://your-webhook-endpoint:9999/alerts'
+            send_resolved: true
+
+    inhibit_rules:
+      - source_match:
+          severity: 'critical'
+        target_match:
+          severity: 'warning'
+        equal: ['alertname', 'namespace']

@@ -1,0 +1,74 @@
+# =============================================================================
+# Tempo Helm Values
+# Chart: grafana/tempo v1.21.1
+# Trace storage backend. Receives OTLP traces from Alloy, serves Grafana.
+# Chart defaults already provide a valid tempo.yaml (OTLP receivers on
+# 4317/4318, filesystem storage); only Helm-level knobs are overridden here.
+# =============================================================================
+
+image:
+  repository: grafana/tempo
+  tag: 2.7.1
+  pullPolicy: IfNotPresent
+
+# --- Tempo config knobs exposed by the chart ---
+tempo:
+  # Processors must be explicitly enabled per tenant (issue grafana/tempo
+  # #5479): without overrides.defaults.metrics_generator.processors the
+  # generator runs but computes no span metrics, so TraceQL metrics queries
+  # (Grafana Queryless) return "No data" even though traces exist.
+  overrides:
+    defaults:
+      metrics_generator:
+        processors:
+          - service-graphs
+          - span-metrics
+          - local-blocks
+  metricsGenerator:
+    # Enables Tempo's metrics generator. Required for TraceQL metrics queries:
+    # Grafana's "Queryless" views generate e.g.
+    #   {nestedSetParent<0 && ...} | rate() by(resource.service.name)
+    # which the querier answers from the metrics generator's in-memory span
+    # metrics (queryRangeRecent path). Without this the querier fails with
+    # "error finding generators in Querier.queryRangeRecent: empty ring".
+    enabled: true
+    # Where generated span metrics are remote-written. Points at this
+    # cluster's Prometheus remote-write receiver (same target Alloy uses).
+    remoteWriteUrl: "http://monitoring-kube-prometheus-prometheus.observability.svc.cluster.local:9090/api/v1/write"
+
+# OTLP receivers on gRPC (4317) + HTTP (4318) are enabled by chart defaults.
+
+# Expose query (3200) + OTLP grpc (4317) + OTLP http (4318) to in-cluster
+# clients (Grafana, Alloy, trace generator).
+service:
+  enabled: true
+  type: ClusterIP
+  ports:
+    http:
+      port: 3200
+      targetPort: 3200
+      name: http
+    otlp-grpc:
+      port: 4317
+      targetPort: 4317
+      name: otlp-grpc
+    otlp-http:
+      port: 4318
+      targetPort: 4318
+      name: otlp-http
+
+persistence:
+  enabled: true
+  storageClassName: local-path
+  size: 5Gi
+
+# Tempo's own metrics aren't needed; Prometheus scrapes the backend services.
+metrics:
+  enabled: false
+
+test:
+  enabled: false
+
+resources:
+  requests: { cpu: 200m, memory: 384Mi }
+  limits: { cpu: 1, memory: 1Gi }

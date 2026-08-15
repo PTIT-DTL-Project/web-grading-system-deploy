@@ -1,0 +1,40 @@
+tunnel: web-dev1-web-grading
+credentials-file: /etc/cloudflared/5b482a4e-5b3a-4d60-8042-d82dc98797f3.json
+ingress:
+  - hostname: web-dev1-api.vucongtuanduong.dpdns.org
+    service: http://localhost:30566
+
+  - hostname: web-dev1-assignment.vucongtuanduong.dpdns.org
+    service: http://localhost:30566
+
+  - hostname: web-dev1-submission.vucongtuanduong.dpdns.org
+    service: http://localhost:30566
+
+  - hostname: web-dev1-grading.vucongtuanduong.dpdns.org
+    service: http://localhost:30566
+
+  - hostname: web-dev1-result.vucongtuanduong.dpdns.org
+    service: http://localhost:30566
+
+  - hostname: web-dev1-notification.vucongtuanduong.dpdns.org
+    service: http://localhost:30566
+
+  - hostname: web-dev1-argocd.vucongtuanduong.dpdns.org
+    service: http://localhost:30566
+
+  - hostname: web-dev1-keycloak.vucongtuanduong.dpdns.org
+    service: http://localhost:30566
+
+  - hostname: web-dev1-rustfs.vucongtuanduong.dpdns.org
+    service: http://localhost:30566
+
+  - hostname: web-dev1-grafana.vucongtuanduong.dpdns.org
+    service: http://localhost:30566
+
+  - hostname: web-dev1-otlp.vucongtuanduong.dpdns.org
+    service: http://localhost:30566
+
+  - hostname: web-dev1-pyroscope.vucongtuanduong.dpdns.org
+    service: http://localhost:30566
+
+  - service: http_status:404

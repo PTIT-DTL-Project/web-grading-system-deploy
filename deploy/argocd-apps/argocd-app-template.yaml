@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grading-${SERVICE_NAME}
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/Duong-Vu-practice-workspace/web-grading-system-config-test.git
+    targetRevision: main
+    path: ${SERVICE_NAME}
+    helm:
+      valueFiles:
+        - values-stg.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: web-grading
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false

@@ -1,0 +1,10 @@
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared-web-dev1
+    restart: unless-stopped
+    command: tunnel --origincert /etc/cloudflared/cert.pem --protocol http2 --config /etc/cloudflared/config.yml run
+    volumes:
+      - /home/duongvct/.cloudflared:/etc/cloudflared
+      - ./config.yml:/etc/cloudflared/config.yml:ro
+    network_mode: host

@@ -1,0 +1,42 @@
+# =============================================================================
+# Spring Boot Application — Observability Config Template
+# =============================================================================
+# MERGE vào application.yaml của mỗi service Spring Boot.
+# Không replace toàn bộ, chỉ thêm phần management + logging.
+# =============================================================================
+
+server:
+  port: 8082
+
+spring:
+  application:
+    name: submission-service  # ← Đổi thành tên service của bạn
+
+# =============================================================================
+# OBSERVABILITY — Thêm đoạn này vào application.yaml
+# =============================================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0  # 1.0 = 100% traces (dev). 0.1-0.3 cho prod
+  otlp:
+    tracing:
+      # Send OTLP traces to Alloy, which forwards them to Tempo.
+      endpoint: http://alloy.observability.svc.cluster.local:4318/v1/traces
+      transport: http
+  # No OTLP metrics export here — Prometheus scrapes /actuator/prometheus
+  # directly (see kube-prometheus-stack additionalScrapeConfigs in install.sh).
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+  level:
+    root: INFO
+    vn.edu.ptit: DEBUG
+    org.springframework.web: INFO
+    io.micrometer.tracing: DEBUG  # Debug tracing issues, tắt ở prod

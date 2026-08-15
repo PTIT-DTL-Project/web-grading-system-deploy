@@ -1,0 +1,171 @@
+# =============================================================================
+# Alloy Helm Values — OTLP trace/metrics collector + pod log scraper
+# Chart: grafana/alloy v1.0.3
+# Receives OTLP traces/metrics (gRPC 4317 / HTTP 4318) from Spring Boot
+# services and the k6 trace generator, scrapes pod logs, then forwards
+# traces -> Tempo, metrics -> Prometheus remote_write, logs -> Loki.
+# =============================================================================
+
+controller:
+  type: deployment
+  replicas: 1
+
+alloy:
+  # The grafana/alloy chart only honors `alloy.configMap.create` +
+  # `alloy.configMap.content`. The `alloy.config` key is ignored and falls
+  # back to the chart's default example config (discovery blocks only, no
+  # OTLP receiver) — which is why ports 4317/4318 refused connections.
+  configMap:
+    create: true
+    content: |
+      logging {
+        level  = "info"
+        format = "logfmt"
+      }
+
+      // OTLP receiver: Spring Boot services push traces/metrics here.
+      otelcol.receiver.otlp "default" {
+        grpc {
+          endpoint = "0.0.0.0:4317"
+        }
+        http {
+          endpoint = "0.0.0.0:4318"
+        }
+        output {
+          metrics = [otelcol.processor.batch.default.input]
+          logs    = [otelcol.processor.batch.default.input]
+          traces  = [otelcol.processor.batch.default.input]
+        }
+      }
+
+      otelcol.processor.batch "default" {
+        output {
+          metrics = [otelcol.exporter.prometheus.prometheus.input]
+          logs    = [otelcol.exporter.loki.loki.input]
+          traces  = [otelcol.exporter.otlp.tempo.input]
+        }
+      }
+
+      // Traces -> Tempo
+      otelcol.exporter.otlp "tempo" {
+        client {
+          endpoint = "tempo.observability.svc.cluster.local:4317"
+          tls {
+            insecure = true
+          }
+        }
+      }
+
+      // Logs -> Loki
+      otelcol.exporter.loki "loki" {
+        forward_to = [loki.write.default.receiver]
+      }
+
+      loki.write "default" {
+        endpoint {
+          url = "http://loki.observability.svc.cluster.local:3100/loki/api/v1/push"
+        }
+      }
+
+      // Scrape pod logs (Spring Boot apps log JSON to stdout; no OTLP log
+      // export on their side).
+      discovery.kubernetes "pods" {
+        role = "pod"
+        namespaces {
+          names = ["observability", "web-grading"]
+        }
+      }
+
+      // Carry k8s metadata onto log entries as queryable labels, and parse
+      // the JSON log lines to expose level/service as labels too. Without
+      // this, Loki streams only carry instance/job labels and Grafana cannot
+      // filter by namespace/pod/service.
+      // loki.source.kubernetes strips __meta_* labels before entries reach a
+      // relabel stage, so namespace/pod/container are re-derived from the
+      // instance label it builds ("namespace/pod:container").
+      loki.relabel "kubernetes" {
+        forward_to = [loki.process.add_labels.receiver]
+
+        rule {
+          source_labels = ["instance"]
+          regex         = "(.*)/(.*):(.*)"
+          target_label  = "namespace"
+          replacement   = "$1"
+        }
+        rule {
+          source_labels = ["instance"]
+          regex         = "(.*)/(.*):(.*)"
+          target_label  = "pod"
+          replacement   = "$2"
+        }
+        rule {
+          source_labels = ["instance"]
+          regex         = "(.*)/(.*):(.*)"
+          target_label  = "container"
+          replacement   = "$3"
+        }
+      }
+
+      loki.process "add_labels" {
+        stage.json {
+          expressions = {
+            level   = "",
+            service = "",
+          }
+        }
+        stage.labels {
+          values = {
+            level   = "",
+            service = "",
+          }
+        }
+        forward_to = [loki.write.default.receiver]
+      }
+
+      loki.source.kubernetes "pods" {
+        targets    = discovery.kubernetes.pods.targets
+        forward_to = [loki.relabel.kubernetes.receiver]
+      }
+
+      // Metrics -> Prometheus via remote_write
+      otelcol.exporter.prometheus "prometheus" {
+        forward_to = [prometheus.remote_write.metrics.receiver]
+      }
+
+      prometheus.remote_write "metrics" {
+        endpoint {
+          url = "http://monitoring-kube-prometheus-prometheus.observability.svc.cluster.local:9090/api/v1/write"
+        }
+      }
+
+  listenPort: 12345
+  clustering:
+    enabled: false
+  # Extra ports exposed via the ClusterIP Service. Must mirror the
+  # receivers configured in alloy.configMap.content above.
+  extraPorts:
+    - name: otel-grpc
+      port: 4317
+      targetPort: 4317
+      protocol: "TCP"
+    - name: otel-http
+      port: 4318
+      targetPort: 4318
+      protocol: "TCP"
+    - name: prom-metrics
+      port: 8889
+      targetPort: 8889
+      protocol: "TCP"
+
+resources:
+  limits: { cpu: 300m, memory: 256Mi }
+  requests: { cpu: 100m, memory: 128Mi }
+
+# Expose OTLP receivers to other in-cluster clients (backend services +
+# trace generator).
+service:
+  enabled: true
+  type: ClusterIP
+
+# Allow Alloy to resolve in-cluster DNS (Tempo service).
+dnsPolicy: ClusterFirst

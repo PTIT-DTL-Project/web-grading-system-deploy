@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Logback config for Spring Boot + Micrometer Tracing + OpenTelemetry
+  Outputs structured JSON logs with trace_id and span_id for Grafana correlation.
+
+  DROP this file into src/main/resources/logback-spring.xml of each Spring Boot service.
+-->
+<configuration>
+
+    <springProperty scope="context" name="APP_NAME" source="spring.application.name" defaultValue="unknown"/>
+    <springProperty scope="context" name="APP_ENV" source="spring.profiles.active" defaultValue="local"/>
+
+    <!-- Console: structured JSON for Loki -->
+    <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeMdcKeyName>trace_id</includeMdcKeyName>
+            <includeMdcKeyName>span_id</includeMdcKeyName>
+            <includeMdcKeyName>trace_flags</includeMdcKeyName>
+            <fieldNames>
+                <timestamp>[ignore]</timestamp>
+                <version>[ignore]</version>
+            </fieldNames>
+            <customFields>
+                {"service":"${APP_NAME}","environment":"${APP_ENV}"}
+            </customFields>
+            <timeZone>UTC</timeZone>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="JSON"/>
+    </root>
+
+</configuration>
