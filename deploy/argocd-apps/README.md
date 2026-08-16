@@ -34,6 +34,12 @@ kubectl apply -f generated/
 kubectl apply -f generated/submission-service.yaml
 ```
 
+### ArgoCD Initial Password
+
+```bash
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+```
+
 ### Verify Applications
 
 ```bash
