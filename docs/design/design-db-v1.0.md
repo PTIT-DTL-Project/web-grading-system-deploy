@@ -15,8 +15,9 @@
 3. [submission_db](#3-submission_db)
 4. [executor_db](#4-executor_db)
 5. [result_db](#5-result_db)
-6. [Sơ đồ ER tổng thể](#6-sơ-đồ-er-tổng-thể)
-7. [Changelog](#7-changelog)
+6. [http_log — có ở cả 4 DB](#6-http_log--có-ở-cả-4-db)
+7. [Sơ đồ ER tổng thể](#7-sơ-đồ-er-tổng-thể)
+8. [Changelog](#8-changelog)
 
 ---
 
@@ -712,7 +713,53 @@ CREATE INDEX idx_manual_scores_student ON manual_scores(class_id, student_code);
 
 ---
 
-## 6. Sơ đồ ER tổng thể
+## 6. http_log — có ở cả 4 DB
+
+Log mọi HTTP call của service: request đến (inbound) và request đi (outbound qua Feign). Mỗi service log vào DB của chính nó; không log `/actuator/*`. Header nhạy cảm (`authorization`, `cookie`, `set-cookie`, `proxy-authorization`, `x-api-key`) bị bỏ khi lưu; body cắt ở 20KB.
+
+| Column | Type | Constraint | Ghi chú |
+|---|---|---|---|
+| id | UUID | PK | |
+| service_name | VARCHAR(50) | NOT NULL | Tên service ghi log |
+| direction | VARCHAR(10) | NOT NULL | `INBOUND`, `OUTBOUND` |
+| method | VARCHAR(10) | NOT NULL | GET, POST... |
+| url | TEXT | NOT NULL | |
+| port | INT | | Cổng service (inbound) / cổng đích (outbound) |
+| request_headers | JSONB | | Đã lọc header nhạy cảm |
+| request_body | TEXT | | Cắt ở 20KB |
+| status_code | INT | | |
+| response_headers | JSONB | | |
+| response_body | TEXT | | Cắt ở 20KB |
+| duration_ms | INT | NOT NULL | Thời gian call |
+| created_at | TIMESTAMPTZ | NOT NULL | |
+| updated_at | TIMESTAMPTZ | NOT NULL | |
+| deleted_at | TIMESTAMPTZ | | |
+
+```sql
+CREATE TABLE http_log (
+    id UUID PRIMARY KEY,
+    service_name VARCHAR(50) NOT NULL,
+    direction VARCHAR(10) NOT NULL,
+    method VARCHAR(10) NOT NULL,
+    url TEXT NOT NULL,
+    port INT,
+    request_headers JSONB,
+    request_body TEXT,
+    status_code INT,
+    response_headers JSONB,
+    response_body TEXT,
+    duration_ms INT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    deleted_at TIMESTAMPTZ
+);
+
+CREATE INDEX idx_http_log_created ON http_log(created_at);
+```
+
+---
+
+## 7. Sơ đồ ER tổng thể
 
 ```
 ┌──────────────────────────── ASSIGNMENT SERVICE ────────────────────────────┐
@@ -746,8 +793,9 @@ CREATE INDEX idx_manual_scores_student ON manual_scores(class_id, student_code);
 
 ---
 
-## 7. Changelog
+## 8. Changelog
 
 | Version | Ngày | Thay đổi |
 |---|---|---|
 | v1.0 | 2026-08-16 | Bản đầu tiên. Kế thừa `docs/db/README.md`; thêm `classes`, `class_students`, `manual_scores`; đổi `grading_db` → `executor_db`, `scenario_results` → `step_results`; thêm `connection` block cho DB steps; bỏ step type `SCRIPT` ra khỏi v1 |
+| v1.0 | 2026-08-16 | Thêm bảng `http_log` cho cả 4 DB — log HTTP inbound (filter) + outbound (Feign client) với request/response body, headers, thời gian, cổng; bỏ header nhạy cảm, cắt body 20KB |
