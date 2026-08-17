@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/Duong-Vu-practice-workspace/web-grading-system-config-test.git
+    repoURL: https://github.com/PTIT-DTL-Project/web-grading-system-services-config.git
     targetRevision: main
     path: ${SERVICE_NAME}
     helm:
