@@ -25,12 +25,10 @@ TUNNEL_ID=$(cloudflared tunnel info "${TUNNEL_NAME}" 2>&1 | grep -oP 'tunnel \K[
 echo "Tunnel ID: ${TUNNEL_ID}"
 
 echo ""
-echo "=== Update config.yml with tunnel ID and gateway port ==="
-sed -i "s|credentials-file:.*|credentials-file: /etc/cloudflared/${TUNNEL_ID}.json|" "${SCRIPT_DIR}/config.yml"
-sed -i "s|GATEWAY_PORT|${GATEWAY_PORT}|g" "${SCRIPT_DIR}/config.yml"
-
-echo "=== Copy config.yml to ~/.cloudflared/ ==="
-cp "${SCRIPT_DIR}/config.yml" ~/.cloudflared/config.yml
+echo "=== Generate config.yml from template ==="
+sed -e "s|CREDENTIALS_FILE_PLACEHOLDER|${TUNNEL_ID}|g" \
+    -e "s|GATEWAY_PORT|${GATEWAY_PORT}|g" \
+    "${SCRIPT_DIR}/config.yml.tmpl" > ~/.cloudflared/config.yml
 chmod 755 ~/.cloudflared
 chmod 644 ~/.cloudflared/config.yml
 chmod 644 ~/.cloudflared/${TUNNEL_ID}.json 2>/dev/null || true

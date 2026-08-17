@@ -635,3 +635,4 @@ K8s Cluster
 (k3s installed) chạy lên thành hệ thống hoàn chỉnh. `setup.sh` chạy tuần tự
 các bước. Mọi thay đổi về phiên bản đều qua CI/CD (GitHub Actions → Docker
 Hub → config repo → ArgoCD sync).
+chmod 644 ~/.cloudflared/cert.pem ~/.cloudflared/d776f26b-5766-4c8d-9bb8-36ac3a6d843c.json
