@@ -73,9 +73,9 @@ Run a service on your localhost but still send metrics/traces/profiles to the
 deployed observability stack via the Cloudflare tunnel:
 
 ```bash
-export OTLP_TRACES_ENDPOINT=https://web-dev1-otlp.vucongtuanduong.dpdns.org/v1/traces
-export OTLP_METRICS_ENDPOINT=https://web-dev1-otlp.vucongtuanduong.dpdns.org/v1/metrics
-export PYROSCOPE_ENDPOINT=https://web-dev1-pyroscope.vucongtuanduong.dpdns.org
+export OTLP_TRACES_ENDPOINT=https://web-dev2-otlp.vucongtuanduong.dpdns.org/v1/traces
+export OTLP_METRICS_ENDPOINT=https://web-dev2-otlp.vucongtuanduong.dpdns.org/v1/metrics
+export PYROSCOPE_ENDPOINT=https://web-dev2-pyroscope.vucongtuanduong.dpdns.org
 ./gradlew bootRun   # or however you start the local service
 ```
 
@@ -171,8 +171,8 @@ deploy/observability/
 │   │   └── trace-generator.yaml           # k6 synthetic trace generator
 │   └── ingress/
 │       ├── grafana.yaml
-│       ├── otlp.yaml                        # web-dev1-otlp → alloy:4318 (local dev)
-│       └── pyroscope.yaml                   # web-dev1-pyroscope → pyroscope:4100 (local dev)
+│       ├── otlp.yaml                        # web-dev2-otlp → alloy:4318 (local dev)
+│       └── pyroscope.yaml                   # web-dev2-pyroscope → pyroscope:4100 (local dev)
 ├── templates/
 │   ├── application-observability.yaml     # merge-block for Spring Boot services
 │   └── logback-spring.xml                 # JSON logging with trace IDs

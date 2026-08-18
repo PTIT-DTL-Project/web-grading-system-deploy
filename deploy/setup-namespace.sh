@@ -27,7 +27,7 @@ kubectl create secret generic db-secret \
 kubectl create secret generic rustfs-secret \
   --namespace "${NAMESPACE}" \
   --from-literal=RUSTFS_ENDPOINT="${RUSTFS_ENDPOINT:-http://rustfs:9000}" \
-  --from-literal=RUSTFS_PUBLIC_ENDPOINT="${RUSTFS_PUBLIC_ENDPOINT:-https://web-dev1-rustfs-api.vucongtuanduong.dpdns.org}" \
+  --from-literal=RUSTFS_PUBLIC_ENDPOINT="${RUSTFS_PUBLIC_ENDPOINT:-https://web-dev2-rustfs-api.vucongtuanduong.dpdns.org}" \
   --from-literal=RUSTFS_ACCESS_KEY="${RUSTFS_ACCESS_KEY:-minioadmin}" \
   --from-literal=RUSTFS_SECRET_KEY="${RUSTFS_SECRET_KEY:-minioadmin}" \
   --dry-run=client -o yaml | kubectl apply -f -

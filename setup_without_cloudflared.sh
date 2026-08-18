@@ -77,8 +77,8 @@ echo -e "${YELLOW}🌐 Local Access (no Cloudflare tunnel):${NC}"
 LB_IP=$(kubectl get svc traefik -n kube-system -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
 if [ -n "${LB_IP}" ]; then
   echo "  Traefik LB IP: ${LB_IP}"
-  echo "  Example:       curl -k -H 'Host: web-dev1-rustfs.vucongtuanduong.dpdns.org' https://${LB_IP}"
-  echo "  Tip:           add '${LB_IP}  web-dev1-api.vucongtuanduong.dpdns.org web-dev1-rustfs.vucongtuanduong.dpdns.org ...' to /etc/hosts"
+  echo "  Example:       curl -k -H 'Host: web-dev2-rustfs.vucongtuanduong.dpdns.org' https://${LB_IP}"
+  echo "  Tip:           add '${LB_IP}  web-dev2-api.vucongtuanduong.dpdns.org web-dev2-rustfs.vucongtuanduong.dpdns.org ...' to /etc/hosts"
 else
   echo "  Traefik LB IP not found; check: kubectl get svc traefik -n kube-system"
 fi

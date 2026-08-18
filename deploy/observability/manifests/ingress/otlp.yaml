@@ -8,7 +8,7 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-    - host: web-dev1-otlp.vucongtuanduong.dpdns.org
+    - host: web-dev2-otlp.vucongtuanduong.dpdns.org
       http:
         paths:
           - path: /v1/

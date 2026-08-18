@@ -6,7 +6,7 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-    - host: web-dev1-rustfs.vucongtuanduong.dpdns.org
+    - host: web-dev2-rustfs.vucongtuanduong.dpdns.org
       http:
         paths:
           - path: /
@@ -16,7 +16,7 @@ spec:
                 name: rustfs
                 port:
                   number: 9001
-    - host: web-dev1-rustfs-api.vucongtuanduong.dpdns.org
+    - host: web-dev2-rustfs-api.vucongtuanduong.dpdns.org
       http:
         paths:
           - path: /

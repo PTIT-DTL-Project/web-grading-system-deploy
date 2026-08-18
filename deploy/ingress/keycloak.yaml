@@ -6,7 +6,7 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-    - host: web-dev1-keycloak.vucongtuanduong.dpdns.org
+    - host: web-dev2-keycloak.vucongtuanduong.dpdns.org
       http:
         paths:
           - path: /

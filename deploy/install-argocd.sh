@@ -30,7 +30,7 @@ kubectl apply -f "$ARGOCD_APPS_DIR/generated/"
 ARGO_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d 2>/dev/null || echo "not found")
 echo ""
 echo "=== ArgoCD ready ==="
-echo "  URL:  https://web-dev1-argocd.vucongtuanduong.dpdns.org"
+echo "  URL:  https://web-dev2-argocd.vucongtuanduong.dpdns.org"
 echo "  User: admin"
 echo "  Pass: ${ARGO_PASSWORD}"
 echo ""

@@ -94,7 +94,7 @@ grafana:
     server:
       root_url: "%(protocol)s://%(domain)s/"
       serve_from_sub_path: true
-      domain: "${GRAFANA_DOMAIN:-web-dev1-grafana.vucongtuanduong.dpdns.org}"
+      domain: "${GRAFANA_DOMAIN:-web-dev2-grafana.vucongtuanduong.dpdns.org}"
     auth:
       anonymous:
         enabled: false
