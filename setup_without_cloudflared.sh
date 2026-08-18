@@ -21,6 +21,7 @@ GATEWAY_PORT="${1:-${GATEWAY_PORT:-31242}}"
 
 echo -e "${BLUE}============================================================${NC}"
 echo -e "${BLUE}  Web Grading System - Full Setup (Mono-Repo)${NC}"
+echo -e "${BLUE}  No Cloudflare Tunnel${NC}"
 echo -e "${BLUE}============================================================${NC}"
 echo -e "  GATEWAY_PORT=${GATEWAY_PORT}"
 echo ""
@@ -67,40 +68,26 @@ print_step "5. Install ArgoCD + deploy applications"
 bash "$SCRIPT_DIR/deploy/install-argocd.sh"
 print_success "ArgoCD installed and applications deployed"
 
-print_step "6. Install Observability Stack"
-echo "  (Grafana + Loki + Mimir + Tempo + Alloy)"
-bash "$SCRIPT_DIR/deploy/observability/install.sh"
-print_success "Observability stack installed"
-
-print_step "7. Setup Cloudflare Tunnel"
-bash "$SCRIPT_DIR/deploy/cloudflared/setup-tunnel.sh" \
-  "vucongtuanduong.dpdns.org" \
-  "web-dev1-web-grading" \
-  "${GATEWAY_PORT}" \
-  || echo "  Tunnel may already exist, skipping"
-docker compose -f "$SCRIPT_DIR/deploy/cloudflared/docker-compose.yml" up -d
-print_success "Cloudflare Tunnel running"
-
 echo ""
 echo -e "${BLUE}============================================================${NC}"
 echo -e "${BLUE}  SETUP COMPLETE!${NC}"
 echo -e "${BLUE}============================================================${NC}"
 echo ""
-echo -e "${YELLOW}📊 Management Interfaces:${NC}"
-echo "  ArgoCD:     https://web-dev1-argocd.vucongtuanduong.dpdns.org"
-echo "  Grafana:    https://web-dev1-grafana.vucongtuanduong.dpdns.org"
-echo "  RustFS:     https://web-dev1-rustfs.vucongtuanduong.dpdns.org"
-echo "  RustFS API: https://web-dev1-rustfs-api.vucongtuanduong.dpdns.org"
+echo -e "${YELLOW}🌐 Local Access (no Cloudflare tunnel):${NC}"
+LB_IP=$(kubectl get svc traefik -n kube-system -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
+if [ -n "${LB_IP}" ]; then
+  echo "  Traefik LB IP: ${LB_IP}"
+  echo "  Example:       curl -k -H 'Host: web-dev1-rustfs.vucongtuanduong.dpdns.org' https://${LB_IP}"
+  echo "  Tip:           add '${LB_IP}  web-dev1-api.vucongtuanduong.dpdns.org web-dev1-rustfs.vucongtuanduong.dpdns.org ...' to /etc/hosts"
+else
+  echo "  Traefik LB IP not found; check: kubectl get svc traefik -n kube-system"
+fi
 echo ""
-echo -e "${YELLOW}🚀 Microservices:${NC}"
-echo "  API Gateway:      https://web-dev1-api.vucongtuanduong.dpdns.org"
-echo "  Submission:       https://web-dev1-submission.vucongtuanduong.dpdns.org"
-echo "  Executor:         https://web-dev1-executor.vucongtuanduong.dpdns.org"
-echo "  Assignment:       https://web-dev1-assignment.vucongtuanduong.dpdns.org"
-echo "  Result:           https://web-dev1-result.vucongtuanduong.dpdns.org"
-echo "  Grading:          https://web-dev1-grading.vucongtuanduong.dpdns.org"
-echo "  Notification:     https://web-dev1-notification.vucongtuanduong.dpdns.org"
-echo "  Keycloak:         https://web-dev1-keycloak.vucongtuanduong.dpdns.org"
+echo -e "${YELLOW}🚀 Services (via kubectl port-forward):${NC}"
+echo "  API Gateway:  kubectl port-forward -n web-grading svc/gateway ${GATEWAY_PORT}:8080"
+echo "  RustFS API:   kubectl port-forward -n web-grading svc/rustfs 9000:9000"
+echo "  RustFS Web:   kubectl port-forward -n web-grading svc/rustfs 9001:9001"
+echo "  ArgoCD:       kubectl port-forward -n argocd svc/argocd-server 8080:80"
 echo ""
 echo -e "${YELLOW}💡 Quick Commands:${NC}"
 echo "  Check status:     kubectl get pods -n web-grading"
