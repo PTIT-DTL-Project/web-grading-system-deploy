@@ -36,9 +36,11 @@ spec:
             - name: RUSTFS_NOTIFY_WEBHOOK_ENABLE_PRIMARY
               value: "on"
             - name: RUSTFS_NOTIFY_WEBHOOK_ENDPOINT_PRIMARY
-              value: "http://submission-service:8082/api/v1/submissions/webhook/upload-complete"
+              value: "http://grading-submission-service:8082/api/v1/submissions/webhook/upload-complete"
             - name: RUSTFS_NOTIFY_WEBHOOK_QUEUE_DIR_PRIMARY
               value: /tmp/rustfs-events
+            - name: RUSTFS_OUTBOUND_ALLOW_ORIGINS
+              value: "http://grading-submission-service:8082"
           volumeMounts:
             - name: data
               mountPath: /data

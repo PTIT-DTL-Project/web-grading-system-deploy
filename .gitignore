@@ -32,3 +32,4 @@ replay_pid*
 **/.env.observability
 
 **/frontend-src/**
+**/cloudflare_tunnel_run.sh

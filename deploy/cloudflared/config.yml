@@ -19,6 +19,12 @@ ingress:
     service: http://localhost:30195
   - hostname: web-dev1-rustfs.vucongtuanduong.dpdns.org
     service: http://localhost:30195
+    originRequest:
+          disableChunkedEncoding: true
+  - hostname: web-dev1-rustfs-api.vucongtuanduong.dpdns.org
+    service: http://localhost:30195
+    originRequest:
+      disableChunkedEncoding: true
   - hostname: web-dev1-grafana.vucongtuanduong.dpdns.org
     service: http://localhost:30195
   - hostname: web-dev1-otlp.vucongtuanduong.dpdns.org

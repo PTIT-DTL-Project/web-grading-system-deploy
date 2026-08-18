@@ -16,3 +16,13 @@ spec:
                 name: rustfs
                 port:
                   number: 9001
+    - host: web-dev1-rustfs-api.vucongtuanduong.dpdns.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: rustfs
+                port:
+                  number: 9000

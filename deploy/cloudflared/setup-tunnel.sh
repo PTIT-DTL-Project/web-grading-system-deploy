@@ -35,7 +35,7 @@ chmod 644 ~/.cloudflared/${TUNNEL_ID}.json 2>/dev/null || true
 
 echo ""
 echo "=== Route DNS ==="
-for sub in api assignment submission grading result notification argocd keycloak rustfs grafana otlp pyroscope; do
+for sub in api assignment submission grading result notification argocd keycloak rustfs rustfs-api grafana otlp pyroscope; do
   cloudflared tunnel route dns "${TUNNEL_NAME}" "web-dev1-${sub}.${DOMAIN}" || true
 done
 
