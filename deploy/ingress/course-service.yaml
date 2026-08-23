@@ -1,18 +1,18 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: assignment-service
+  name: course-service
   namespace: web-grading
 spec:
   ingressClassName: traefik
   rules:
-    - host: web-dev1-assignment.vucongtuanduong.dpdns.org
+    - host: web-dev1-course.vucongtuanduong.dpdns.org
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: grading-assignment-service
+                name: grading-course-service
                 port:
                   number: 8081

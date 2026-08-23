@@ -212,7 +212,7 @@ testing-playground/
 │   ├── eureka-server/                 # Service Discovery
 │   ├── config-server/                 # Centralized Configuration
 │   ├── gateway/                       # API Gateway (Spring Cloud Gateway)
-│   ├── assignment-service/            # Exercises & test scenarios
+│   ├── course-service/            # Exercises & test scenarios
 │   ├── submission-service/            # File upload & Kafka producer
 │   ├── grading-service/               # Kafka consumer + Docker + tests
 │   ├── result-service/                # Results & statistics
@@ -224,7 +224,7 @@ testing-playground/
 │   ├── config-repo/                   # Spring Cloud Config files
 │   │   ├── application.yml
 │   │   ├── gateway.yml
-│   │   ├── assignment-service.yml
+│   │   ├── course-service.yml
 │   │   ├── submission-service.yml
 │   │   ├── grading-service.yml
 │   │   ├── result-service.yml
@@ -430,7 +430,7 @@ management:
         include: health,info,metrics
 ```
 
-**assignment-service.yml:**
+**course-service.yml:**
 ```yaml
 server:
   port: 8081
@@ -563,8 +563,8 @@ spring:
   cloud:
     gateway:
       routes:
-        - id: assignment-service
-          uri: lb://assignment-service
+        - id: course-service
+          uri: lb://course-service
           predicates:
             - Path=/api/v1/assignments/**,/api/v1/docker-images/**
           filters:
@@ -697,8 +697,8 @@ public class SecurityConfig {
 
 | Path | Target Service | HTTP Methods | Roles |
 |---|---|---|---|
-| `/api/v1/assignments/**` | assignment-service | ALL | lecturer, student |
-| `/api/v1/docker-images/**` | assignment-service | ALL | lecturer, student |
+| `/api/v1/assignments/**` | course-service | ALL | lecturer, student |
+| `/api/v1/docker-images/**` | course-service | ALL | lecturer, student |
 | `/api/v1/submissions/**` | submission-service | ALL | lecturer, student |
 | `/api/v1/results/**` | result-service | ALL | lecturer, student |
 | `/api/v1/notifications/**` | notification-service | GET | lecturer, student |
@@ -1963,7 +1963,7 @@ psql -U postgres -c "CREATE DATABASE keycloak_db;"
 ### 6.2 assignment_db
 
 ```sql
--- services/assignment-service/src/main/resources/db/migration/V1__init_schema.sql
+-- services/course-service/src/main/resources/db/migration/V1__init_schema.sql
 
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY,
@@ -2707,8 +2707,8 @@ services:
     networks:
       - grading-network
 
-  assignment-service:
-    build: ../services/assignment-service
+  course-service:
+    build: ../services/course-service
     container_name: grading-assignment
     depends_on:
       eureka-server:
@@ -2818,7 +2818,7 @@ networks:
 ### 10.2 Dockerfile mẫu cho mỗi service
 
 ```dockerfile
-# services/assignment-service/Dockerfile
+# services/course-service/Dockerfile
 FROM eclipse-temurin:25-jre-alpine AS builder
 WORKDIR /build
 COPY pom.xml .
@@ -2842,7 +2842,7 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 4. keycloak
 5. eureka-server ── health check
 6. config-server ── health check
-7. assignment-service, submission-service, result-service, notification-service
+7. course-service, submission-service, result-service, notification-service
 8. grading-service (needs kafka + db)
 9. gateway (needs eureka + keycloak)
 ```
@@ -3008,8 +3008,8 @@ Files:
 [ ] 2.6 Seed Docker base images
 
 Files:
-  - services/assignment-service/
-  - services/assignment-service/src/main/resources/db/migration/
+  - services/course-service/
+  - services/course-service/src/main/resources/db/migration/
 ```
 
 ### Phase 3 — Submission Service + Kafka (1 tuần)
@@ -3100,32 +3100,32 @@ Files:
 |---|---|---|
 | `DemoApplication.java` | → Mỗi service có *Application riêng | Thêm `@EnableDiscoveryClient` |
 | `model/BaseUUID.java` | → Copy vào mỗi service | Hoặc `common-lib` module |
-| `model/User.java` | → `assignment-service` | Chỉ validate owner |
-| `model/Exercise.java` | → `assignment-service` | Đổi tên → `Assignment` |
-| `model/ExerciseRequirement.java` | → `assignment-service` | Đổi tên → `TestScenario` |
-| `model/PathVariable.java` | → `assignment-service` | Đổi FK: `scenarioId` |
-| `model/DockerImageBase.java` | → `assignment-service` | Giữ nguyên |
-| `model/ExerciseDockerImageBase.java` | → `assignment-service` | Đổi tên → `AssignmentDockerImage` |
-| `repository/ExerciseRepository.java` | → `assignment-service` | Đổi tên → `AssignmentRepository` |
-| `repository/ExerciseRequirementRepository.java` | → `assignment-service` | Đổi tên → `ScenarioRepository` |
-| `repository/PathVariableRepository.java` | → `assignment-service` | Đổi FK field |
-| `repository/DockerImageBaseRepository.java` | → `assignment-service` | Giữ nguyên |
-| `repository/ExerciseDockerImageBaseRepository.java` | → `assignment-service` | Đổi tên → `AssignmentDockerImageRepository` |
-| `repository/UserRepository.java` | → `assignment-service` | Chỉ `findByEmail` |
-| `service/ExerciseService.java` | → `assignment-service` | Tách: `AssignmentService` + `ScenarioService` |
+| `model/User.java` | → `course-service` | Chỉ validate owner |
+| `model/Exercise.java` | → `course-service` | Đổi tên → `Assignment` |
+| `model/ExerciseRequirement.java` | → `course-service` | Đổi tên → `TestScenario` |
+| `model/PathVariable.java` | → `course-service` | Đổi FK: `scenarioId` |
+| `model/DockerImageBase.java` | → `course-service` | Giữ nguyên |
+| `model/ExerciseDockerImageBase.java` | → `course-service` | Đổi tên → `AssignmentDockerImage` |
+| `repository/ExerciseRepository.java` | → `course-service` | Đổi tên → `AssignmentRepository` |
+| `repository/ExerciseRequirementRepository.java` | → `course-service` | Đổi tên → `ScenarioRepository` |
+| `repository/PathVariableRepository.java` | → `course-service` | Đổi FK field |
+| `repository/DockerImageBaseRepository.java` | → `course-service` | Giữ nguyên |
+| `repository/ExerciseDockerImageBaseRepository.java` | → `course-service` | Đổi tên → `AssignmentDockerImageRepository` |
+| `repository/UserRepository.java` | → `course-service` | Chỉ `findByEmail` |
+| `service/ExerciseService.java` | → `course-service` | Tách: `AssignmentService` + `ScenarioService` |
 | **`service/DockerService.java`** | → **`grading-service`** | Cải tiến: PortAllocator, timeout, resource limits |
 | **`service/EvaluationService.java`** | → **`grading-service`** | Tách → `GradingOrchestrator` + `TestExecutor` |
 | `service/MinioService.java` | → `submission-service` + `grading-service` | Upload ở submission, download ở grading |
-| `controller/ExerciseController.java` | → `assignment-service` | Thêm CRUD đầy đủ + pagination |
+| `controller/ExerciseController.java` | → `course-service` | Thêm CRUD đầy đủ + pagination |
 | `controller/FileController.java` | → `submission-service` + `grading-service` | Upload → submission; evaluation → grading |
 | `feign/FeignClientFactory.java` | → `grading-service` | Dynamic Feign cho student container |
 | **`feign/SubmissionClient.java`** | → **`grading-service`** | Giữ nguyên interface |
 | `dto/response/DockerSubmissionResult.java` | → `grading-service` | Có thể giữ hoặc refactor |
-| `dto/request/CreateExerciseRequest.java` | → `assignment-service` | Đổi tên → `CreateAssignmentRequest` |
-| `dto/request/CreateExerciseRequirementRequest.java` | → `assignment-service` | Đổi tên → `CreateScenarioRequest` |
+| `dto/request/CreateExerciseRequest.java` | → `course-service` | Đổi tên → `CreateAssignmentRequest` |
+| `dto/request/CreateExerciseRequirementRequest.java` | → `course-service` | Đổi tên → `CreateScenarioRequest` |
 | `configuration/GsonConfig.java` | → copy vào mỗi service | Hoặc shared `common-lib` |
 | `configuration/MinioConfiguration.java` | → `submission-service` + `grading-service` | Copy |
-| `mapper/ExerciseMapper.java` | → `assignment-service` | Đổi tên → `AssignmentMapper` |
+| `mapper/ExerciseMapper.java` | → `course-service` | Đổi tên → `AssignmentMapper` |
 | `application.yaml` | → `infra/config-repo/` | Tách thành file per service |
 
 ### 13.2 Shared Library (common-lib)

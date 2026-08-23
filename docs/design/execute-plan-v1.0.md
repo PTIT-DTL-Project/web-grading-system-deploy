@@ -83,7 +83,7 @@ Toàn bộ grading là **bất đồng bộ**: sinh viên nộp xong nhận ngay
 - Tạo `grading_jobs` row: `status = PENDING`.
 - Chống trùng: nếu đã có job `DONE`/`RUNNING` cho submissionId → bỏ qua (idempotent).
 
-### Bước 1 — Fetch cấu hình chấm (Feign → assignment-service)
+### Bước 1 — Fetch cấu hình chấm (Feign → course-service)
 
 ```
 GET /api/v1/internal/assignments/{assignmentId}
@@ -355,7 +355,7 @@ Kafka: grading-jobs (3 partitions)
 
 ### 7.3 Image warm-up
 
-- Khi giảng viên lưu bài tập, assignment-service có thể báo executor (hoặc executor định kỳ) pull sẵn các images trong `docker_images` → giảm thời gian build/pull khi SV nộp.
+- Khi giảng viên lưu bài tập, course-service có thể báo executor (hoặc executor định kỳ) pull sẵn các images trong `docker_images` → giảm thời gian build/pull khi SV nộp.
 - Docker layer cache trong DinD volume (PVC cho `/var/lib/docker` nếu muốn giữ cache qua restart pod).
 
 ### 7.4 Concurrency của Spring Kafka

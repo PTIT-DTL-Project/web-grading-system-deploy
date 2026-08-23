@@ -56,10 +56,10 @@ Hệ thống chấm bài tự động môn Lập trình Web. Giảng viên tạo
 
 | Use case | Service xử lý |
 |---|---|
-| Quản lý lớp: tạo lớp, archive theo kỳ | assignment-service |
-| Import sinh viên vào lớp (CSV/Excel) | assignment-service |
-| Tạo bài tập, khai báo docker image, compose template | assignment-service |
-| Tạo test plan / test step (endpoint, DB, auth, multi-step) | assignment-service |
+| Quản lý lớp: tạo lớp, archive theo kỳ | course-service |
+| Import sinh viên vào lớp (CSV/Excel) | course-service |
+| Tạo bài tập, khai báo docker image, compose template | course-service |
+| Tạo test plan / test step (endpoint, DB, auth, multi-step) | course-service |
 | Chấm điểm (tự động khi SV nộp) | executor-service |
 | Nhập tay điểm chuyên cần / điểm khác | result-service |
 | Xem điểm, xem thống kê | result-service |
@@ -70,8 +70,8 @@ Hệ thống chấm bài tự động môn Lập trình Web. Giảng viên tạo
 | Use case | Service xử lý |
 |---|---|
 | Đổi mật khẩu lần đầu | Keycloak (không thuộc hệ thống) |
-| Xem lớp của mình, danh sách sinh viên trong lớp | assignment-service |
-| Xem danh sách/chi tiết bài tập | assignment-service |
+| Xem lớp của mình, danh sách sinh viên trong lớp | course-service |
+| Xem danh sách/chi tiết bài tập | course-service |
 | Nộp bài (zip), kiểm tra trạng thái | submission-service |
 | Xem điểm, nhận xét | result-service |
 
@@ -89,7 +89,7 @@ Hệ thống chấm bài tự động môn Lập trình Web. Giảng viên tạo
 | # | Service | Port | DB | Trạng thái hiện tại |
 |---|---|---|---|---|
 | 1 | api-gateway | 8080 | — | Skeleton |
-| 2 | assignment-service | 8081 | `assignment_db` | Skeleton |
+| 2 | course-service | 8081 | `assignment_db` | Skeleton |
 | 3 | submission-service | 8082 | `submission_db` | Hoạt động (presigned + webhook), thiếu Kafka |
 | 4 | executor-service | 8083 | `executor_db` | Skeleton |
 | 5 | result-service | 8084 | `result_db` | Skeleton |
@@ -104,15 +104,15 @@ Hệ thống chấm bài tự động môn Lập trình Web. Giảng viên tạo
 
 | Path | Target | Ghi chú |
 |---|---|---|
-| `/api/v1/classes/**` | assignment-service | |
-| `/api/v1/assignments/**` | assignment-service | |
-| `/api/v1/docker-images/**` | assignment-service | |
+| `/api/v1/classes/**` | course-service | |
+| `/api/v1/assignments/**` | course-service | |
+| `/api/v1/docker-images/**` | course-service | |
 | `/api/v1/submissions/**` | submission-service | |
 | `/api/v1/results/**` | result-service | |
 
 **Chặn ngoài gateway:** mọi internal endpoint (`/api/v1/internal/**`) không expose ra ngoài (chỉ gọi trong cluster network).
 
-### 3.2 assignment-service
+### 3.2 course-service
 
 **Trách nhiệm:** Toàn bộ nội dung giảng viên tạo — lớp học, sinh viên trong lớp, bài tập, docker images, test plans, test steps.
 
@@ -188,7 +188,7 @@ PATCH /api/v1/submissions/{id}/status       — executor cập nhật trạng th
 
 **Không có public API.** Chỉ có:
 - Kafka consumer (`grading-jobs`)
-- Feign clients: assignment-service (lấy plan), submission-service (PATCH status), result-service (lưu kết quả)
+- Feign clients: course-service (lấy plan), submission-service (PATCH status), result-service (lưu kết quả)
 - RustFS client (download zip)
 - Docker client (DinD socket)
 
@@ -249,17 +249,17 @@ POST /api/v1/internal/results                            — executor ghi kết 
 |---|---|---|---|
 | Client | api-gateway | HTTP | Mọi request từ FE |
 | api-gateway | Tất cả services | HTTP (K8s DNS) | Route + inject auth headers |
-| submission-service | assignment-service | Feign | Validate assignment tồn tại + published |
+| submission-service | course-service | Feign | Validate assignment tồn tại + published |
 | submission-service | RustFS | S3 SDK | Presigned URL upload |
 | submission-service | Kafka | Producer | `grading-jobs` |
 | executor-service | Kafka | Consumer | `grading-jobs` |
 | executor-service | RustFS | S3 SDK | Download zip |
-| executor-service | assignment-service | Feign | Lấy assignment + plans/steps |
+| executor-service | course-service | Feign | Lấy assignment + plans/steps |
 | executor-service | submission-service | Feign | PATCH status |
 | executor-service | result-service | Feign | Ghi kết quả |
 | executor-service | Docker (DinD) | Docker socket | Chạy container SV |
 
-**Không dùng service discovery:** tên service = DNS trong K8s (vd `assignment-service.web-grading.svc.cluster.local`), cấu hình qua env var trong Helm values.
+**Không dùng service discovery:** tên service = DNS trong K8s (vd `course-service.web-grading.svc.cluster.local`), cấu hình qua env var trong Helm values.
 
 ---
 
@@ -301,7 +301,7 @@ Không tạo `notifications` topic khi chưa có consumer — chờ khi làm not
 |---|---|---|
 | **Notification service (WebSocket)** | Giới hạn RAM cluster; FE poll trạng thái submission là đủ | Khi cần realtime, thêm service + topic `notifications` |
 | **Eureka / Config Server** | K8s DNS + Helm values đã đủ | Không cần |
-| **Service riêng cho user/class** | Class nằm trong assignment-service, auth nằm ở Keycloak | Không cần |
+| **Service riêng cho user/class** | Class nằm trong course-service, auth nằm ở Keycloak | Không cần |
 | **DB test cho MySQL/MariaDB** | Chỉ hỗ trợ PostgreSQL trong v1 | Khi có bài tập yêu cầu DB khác |
 | **Step type `SCRIPT`** | Chạy script tuỳ chỉnh — rủi ro bảo mật cao, chưa có nhu cầu cụ thể | Khi có yêu cầu thật |
 | **AI module (Agent tạo bài tập, chatbot nhận xét)** | Nghiên cứu, chưa phải việc chính | Sau khi hệ thống chấm ổn định |
