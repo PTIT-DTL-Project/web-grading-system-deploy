@@ -9,14 +9,14 @@ NC='\033[0m'
 
 NAMESPACE="web-grading"
 SECRET_NAME="app-config"
-SECRET_KEY="LOG_LEVEL"
+SECRET_KEY="APP_LOG_LEVEL"
 ENV_NAME="LOGGING_LEVEL_VN_EDU_PTIT_WEB_GRADING_SYSTEM"
 SERVICES=(grading-course-service grading-submission-service grading-result-service grading-executor-service grading-api-gateway)
 
 # Level: $1 wins, else LOG_LEVEL from .env, else INFO
 LEVEL="${1:-}"
 if [[ -z "$LEVEL" && -f .env ]]; then
-    LEVEL=$(grep -E '^LOG_LEVEL=' .env | cut -d= -f2 | tr -d '[:space:]')
+    LEVEL=$(grep -E '^APP_LOG_LEVEL=' .env | cut -d= -f2 | tr -d '[:space:]')
 fi
 LEVEL="${LEVEL:-INFO}"
 

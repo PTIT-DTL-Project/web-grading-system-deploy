@@ -35,7 +35,7 @@ kubectl create secret generic rustfs-secret \
 # App config (log level for all services)
 kubectl create secret generic app-config \
   --namespace "${NAMESPACE}" \
-  --from-literal=LOG_LEVEL="${LOG_LEVEL:-INFO}" \
+  --from-literal=APP_LOG_LEVEL="${APP_LOG_LEVEL:-INFO}" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 echo "Namespace and secrets created"
