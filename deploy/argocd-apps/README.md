@@ -22,7 +22,7 @@ Script sẽ tạo các file manifest trong thư mục `generated/`:
 - `executor-service.yaml`
 - `api-gateway.yaml`
 - `result-service.yaml`
-- `assignment-service.yaml`
+- `course-service.yaml`
 
 ### Apply to Cluster
 
