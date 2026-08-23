@@ -32,4 +32,10 @@ kubectl create secret generic rustfs-secret \
   --from-literal=RUSTFS_SECRET_KEY="${RUSTFS_SECRET_KEY:-minioadmin}" \
   --dry-run=client -o yaml | kubectl apply -f -
 
+# App config (log level for all services)
+kubectl create secret generic app-config \
+  --namespace "${NAMESPACE}" \
+  --from-literal=LOG_LEVEL="${LOG_LEVEL:-INFO}" \
+  --dry-run=client -o yaml | kubectl apply -f -
+
 echo "Namespace and secrets created"
