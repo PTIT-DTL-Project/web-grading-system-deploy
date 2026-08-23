@@ -195,6 +195,13 @@ Verify by checking the compiled class has `RuntimeVisibleParameterAnnotations`.
   name follows the FIELD, not the column (`latest`, not `is_latest`).
 - Defensive Feign: wrap client calls that degrade gracefully (e.g. exercise score) in
   try/catch -> log.warn + return null, so a dependency outage never fails the whole endpoint.
+- ENV OVERRIDES CANNOT CARRY UNDERSCORES INSIDE PACKAGE NAMES: relaxed binding turns
+  `LOGGING_LEVEL_VN_EDU_PTIT_WEB_GRADING_SYSTEM` into `vn.edu.ptit.web.grading.system`
+  (dots), which matches no logger. Alias instead: yaml
+  `vn.edu.ptit.web_grading_system: ${app.log.level:INFO}` + env `APP_LOG_LEVEL`.
+- LoggingAspect pointcut covers ONLY @Service + @RestController beans — never
+  @ControllerAdvice/@Configuration (actuator/advice tracing is pure noise; Boot 4's
+  health handler method is named `handle`, which defeats name-based filters).
 
 ## 11. Logging
 
