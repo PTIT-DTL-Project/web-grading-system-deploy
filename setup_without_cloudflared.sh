@@ -68,6 +68,12 @@ print_step "5. Install ArgoCD + deploy applications"
 bash "$SCRIPT_DIR/deploy/install-argocd.sh"
 print_success "ArgoCD installed and applications deployed"
 
+print_step "6. Deploy Kafka UI"
+kubectl apply -f "$SCRIPT_DIR/deploy/kafka-ui/service.yaml" \
+  -f "$SCRIPT_DIR/deploy/kafka-ui/deployment.yaml" \
+  -f "$SCRIPT_DIR/deploy/kafka-ui/ingress.yaml"
+print_success "Kafka UI deployed"
+
 echo ""
 echo -e "${BLUE}============================================================${NC}"
 echo -e "${BLUE}  SETUP COMPLETE!${NC}"
@@ -88,6 +94,7 @@ echo "  API Gateway:  kubectl port-forward -n web-grading svc/gateway ${GATEWAY_
 echo "  RustFS API:   kubectl port-forward -n web-grading svc/rustfs 9000:9000"
 echo "  RustFS Web:   kubectl port-forward -n web-grading svc/rustfs 9001:9001"
 echo "  ArgoCD:       kubectl port-forward -n argocd svc/argocd-server 8080:80"
+echo "  Kafka UI:     kubectl port-forward -n web-grading svc/kafka-ui 8080:8080"
 echo ""
 echo -e "${YELLOW}💡 Quick Commands:${NC}"
 echo "  Check status:     kubectl get pods -n web-grading"
