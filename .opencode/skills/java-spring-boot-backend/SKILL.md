@@ -353,3 +353,43 @@ The rule triggers at >2 positional args — 1-2 arg constructors are fine as-is.
 - Pre-existing broken services (e.g. `submission-service`'s missing
   `KafkaTemplate<String, WgsEvent<?>>` bean) are known blockers; document
   them, do not fabricate responses.
+
+## 14. Typed KafkaTemplate for generic event types (mandatory)
+
+When a service uses `KafkaTemplate<String, CustomEvent<?>>` (typed generic),
+Spring Kafka auto-config only creates `KafkaTemplate<String, Object>`.
+This causes `No qualifying bean of type 'KafkaTemplate<String, CustomEvent<?>>'`.
+
+Fix: create a `KafkaConfig` class in the service's `config/` package that
+provides a typed `ProducerFactory` and `KafkaTemplate` bean.
+The `application.yaml` already has `spring.kafka.*` properties — read them
+with `@Value` and reuse:
+
+```java
+@Configuration
+public class KafkaConfig {
+    @Bean
+    public ProducerFactory<String, MyEvent<?>> producerFactory() {
+        Map<String, Object> props = new HashMap<>();
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put("security.protocol", securityProtocol);
+        props.put("sasl.mechanism", saslMechanism);
+        props.put("sasl.jaas.config", saslJaasConfig);
+        props.put("ssl.truststore.location", sslTruststoreLocation);
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+        return new DefaultKafkaProducerFactory<>(props);
+    }
+    @Bean
+    public KafkaTemplate<String, MyEvent<?>> kafkaTemplate() {
+        return new KafkaTemplate<>(producerFactory());
+    }
+}
+```
+
+Properties come from `application.yaml` (`spring.kafka.bootstrap-servers`,
+`spring.kafka.properties.*`, `spring.kafka.producer.*`).
+Use `org.apache.kafka.common.serialization.StringSerializer` for keys.
+The `JsonSerializer` handles the custom event type via Jackson.
+
+See `src-services/submission-service/src/main/java/.../config/KafkaConfig.java` for a working example.
