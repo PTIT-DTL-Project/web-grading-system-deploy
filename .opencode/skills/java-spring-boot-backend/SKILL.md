@@ -186,6 +186,11 @@ Verify by checking the compiled class has `RuntimeVisibleParameterAnnotations`.
 
 ## 10. Gotchas
 
+- Boot 4 auto-configures **Jackson 3** (`tools.jackson.databind.ObjectMapper`) — the old
+  `com.fasterxml.jackson.databind.ObjectMapper` is NOT a bean anymore. New code injecting
+  an ObjectMapper must import from `tools.jackson.databind`. Exceptions are unchecked there,
+  so readTree/writeValueAsString need no throws clauses.
+
 - `Map.of(...)` throws NPE on null VALUES — never feed it nullable data
   (e.g. computed averages). Use `Collections.singletonMap(k, v)` or a HashMap.
 - Not-found is ALWAYS `ResourceNotFoundException` (404) — never IllegalArgumentException
@@ -243,7 +248,17 @@ Verify by checking the compiled class has `RuntimeVisibleParameterAnnotations`.
 - Every business service carries `spring-boot-starter-validation`; api-gateway does not
   (no request bodies).
 - Identity: `X-User-Id` header (until Keycloak integration injects it at the gateway);
-  no endpoint trusts client-sent identity beyond that header today.
+   no endpoint trusts client-sent identity beyond that header today.
+- Student-facing read endpoints live under `/api/v1/student/**` (gateway routes them to
+   course-service). They are enrollment + `published` gated via `class_students.student_user_id`
+   and sanitize `test_steps.config` (strip `connection`/`extract`/`expected`, drop
+   `DELAY`/`EXTRACT` steps) so grading internals/credentials never reach students.
+- `test_steps.description` = nullable lecturer-authored problem-set note. FE prefers it
+   verbatim over auto-generated text derived from `config` (fallback only when empty).
+- Per-plan submission: `submissions.planId` optional; `null` ⇒ executor grades all plans,
+   set ⇒ only that plan. `results.is_latest` is unique per `(student_id, assignment_id, plan_id)`
+   and `results.plan_weight` carries `test_plans.weight` so the assignment exercise score
+   is the weight-weighted average of per-plan scores (`ResultService.weightedScoreByPlan`).
 - Internal service-to-service APIs under `/api/v1/internal/**`: plain DTOs, no envelope,
   called via OpenFeign (`@EnableFeignClients` already on every application class).
   Gateway never routes internal paths.
@@ -265,3 +280,76 @@ Verify by checking the compiled class has `RuntimeVisibleParameterAnnotations`.
   pure logic with Mockito mocks); no heavyweight test infra. Run:
   `./mvnw test -Dtest='ClassName'` inside the service directory.
 - Compile check per service: `./mvnw -q compile` from `src-services/<service>/`.
+
+## 12. Definition of done — test before reporting
+
+MANDATORY before telling the user a task is done:
+
+1. **Unit tests**: cover every new/changed logic branch — boundaries, error paths,
+   and edge cases (empty / null / invalid input / duplicates), not just the happy path.
+   Style per §11: plain JUnit + Mockito, static helpers tested directly.
+2. **Integration tests (when needed)**: if the change touches component wiring —
+   controllers, repositories, Feign clients, config binding, file upload, messaging —
+   verify real behavior by booting the service and exercising the actual endpoint
+   (curl/Postman, check HTTP status + ApiResponse envelope), or a @SpringBootTest
+   when a DB is reachable. Compile success is NOT verification.
+3. **Regression**: re-run all existing tests for every touched service
+   (`./mvnw test -Dtest='…'`) and fix or explain any failure — never ship with
+   silently broken pre-existing tests.
+4. **Report honestly**: state what was tested, how, and the result counts in the
+   completion message ("verified live: 200 …", "7/7 tests pass"). If something could
+   NOT be verified (e.g. no local DB), say so explicitly instead of claiming done.
+
+5. **Postman collection is part of done**: every new public endpoint (and every
+    changed endpoint's new param/behavior) gets a request in
+    `src-services/docs/api/postman/Web grading service.postman_collection.json` under
+    its service folder, with a saved **real** `response` for the happy path (200/201)
+    **and** at least one error case (e.g. 404 Not Found, 400). Capture the bodies from
+    a live boot of the service — never hand-write or guess response JSON. Internal
+    `/api/v1/internal/**` endpoints are included when they have a caller contract worth
+    exercising (e.g. `POST /api/v1/internal/results/weighted`). If the service cannot
+    be booted in the environment, add the request definition (method/URL/headers/body)
+    but leave `response` empty and say so — do not fabricate responses.
+6. **No all-args positional constructors**: every record constructor call with more
+    than 2 positional arguments must use a builder (`X.builder().field(val)...build()`)
+    or a named static factory method. This applies at all call sites AND inside helper
+    methods. Use `@Builder` on the record (already configured project-wide via Lombok).
+    See §§12.6–12.7 for the full rule and examples.
+
+## 12.6. No all-args positional constructors (mandatory)
+
+Every record/POJO constructor call with more than 2 positional arguments must
+use Lombok `@Builder` and the builder pattern. Do NOT write:
+```java
+new MyDto(a.getId(), a.getName(), a.getType(), a.getConfig(), a.getWeight())
+```
+Do write one of:
+```java
+// builder inline
+MyDto.builder().id(a.getId()).name(a.getName()).type(a.getType())
+      .config(a.getConfig()).weight(a.getWeight()).build();
+```
+
+## 12.7. Named factory method (recommended)
+
+When the same construction pattern is reused in a stream or helper, extract a
+`static X of(Entity e)` method on the DTO (if it does not import the entity,
+which would cause a circular dependency):
+```java
+public static MyDto of(Entity e) {
+    return builder().id(e.getId()).name(e.getName())...build();
+}
+```
+Then call sites read `.map(MyDto::of)` instead of a long lambda.
+Factories go on the DTO when no entity import is needed; otherwise put the
+builder chain directly at the call site in the service.
+The rule triggers at >2 positional args — 1-2 arg constructors are fine as-is.
+
+## 13. Verification
+
+- Compile success is NOT verification. Tests must pass (`./mvnw test`).
+- If the local Postgres container is not running, tests will fail with
+  `FATAL: database does not exist` — start it and re-run.
+- Pre-existing broken services (e.g. `submission-service`'s missing
+  `KafkaTemplate<String, WgsEvent<?>>` bean) are known blockers; document
+  them, do not fabricate responses.

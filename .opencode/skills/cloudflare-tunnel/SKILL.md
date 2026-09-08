@@ -1,89 +1,48 @@
 ---
 name: cloudflare-tunnel
-description: Cloudflare Tunnel (cloudflared) setup and troubleshooting for exposing this project's k3s services via *.vucongtuanduong.dpdns.org hostnames. Use when a tunnel hostname shows Cloudflare Error 1033, when running deploy/cloudflared/setup-tunnel.sh or its docker-compose, editing config.yml.tmpl, or when external URLs fail while the cluster itself is healthy.
+description: Cloudflare Zero Trust Tunnel setup and troubleshooting for exposing this project's k3s services via *.vucongtuanduong.dpdns.org hostnames. Use when a tunnel hostname shows Cloudflare Error 1033, adding a new public hostname (e.g. kafka-ui), or when external URLs fail while the cluster itself is healthy.
 ---
 
-# Cloudflare Tunnel (host docker-compose)
+# Cloudflare Zero Trust Tunnel (dashboard-only)
 
-The tunnel runs on the HOST via `deploy/cloudflared/docker-compose.yml`
-(`network_mode: host`), NOT as a Kubernetes pod. `kubectl get pods -A | grep
-cloudflared` finding nothing is EXPECTED — check `docker ps` instead.
+The project moved from local cloudflared to **Cloudflare Zero Trust tunnels** —
+managed entirely in the Cloudflare Dashboard. The local `deploy/cloudflared/`
+directory was deleted; there is no config file in the repo to edit.
 
-Traffic path: internet → Cloudflare edge → tunnel → cloudflared container →
-`http://localhost:<GATEWAY_PORT>` (Traefik NodePort, default 30195 from `.env`)
-→ Traefik ingress → service.
+Traffic path: internet → Cloudflare edge (TLS terminated) → Zero Trust tunnel →
+machine's gateway (Traefik NodePort 30195) → Traefik Ingress → k8s service.
 
 ## 1. Hostnames
 
-Pattern: `web-dev{N}-<sub>.vucongtuanduong.dpdns.org` (dev1/dev2 per
-branch/user). Subs: api, assignment, submission, grading, result, notification,
-argocd, keycloak, rustfs, grafana, otlp, pyroscope.
+Pattern: `web-dev{N}-<sub>.vucongtuanduong.dpdns.org`.
+Current subs: api, course, submission, result, grading, rustfs, rustfs-api,
+argocd, keycloak, grafana, otlp, pyroscope, kafka-ui.
 
-## 2. Setup flow
+## 2. Adding a new public hostname
 
-```bash
-deploy/cloudflared/setup-tunnel.sh [domain] [tunnel-name] [port]
-```
+1. Deploy the k8s workload + Traefik Ingress for the new host (repo work).
+2. Cloudflare Dash → Zero Trust → Networks → Tunnels → your tunnel
+   → Public Hostnames → Add:
+   - Subdomain: `web-dev1-<sub>.vucongtuanduong.dpdns.org` (or pattern host)
+   - Service: `http://localhost:30195` (Traefik NodePort)
+   - TLS: leave default
+3. Save — no restart needed, live immediately.
 
-It: creates tunnel if missing → extracts TUNNEL_ID → renders `config.yml.tmpl`
-into `~/.cloudflared/config.yml` (substitutes TUNNEL_ID + GATEWAY_PORT) → runs
-`cloudflared tunnel route dns` for every subdomain. Start it with
-`docker compose -f deploy/cloudflared/docker-compose.yml up -d` (or `start.sh`).
+## 3. Troubleshooting Error 1033
 
-## 3. Two traps that cause Error 1033
+Cloudflare Error 1033 means the edge can't reach your gateway—not the tunnel.
 
-Both bit us on 2026-08-17. If a tunnel URL returns Cloudflare Error 1033, the
-edge can't reach cloudflared — it's almost always one of these.
+1. Is Traefik reachable? `kubectl get svc -n kube-system traefik` — needs
+   LoadBalancer IP; `curl -H "Host: web-dev1-…" http://192.168.103.27:30195/`.
+2. Is the tunnel connected? Dash → Tunnels — check status Healthy, not
+   Disconnected.
+3. Does the public hostname exist in the Dash? Compare exact string — typos
+   in the subdomain are the most common cause.
 
-### Trap A: stale repo config.yml overrides the generated one
+Note: health probes inside the pod still run independent of the tunnel, so a
+pod "Healthy" but 1033 means the gateway/hostname chain, not the workload.
 
-docker-compose mounts BOTH:
-- `~/.cloudflared:/etc/cloudflared` (whole dir)
-- `./config.yml:/etc/cloudflared/config.yml:ro` ← **this file WINS**
+## 4. Don't touch
 
-So the repo copy `deploy/cloudflared/config.yml` is what the container reads,
-NOT the freshly rendered `~/.cloudflared/config.yml`. After every
-setup-tunnel.sh run:
-
-```bash
-cp ~/.cloudflared/config.yml deploy/cloudflared/config.yml
-```
-
-Symptom of staleness: logs show `error parsing tunnel ID: Can't read origin
-cert...` even though cert.pem exists — because an old config references the
-tunnel by NAME (needs cert.pem lookup) plus a credentials-file JSON that no
-longer exists. Fresh configs use the tunnel UUID directly.
-
-### Trap B: cert.pem unreadable by the container user
-
-`cloudflare/cloudflared:latest` runs as uid 65532. `~/.cloudflared/cert.pem`
-from `cloudflared login` is mode 600 owned by uid 1000 → unreadable → crash
-loop. Fix once:
-
-```bash
-chmod 644 ~/.cloudflared/cert.pem ~/.cloudflared/<TUNNEL_ID>.json
-```
-
-## 4. Error 1033 diagnosis chain (in order)
-
-```bash
-curl -sI https://web-dev1-api.vucongtuanduong.dpdns.org   # 1033 = tunnel down
-docker ps | grep cloudflared                              # Restarting? crash loop
-docker logs cloudflared-web-dev1 --tail 30                # read root cause
-# fix per trap A or B above, then:
-docker restart cloudflared-web-dev1
-docker logs -f cloudflared-web-dev1                       # want: "Registered tunnel connection" x4
-curl -sI https://web-dev1-api.vucongtuanduong.dpdns.org   # expect app-level status (404/200), NOT 1033
-```
-
-Success looks like four `Registered tunnel connection` lines (hkg locations,
-protocol http2). An HTTP 404/503 after that is an APP/ingress problem, not a
-tunnel problem — check Traefik ingress hosts match the hostname.
-
-## 5. Rules
-
-- NEVER edit `~/.cloudflared/config.yml` directly for persistent changes — edit
-  `config.yml.tmpl`, re-run setup-tunnel.sh, then re-copy to the repo dir.
-- Tunnel name convention: `web-dev{N}-web-grading`.
-- DNS route failures (`route dns`) are non-fatal in the script; verify CNAMEs
-  `<TUNnel_ID>.cfargotunnel.com` exist at the DNS provider if a sub stays 1033.
+- There is no longer a `deploy/cloudflared/` folder to edit.
+- Don't recreate `config.yml.tmpl` — Zero Trust config is dashboard-only.

@@ -33,3 +33,7 @@ replay_pid*
 
 **/frontend-src/**
 **/cloudflare_tunnel_run.sh
+
+# Aiven secrets
+**/test.txt
+**/docker/kafka-ca.pem

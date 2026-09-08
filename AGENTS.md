@@ -15,6 +15,7 @@ When the user gives requirements, standards, or corrections, and the work succee
      (`name` = folder name, lowercase-hyphenated; `description` front-loads trigger keywords)
 2. Record only durable conventions: patterns, decisions, gotchas, exact commands.
    Never one-off task details.
+   - Postman + real-response duty for new endpoints → `java-spring-boot-backend/SKILL.md` §12.5.
 3. If the new convention contradicts an existing skill section, rewrite that
    section — stale rules are worse than missing ones.
 4. Do this silently as part of finishing the task; mention it in one line max.
@@ -35,3 +36,14 @@ Every time you add or change an endpoint/API (or anything client-facing):
 
 Example of the expected format: the Classes & Scores flow in `src-services/README.md`
 (create → import → score-components → scores → transcript).
+
+## Coding convention: no all-args positional constructors (mandatory)
+
+When a record constructor call has more than 2 positional arguments,
+do NOT write `new X(a, b, c, d...)`. Use Lombok `@Builder` and the
+builder pattern (`X.builder().field(val)...build()`), or a `static X of(Entity)`
+named factory method on the DTO when no entity import is needed
+(to avoid circular dependency). The factory approach yields readable
+`.map(X::of)` at call sites; the builder approach is used inline
+when a factory would need an entity import. Triggers at >2 positional
+args — 1-2 arg constructors are fine as-is. See `java-spring-boot-backend/SKILL.md` §§12.6–12.7.

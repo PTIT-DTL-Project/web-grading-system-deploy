@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-ui
+  namespace: web-grading
+  labels:
+    app: kafka-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-ui
+  template:
+    metadata:
+      labels:
+        app: kafka-ui
+    spec:
+      containers:
+        - name: kafka-ui
+          image: ghcr.io/kafbat/kafka-ui:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - secretRef:
+                name: kafka-aiven-credentials
+                optional: true
+          env:
+            # Kafka UI maps flat env vars onto spring properties.
+            - name: KAFKA_CLUSTERS_0_NAME
+              value: aiven-grading
+            - name: KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS
+              valueFrom:
+                secretKeyRef:
+                  name: kafka-aiven-credentials
+                  key: bootstrap-servers
+                  optional: true
+            - name: KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL
+              value: SASL_SSL
+            - name: KAFKA_CLUSTERS_0_PROPERTIES_SASL_MECHANISM
+              value: SCRAM-SHA-256
+            - name: KAFKA_CLUSTERS_0_PROPERTIES_SASL_JAAS_CONFIG
+              value: 'org.apache.kafka.common.security.scram.ScramLoginModule required username="$(username)" password="$(password)";'
+            - name: KAFKA_CLUSTERS_0_PROPERTIES_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM
+              value: https
+            - name: KAFKA_CLUSTERS_0_PROPERTIES_SSL_TRUSTSTORE_TYPE
+              value: PEM
+            - name: KAFKA_CLUSTERS_0_PROPERTIES_SSL_TRUSTSTORE_LOCATION
+              value: /etc/kafka/secrets/ca.pem
+          volumeMounts:
+            - name: kafka-ca
+              mountPath: /etc/kafka/secrets
+              readOnly: true
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 50m
+            limits:
+              memory: 512Mi
+              cpu: 500m
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 10
+      volumes:
+        - name: kafka-ca
+          secret:
+            secretName: kafka-aiven-credentials
+            optional: true
+            items:
+              - key: ca.pem
+                path: ca.pem
