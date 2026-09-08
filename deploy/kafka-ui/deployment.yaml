@@ -64,6 +64,12 @@ spec:
               port: 8080
             initialDelaySeconds: 20
             periodSeconds: 10
+      dnsPolicy: "None"
+      dnsConfig:
+        nameservers:
+          - 8.8.8.8
+        searches:
+          - aivencloud.com
       volumes:
         - name: kafka-ca
           secret:
