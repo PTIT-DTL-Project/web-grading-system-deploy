@@ -44,7 +44,7 @@ kubectl create secret generic kafka-aiven-credentials \
   --from-literal=username="${KAFKA_USERNAME:-}" \
   --from-literal=password="${KAFKA_PASSWORD:-}" \
   --from-literal=bootstrap-servers="${KAFKA_BOOTSTRAP_SERVERS:-localhost:9092}" \
-  --from-file=ca.pem="${KAFKA_CA_PEM:-src-services/executor-service/docker/kafka-ca.pem}" \
+  --from-file=ca.pem="${KAFKA_CA_PATH:-src-services/executor-service/docker/kafka-ca.pem}" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 echo "Namespace and secrets created"
