@@ -260,28 +260,34 @@ plumbing is hidden from students:
 ### Step 3 — Submit a plan (per-plan grading)
 
 ```
-POST /api/v1/submissions/presigned-url?assignmentId={id}&planId={planId}
-X-User-Id: <student-uuid>
-{ "zipFileName": "solution.zip" }
+POST /api/v1/submissions/presigned-url?assignmentId={id}&zipFileName={name}&planId={planId}
 → 201 { submissionId, uploadUrl, objectName, expiresInMinutes }
 ```
-`planId` is optional: omitted ⇒ executor grades **all** plans; set ⇒ only that plan's
-steps run (`execute-plan-v1.0.md` §3 step 1). Each plan gets its own zip (full student
-app per plan is acceptable). Student PUTs the zip to RustFS, then:
-```
-POST /api/v1/submissions/{submissionId}/confirm
-```
-→ status `PENDING` → submission-service publishes `GRADE_SUBMISSION` to Kafka
+Query params only, no body. `planId` is optional: omitted ⇒ executor grades **all** plans; set ⇒ only that plan's
+steps run (`execute-plan-v1.0.md` §3 step 1). Identity is stubbed server-side (random student UUID per call).
+Each plan gets its own zip (full student app per plan is acceptable). Student PUTs the zip to RustFS;
+no confirm call exists — the RustFS `ObjectCreated:Put` webhook on `submissions/*.zip` is the sole trigger:
+webhook → status `PENDING` → submission-service publishes `GRADE_SUBMISSION` to Kafka
 (`wgs-events`) with `planId` → executor persists a `grading_jobs` row carrying
-`planId` (`GradeSubmissionHandler`) → boots the student container → runs the targeted
-plan's steps → writes one `results` row per plan with `plan_id` + `plan_weight`.
+`planId` (`GradeSubmissionHandler`) → async `GradingOrchestrator` runs the job:
+`FETCHING` (course-service config + plans) → `BUILDING` (RustFS zip download +
+Testcontainers compose boot via DinD) → `RUNNING` (targeted plan's steps when
+`planId` is set, else all plans; HTTP steps only — other step types fail gracefully
+until their executors land) → `DONE`/`FAILED`. One job at a time (single-job gate).
+Score = weight-weighted passed/ran ratio (`ScoreCalculator`), reported via
+`POST /api/v1/internal/results` (result-service) which writes one `results` row
+(`plan_id` + `plan_weight`, `is_latest` flip) plus `step_results` rows; submission
+status is patched `GRADING` → `DONE`/`FAILED` along the way.
 
 ### Step 4 — Poll score
 
 ```
 GET /api/v1/results/{submissionId}
-GET /api/v1/student/assignments/{id}   (re-read, now shows score after result lands)
+GET /api/v1/student/assignments/{id}   (re-read, shows score after result lands)
 ```
+One `results` row per graded plan (each with its `step_results`), enveloped as
+`{status, message, data, error}`. Empty list while the submission is queued or
+grading — poll until rows appear.
 `results.is_latest` is unique per `(student_id, assignment_id, plan_id)`, so each plan
 keeps its own latest result. Assignment exercise score = **weight-weighted average of
 per-plan scores** (`result_service ResultService.weightedScoreByPlan`, weighted by

@@ -180,7 +180,7 @@ Course-service exposes executor-facing DTOs without the public response envelope
 Current boundary status:
 
 - `GradeSubmissionHandler` persists `planId` from the grading event.
-- Executor-side filtering to run only that plan is still pending; do not document it as implemented.
+- `GradingOrchestrator` filters to the requested `planId` when set, else runs all plans sequentially.
 
 ## 5. HTTP executor pipeline
 
@@ -374,7 +374,8 @@ Do not silently “fix” these in prose. They are load-bearing implementation f
 - Query parameters are appended without URL-encoding.
 - Legacy `expected_body_contains` may appear in old scenario payloads, but the current assertion engine does not evaluate it.
 - HTTP extraction always uses the current response body; `extract.from` is validated but not used to select another source.
-- Internal plans currently return all assignment plans sorted; per-`planId` executor filtering is pending.
+- Internal plans return all assignment plans sorted; `GradingOrchestrator` filters to
+  the requested `planId` when set, else runs all plans sequentially.
 - `GradingStepResult.expected_response_body` exists but is not populated by the current HTTP executor.
 - Current HTTP `http_log` persistence does not invoke every `HttpLogService` redaction helper in this path.
 
@@ -384,4 +385,6 @@ This is a docs-only change. Validation for the later build step is:
 
 - Read back the created Markdown and check headings, tables, code fences, JSON examples, and code references.
 - Confirm every behavioral claim traces to the files cited above.
-- Keep the executor/orchestrator boundary explicit: implemented HTTP execution versus pending orchestrator filtering/scoring behavior.
+- Keep the executor/orchestrator boundary explicit: implemented HTTP execution,
+  `planId` filtering, required-stop/`SKIPPED` policy, and weight scoring
+  (`GradingOrchestrator` + `ScoreCalculator`) versus pending DB-step executors.

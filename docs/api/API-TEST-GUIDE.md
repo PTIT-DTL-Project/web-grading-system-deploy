@@ -250,8 +250,8 @@ Behind `/api/v1/internal/**`; gateway never routes these externally.
 Then **PUT `{uploadUrl}`** with the zip as raw binary `Body → form-data` NOT needed here —
 use `curl -T lab01.zip "$uploadUrl"` or Postman `Body → binary`.
 
-**POST `/api/v1/submissions/{{submissionId}}/confirm`** — client-side confirm (webhook also
-confirms via RustFS). Response 200; publishing `GRADE_SUBMISSION` onto `wgs-events` happens here
+**POST `/api/v1/submissions/webhook/upload-complete`** — webhook confirms
+via RustFS; publishing `GRADE_SUBMISSION` onto `wgs-events` happens here
 (idempotent — previously GRADING/DONE/FAILED → no duplicate Kafka message).
 
 ### 2.2 Queries
@@ -259,13 +259,12 @@ confirms via RustFS). Response 200; publishing `GRADE_SUBMISSION` onto `wgs-even
 - `GET /api/v1/submissions` — `X-User-Id: <student-uuid>`, paged
 - `GET /api/v1/submissions/{{id}}` — detail
 - `GET /api/v1/submissions/assignment/{{assignmentId}}` — `List<SubmissionResponse>`
-- `GET /api/v1/submissions/{{id}}/download` → `{ "downloadUrl": "https://…/presigned" }`
-- `GET /api/v1/submissions/{{id}}/download/file` → raw file stream (not enveloped)
 
 ### 2.3 Status update (used by executor)
 
-**PUT `/api/v1/submissions/{{id}}/status`** with body `{ "status": "GRADING" }` —
-values: `PENDING | GRADING | DONE | FAILED`. Missing/invalid → 400. 404 if not found.
+**PUT `/api/v1/internal/submissions/{{id}}/status`** with body `{ "status": "GRADING" }` —
+values: `PENDING | GRADING | DONE | FAILED`. Executor-only: not routed by the
+api-gateway, call the service directly. Missing/invalid → 400. 404 if not found.
 
 ### 2.4 Webhook + health
 

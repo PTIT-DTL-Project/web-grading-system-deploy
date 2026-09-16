@@ -37,6 +37,21 @@ Every time you add or change an endpoint/API (or anything client-facing):
 Example of the expected format: the Classes & Scores flow in `src-services/README.md`
 (create → import → score-components → scores → transcript).
 
+## Configuration must use @ConfigurationProperties, not @Value
+
+NEVER use `@Value` for configuration properties. Group all related
+settings into a `@ConfigurationProperties` record in `config/`.
+
+- The only exception is framework-internal properties (e.g.
+  `@Value("${spring.application.name}")` inside Logstash encoder
+  config). Everything business-related goes in a record.
+- Records are registered via `@ConfigurationPropertiesScan` on the
+  application class. Env overrides stay in `application.yaml` placeholders.
+- Inject the properties record (constructor/final field), never re-declare
+  the same `@Value` fields in multiple classes — one source of truth.
+- Canonical example: `submission-service/config/RustFsProperties.java`,
+  `config/SubmissionProperties.java`.
+
 ## Coding convention: no all-args positional constructors (mandatory)
 
 When a record constructor call has more than 2 positional arguments,

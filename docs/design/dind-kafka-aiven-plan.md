@@ -107,8 +107,8 @@ Resource ceiling per pod ≈ 256Mi main + 256Mi sidecar + student containers.
 
 1. `kubectl rollout status deploy/grading-executor-service -n web-grading`
    → DinD sidecar active: `kubectl exec ... -c dind -- docker version`
-2. Produce message: `POST /api/v1/submissions/{id}/confirm` (after zip upload)
-   → message on `wgs-events` with `action=GRADE_SUBMISSION`
+2. Produce message: upload a zip and wait for webhook
+    → message on `wgs-events` with `action=GRADE_SUBMISSION`
 3. `kubectl logs deploy/grading-executor-service -n web-grading` → consumer
    dispatch log; `grading_jobs` row PENDING
 4. Kafka UI loads at `https://web-dev1-kafka-ui.vucongtuanduong.dpdns.org`,

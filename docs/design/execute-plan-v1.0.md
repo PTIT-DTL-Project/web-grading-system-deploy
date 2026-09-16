@@ -31,18 +31,18 @@ Sinh viên                              Submission Service              Executor
    │◄──── uploadUrl + submissionId ────────────│                               │                              │
    │ 2. PUT file zip lên RustFS (presigned)    │                               │                              │
    │                                           │◄── RustFS webhook upload-complete ──│                     │
-   │                                           │ 3. status = PENDING               │                              │
-   │                                           │ 4. publish Kafka: grading-jobs ──▶│                              │
+    │                                           │ 3. status = PENDING               │                              │
+    │                                           │ 4. publish Kafka: wgs-events (GRADE_SUBMISSION) ──▶│                              │
    │                                           │                               │ 5. persist grading_job      │
    │                                           │                               │ 6. fetch assignment+plans   │
-   │                                           │◄── PATCH status=GRADING ───────│                              │
+   │                                           │◄── PUT status=GRADING ───────│                              │
    │                                           │                               │ 7. download+unzip zip      │
    │                                           │                               │ 8. patch compose + up (DinD)│
    │                                           │                               │ 9. chạy từng step          │
    │                                           │                               │ 10. tính điểm              │
-   │                                           │◄── PATCH status=DONE/FAILED ───│                              │
-   │                                           │                               │── POST /internal/results ─▶│
-   │◄────────── GET /results/{submissionId} ─────────────────────────────────────────────────────────────────│
+    │                                           │◄── PUT status=DONE/FAILED ───│                              │
+    │                                           │                               │── POST /internal/results ─▶│
+    │◄────────── GET /results/{submissionId} (poll score) ──────────────────────────────────────────────────│
 ```
 
 Toàn bộ grading là **bất đồng bộ**: sinh viên nộp xong nhận ngay `submissionId`, điểm có sau khi executor xử lý xong (FE poll trạng thái).
@@ -53,11 +53,11 @@ Toàn bộ grading là **bất đồng bộ**: sinh viên nộp xong nhận ngay
 
 Đã có sẵn flow upload (presigned URL + webhook). Cần thêm 1 bước:
 
-**SubmissionService.handleUploadComplete** (sau khi xác nhận file đã lên RustFS — qua webhook hoặc confirm từ FE):
+**SubmissionService.handleUploadComplete** (khi RustFS webhook báo file đã lên — trigger duy nhất):
 
 1. Cập nhật `submissions.status = PENDING` (đã có).
 2. Nếu submission đang có `latest = true` cũ → set `latest = false` (đã có ở bước tạo presigned).
-3. Publish message vào Kafka topic `grading-jobs`, key = `submissionId`.
+3. Publish message vào Kafka topic `wgs-events` (`action=GRADE_SUBMISSION`, envelope `{action, version, timestamp, traceId, payload}`), key = `submissionId`.
 
 ```json
 {
@@ -70,18 +70,18 @@ Toàn bộ grading là **bất đồng bộ**: sinh viên nộp xong nhận ngay
 }
 ```
 
-> Webhook RustFS có thể gọi nhiều lần cho cùng object → cần **idempotent**: trước khi publish, check submission đã ở trạng thái `GRADING`/`DONE`/`FAILED` thì bỏ qua (hoặc dùng Kafka key trùng submissionId + dedupe ở executor qua `grading_jobs.submission_id` unique).
+> Webhook RustFS có thể gọi nhiều lần cho cùng object → **idempotent**: row `grading_jobs.submission_id` unique nên redelivery trùng bị skip (`DataIntegrityViolationException` → log, không throw). Webhook muộn (sau khi job đã `GRADING`/`DONE`/`FAILED`) không được regress status về `PENDING`.
 
 ---
 
 ## 3. Pipeline chấm bài của executor
 
-`GradingJobConsumer` (Kafka listener, `concurrency = N` thread) → `GradingOrchestrator.execute(job)`.
+`WgsEventsConsumer` (Kafka listener, group `executor-group`) → `Map<WgsEventAction, EventHandler>` → `GradeSubmissionHandler` → async `GradingOrchestrator.gradeAsync` (single-job gate — 1 job tại một thời điểm).
 
 ### Bước 0 — Nhận job & persist
 
 - Tạo `grading_jobs` row: `status = PENDING`.
-- Chống trùng: nếu đã có job `DONE`/`RUNNING` cho submissionId → bỏ qua (idempotent).
+- Chống trùng: `submission_id` unique → redelivery trùng skip qua `DataIntegrityViolationException` (idempotent).
 
 ### Bước 1 — Fetch cấu hình chấm (Feign → course-service)
 
@@ -303,8 +303,8 @@ POST /api/v1/internal/results
 ### 5.3 Cập nhật trạng thái submission (Feign)
 
 ```
-PATCH /api/v1/submissions/{id}/status  {"status": "GRADING"}   // đầu pipeline
-PATCH /api/v1/submissions/{id}/status  {"status": "DONE|FAILED"} // cuối pipeline
+PUT /api/v1/internal/submissions/{id}/status  {"status": "GRADING"}   // đầu pipeline
+PUT /api/v1/internal/submissions/{id}/status  {"status": "DONE|FAILED"} // cuối pipeline
 ```
 
 ### 5.4 Ghi log
@@ -325,10 +325,24 @@ Mọi bước quan trọng ghi `grading_logs` (step, message, level) — để l
 | 6 | Step execute lỗi (exception) | Ghi `ERROR` cho step, chạy tiếp | Step `ERROR`, plan tiếp tục nếu is_required=false |
 | 7 | Step required fail | Dừng plan, đánh SKIPPED các step sau | Step `FAILED`, plan còn lại `SKIPPED` |
 | 8 | Hết execution_timeout tổng | Dừng toàn bộ, cleanup | `FAILED` |
-| 9 | Feign ghi result lỗi | Log + job vẫn DONE; retry ghi result theo `retry_count` | Job `DONE`, result có thể thiếu → cảnh báo |
-| 10 | Kafka consume lỗi ngoài mong đợi | Không commit offset → message được consume lại | Tự phục hồi (idempotent nhờ bước 0) |
+| 9 | Feign ghi result lỗi | Log + job vẫn DONE (đã persist trước khi gọi Feign) | Job `DONE`, result có thể thiếu → cảnh báo |
+| 10 | Kafka consume lỗi ngoài mong đợi | Auto-commit, offset vẫn commit → chỉ log lỗi, không redelivery | Job không được tạo — quan sát log |
+| 11 | Pod chết giữa chừng (job kẹt `PENDING`/`FETCHING`/`BUILDING`/`RUNNING`) | `StaleJobReaper` re-enqueue (xem 6.1) | Job chạy lại, `retry_count` +1 |
 
 **Nguyên tắc:** không nuốt lỗi — mọi lỗi đều có `grading_logs` + trạng thái rõ ràng, sinh viên luôn thấy được lý do fail.
+
+### 6.1 Crash recovery — StaleJobReaper
+
+- `@Scheduled(fixedDelay = executor.reaper.interval-ms, mặc định 5 phút)` quét jobs ở trạng thái non-terminal (`PENDING`, `FETCHING`, `BUILDING`, `RUNNING`) mà `started_at` (hoặc `created_at` nếu chưa start) quá `stale-after-minutes` (mặc định 30).
+- Job đủ điều kiện: `retry_count++` rồi gọi lại `gradeAsync` (traceId=`"reaper"`). Quá `max-attempts` (mặc định 3) → bỏ qua, cần người xem.
+- ⚠️ `stale-after` **phải lớn hơn** tổng thời gian job lâu nhất (startup + execution timeout, mặc định 6 phút) — không thì job đang chạy bị chấm trùng.
+- Mỗi lần chạy lại tạo một saga row mới (xem 6.2) nên lịch sử attempt còn nguyên.
+
+### 6.2 Saga tracking — `grading_sagas` + `grading_saga_steps`
+
+- Mỗi lần `grade()` chạy tạo 1 saga row (`STARTED` → `DONE`/`FAILED`); mỗi phase (`FETCH_CONFIG`, `DOWNLOAD_ARTIFACT`, `BOOT_COMPOSE`, `RUN_STEPS`, `SCORE_REPORT`) và mỗi grading step (`STEP:<name>`, kèm `plan_id` + `step_id`) là 1 step row (`STARTED` → `DONE`/`FAILED`/`SKIPPED`).
+- Trả lời "step nào của plan nào đang chạy": `SELECT ... FROM grading_saga_steps WHERE status='STARTED'`.
+- Ghi best-effort qua `SagaTracker` (tự nuốt exception, trả null) — tracking không bao giờ làm hỏng grading.
 
 ---
 
@@ -337,15 +351,13 @@ Mọi bước quan trọng ghi `grading_logs` (step, message, level) — để l
 ### 7.1 Kiến trúc worker
 
 ```
-Kafka: grading-jobs (3 partitions)
-   partition-0 ──► executor pod 1 (concurrency 2 threads)
-   partition-1 ──► executor pod 2 (concurrency 2 threads)
-   partition-2 ──► executor pod 3 (concurrency 2 threads)
+Kafka: wgs-events
+    └──► executor pod duy nhất (single-job gate: 1 job tại một thời điểm)
 ```
 
-- Topic có N partitions; executor là consumer group → tối đa N pods tiêu thụ song song.
-- Mỗi thread xử lý 1 job; mỗi job chạy độc lập (compose project name = `sub-<submissionId>`).
-- Scale: tăng partition + tăng executor pods. Với k3s 1 node, giới hạn thực tế là RAM node (mỗi job ước tính 512MB-1GB gồm cả student container).
+- Topic có N partitions; executor là consumer group → có thể scale pods, nhưng v1 giữ single-job gate vì 1 DinD daemon/pod + tài nguyên pod eo hẹp.
+- Mỗi job chạy độc lập (compose project name = `sub-<submissionId>`).
+- Scale tương lai: tăng partition + tăng executor pods + nới dind limits. Với k3s 1 node, giới hạn thực tế là RAM node (mỗi job ước tính 512MB-1GB gồm cả student container).
 
 ### 7.2 Port allocation — pod-local
 
@@ -360,8 +372,7 @@ Kafka: grading-jobs (3 partitions)
 
 ### 7.4 Concurrency của Spring Kafka
 
-- `max-poll-records=1` + `concurrency = threads` (giống thiết kế cũ) — xử lý xong 1 job mới nhận tiếp, dễ kiểm soát tài nguyên.
-- Có thể dùng thread pool riêng nếu muốn batch poll; v1 dùng max-poll-records=1 cho đơn giản.
+- `max-poll-records=1`, single-job gate (`Semaphore(1)` trong `GradingOrchestrator`) — xử lý xong 1 job mới nhận tiếp, dễ kiểm soát tài nguyên.
 
 ---
 
@@ -386,3 +397,5 @@ Kafka: grading-jobs (3 partitions)
 | Version | Ngày | Thay đổi |
 |---|---|---|
 | v1.0 | 2026-08-16 | Bản đầu tiên. Pipeline 8 bước, step execution engine (6 step types, VariableContext, AssertionEngine), tính điểm, failure paths, scale & bảo mật |
+| v1.1 | 2026-09-12 | Crash recovery (`StaleJobReaper` re-enqueue jobs kẹt, `retry_count` làm attempt counter) + saga tracking (`grading_sagas`/`grading_saga_steps`, best-effort qua `SagaTracker`) |
+| v1.2 | 2026-09-12 | Clean code & constants: added `Constant.java` with nested classes (`VariableContext`, `HttpStep`, `Assertion`, `DockerCompose`, `Saga`, `Message`); extracted all error messages and string literal keys to constants; replaced `e.getMessage() != null ? e.getMessage() : e.toString()` with `safeMessage()` helper; removed yagni code (`@SQLRestriction`/`deleted_at` from saga entities, `attempt` field, `Semaphone gate`); Allman bracket style; moved saga step names to `Constant.Saga`; shared `Gson` instance in `HttpStepExecutor`; migrated `JsonNode.asText()` → `asString()` (Jackson 3.x deprecation) |

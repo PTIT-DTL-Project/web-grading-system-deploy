@@ -207,6 +207,12 @@ Verify by checking the compiled class has `RuntimeVisibleParameterAnnotations`.
 - LoggingAspect pointcut covers ONLY @Service + @RestController beans — never
   @ControllerAdvice/@Configuration (actuator/advice tracing is pure noise; Boot 4's
   health handler method is named `handle`, which defeats name-based filters).
+- Feign `Client`-wrapping @Bean (e.g. audit-logging decorator) must NEVER take an
+  injected `Client delegate` parameter: a `@FeignClient(configuration=...)` class runs
+  in each client's child context where the wrapper is the SOLE `Client` candidate, so
+  the parameter self-resolves -> `BeanCurrentlyInCreationException` at startup.
+  Construct the delegate inline instead: `new Client.Default(null, null)` (exactly what
+  the framework supplies here — no hc5/okhttp/loadbalancer Client customizations).
 
 ## 11. Logging
 
@@ -227,6 +233,30 @@ Verify by checking the compiled class has `RuntimeVisibleParameterAnnotations`.
   while third-party libs stay INFO.
 - Services log JSON to stdout (logback-spring.xml + logstash encoder); locally read the
   console/IntelliJ, in cluster `kubectl logs -n web-grading deploy/<name>` or Loki.
+
+## 11.5. Inbound http_log via HttpLoggingFilter (mandatory pattern)
+
+- Every business service persists one INBOUND `http_log` row per request via
+  `config/HttpLoggingFilter.java` (`@Component extends OncePerRequestFilter`,
+  auto-registered; no HandlerInterceptor — interceptors cannot capture bodies).
+- Shape: wrap in `ContentCachingRequestWrapper(request, 32*1024)` +
+  `ContentCachingResponseWrapper`; `chain.doFilter`; build with `HttpLog.builder()`
+  (`direction=INBOUND`, url via `sanitizeUrl()`, headers via `headersToJson()`,
+  bodies via `truncate()`, `port=getLocalPort()`); `saveLog` guarded so logging
+  never breaks the request; `copyBodyToResponse()` in `finally`.
+- Spring 7 requires the `(request, contentCacheLimit)` constructor (no no-arg ctor);
+  32KB cap bounds memory while `truncate()` enforces the 20KB stored cap.
+- Skip request wrapping when `isFileContentType(request.getContentType())`
+  (multipart/uploads would be buffered in memory); store null bodies.
+- `shouldNotFilter`: `/actuator/*`, `/v3/api-docs*`, `/swagger-ui*`,
+  `/swagger-ui.html`, `*/health`, `*/version`. Internal + webhook paths ARE logged.
+- Outbound symmetry: every `@FeignClient` gets
+  `configuration = FeignLoggingConfiguration.class`; `LoggingFeignClient.saveLog`
+  stores `responseHeaders` too; Feign config constructs `new Client.Default(null, null)`
+  inline, never injects `Client delegate` (startup cycle — see §10).
+- Test per filter with `MockHttpServletRequest/Response` + lambda `FilterChain`
+  (cast `res` to `HttpServletResponse`): INBOUND row content, exclusions skipped,
+  multipart unwrapped + null body, `save()` throw still returns response.
 
 ## 11. General conventions
 
@@ -362,27 +392,106 @@ This causes `No qualifying bean of type 'KafkaTemplate<String, CustomEvent<?>>'`
 
 Fix: create a `KafkaConfig` class in the service's `config/` package that
 provides a typed `ProducerFactory` and `KafkaTemplate` bean.
-The `application.yaml` already has `spring.kafka.*` properties — read them
-with `@Value` and reuse:
+The `application.yaml` already has `spring.kafka.*` properties — inject them via a
+`@ConfigurationProperties` record instead of `@Value`:
 
 ```java
 @Configuration
 public class KafkaConfig {
+    private final KafkaProperties props;
+
+    public KafkaConfig(KafkaProperties props) { this.props = props; }
+
     @Bean
     public ProducerFactory<String, MyEvent<?>> producerFactory() {
-        Map<String, Object> props = new HashMap<>();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        props.put("security.protocol", securityProtocol);
-        props.put("sasl.mechanism", saslMechanism);
-        props.put("sasl.jaas.config", saslJaasConfig);
-        props.put("ssl.truststore.location", sslTruststoreLocation);
-        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
-        return new DefaultKafkaProducerFactory<>(props);
+        Map<String, Object> propsMap = new HashMap<>();
+        propsMap.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, props.bootstrapServers());
+        String jaasConfig = props.properties().sasl().jaas().config();
+        if (jaasConfig != null && !jaasConfig.isBlank()) {
+            propsMap.put("sasl.jaas.config", jaasConfig);
+        }
+        propsMap.put("security.protocol", props.properties().security().protocol());
+        propsMap.put("sasl.mechanism", props.properties().sasl().mechanism());
+        propsMap.put("ssl.endpoint.identification.algorithm",
+                props.properties().ssl().endpoint().identification().algorithm());
+        propsMap.put("ssl.truststore.type", props.properties().ssl().truststore().type());
+        propsMap.put("ssl.truststore.location",
+                props.properties().ssl().truststore().location());
+        propsMap.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        propsMap.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+        return new DefaultKafkaProducerFactory<>(propsMap);
     }
     @Bean
     public KafkaTemplate<String, MyEvent<?>> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());
+    }
+}
+
+// Binds spring.kafka.properties.* / spring.kafka.producer.* — keep the record
+// shape aligned with application.yaml or keys silently bind null. Compact
+// constructors supply per-node defaults so a dropped yaml subtree degrades
+// to defaults instead of NPEing on the next deref.
+@ConfigurationProperties(prefix = "spring.kafka")
+public record KafkaProperties(
+    String bootstrapServers,
+    Properties properties,
+    Producer producer
+) {
+    public KafkaProperties {
+        if (bootstrapServers == null) bootstrapServers = "localhost:9092";
+        if (properties == null) properties = new Properties(null, null, null);
+        if (producer == null) producer = new Producer(null, null);
+    }
+    public record Properties(Security security, Sasl sasl, Ssl ssl) {
+        public Properties {
+            if (security == null) security = new Security(null);
+            if (sasl == null) sasl = new Sasl(null, null);
+            if (ssl == null) ssl = new Ssl(null, null);
+        }
+    }
+    public record Security(String protocol) {
+        public Security {
+            if (protocol == null) protocol = "SASL_SSL";
+        }
+    }
+    public record Sasl(String mechanism, Jaas jaas) {
+        public Sasl {
+            if (mechanism == null) mechanism = "SCRAM-SHA-256";
+            if (jaas == null) jaas = new Jaas(null);
+        }
+    }
+    public record Jaas(String config) {
+        public Jaas {
+            if (config == null) config = "";
+        }
+    }
+    public record Ssl(Endpoint endpoint, Truststore truststore) {
+        public Ssl {
+            if (endpoint == null) endpoint = new Endpoint(null);
+            if (truststore == null) truststore = new Truststore(null, null);
+        }
+    }
+    public record Endpoint(Identification identification) {
+        public Endpoint {
+            if (identification == null) identification = new Identification(null);
+        }
+    }
+    public record Identification(String algorithm) {
+        public Identification {
+            if (algorithm == null) algorithm = "https";
+        }
+    }
+    public record Truststore(String type, String location) {
+        public Truststore {
+            if (type == null) type = "PEM";
+            if (location == null) location = "docker/kafka-ca.pem";
+        }
+    }
+    public record Producer(String acks, Integer retries) {
+        public Producer {
+            if (acks == null) acks = "all";
+            if (retries == null) retries = 3;
+        }
     }
 }
 ```
@@ -391,5 +500,75 @@ Properties come from `application.yaml` (`spring.kafka.bootstrap-servers`,
 `spring.kafka.properties.*`, `spring.kafka.producer.*`).
 Use `org.apache.kafka.common.serialization.StringSerializer` for keys.
 The `JsonSerializer` handles the custom event type via Jackson.
+Cover the binding with a test (`ApplicationContextRunner` + property values
+mirroring `application.yaml`, asserting the producer config map — notably
+`sasl.jaas.config`, `acks`, `retries`) so a record/yaml shape drift fails
+fast instead of silently publishing with nulls.
 
 See `src-services/submission-service/src/main/java/.../config/KafkaConfig.java` for a working example.
+
+## 15. Kafka consumers need @EnableKafka + manual factory (mandatory)
+
+Boot 4 ships NO Kafka auto-configuration (`spring-boot-autoconfigure` contains
+zero Kafka classes) and spring-kafka 4.x provides none either — its
+`KafkaBootstrapConfiguration` registers ONLY the annotation processor + endpoint
+registry, and only when `@EnableKafka` is present. Without it, `@KafkaListener`
+methods are silently ignored: context boots fine, no container, no consumer,
+zero log output (not even at DEBUG). Verified via jar inspection + bytecode.
+
+Every consuming service therefore needs BOTH (see executor-service
+`config/KafkaConfig.java`):
+
+1. `@EnableKafka` on the application class.
+2. A `config/KafkaConfig.java` with `ConsumerFactory<String, String>` and a
+   `ConcurrentKafkaListenerContainerFactory<String, String>` bean named exactly
+   `kafkaListenerContainerFactory` (the default name the post-processor looks up).
+   Read props from a `@ConfigurationProperties(prefix = "spring.kafka")` record
+   (see §14 for the pattern), never `@Value`. Use
+   kafka-clients config constants (`ConsumerConfig.*`, `SslConfigs.*`,
+   `SaslConfigs.*`, `CommonClientConfigs.*`), never raw strings. Omit blank
+   `sasl.jaas.config` (local runs leave `KAFKA_USERNAME`/`KAFKA_PASSWORD` empty).
+   Ack mode via `ContainerProperties.AckMode.valueOf(ackMode)` so yaml stays
+   the single source of truth.
+
+## 16. Internal reset/rerun API for FAILED grading jobs (mandatory)
+
+`GradeSubmissionHandler` catches `DataIntegrityViolationException` on
+`uk_grading_jobs_submission` and previously just logged "skipping" —
+FAILED jobs were permanently stuck. Now the handler calls
+`ResetGradingJobService.reset()` which resets the job + saga + saga steps
++ step results to allow re-execution.
+
+Every consuming service with a unique constraint on a business key
+needs a reset mechanism:
+
+1. **`controller/ResetXxxController.java`** — `@RestController` at
+   `/api/v1/internal/grading-jobs` (or the relevant domain), one
+   `@PostMapping("/{submissionId}/reset")` accepting a request body with
+   the original event params.
+2. **`service/ResetXxxService.java`** — `@Transactional` method that:
+   - Finds the existing row by business key, returns false if not FAILED
+   - Deletes all `grading_step_results` for the job
+   - Resets the saga (`resetByJobId` to `STARTED`) and deletes saga steps
+   - Resets the job to `PENDING`, clears `errorMessage`/`startedAt`/`completedAt`, increments `retryCount`
+   - Does NOT call `gradeAsync` inside `@Transactional` (race condition) — returns `ResetResult` to the caller
+3. **Caller calls `gradeAsync` separately** after `reset()` returns and
+   the `@Transactional` commits (done in controller and handler catch block).
+4. **`GradingJob` entity** needs `traceId` column (add V6 migration) to
+   track the original wgs-events trace for debugging.
+
+Repositories needed: `findBySubmissionId`, `deleteByJobId`,
+`findFirstByJobId`, `resetByJobId`, `deleteBySagaId`.
+
+Also update §15 to note: `@Transactional` methods must not call `@Async`
+inside the same call stack — call it after the method returns to avoid
+reading uncommitted rows in the async thread.
+
+## 17. Utility constant classes must not be instantiable (mandatory)
+
+A utility class containing only nested static constant groups must declare
+exactly one private no-argument constructor. Do not add a second constructor
+while reorganizing constants; duplicate constructors cause
+`'Constant()' is already defined` compilation errors. Prefer an empty private
+constructor unless an explicit defensive exception is required by the project.
+

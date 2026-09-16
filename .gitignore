@@ -37,3 +37,5 @@ replay_pid*
 # Aiven secrets
 **/test.txt
 **/docker/kafka-ca.pem
+
+**/mock/**

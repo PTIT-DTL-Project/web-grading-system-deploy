@@ -447,7 +447,7 @@ Executor Service là Kafka consumer — nhận job, chấm, ghi log và kết qu
 | student_id | UUID | NOT NULL | |
 | plan_id | UUID | | null = chạy tất cả plans |
 | status | VARCHAR(20) | NOT NULL DEFAULT 'PENDING' | `PENDING`, `FETCHING`, `BUILDING`, `RUNNING`, `DONE`, `FAILED` |
-| retry_count | INT | NOT NULL DEFAULT 0 | |
+| retry_count | INT | NOT NULL DEFAULT 0 | Attempt counter — `StaleJobReaper` tăng mỗi lần re-enqueue, bỏ qua khi quá max |
 | error_message | TEXT | | |
 | started_at | TIMESTAMPTZ | | |
 | completed_at | TIMESTAMPTZ | | |
@@ -494,6 +494,38 @@ Kết quả từng step — lưu đủ request/response (cả expected và actua
 | message | TEXT | NOT NULL | |
 | level | VARCHAR(10) | NOT NULL DEFAULT 'INFO' | `INFO`, `WARN`, `ERROR` |
 | created_at | TIMESTAMPTZ | NOT NULL | |
+
+#### grading_sagas
+
+Một row mỗi lần `grade()` chạy (retry/re-enqueue tạo row mới). Xem `execute-plan-v1.0.md` §6.2.
+
+| Column | Type | Constraint | Ghi chú |
+|---|---|---|---|
+| id | UUID | PK | |
+| job_id | UUID | NOT NULL FK → grading_jobs | |
+| saga_type | VARCHAR(50) | NOT NULL DEFAULT 'GRADE_SUBMISSION' | |
+| status | VARCHAR(20) | NOT NULL DEFAULT 'STARTED' | `STARTED`, `DONE`, `FAILED` |
+| current_step | VARCHAR(100) | | Phase đang chạy |
+| started_at | TIMESTAMPTZ | NOT NULL | |
+| completed_at | TIMESTAMPTZ | | |
+
+#### grading_saga_steps
+
+Phase rows (`plan_id`/`step_id` NULL) + per-step rows (`STEP:<name>`, kèm `plan_id` + `step_id`) — trả lời "step nào của plan nào đang chạy" bằng `WHERE status='STARTED'`.
+
+| Column | Type | Constraint | Ghi chú |
+|---|---|---|---|
+| id | UUID | PK | |
+| saga_id | UUID | NOT NULL FK → grading_sagas | |
+| step_name | VARCHAR(100) | NOT NULL | `FETCH_CONFIG`, `DOWNLOAD_ARTIFACT`, `BOOT_COMPOSE`, `RUN_STEPS`, `SCORE_REPORT`, `STEP:<name>` |
+| plan_id | UUID | | NULL với phase rows |
+| step_id | UUID | | NULL với phase rows |
+| status | VARCHAR(20) | NOT NULL DEFAULT 'STARTED' | `STARTED`, `DONE`, `FAILED`, `SKIPPED` |
+| error_message | TEXT | | |
+| started_at | TIMESTAMPTZ | NOT NULL | |
+| completed_at | TIMESTAMPTZ | | |
+
+> **Note** — `grading_sagas`/`grading_saga_steps` không có `deleted_at` (best-effort tracking, terminal states không cần soft delete) và không có `attempt` column (SagaTracker không tăng counter).
 
 ### 4.3 SQL script
 

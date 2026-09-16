@@ -157,38 +157,35 @@ GET /api/v1/internal/assignments/{id}/exists          — submission: validate a
 
 ### 3.3 submission-service
 
-**Trách nhiệm:** Nhận bài nộp — presigned URL upload lên RustFS, confirm upload (webhook), lưu bản ghi submission, publish message grading qua Kafka.
+**Trách nhiệm:** Nhận bài nộp — presigned URL upload lên RustFS, lưu bản ghi submission, publish message grading qua Kafka khi RustFS webhook báo upload xong.
 
 **Public API (đã có, giữ nguyên):**
 
 ```
 POST  /api/v1/submissions/presigned-url     — Request upload URL
-POST  /api/v1/submissions/{id}/confirm      — Confirm upload (FE gọi)
 GET   /api/v1/submissions                   — Bài nộp của tôi
 GET   /api/v1/submissions/{id}              — Chi tiết
 GET   /api/v1/submissions/assignment/{id}   — DS bài nộp của 1 bài tập
-GET   /api/v1/submissions/{id}/download     — Presigned download URL
-GET   /api/v1/submissions/{id}/download/file — Stream file
-POST  /api/v1/submissions/webhook/upload-complete  — RustFS webhook (đã có)
+POST  /api/v1/submissions/webhook/upload-complete  — RustFS webhook (trigger chấm duy nhất)
 ```
 
 **Internal API:**
 
 ```
-PATCH /api/v1/submissions/{id}/status       — executor cập nhật trạng thái (đã có)
+PUT /api/v1/internal/submissions/{id}/status       — executor cập nhật trạng thái (đã có)
 ```
 
 **Thay đổi cần làm trong v1:**
 - Thêm cột `plan_id` cho `submissions` (SV có thể chọn plan để chấm; null = chạy tất cả).
-- Thêm Kafka producer: khi webhook/confirm xác nhận upload xong → publish message vào topic `grading-jobs`.
+- Thêm Kafka producer: khi webhook xác nhận upload xong → publish message vào topic `wgs-events` (`action=GRADE_SUBMISSION`).
 
 ### 3.4 executor-service
 
 **Trách nhiệm:** Service quan trọng nhất — Kafka consumer. Nhận job, tải zip từ RustFS, chạy docker compose (qua DinD), thực thi từng test step, tính điểm, ghi `grading_step_results`, báo kết quả cho result-service và cập nhật trạng thái submission.
 
 **Không có public API.** Chỉ có:
-- Kafka consumer (`grading-jobs`)
-- Feign clients: course-service (lấy plan), submission-service (PATCH status), result-service (lưu kết quả)
+- Kafka consumer (`wgs-events`, group `executor-group`): `WgsEventsConsumer` → `GradeSubmissionHandler` → async `GradingOrchestrator` (single-job gate)
+- Feign clients: course-service (lấy plan), submission-service (PUT status), result-service (lưu kết quả)
 - RustFS client (download zip)
 - Docker client (DinD socket)
 
@@ -196,9 +193,10 @@ PATCH /api/v1/submissions/{id}/status       — executor cập nhật trạng th
 
 ```
 executor-service/
-├── consumer/GradingJobConsumer.java        # @KafkaListener, điều phối
+├── consumer/WgsEventsConsumer.java           # @KafkaListener, route theo action
+├── event/handler/GradeSubmissionHandler.java # persist PENDING + gọi orchestrator
 ├── service/
-│   ├── GradingOrchestrator.java            # Luồng chấm 1 job
+│   ├── GradingOrchestrator.java            # Luồng chấm 1 job (single-job gate)
 │   ├── DockerService.java                  # compose up/down, readiness
 │   ├── DockerComposePatcher.java           # Patch resource limits + port
 │   ├── PortAllocator.java                  # Cấp port nội bộ pod
@@ -224,21 +222,14 @@ executor-service/
 **Public API:**
 
 ```
-GET  /api/v1/results/{submissionId}                      — Kết quả 1 bài nộp
-GET  /api/v1/results/my                                  — Điểm của tôi
-GET  /api/v1/results/assignment/{assignmentId}           — Điểm toàn bộ bài tập (lecturer)
-GET  /api/v1/results/assignment/{assignmentId}/stats     — Thống kê (avg, distribution)
-GET  /api/v1/results/class/{classId}                     — Bảng điểm cả lớp (lecturer)
-
-POST /api/v1/results/manual-scores                       — Nhập tay điểm chuyên cần...
-GET  /api/v1/results/manual-scores?classId=...           — DS điểm nhập tay
-PUT  /api/v1/results/manual-scores/{id}                  — Sửa
+GET  /api/v1/results/{submissionId}   — Kết quả 1 bài nộp (một row mỗi plan + step_results)
 ```
 
 **Internal API:**
 
 ```
 POST /api/v1/internal/results                            — executor ghi kết quả chấm
+POST /api/v1/internal/results/weighted                   — điểm exercise theo plan weight
 ```
 
 ---
@@ -251,11 +242,11 @@ POST /api/v1/internal/results                            — executor ghi kết 
 | api-gateway | Tất cả services | HTTP (K8s DNS) | Route + inject auth headers |
 | submission-service | course-service | Feign | Validate assignment tồn tại + published |
 | submission-service | RustFS | S3 SDK | Presigned URL upload |
-| submission-service | Kafka | Producer | `grading-jobs` |
-| executor-service | Kafka | Consumer | `grading-jobs` |
+| submission-service | Kafka | Producer | `wgs-events` (GRADE_SUBMISSION) |
+| executor-service | Kafka | Consumer | `wgs-events` |
 | executor-service | RustFS | S3 SDK | Download zip |
 | executor-service | course-service | Feign | Lấy assignment + plans/steps |
-| executor-service | submission-service | Feign | PATCH status |
+| executor-service | submission-service | Feign | PUT status |
 | executor-service | result-service | Feign | Ghi kết quả |
 | executor-service | Docker (DinD) | Docker socket | Chạy container SV |
 
@@ -265,18 +256,17 @@ POST /api/v1/internal/results                            — executor ghi kết 
 
 ## 5. Kafka topics & message contracts
 
-### 5.1 `grading-jobs`
+### 5.1 `wgs-events`
 
 | Thuộc tính | Giá trị |
 |---|---|
-| Partitions | 3 (dev) — ≥ concurrency của executor |
-| Replication | 1 (dev) / 3 (prod) |
+| Partitions | 3 (dev) |
 | Retention | 7 ngày |
 | Key | `submissionId` |
 | Producer | submission-service |
 | Consumer | executor-service (consumer group `executor-group`) |
 
-**Payload:**
+**Payload:** envelope `{action: GRADE_SUBMISSION, version, timestamp, traceId, payload}` với payload:
 
 ```json
 {
