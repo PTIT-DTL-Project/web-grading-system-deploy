@@ -1,0 +1,60 @@
+%% Web Grading System - overall architecture
+%% Paste into https://mermaid.live to preview and export SVG/PNG/PDF
+flowchart LR
+    subgraph Clients["Clients"]
+        FE["Lecturer / student frontend"]
+    end
+
+    subgraph Edge["Edge"]
+        CF["Cloudflare Tunnel"]
+    end
+
+    subgraph K8s["k3s cluster"]
+        subgraph Gateway["Routing"]
+            GW["api-gateway"]
+        end
+
+        subgraph Services["Spring Boot microservices"]
+            COURSE["course-service"]
+            SUBM["submission-service"]
+            EXEC["executor-service"]
+            RES["result-service"]
+        end
+
+        subgraph Messaging["Events"]
+            KAFKA["Kafka topic wgs-events"]
+        end
+
+        subgraph Storage["Storage"]
+            PG1[("course-db")]
+            PG2[("submission-db")]
+            PG3[("executor-db")]
+            PG4[("result-db")]
+            RUSTFS[("RustFS submission-files")]
+        end
+
+        subgraph Platform["Platform"]
+            ARGO["ArgoCD GitOps"]
+            OBS["Observability"]
+        end
+    end
+
+    FE --> CF
+    CF --> GW
+    GW --> COURSE
+    GW --> SUBM
+    GW --> EXEC
+    GW --> RES
+    SUBM --> KAFKA
+    KAFKA --> EXEC
+    COURSE --> PG1
+    SUBM --> PG2
+    EXEC --> PG3
+    RES --> PG4
+    SUBM --> RUSTFS
+    EXEC --> RUSTFS
+    EXEC --> COURSE
+    EXEC --> SUBM
+    EXEC --> RES
+    ARGO -. deploys .-> Services
+    Services -. metrics / logs / traces .-> OBS

@@ -531,6 +531,86 @@ Every consuming service therefore needs BOTH (see executor-service
    Ack mode via `ContainerProperties.AckMode.valueOf(ackMode)` so yaml stays
    the single source of truth.
 
+Tests must construct `KafkaConfig` via `new KafkaConfig(new KafkaProperties(...))`
+— the class has no no-arg constructor. Build a full `KafkaProperties` record
+and pass it through the constructor; do NOT use `ReflectionTestUtils.setField()`
+on `KafkaConfig` fields (they live on `KafkaProperties`). See
+`src-services/executor-service/src/test/java/.../config/KafkaConfigTest.java`.
+
+## 15.5. Executor service production patterns (mandatory)
+
+**Testcontainers must use the containerized constructor.** The
+`ComposeContainer(File)` constructor puts testcontainers in Local Compose
+mode which requires a host `docker` CLI binary. The runtime image
+(`eclipse-temurin:21-jre`) ships no `docker`, so every grading job's boot
+step fails. Always use:
+```java
+new ComposeContainer(new DockerImageName("docker:25.0.5"), composeFile.toFile())
+```
+Add `import org.testcontainers.utility.DockerImageName`.
+
+**@Async must use a dedicated TaskExecutor with explicit rejection.** Boot's default `applicationTaskExecutor`
+has core=8 and unbounded queue, which violates the single-job DinD gate
+(§15). Define a bean in the application class:
+```java
+@Bean(name = "gradingTaskExecutor")
+public Executor gradingTaskExecutor() {
+    ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+    executor.setCorePoolSize(1);
+    executor.setMaxPoolSize(1);
+    executor.setQueueCapacity(10);
+    executor.setThreadNamePrefix("grading-");
+    executor.initialize();
+    return executor;
+}
+```
+Then annotate `@Async("gradingTaskExecutor")` on the grading method.
+Keep the default `AbortPolicy` — NEVER `CallerRunsPolicy`: it runs a full
+grading inline on the caller thread, which blocks the single Kafka listener
+thread past `max.poll.interval.ms` (consumer rebalance) and breaks the gate.
+Instead catch `org.springframework.core.task.TaskRejectedException` at every
+`gradeAsync` call site (consumer handler, reaper, reset controller): log a
+warning and leave the job `PENDING` — the 5-min reaper recovers it.
+
+**StaleJobReaper must never reap RUNNING.** Wall-clock alone cannot tell a live
+worker from a dead one, so re-enqueueing `RUNNING` double-grades live jobs
+(`startedAt` is stamped at FETCHING onset and the true budget lives in
+per-assignment config the reaper can't see). Keep `RUNNING` out of `ACTIVE`.
+A dead-`RUNNING` job recovers via manual reset: `ResetGradingJobService.reset()`
+accepts every non-terminal status (`PENDING/FETCHING/BUILDING/RUNNING/FAILED`)
+and refuses only `DONE` (re-grading it would post a duplicate result row).
+Enforce the documented invariant instead: `stale-after-minutes` must exceed
+startup + execution timeouts. Saturated reaper submits must NOT burn a retry:
+increment `retryCount` only after `gradeAsync` accepts the task.
+
+**StepRegistry must throw IllegalArgumentException.** `GradingOrchestrator.runStep`
+catches `IllegalArgumentException` around `stepRegistry.of(...)`. If
+`StepRegistry.of()` throws `IllegalStateException`, the guard is dead and
+unknown step types abort the whole job with a misleading message.
+
+**ResetResult must carry the GradingJob.** Controllers and event handlers
+need the stored job fields (assignmentId, studentId, planId, rustfsPath)
+to re-grade correctly — they must not come from the caller's request body.
+`ResetResult` carries both the `jobId` and the `GradingJob` object so
+callers read fields from the stored data.
+
+**Saga cleanup must delete steps for ALL sagas.** `GradingSagaRepository.findByJobId`
+returns a `List<GradingSaga>` (a job can have multiple sagas across attempts).
+Iterate the list and delete steps for each saga, not just `findFirstByJobId`.
+
+**firstServiceWithPorts must identify the app service.** A typical student
+compose has both a DB and an app service publishing ports. Picking the first
+with ports often selects the DB. Use a heuristic that excludes database-named
+services (name contains "db", "database", "postgres", "mysql", "mongo", "redis", "kafka").
+
+**Result posting must retry with backoff, skipping validation errors.** `postResult` attempts delivery up to 3 times
+with a linear backoff (`attempt * 2000L` ms) between attempts, since tight
+retries complete in milliseconds and never outlast a transient outage.
+Skip retry on deterministic client errors: a `feign.FeignException` with a
+4xx status other than 408/429 is logged once and returned (retrying a
+validation 400 just re-posts the same rejected body). Interrupt during sleep
+restores the flag and stops retrying.
+
 ## 16. Internal reset/rerun API for FAILED grading jobs (mandatory)
 
 `GradeSubmissionHandler` catches `DataIntegrityViolationException` on
