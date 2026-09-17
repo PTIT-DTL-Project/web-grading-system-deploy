@@ -603,6 +603,14 @@ compose has both a DB and an app service publishing ports. Picking the first
 with ports often selects the DB. Use a heuristic that excludes database-named
 services (name contains "db", "database", "postgres", "mysql", "mongo", "redis", "kafka").
 
+**Zip extraction drops Unix mode bits — restore wrapper +x.** `java.util.zip`
+unzipping ignores entry permissions, so `mvnw`/`gradlew` (755 in git) land
+644 in the grading work dir and the DinD `docker build` dies at `RUN ./mvnw`
+with "Permission denied" (exit 126). `ArtifactService` re-applies `rwxr-xr-x`
+to those two names at the workdir root right after unzip, best-effort only
+(never fail grading on a chmod error). Fix belongs in the executor, not the
+student Dockerfile — submissions bring their own Dockerfiles.
+
 **Result posting must retry with backoff, skipping validation errors.** `postResult` attempts delivery up to 3 times
 with a linear backoff (`attempt * 2000L` ms) between attempts, since tight
 retries complete in milliseconds and never outlast a transient outage.

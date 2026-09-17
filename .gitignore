@@ -39,3 +39,4 @@ replay_pid*
 **/docker/kafka-ca.pem
 
 **/mock/**
+.dev-scale-state/
