@@ -611,6 +611,16 @@ to those two names at the workdir root right after unzip, best-effort only
 (never fail grading on a chmod error). Fix belongs in the executor, not the
 student Dockerfile — submissions bring their own Dockerfiles.
 
+**Wrapper-only distributionUrls are rewritten to a pinned full Maven.**
+Published `maven-wrapper-distribution` artifacts (≈65KB, scripts + wrapper
+jar only) contain no Maven binaries, so any submission pointing at one fails
+its build deterministically. `ArtifactService` rewrites such URLs to
+`executor.maven.pinned-distribution-url` (default: full `apache-maven-3.9.9`)
+and drops a stale `distributionSha256Sum` alongside; full-Maven URLs, Gradle
+and wrapper-less projects pass through untouched; blank pin disables the
+rewrite. Bump the pin deliberately via config/env (`EXECUTOR_MAVEN_PINNED_URL`) —
+never resolve "latest" at runtime, grading must stay reproducible.
+
 **Result posting must retry with backoff, skipping validation errors.** `postResult` attempts delivery up to 3 times
 with a linear backoff (`attempt * 2000L` ms) between attempts, since tight
 retries complete in milliseconds and never outlast a transient outage.
