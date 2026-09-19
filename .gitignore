@@ -40,3 +40,6 @@ replay_pid*
 
 **/mock/**
 .dev-scale-state/
+
+# Local rolling log files (per-service .log/ dirs, WAL-style)
+**/.log/

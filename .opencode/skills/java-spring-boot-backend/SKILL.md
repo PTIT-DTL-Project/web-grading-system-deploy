@@ -231,8 +231,28 @@ Verify by checking the compiled class has `RuntimeVisibleParameterAnnotations`.
 - Log level: root stays INFO; every service yaml sets
   `logging.level.vn.edu.ptit.web_grading_system: DEBUG` so aspect traces appear
   while third-party libs stay INFO.
-- Services log JSON to stdout (logback-spring.xml + logstash encoder); locally read the
-  console/IntelliJ, in cluster `kubectl logs -n web-grading deploy/<name>` or Loki.
+ - Services log JSON to stdout (logback-spring.xml + logstash encoder); locally read the
+   console/IntelliJ, in cluster `kubectl logs -n web-grading deploy/<name>` or Loki.
+ - Every service also mirrors the same JSON into a local WAL-style rolling file:
+   `RollingFileAppender` named `FILE` in the same logback-spring.xml,
+   with the path baked to the project dir via Maven resource filtering:
+   `@project.basedir@/.log/app.log` (and same prefix in `fileNamePattern`).
+   Relative `.log/` follows the JVM working dir, NOT the project — a launch
+   from `src-services/` once created a stray `src-services/.log`, hence the
+   absolute path. Filtering MUST use `@...@`: spring-boot-starter-parent sets
+   `useDefaultDelimiters=false`, so `${project.basedir}` silently never
+   substitutes (this also proves `application.yaml` `${...}` placeholders are
+   safe). Scope filtering to logback-spring.xml ONLY (include-split in each
+   pom) so yaml/SQL resources are never touched. The FILE appender and its root ref share one
+   `<springProfile name="!stg &amp; !prod">` block (merged, not split
+   across two blocks). `stg | prod` has stdout-only root. Rolling: `app-%d{yyyy-MM-dd}.%i.log` (`%i` = version number on
+   size rollover), `maxFileSize=10MB`, `maxHistory=7`, `totalSizeCap=100MB`
+   (deletes OLDEST archives first, active file untouched). Encoder reuses that
+   service's own `ReadableLogstashEncoder` package. `.log/` dirs are gitignored
+   (`**/.log/` in root `.gitignore`; a pre-existing `*.log` rule already covers
+   the files). Caveat: IntelliJ runs that don't delegate to Maven copy
+   resources unfiltered, leaving a literal `@project.basedir@` dir — harmless,
+   app still runs.
 
 ## 11.5. Inbound http_log via HttpLoggingFilter (mandatory pattern)
 
