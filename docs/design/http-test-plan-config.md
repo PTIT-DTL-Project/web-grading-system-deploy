@@ -101,7 +101,7 @@ Rules:
 - `path` must be non-empty and start with `/`.
 - `headers` and `query_params`, when present and non-null, must be JSON objects.
 - `expected_status`, when present, must be an integer from `100` to `599`.
-- `assertions`, when an array, supports only `status`, `body_structure`, `body_equals`, `json_path`, and `contains`.
+- `assertions`, when an array, supports only `status`, `body_structure`, `body_equals`, `json_path`, `contains`, and `field_equals`.
 - `status` needs `equals`; `json_path` needs `path`; `contains` needs `text`.
 - Every `extract` item needs `name`, `from`, and `expression`.
 
@@ -256,6 +256,7 @@ Source: `AssertionEngine.java:40-117`.
 | `json_path` + `path` | JsonPath result exists, or does not exist when `exists: false`. An empty list counts as absent. |
 | `body_equals` + `json` | Parsed actual JSON deeply equals parsed expected JSON. |
 | `body_structure` + `json` | Same structure under `GsonStructureComparator`. |
+| `field_equals` + `path` + `equals` | Field value at JsonPath equals expected (with `${var}` substitution). |
 | Unknown `kind` | Fails that assertion. |
 
 `body_structure` means:

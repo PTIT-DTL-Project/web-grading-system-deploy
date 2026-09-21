@@ -62,3 +62,21 @@ named factory method on the DTO when no entity import is needed
 `.map(X::of)` at call sites; the builder approach is used inline
 when a factory would need an entity import. Triggers at >2 positional
 args — 1-2 arg constructors are fine as-is. See `java-spring-boot-backend/SKILL.md` §§12.6–12.7.
+
+## Code comments for future review (mandatory)
+
+When fixing bugs or implementing features that address review feedback:
+
+1. Add an inline comment above each fix explaining WHY (not what it does).
+2. Include the review date and reviewer reference (e.g. `Review: 2026-09-20, Pullfrog PR #16`).
+3. Comment the reasoning for non-obvious decisions (e.g. why a fallback is needed, why a check is ordered a certain way).
+4. Purpose: future code reviewers can understand the historical context without reading the PR.
+5. Do NOT over-comment — one comment per logical block, not per line.
+
+## Comment accuracy (mandatory)
+
+Whenever code is edited that affects behavior, ALL associated comments must be updated to match the new code. A comment describing old behavior is worse than no comment — it actively misleads readers. This applies to:
+- Javadoc/block comments on methods whose implementation changed
+- Inline comments explaining logic that was modified
+- Review attribution comments if the fix scope changed
+Never leave a comment that no longer describes what the code actually does.
