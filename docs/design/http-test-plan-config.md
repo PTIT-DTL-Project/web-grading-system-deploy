@@ -111,39 +111,45 @@ Real chained example: `docs/api/scenarios/exercise-steps.sh:80-100`.
 
 ```json
 {
+  "connection": {"db_type": "postgres", "database": "test", "username": "test", "password": "test"},
   "query": "SELECT title, author FROM books WHERE id = ${bookId}",
-  "expected": {"row_count": 1, "columns": ["title", "author"]}
+  "expected": {"row_count": 1, "columns": ["title", "author"]},
+  "timeoutMs": 30000
 }
 ```
 
-`query` must be non-empty. `expected`, when present, must be an object.
+`connection` is required and supplies `db_type`, `database`, `username`, `password` (allowed `db_type` values are listed in §3.3). `query` must be non-empty. `expected`, when present, must be an object. `timeoutMs` is the per-step budget in ms; the executor shares one deadline across the step and raises `ERROR` when it is exhausted.
 
 ### 3.3 `DB_SCHEMA_CHECK`
 
 ```json
 {
+  "connection": {"db_type": "postgres", "database": "test", "username": "test", "password": "test"},
   "checks": [
     {"kind": "TABLE_EXISTS", "table_name": "books"},
     {"kind": "COLUMN_EXISTS", "table_name": "books", "column_name": "title"},
     {"kind": "INDEX_EXISTS", "index_name": "idx_books_title"},
     {"kind": "PRIMARY_KEY", "column": "id"}
-  ]
+  ],
+  "timeoutMs": 30000
 }
 ```
 
-`checks` must be a non-empty array. Supported kinds and required fields are exactly those validated in `StepConfigValidator.java:109-135`.
+`connection` is required (same shape as §3.2). `checks` must be a non-empty array. Supported kinds and required fields are exactly those validated in `StepConfigValidator.java:109-135`. Each check shares the step's single deadline.
 
 ### 3.4 `DB_MIGRATION`
 
 ```json
 {
+  "connection": {"db_type": "postgres", "database": "test", "username": "test", "password": "test"},
   "statements": [
     "INSERT INTO books (id, title) VALUES ('...', 'Book A')"
-  ]
+  ],
+  "timeoutMs": 30000
 }
 ```
 
-`statements` must be a non-empty array of non-empty strings.
+`connection` is required (same shape as §3.2). `statements` must be a non-empty array of non-empty strings. Statements run inside one transaction (`autoCommit=false`): all succeed → `COMMIT` → `PASSED`; any error → `ROLLBACK` → `ERROR` (prefix `SQL_EXECUTION_ERROR`).
 
 ### 3.5 `EXTRACT`
 

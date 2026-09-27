@@ -169,3 +169,14 @@ Two **orthogonal axes** — never conflate them:
   5. Persistence already designed: `docker_images` +
      `assignment_docker_images` (`design-db-v1.0.md` §2.2) — the feature needs
      no schema change.
+
+## 10. DB integration tests (Testcontainers 2.x)
+
+Module artifacts renamed in Testcontainers 2.x (managed by the Spring Boot 4 parent BOM — no version needed):
+- `org.testcontainers:testcontainers-postgresql` (**not** `org.testcontainers:postgresql`, which 404s at 2.x)
+- `org.testcontainers:testcontainers-mysql`
+- `org.testcontainers:testcontainers-junit-jupiter`
+Class packages: `org.testcontainers.postgresql.PostgreSQLContainer`, `org.testcontainers.mysql.MySQLContainer`.
+Guard Docker availability with `org.testcontainers.DockerClientFactory.instance().isDockerAvailable()` (JUnit5 `Assumptions.assumeTrue`) — the suite skips cleanly when Docker is absent.
+
+**Wiring recipe** (see `Db*Test` in `executor-service`): construct a real `DbConnectionHelper(new DbDialectRegistry(List.of(new PostgresDialect())))` and hand it to the executor; a single package-private `TestPostgresContainer` is shared across the three DB test classes, seeded once and kept clean with `DELETE FROM books` between tests. `VariableContext.DB_PORT` must be set to the container's mapped port; `${var}` substitutions in SQL must be quoted in the query string (e.g. `WHERE id = '${bookId}'`).

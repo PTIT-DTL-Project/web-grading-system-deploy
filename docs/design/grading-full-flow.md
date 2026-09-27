@@ -15,10 +15,12 @@
 5. [HttpStepExecutor Thực Hiện Step](#5-httpstepexecutor-thực-hiện-step)
 6. [AssertionEngine Kiểm Tra Điều Kiện](#6-assertionengine-kiểm-tra-điều-kiện)
 7. [Truyền Biến Giữa Các Step (autoInjectExtracts)](#7-truyền-biến-giữa-các-step-autoinjectextracts)
-8. [Full Luồng Chấm Bài](#8-full-luồng-chấm-bài)
-9. [Ví Dụ Chi Tiết](#9-ví-dụ-chi-tiết)
-10. [Các Trường Hợp Đặc Biệt](#10-các-trường-hợp-đặc-biệt)
-11. [Bảng Tóm Tắt](#11-bảng-tóm-tắt)
+8. [DB Step Execution](#8-db-step-execution)
+9. [Full Luồng Chấm Bài](#9-full-luồng-chấm-bài)
+10. [Ví Dụ Chi Tiết](#10-ví-dụ-chi-tiết)
+11. [Các Trường Hợp Đặc Biệt](#11-các-trường-hợp-đặc-biệt)
+12. [Bảng Tóm Tắt](#12-bảng-tóm-tắt)
+13. [E2E Verification Recipe](#13-e2e-verification-recipe)
 
 ---
 
@@ -543,7 +545,45 @@ Với mỗi step (từ cuối về đầu, trừ step đầu tiên):
 
 ---
 
-## 8. Full Luồng Chấm Bài
+## 8. DB Step Execution (DB_QUERY / DB_SCHEMA_CHECK / DB_MIGRATION)
+
+Ba executor phục vụ grader cơ sở dữ liệu. Tất cả đều đọc `connection` từ config, resolve engine qua `DbDialectRegistry` theo `connection.db_type`, và chia sẻ **một deadline duy nhất** (`timeoutMs` ms) cho toàn bộ bước — mỗi statement/check lấy thời gian còn lại (clamp ≥ 1 s), throw `DbStepTimeoutException` khi hết budget.
+
+### 8.1 Cấu hình chung
+
+Mọi bước DB đều cần khối `connection` (§3.2–3.4):
+```json
+{"connection": {"db_type": "postgres", "database": "test", "username": "test", "password": "test"}}
+```
+`db_type` cho phép: `postgres` (mặc định, 5432), `mysql` / `mariadb` (3306, `mariadb` là alias của dialect `mysql`). Blank/unknown → bước FAIL *trước* khi claim port.
+
+### 8.2 DB_QUERY
+
+- Đọc `query`, thay `${var}` bằng `VariableContext`.
+- So sánh `expected.row_count` và `expected.columns` (case-insensitive).
+- `PASSED` / `FAILED` / `ERROR` (SQL exception hoặc timeout).
+
+### 8.3 DB_SCHEMA_CHECK
+
+- `checks`: mảng `TABLE_EXISTS` / `COLUMN_EXISTS` / `INDEX_EXISTS` / `PRIMARY_KEY`.
+- Mỗi check chạy câu SQL dialect-specific, so sánh COUNT > 0 (hoặc `sameType` cho `COLUMN_EXISTS`).
+
+### 8.4 DB_MIGRATION
+
+- `statements`: mảng SQL, thực thi tuần tự trong **một transaction** (`autoCommit=false`).
+- Tất cả succeed → `COMMIT` → `PASSED`; bất kỳ lỗi nào → `ROLLBACK` → `ERROR`.
+- Đảm bảo tính nguyên tử DDL trên PostgreSQL (rollback cũng drop table đã tạo).
+
+### 8.5 Chạy thử với container
+
+```bash
+mvn -f src-services/executor-service/pom.xml test -Dtest='Db*Test'
+# 13 container test mới boot postgres:16 qua Testcontainers 2.x.
+```
+
+---
+
+## 9. Full Luồng Chấm Bài
 
 ### 8.1 Sơ Đồ
 
@@ -674,7 +714,7 @@ Với mỗi step (từ cuối về đầu, trừ step đầu tiên):
 
 ---
 
-## 9. Ví Dụ Chi Tiết
+## 10. Ví Dụ Chi Tiết
 
 ### 9.1 Đề Bài: Quản Lý Sách
 
@@ -808,7 +848,7 @@ Nếu Step 2 trả về 404 (không tìm thấy sách):
 
 ---
 
-## 10. Các Trường Hợp Đặc Biệt
+## 11. Các Trường Hợp Đặc Biệt
 
 ### 10.1 Duplicate Submission
 
@@ -849,7 +889,7 @@ Pod chết khi job đang RUNNING:
 
 ---
 
-## 11. Bảng Tóm Tắt
+## 12. Bảng Tóm Tắt
 
 ### 11.1 Các Loại Assertion
 
@@ -890,3 +930,16 @@ Pod chết khi job đang RUNNING:
 | Timeout | `"timeoutMs": 5000` | Request chạy quá 5s → ERROR |
 | Có extract | `"extract": [...]` | Trích biến từ response |
 | Không có assertion | `"assertions": []` | Chỉ kiểm tra status (nếu có expected_status) |
+
+## 13. E2E Verification Recipe
+
+Để verify full luồng chấm bài end-to-end trên máy có Docker (không chạy live trong CI — CI chạy `-DskipTests`):
+
+1. **Boot k3s + dependencies**: deploy toàn bộ stack (kafka, postgres, rustfs, course/executor/result services).
+2. **Create assignment + test plan** với các DB-type steps (ví dụ `DB_QUERY` kiểm tra bảng `books`).
+3. **Submit một solution** → trigger `GRADE_SUBMISSION` Kafka event.
+4. **Observe grading**: `GradingOrchestrator` scans DB requirements, claims DB port, boots student app, thực thi DB steps chống真实数据库.
+5. **Check result**: `GET /api/v1/results/{submissionId}` → step rows với status `PASSED`/`FAILED`/`ERROR`.
+6. **Verify atomicity**: migration step lỗi → rollback (không data dư); timeout → `ERROR`.
+
+Xem `docs/design/http-test-plan-config.md` cho schema và `docs/db/README.md` cho ví dụ hoàn chỉnh.
