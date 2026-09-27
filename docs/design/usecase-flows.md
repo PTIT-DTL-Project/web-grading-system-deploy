@@ -199,7 +199,8 @@ POST `…/plans/{planId}/steps` ×N. Example chain (docs/db §8.1):
 5. DB_QUERY verify row
 
 Errors: duplicate step_order → 400 naming it · invalid config structure → 400 naming
-the key · step of another assignment → 404.
+the key · unknown `connection.db_type` (DB_* steps) → 400 listing allowed engines
+`postgres, mysql, mariadb` · step of another assignment → 404.
 
 ### Step 4 — Update / reorder
 
@@ -299,4 +300,87 @@ per-plan scores** (`result_service ResultService.weightedScoreByPlan`, weighted 
 
 `404` for any assignment the student isn't enrolled in or that isn't published. Upload
 errors and grading failures behave as in UC-03 / `execute-plan-v1.0.md` §6.
+
+---
+
+## UC-05: Auto-grading a DB step (`DB_QUERY` / `DB_SCHEMA_CHECK` / `DB_MIGRATION`)
+
+**Actor:** executor-service (Kafka consumer `GRADE_SUBMISSION`). **Not a human-facing UC.**
+**Service:** executor-service (after compose boot). **FE:** n/a.
+
+**Preconditions:** plan's compose started and healthy (`RUNNING`); the plan's step
+has type `DB_QUERY`, `DB_SCHEMA_CHECK`, or `DB_MIGRATION`; `connection.db_type` set
+(default `postgres`, allowed `{postgres, mysql, mariadb}`; MariaDB = MySQL alias).
+
+### Step 1 — Resolve engine and port
+
+1. `GradingOrchestrator.runSteps` reads the step's `connection` block and
+   `connection.db_type`.
+2. `VariableContext.DB_PORT` holds the host port published from the student
+   compose (allocated by `GradingOrchestrator`).
+3. `DbDialectRegistry.resolve(db_type)` picks the dialect (engine-agnostic,
+   single `@Component` per engine; MariaDB resolves to the MySQL dialect).
+
+### Step 2 — Open JDBC connection (all DB types)
+
+`DbConnectionHelper.withConnection(connection, hostPort, action)` builds the
+dialect-owned JDBC URL and opens a connection, retrying up to 5 times
+(1 s each) if the DB container is still initialising. On final failure the
+exception is wrapped with `Constant.Message.Db` dialect hint:
+`"Connection failed using dialect '<key>'. If your DB is MySQL/MariaDB, set connection.db_type"`.
+
+### Step 3 — Execute step-specific logic
+
+**`DB_QUERY`** (`DbQueryExecutor`):
+1. Substitute `${var}` in the lecturer's `query`.
+2. Run via `Statement.executeQuery`; collect column labels and row count.
+3. Compare against `expected.row_count` (exact) and/or `expected.columns`
+   (exact ordered list, case-insensitive) — each yields one
+   `AssertionEngine.AssertionDetail` (`kind = "row_count"` / `"columns"`).
+4. All assertions pass → `PASSED`; else → `FAILED` with details.
+
+**`DB_SCHEMA_CHECK`** (`DbSchemaCheckExecutor`):
+1. Iterate the `checks[]` array; for each check run the dialect's
+   information-schema query (`tableExistsSql`, `columnExistsSql`,
+   `primaryKeySql`, `indexExistsSql`) with the documented params.
+2. `COLUMN_EXISTS` compares the returned `data_type`/`column_type` via
+   `dialect.sameType(expected, actual)` (normalises engine-specific names,
+   e.g. `varchar` ↔ `character varying`, `boolean` ↔ `bit`).
+3. One `AssertionDetail` per check → all pass → `PASSED`; first fail →
+   `FAILED` with the per-check details.
+
+**`DB_MIGRATION`** (`DbMigrationExecutor`):
+1. Run each statement in `statements[]` in a single transaction
+   (`autoCommit=false`).
+2. Commit only if every statement succeeds; rollback on the first error.
+3. Restore `autoCommit=true` in `finally`.
+4. No assertions → `PASSED` (no `assertionResult`, no `extractedVariables`);
+   on error → `ERROR` with `Constant.Message.Db.SQL_EXECUTION_ERROR` prefix.
+
+### Step 4 — Error handling
+
+- **Connection failure** (dialect can't reach the DB) → `StepResultStatus.ERROR`
+  with a dialect-hint message distinguishing it from SQL errors.
+- **SQL / execution failure** (lecturer's query/statement/migration errored) →
+  `StepResultStatus.ERROR` prefixed with `"DB step SQL error: "` so the
+  lecturer's mistake is distinguishable from infrastructure failure.
+- Both paths throw inside the existing `runSteps` wrapper → persisted as
+  `ERROR` rows with `errorMessage`; the plan continues (other steps / plans).
+
+### Step 5 — Persist and continue
+
+`GradingOrchestrator` persists the `GradingStepResult` (status, `assertionResult`
+JSON, `errorMessage`, `durationMs`) exactly as for `HTTP_REQUEST` steps, then
+continues to the next step/plan. DB steps contribute to the plan's score like
+any other step.
+
+### Notes
+
+- The `ENSURE_IMAGES` slot stays empty: DB executors run after compose boot
+  (inside `runSteps`), so the image pre-pull seam (Axis 2) is untouched.
+- `StepRegistry` bean-collects all four `StepExecutor` implementations;
+  adding a new DB type = one `@Component` + `DbDialect` (zero registry changes).
+- `db_type` is validated at step-creation time by `StepConfigValidator`
+  (course-service); the executor fail-fasts early if a legacy row slips through.
+
 

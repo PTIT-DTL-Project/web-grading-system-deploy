@@ -63,6 +63,14 @@ named factory method on the DTO when no entity import is needed
 when a factory would need an entity import. Triggers at >2 positional
 args — 1-2 arg constructors are fine as-is. See `java-spring-boot-backend/SKILL.md` §§12.6–12.7.
 
+## Coding convention: Jackson JsonNode read — `asString()` only
+
+`tools.jackson` (Jackson 3, auto-configured by Boot 4) deprecated
+`JsonNode.asText()` in favour of `JsonNode.asString()`. **All production
+code must use `.asString()`** — never `.asText()`. Apply when editing any
+file that calls `node.path(...).asText()` or `node.get(...).asText()`.
+This is audited in code review; replace any occurrence you touch.
+
 ## Code comments for future review (mandatory)
 
 When fixing bugs or implementing features that address review feedback:

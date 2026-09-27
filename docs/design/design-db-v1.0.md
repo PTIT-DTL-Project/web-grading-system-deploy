@@ -193,6 +193,7 @@ DB_QUERY (và DB_SCHEMA_CHECK, DB_MIGRATION) — block `connection`:
 ```json
 {
   "connection": {
+    "db_type": "postgres",
     "db_service": "db",
     "db_port": 5432,
     "database": "bookstore",
@@ -209,8 +210,9 @@ DB_QUERY (và DB_SCHEMA_CHECK, DB_MIGRATION) — block `connection`:
 
 | Field trong `connection` | Ý nghĩa |
 |---|---|
+| `db_type` | Engine của DB (`postgres` \| `mysql` \| `mariadb`, không phân biệt hoa thường, mặc định `postgres`) — ánh xạ sang JDBC dialect tương ứng trong executor (`DbDialectRegistry`). `mariadb` dùng chung dialect với `mysql` (wire-compatible) |
 | `db_service` | Tên service DB trong docker-compose của SV (mặc định `db`) — executor sẽ expose port của service này ra host |
-| `db_port` | Port DB trong container (mặc định 5432) |
+| `db_port` | Port DB trong container — mặc định theo engine: 5432 (postgres) / 3306 (mysql, mariadb) |
 | `database`, `username`, `password` | Thông tin kết nối |
 
 DB_SCHEMA_CHECK:
@@ -829,5 +831,6 @@ CREATE INDEX idx_http_log_created ON http_log(created_at);
 
 | Version | Ngày | Thay đổi |
 |---|---|---|
+| v1.1 | 2026-09-26 | Thêm `db_type` vào `connection` block (multi-DBMS: `postgres` \| `mysql` \| `mariadb`, mặc định `postgres`); `db_port` mặc định theo engine (5432/3306) thay vì cố định 5432 |
 | v1.0 | 2026-08-16 | Bản đầu tiên. Kế thừa `docs/db/README.md`; thêm `classes`, `class_students`, `manual_scores`; đổi `grading_db` → `executor_db`, `scenario_results` → `step_results`; thêm `connection` block cho DB steps; bỏ step type `SCRIPT` ra khỏi v1 |
 | v1.0 | 2026-08-16 | Thêm bảng `http_log` cho cả 4 DB — log HTTP inbound (filter) + outbound (Feign client) với request/response body, headers, thời gian, cổng; bỏ header nhạy cảm, cắt body 20KB |

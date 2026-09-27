@@ -190,6 +190,9 @@ Verify by checking the compiled class has `RuntimeVisibleParameterAnnotations`.
   `com.fasterxml.jackson.databind.ObjectMapper` is NOT a bean anymore. New code injecting
   an ObjectMapper must import from `tools.jackson.databind`. Exceptions are unchecked there,
   so readTree/writeValueAsString need no throws clauses.
+  **`JsonNode.asText()` is deprecated — use `JsonNode.asString()` instead** (`tools.jackson`
+  renamed it). All production code already uses `.asString()`; if you write a new one, use
+  `.asString()` — do not copy the old `.asText()` habit.
 
 - `Map.of(...)` throws NPE on null VALUES — never feed it nullable data
   (e.g. computed averages). Use `Collections.singletonMap(k, v)` or a HashMap.
