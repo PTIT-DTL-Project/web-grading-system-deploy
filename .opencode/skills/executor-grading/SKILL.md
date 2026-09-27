@@ -151,24 +151,42 @@ Two **orthogonal axes** — never conflate them:
    - **DB error-labelling rule (durable):** `DbStepResults.message(SQLException)` is the single place that decides the `errorMessage` prefix. `DbConnectionException` (connect retry exhausted) and `DbStepTimeoutException` (budget exhausted) surface their message verbatim; every other `SQLException` is prefixed `Constant.Message.Db.SQL_EXECUTION_ERROR`. The three DB executors call `DbStepResults.message(e)`, never a local variant. `withConnection` throws `DbConnectionException` / `DbStepTimeoutException`; never a plain `SQLException`.
      See `docs/design/vi/db-step-execution-flow-v1.0.md` §7.
    - **Per-step DB budget = one deadline across the list** (`DbQueryExecutor`, `DbSchemaCheckExecutor`, `DbMigrationExecutor`): compute `deadline = now() + timeoutMs` once, give each statement/check its remaining time (clamped ≥ 1 s), throw `DbStepTimeoutException` when spent. Partial results stay in `details`. Never `setQueryTimeout(timeoutMs/1000)` for every item — that is `N × budget`.
-- **Axis 2: getting bytes on the box** (FUTURE — lecturer registers images
-  like DB images/Java SDKs; async task scans and pulls missing ones). NOT
-  built; structure reserved so it needs no surgery:
-  1. `GradingOrchestrator.scanDbRequirements(plans)` is the **named seam** —
-     its future sibling `scanImageRequirements(...)` sits beside it in `grade()`
-     (same pre-boot phase, independent concern).
-  2. Insertion point for a future `ENSURE_IMAGES` saga step: between the
-     pre-scan/port-claim block and `composeRunner.boot()` — or an independent
-     `@Scheduled` scanner if pulls must not block grading. Deliberately not
-     fixed yet; either choice never reorders existing steps.
-  3. `DockerComposePatcher.load()`/`servicesOf()` are static and
-     side-effect-free — reuse them to enumerate `image:` entries instead of
-     re-parsing YAML.
-  4. Config will follow the `ExecutorProperties` nested-record pattern (e.g.
-     a future `ImageScan` record). No placeholder config exists today (YAGNI).
-  5. Persistence already designed: `docker_images` +
-     `assignment_docker_images` (`design-db-v1.0.md` §2.2) — the feature needs
-     no schema change.
+- **Axis 2: getting bytes on the box** (built 2026-09-27, PR #20 — Phase 2):
+   lecturer registers images; an `@Scheduled` scanner in the executor
+   pre-pulls missing ones into each pod's DinD store before grading.
+   Realized: `ImageScanner` (`@Scheduled(fixedDelayString =
+   "${executor.image-scan.interval-ms:300000}")`) fetches the active
+   image list via `CourseInternalClient.images()` (defensive — a
+   Feign failure never stalls the pod), warms the pod with
+   `DockerImageGateway`/`DockerImageGatewayImpl` (inspect-based
+   `present()` + timeout-bounded `pull()` on the shared `DOCKER_HOST`
+   DinD client reused by `DockerComposeRunner`), persists per-pod
+   warmth in `docker_image_state` (V7 migration, `@SQLRestriction`
+   soft-delete, age-based prune at 6× interval to GC Deployment
+   pod churn), and backoff-skips FAILED rows for
+   `fail-backoff-ms`. Config: `ExecutorProperties.ImageScan`
+   nested record (`@Builder`), `spring.task.scheduling.pool.size=4`
+   so long pulls never stall `StaleJobReaper`. Tests: 12 new
+   (`ImageScannerTest` 8, `DockerImageGatewayImplTest` 2 Docker-gated
+   via `Assumptions.assumeTrue`, `DockerImageStateRepositoryTest` 4
+   on H2) — all green, 205/205.
+   1. `GradingOrchestrator.scanDbRequirements(plans)` is the **named seam** —
+      its existing sibling `scanImageRequirements(...)` sits beside it in `grade()`
+      (same pre-boot phase, independent concern).
+   2. Insertion point for a future `ENSURE_IMAGES` saga step: between the
+      pre-scan/port-claim block and `composeRunner.boot()` — or an independent
+      `@Scheduled` scanner if pulls must not block grading. Deliberately not
+      fixed yet; either choice never reorders existing steps.
+   3. `DockerComposePatcher.load()`/`servicesOf()` are static and
+      side-effect-free — reuse them to enumerate `image:` entries instead of
+      re-parsing YAML.
+   4. Config follows the `ExecutorProperties` nested-record pattern
+      (`ImageScan` record, `@Builder`). Placeholder config exists today
+      (`executor.image-scan.*` in `application.yaml`).
+   5. Persistence already designed: `docker_images` +
+      `assignment_docker_images` (`design-db-v1.0.md` §2.2) — the feature
+      needs no schema change; V7 adds the per-pod `docker_image_state`
+      table with a partial unique index on `(image_url, pod_id)`.
 
 ## 10. DB integration tests (Testcontainers 2.x)
 
