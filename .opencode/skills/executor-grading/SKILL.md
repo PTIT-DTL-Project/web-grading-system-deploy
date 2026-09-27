@@ -150,6 +150,7 @@ Two **orthogonal axes** — never conflate them:
     nature); only schema-check SQL + JDBC URLs are dialect-owned.
    - **DB error-labelling rule (durable):** `DbStepResults.message(SQLException)` is the single place that decides the `errorMessage` prefix. `DbConnectionException` (connect retry exhausted) and `DbStepTimeoutException` (budget exhausted) surface their message verbatim; every other `SQLException` is prefixed `Constant.Message.Db.SQL_EXECUTION_ERROR`. The three DB executors call `DbStepResults.message(e)`, never a local variant. `withConnection` throws `DbConnectionException` / `DbStepTimeoutException`; never a plain `SQLException`.
      See `docs/design/vi/db-step-execution-flow-v1.0.md` §7.
+   - **Per-step DB budget = one deadline across the list** (`DbQueryExecutor`, `DbSchemaCheckExecutor`, `DbMigrationExecutor`): compute `deadline = now() + timeoutMs` once, give each statement/check its remaining time (clamped ≥ 1 s), throw `DbStepTimeoutException` when spent. Partial results stay in `details`. Never `setQueryTimeout(timeoutMs/1000)` for every item — that is `N × budget`.
 - **Axis 2: getting bytes on the box** (FUTURE — lecturer registers images
   like DB images/Java SDKs; async task scans and pulls missing ones). NOT
   built; structure reserved so it needs no surgery:

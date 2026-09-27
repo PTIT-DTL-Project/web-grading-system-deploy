@@ -201,14 +201,16 @@ execute(StepContext ctx):
   connection = config.path("connection")
   dbType     = connection.path("db_type").asString("postgres")
   hostPort   = variableContext.get("db_port")
-  timeoutMs  = ctx.timeoutMs() != null ? ctx.timeoutMs() : 30_000
-  timeoutSec = ceil(timeoutMs / 1000)
+  timeoutMs  = config.path("timeoutMs") != null ? config.path("timeoutMs") : ctx.timeoutMs()
+  deadline   = now() + timeoutMs       // single wall-clock budget cho toàn bộ checks[]
 
   details = []
   db.withConnection(config, hostPort, timeoutMs, conn -> {
     dialect = db.resolve(dbType)                     // PostgresDialect / MysqlDialect
     for check in config.path("checks"):
-      details.add(runCheck(conn, dialect, check, timeoutSec))
+      remaining = deadline - now()
+      if remaining <= 0: throw DbStepTimeoutException(SQL_TIMEOUT_ERROR + timeoutMs)
+      details.add(runCheck(conn, dialect, check, max(1, ceil(remaining / 1000))))
     return null
   })
 
@@ -247,21 +249,23 @@ execute(StepContext ctx):
 
 ### 5.3 `DB_MIGRATION` — `DbMigrationExecutor`
 
-**Mục:** Chạy từng câu DML/DDL của giảng viên trong MỘT transaction — commit tất cả hoặc rollback tất cả.
+**Mục:** Chạy từng câu DML/DDL của giảng viên trong MỘT transaction — commit tất cả hoặc rollback tất cả. *(Atomicity engine-dependent: PostgreSQL honours DDL+DDL; MySQL/MariaDB force an implicit commit on DDL, so DDL migrations there are best-effort.)*
 
 ```
 execute(StepContext ctx):
   config, hostPort
-  timeoutMs  = ctx.timeoutMs() != null ? ctx.timeoutMs() : 30_000
-  timeoutSec = ceil(timeoutMs / 1000)
+  timeoutMs  = config.path("timeoutMs") != null ? config.path("timeoutMs") : ctx.timeoutMs()
+  deadline   = now() + timeoutMs       // single wall-clock budget cho toàn bộ migration
   details = [] (không có assertion)
 
   db.withConnection(config, hostPort, timeoutMs, conn -> {
     conn.setAutoCommit(false)
     try:
       for stmt in config.path("statements"):
+        remaining = deadline - now()
+        if remaining <= 0: throw DbStepTimeoutException(SQL_TIMEOUT_ERROR + timeoutMs)
         try (PreparedStatement ps = conn.prepareStatement(substitute(stmt.asText()))) {
-          ps.setQueryTimeout(timeoutSec)
+          ps.setQueryTimeout(max(1, ceil(remaining / 1000)))  // thời gian còn lại
           ps.executeUpdate()
         }
       conn.commit()                    // tất cả thành công
@@ -334,10 +338,13 @@ buildResult(mapper, ctx, stepType, status, details, err, started):
 - **`DbStepTimeoutException`** (budget exhaustion — connect hoặc migration): message đã chứa `SQL_TIMEOUT_ERROR` → surface verbatim.
 - **SQL / execution failure** (bên trong lambda executor — câu SQL của giảng viên lỗi): bất kỳ `SQLException` nào khác → thêm prefix `"DB step SQL error: "`.
 - **Unknown `db_type`** (legacy row không bị `StepConfigValidator` chặn):
+- **Unknown `db_type`** (legacy row không bị `StepConfigValidator` chặn):
 ```
 IllegalArgumentException: "Unknown db_type: oracle"
 ```
 → NOT caught bởi executor (không phải SQLException) → `runSteps` catch → `ERROR`.
+
+**`errorMessage` carries the message exactly once** — `DbStepResults.message(SQLException)` already names the prefix (or verbatim for `DbConnectionException`/`DbStepTimeoutException`), so callers must pass it alone; never append `e.getMessage()` again. See `.opencode/skills/executor-grading/SKILL.md`.
 
 **Lưu ý về statement timeout từ driver:** pgjdbc (`PSQLException`, SQLSTATE 57014) và MySQL (`MySQLTimeoutException`) đều report timeout với `cause == null`, nên không thể phân biệt với một syntax error chỉ qua `getCause()`. Đó là lý do rule trên dùng **exception type do chính helper throw** (không phải `getCause()`). Statement-level driver timeout vì vậy vẫn mang prefix `SQL_EXECUTION_ERROR` — là trade-off đã biết, sẽ xử lý riêng nếu cần.
 
