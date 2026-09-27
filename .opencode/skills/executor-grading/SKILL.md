@@ -203,4 +203,14 @@ Guard Docker availability with `org.testcontainers.DockerClientFactory.instance(
       (`*ApplicationTests`) and is required because `api-gateway`
       has exactly one test class which is itself an `*ApplicationTests`,
       so without it the entry selects zero classes and would fail.
-      Widen the step to each service as its suite is confirmed green in CI.
+      Widen the step to each service as its suite is confirmed
+      green — the four other suites were verified locally under
+      JDK 21 (course 89, result 26, submission 20) but have no
+      CI signal yet.
+    - A MySQL COLUMN_EXISTS fixture must include a boolean column
+      (e.g. `is_active BOOL`): MySQL stores it as `tinyint(1)`,
+      so the check is only observable through the `column_type`
+      projection; without it both `column_type` and `data_type`
+      normalize identically and the projection is untested.
+      Assert the parsed `actual` field (`.asString()`) to pin
+      which projection the executor used.
