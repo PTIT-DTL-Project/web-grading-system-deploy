@@ -578,7 +578,7 @@ Mọi bước DB đều cần khối `connection` (§3.2–3.4):
 
 ```bash
 mvn -f src-services/executor-service/pom.xml test -Dtest='Db*Test'
-# 13 container test mới boot postgres:16 qua Testcontainers 2.x.
+# 19 container tests boot postgres:16 and mysql:8 via Testcontainers 2.x. DDL-rollback atomicity is PG-only (MySQL DDL is non-atomic).
 ```
 
 ---

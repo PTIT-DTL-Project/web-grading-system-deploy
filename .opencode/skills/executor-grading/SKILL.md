@@ -180,3 +180,24 @@ Class packages: `org.testcontainers.postgresql.PostgreSQLContainer`, `org.testco
 Guard Docker availability with `org.testcontainers.DockerClientFactory.instance().isDockerAvailable()` (JUnit5 `Assumptions.assumeTrue`) — the suite skips cleanly when Docker is absent.
 
 **Wiring recipe** (see `Db*Test` in `executor-service`): construct a real `DbConnectionHelper(new DbDialectRegistry(List.of(new PostgresDialect())))` and hand it to the executor; a single package-private `TestPostgresContainer` is shared across the three DB test classes, seeded once and kept clean with `DELETE FROM books` between tests. `VariableContext.DB_PORT` must be set to the container's mapped port; `${var}` substitutions in SQL must be quoted in the query string (e.g. `WHERE id = '${bookId}'`).
+
+    - Never place a Docker assumption in `@BeforeAll`: a failing
+      `Assumptions.assumeTrue` there aborts the whole class container
+      so the pre-existing Mockito tests inside the same class vanish
+      (`Tests run: 0, Skipped: 0`). Scope the gate to the container
+      tests themselves and keep `@AfterAll` guarded (`stop()` is a
+      no-op when the container never started).
+    - Testcontainers 2.x package for the PostgreSQL container is
+      `org.testcontainers.postgresql.PostgreSQLContainer`; the old
+      `org.testcontainers.containers.PostgreSQLContainer` is
+      `@Deprecated` in 2.0.5. Both classes are `@Deprecated` in the
+      resolved 2.0.5 jars, so either compiles with one warning —
+      use the new package.
+    - MySQL DDL is non-atomic, so DDL-rollback tests are PostgreSQL
+      only; MySQL tests cover connection/auth (`caching_sha2` via
+      `useSSL=false&allowPublicKeyRetrieval=true`), schema-check
+      dialect SQL, and DML migration commit/rollback.
+    - CI test command: `mvn test -Dtest='!*ApplicationTests' -Dsurefire.failIfNoSpecifiedTests=false`
+      excludes the pre-existing infra-failing `contextLoads`
+      (`*ApplicationTests`) while still executing the DB container
+      tests on runners with a Docker daemon.
