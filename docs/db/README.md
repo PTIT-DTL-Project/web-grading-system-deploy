@@ -218,7 +218,14 @@ DB_QUERY:
 ```json
 {
   "type": "DB_QUERY",
-   "timeoutMs": 30000,
+  "connection": {
+    "db_type": "postgres",
+    "db_service": "db",
+    "database": "bookstore",
+    "username": "u",
+    "password": "p"
+  },
+  "timeoutMs": 30000,
   "query": "SELECT id, title, author FROM books WHERE title = ${title}",
   "expected": {
     "row_count": 1,
@@ -232,7 +239,14 @@ DB_SCHEMA_CHECK:
 ```json
 {
   "type": "DB_SCHEMA_CHECK",
-   "timeoutMs": 30000,
+  "connection": {
+    "db_type": "postgres",
+    "db_service": "db",
+    "database": "bookstore",
+    "username": "u",
+    "password": "p"
+  },
+  "timeoutMs": 30000,
   "checks": [
     {"kind": "TABLE_EXISTS", "table_name": "books"},
     {"kind": "COLUMN_EXISTS", "table_name": "books", "column_name": "title", "data_type": "VARCHAR(255)"},
@@ -247,14 +261,23 @@ DB_MIGRATION:
 ```json
 {
   "type": "DB_MIGRATION",
-   "timeoutMs": 30000,
+  "connection": {
+    "db_type": "postgres",
+    "db_service": "db",
+    "database": "bookstore",
+    "username": "u",
+    "password": "p"
+  },
+  "timeoutMs": 30000,
   "statements": [
     "INSERT INTO books (id, title, author, year) VALUES ('11111111-1111-1111-1111-111111111111', 'Book A', 'Author A', 2000)",
     "INSERT INTO books (id, title, author, year) VALUES ('22222222-2222-2222-2222-222222222222', 'Book B', 'Author B', 2001)"
   ]
 }
-  - **MySQL/MariaDB caveat:** DDL statements force an implicit commit (MySQL §15.3.3, MariaDB "SQL statements Causing an Implicit Commit"), so a migration containing DDL followed by a failing statement is <em>best-effort</em> — the DDL is already durably applied, `rollback()` has nothing to undo, and the step reports `ERROR` without indicating the schema is partially migrated. Keep DDL and DML in separate steps on MySQL/MariaDB.
+
 ```
+
+  - **MySQL/MariaDB caveat:** DDL statements force an implicit commit (MySQL §15.3.3, MariaDB "SQL statements Causing an Implicit Commit"), so a migration containing DDL followed by a failing statement is <em>best-effort</em> — the DDL is already durably applied, `rollback()` has nothing to undo, and the step reports `ERROR` without indicating the schema is partially migrated. Keep DDL and DML in separate steps on MySQL/MariaDB.
 
 EXTRACT:
 ```json
@@ -849,7 +872,14 @@ VALUES ('s3', 'p1', 3, 'Search by title', 'HTTP_REQUEST', '{
 -- Step 4: Kiểm tra DB schema
 INSERT INTO test_steps (id, plan_id, step_order, name, step_type, config, weight)
 VALUES ('s4', 'p1', 4, 'Check DB schema', 'DB_SCHEMA_CHECK', '{
-   "timeoutMs": 30000,
+  "connection": {
+    "db_type": "postgres",
+    "db_service": "db",
+    "database": "bookstore",
+    "username": "u",
+    "password": "p"
+  },
+  "timeoutMs": 30000,
   "checks": [
     {"kind": "TABLE_EXISTS", "table_name": "books"},
     {"kind": "COLUMN_EXISTS", "table_name": "books", "column_name": "title", "data_type": "VARCHAR"},
@@ -861,7 +891,14 @@ VALUES ('s4', 'p1', 4, 'Check DB schema', 'DB_SCHEMA_CHECK', '{
 -- Step 5: DB query kiểm tra dữ liệu
 INSERT INTO test_steps (id, plan_id, step_order, name, step_type, config, weight)
 VALUES ('s5', 'p1', 5, 'Verify data in DB', 'DB_QUERY', '{
-   "timeoutMs": 30000,
+  "connection": {
+    "db_type": "postgres",
+    "db_service": "db",
+    "database": "bookstore",
+    "username": "u",
+    "password": "p"
+  },
+  "timeoutMs": 30000,
   "query": "SELECT title, author, year FROM books WHERE id = ${bookId}",
   "expected": {
     "row_count": 1,
