@@ -383,4 +383,145 @@ any other step.
 - `db_type` is validated at step-creation time by `StepConfigValidator`
   (course-service); the executor fail-fasts early if a legacy row slips through.
 
+---
+
+## UC-10: Lecturer manages the Docker image library
+
+**Actor:** lecturer (`X-User-Id` header).
+**Service:** course-service (`:8081`, or via gateway for `/api/v1/docker-images/**`).
+
+**Preconditions:** service running; lecturer UUID chosen.
+
+### Step 1 — Register an image
+
+```
+POST /api/v1/docker-images
+X-User-Id: <lecturer-uuid>
+{ "name": "Postgres 16", "imageUrl": "postgres:16", "description": "..." }
+```
+
+Validation (single-sourced in `Constant.Image.IMAGE_URL_REGEX`):
+- `imageUrl` must be `registry[:port]/repo:tag` **or** `name@sha256:<digest>` —
+  userinfo (`user:pass@`) is rejected; digest pinning is accepted.
+- The tag must be **explicit**: `:latest` is forbidden (grading reproducibility).
+- `name` ≤ 255 chars, `imageUrl` ≤ 500 chars (`@Size` on the request DTO).
+
+Expected: `201` with `data = {id, name, imageUrl, description}`.
+The owning lecturer's `X-User-Id` is stamped as `ownerId`.
+
+### Step 2 — List / search / get images
+
+```
+GET /api/v1/docker-images?name=postgres&page=0&size=20
+GET /api/v1/docker-images/{id}
+```
+
+Expected: paged/global read (all lecturers can see the shared library).
+`?name=` does a case-insensitive contains filter on image name.
+
+### Step 3 — Update / delete an image
+
+```
+PUT  /api/v1/docker-images/{id}  { "imageUrl": "postgres:17" }
+DELETE /api/v1/docker-images/{id}
+```
+
+Only the owning lecturer (or the system principal for backfilled defaults)
+can mutate; everyone else gets `404` (identity is not silently ignored).
+`DELETE` returns `409` if any `assignment_docker_images` row still references
+the image — deleting a shared image would silently remove an image from the
+executor's grading-config fetch for assignments that depend on it.
+
+---
+
+## UC-11: Lecturer links images to an assignment
+
+**Actor:** lecturer.
+**Service:** course-service.
+
+**Preconditions:** image(s) registered (UC-10); assignment exists and is owned by the lecturer.
+
+### Step 1 — Full-sync the image set
+
+```
+PUT /api/v1/assignments/{id}/docker-images
+X-User-Id: <lecturer-uuid>
+{ "dockerImageIds": ["<uuid>", ...] }
+```
+
+Full-sync replace: old links are soft-deleted, then the supplied ids are inserted.
+- `dockerImageIds = null` (missing `@NotNull`) → `400`.
+- `dockerImageIds = []` → clears all images (documented PUT semantics).
+- Duplicate ids are collapsed once up front (the partial unique index
+  `idx_assign_docker_unique WHERE deleted_at IS NULL` would otherwise 409 on a repeat).
+- An unknown/soft-deleted id → `400 "unknown or soft-deleted"`.
+- `404` if the assignment doesn't belong to the caller.
+
+---
+
+## UC-12: Student views allowed images for an assignment
+
+**Actor:** student (`X-User-Id` header).
+**Service:** course-service.
+
+**Preconditions:** assignment exists and is published; student is enrolled in its class.
+
+### Step 1 — Read the allowed images
+
+```
+GET /api/v1/student/assignments/{id}/docker-images
+X-User-Id: <student-uuid>
+```
+
+Expected: `200` with `[{id, name, imageUrl, description}, ...]` — only images
+linked to the published assignment, gated by the same `requireVisible` guard
+that hides the assignment itself (published + enrolled).
+
+---
+
+## UC-13: Executor pre-pulls images before grading
+
+**Actor:** executor-service (one `@Scheduled` scanner per pod; `ENSURE_IMAGES` at grading boot).
+**Service:** executor-service + course-service (internal HTTP).
+
+**Preconditions:** assignment linked to images (UC-11); service running.
+
+### Step 1 — Periodic scanner
+
+Each executor pod, every `executor.image-scan.interval-ms` (default 5 min):
+
+1. `CourseInternalClient.images()` → `GET /api/v1/internal/docker-images`
+   returns the active image URLs (`List<String>`, no envelope).
+2. For each URL, inspect the local DinD store:
+   - present → mark `PULLED`, record `last_checked_at`.
+   - absent → `pullImageCmd` bounded by `pull-timeout-ms` → `PULLED` or `FAILED`,
+     record `last_pulled_at` / `error_message`.
+3. Upsert per-pod state in `docker_image_state` (`(image_url, pod_id)` unique).
+4. A `FAILED` row is skipped until `fail-backoff-ms` elapses (Docker Hub rate-limit mitigation).
+5. Per-image errors never abort the cycle.
+
+### Step 2 — Grading-time guarantee (`ENSURE_IMAGES`)
+
+Inside `GradingOrchestrator.grade()`, after the DB-port pre-scan and before
+`composeRunner.boot()`:
+
+1. For each image the assignment declares, inspect then pull (bounded) if absent.
+2. Pull failure → job `FAILED` naming the image (fail-fast, like the `db_type` guard).
+3. The existing `finally` still releases the port.
+
+This closes the `emptyDir` race: a pod restart wipes its DinD store, so the
+periodic scanner re-warms each pod and `ENSURE_IMAGES` guarantees the image
+before compose boot.
+
+### Notes
+
+- The internal endpoint is **not** routed by the gateway (`/api/v1/internal/**` absent
+  from `application.yaml`), so only the executor reaches it.
+- `dockerImageUrls` is populated by `TestPlanService.internalGradingConfig` from
+  `assignment_docker_images`; the executor receives it as part of `AssignmentGradingConfigDto`.
+- `syncAssignmentImages` does not check `published` — changing the image set on a
+  published assignment changes the pre-pull list but not the graded workload
+  (compose decides the runtime image). Deleting an image still referenced by a
+  live assignment is blocked with `409`.
+
 

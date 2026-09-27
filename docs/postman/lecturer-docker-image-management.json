@@ -1,0 +1,114 @@
+{
+  "info": {
+    "_postman_id": "7e8f3a1b-2026-09-27-lecturer-docker-image-management",
+    "name": "Lecturer Docker Image Management",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Docker image",
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "X-User-Id", "value": "<lecturer-uuid>"},
+          {"key": "Content-Type", "value": "application/json"}
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"name\": \"Postgres 16\", \"imageUrl\": \"postgres:16\", \"description\": \"DB image\" }"
+        },
+        "url": { "raw": "http://localhost:8081/api/v1/docker-images", "host": "localhost", "port": "8081", "path": ["api", "v1", "docker-images"] }
+      },
+      "response": [
+        {
+          "name": "201 Created",
+          "status": { "code": 201, "name": "Created" },
+          "header": [{"key": "Content-Type", "value": "application/json"}],
+          "body": "{ \"id\": \"550e8400-e29b-41d4-a716-446655440000\", \"name\": \"Postgres 16\", \"imageUrl\": \"postgres:16\", \"description\": \"DB image\" }"
+        },
+        {
+          "name": "400 validation",
+          "status": { "code": 400, "name": "Bad Request" },
+          "body": "{ \"code\": 400, \"message\": \"image_url must be registry/repo:tag (explicit tag, ':latest' forbidden) or name@sha256:<digest>\", \"detail\": null }",
+          "comment": "Triggered by 'nginx:latest' or a bare string."
+        }
+      ]
+    },
+    {
+      "name": "List images (with optional name filter)",
+      "request": {
+        "method": "GET",
+        "header": [{"key": "X-User-Id", "value": "<lecturer-uuid>"}],
+        "url": { "raw": "http://localhost:8081/api/v1/docker-images?name=postgres&page=0&size=20", "host": "localhost", "port": "8081", "path": ["api", "v1", "docker-images"], "query": [{"key": "name", "value": "postgres"}, {"key": "page", "value": "0"}, {"key": "size", "value": "20"}] }
+      },
+      "response": [
+        {
+          "name": "200 OK (paged)",
+          "status": { "code": 200, "name": "OK" },
+          "body": "{ \"content\": [{ \"id\": \"...\", \"name\": \"Postgres 16\", \"imageUrl\": \"postgres:16\", \"description\": null }], \"totalElements\": 1, \"totalPages\": 1, \"size\": 20, \"number\": 0 }"
+        }
+      ]
+    },
+    {
+      "name": "Update image",
+      "request": {
+        "method": "PUT",
+        "header": [{"key": "X-User-Id", "value": "<lecturer-uuid>"}, {"key": "Content-Type", "value": "application/json"}],
+        "body": { "mode": "raw", "raw": "{ \"imageUrl\": \"postgres:17\" }" },
+        "url": { "raw": "http://localhost:8081/api/v1/docker-images/550e8400-e29b-41d4-a716-446655440000", "host": "localhost", "port": "8081", "path": ["api", "v1", "docker-images", "550e8400-e29b-41d4-a716-446655440000"] }
+      },
+      "response": [
+        { "name": "200 OK", "status": { "code": 200 }, "body": "{ \"id\": \"...\", \"name\": \"Postgres 16\", \"imageUrl\": \"postgres:17\", \"description\": null }" },
+        { "name": "404 not-owner", "status": { "code": 404 }, "body": "{ \"code\": 404, \"message\": \"Docker image not found: ...\", \"detail\": null }", "comment": "Another lecturer's image." }
+      ]
+    },
+    {
+      "name": "Delete image (409 when referenced)",
+      "request": {
+        "method": "DELETE",
+        "header": [{"key": "X-User-Id", "value": "<lecturer-uuid>"}],
+        "url": { "raw": "http://localhost:8081/api/v1/docker-images/550e8400-e29b-41d4-a716-446655440000", "host": "localhost", "port": "8081", "path": ["api", "v1", "docker-images", "550e8400-e29b-41d4-a716-446655440000"] }
+      },
+      "response": [
+        { "name": "200 OK", "status": { "code": 200 } },
+        { "name": "409 conflict", "status": { "code": 409 }, "body": "{ \"code\": 409, \"message\": \"Cannot delete an image still referenced by an assignment\", \"detail\": null }" }
+      ]
+    },
+    {
+      "name": "Link images to an assignment",
+      "request": {
+        "method": "PUT",
+        "header": [{"key": "X-User-Id", "value": "<lecturer-uuid>"}, {"key": "Content-Type", "value": "application/json"}],
+        "body": { "mode": "raw", "raw": "{ \"dockerImageIds\": [\"550e8400-e29b-41d4-a716-446655440000\"] }" },
+        "url": { "raw": "http://localhost:8081/api/v1/assignments/<assignment-id>/docker-images", "host": "localhost", "port": "8081", "path": ["api", "v1", "assignments", "<assignment-id>", "docker-images"] }
+      },
+      "response": [
+        { "name": "200 OK" },
+        { "name": "400 null or unknown id", "status": { "code": 400 }, "body": "{ \"code\": 400, \"message\": \"One or more docker image ids are unknown or soft-deleted\", \"detail\": null }", "comment": "Missing @NotNull on null; or an id not in docker_images." },
+        { "name": "404 not-owner", "status": { "code": 404 }, "body": "{ \"code\": 404, \"message\": \"Assignment not found: ...\", \"detail\": null }" }
+      ]
+    },
+    {
+      "name": "Student reads allowed images",
+      "request": {
+        "method": "GET",
+        "header": [{"key": "X-User-Id", "value": "<student-uuid>"}],
+        "url": { "raw": "http://localhost:8081/api/v1/student/assignments/<assignment-id>/docker-images", "host": "localhost", "port": "8081", "path": ["api", "v1", "student", "assignments", "<assignment-id>", "docker-images"] }
+      },
+      "response": [
+        { "name": "200 OK", "status": { "code": 200 }, "body": "[{ \"id\": \"550e8400-e29b-41d4-a716-446655440000\", \"name\": \"Postgres 16\", \"imageUrl\": \"postgres:16\", \"description\": null }]", "comment": "Published assignment + enrolled student only." },
+        { "name": "404 unpublished or not enrolled", "status": { "code": 404 } }
+      ]
+    },
+    {
+      "name": "Executor internal read (not gateway-routed)",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "http://localhost:8081/api/v1/internal/docker-images", "host": "localhost", "port": "8081", "path": ["api", "v1", "internal", "docker-images"] }
+      },
+      "response": [
+        { "name": "200 OK", "status": { "code": 200 }, "body": "[\"postgres:16\", \"openjdk:17\"]", "comment": "Raw list of active image URLs. The executor's CourseInternalClient consumes this; /api/v1/internal/** is not routed by the gateway." }
+      ]
+    }
+  ]
+}
