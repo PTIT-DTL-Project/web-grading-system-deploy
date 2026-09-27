@@ -99,6 +99,8 @@ Step là một HTTP request đơn lẻ trong plan. Xem [grading-full-flow.md §4
 | `PATCH` | Cập nhật một phần | `/api/v1/books/123` |
 | `DELETE` | Xóa | `/api/v1/books/123` |
 
+> **`timeoutMs` cross-cutting:** DB steps (`DB_QUERY`, `DB_SCHEMA_CHECK`, `DB_MIGRATION`) cũng đọc `timeoutMs` từ **step config** (`"timeoutMs": <ms>`), fallback vào `ctx.timeoutMs()` (giống HTTP). Xem `Constant.DbStep.TIMEOUT_MS`.
+
 ### 3.3 Các Giá Trị Hợp Lệ Của `expected_status`
 
 | Giá trị | Ý nghĩa | Thường dùng khi |
@@ -128,6 +130,39 @@ Step là một HTTP request đơn lẻ trong plan. Xem [grading-full-flow.md §4
   "timeoutMs": 5000
 }
 ```
+
+### 3.5 DB Steps (`DB_QUERY` / `DB_SCHEMA_CHECK` / `DB_MIGRATION`) — block `connection`
+
+Ba step type DB dùng chung block `connection` để kết nối vào DB trong docker-compose của sinh viên.
+Chi tiết: [design-db-v1.0.md §2.3](design-db-v1.0.md).
+
+| Trường | Kiểu | Bắt buộc | Mặc định | Mô tả |
+|--------|------|----------|----------|--------|
+| `db_type` | String | ❌ | `postgres` | Engine: `postgres` \| `mysql` \| `mariadb` (không phân biệt hoa thường) — chọn JDBC dialect (`DbDialectRegistry` trong executor). `mariadb` = alias của `mysql` (wire-compatible). Giá trị khác → 400 lúc lưu step |
+| `db_service` | String | ❌ | `db` | Tên service DB trong compose — executor expose port của service này ra host |
+| `db_port` | int | ❌ | Theo engine: 5432 / 3306 | Port DB nghe trong container |
+| `database` | String | ❌ | — | Tên database (cần để kết nối) |
+| `username` | String | ❌ | — | Tài khoản (cần để kết nối) |
+| `password` | String | ❌ | — | Mật khẩu (cần để kết nối) |
+
+```json
+{
+  "connection": {
+    "db_type": "mysql",
+    "db_service": "db",
+    "database": "bookstore",
+    "username": "root",
+    "password": "root"
+  },
+  "query": "SELECT title FROM books"
+}
+```
+
+Lưu ý multi-DBMS:
+- Dialect quyết định URL JDBC + SQL kiểm tra schema engine-specific (`service/db/` trong executor-service). SQL của `DB_QUERY`/`DB_MIGRATION` do giảng viên viết → tự chịu đặc thù engine.
+- Driver nạp sẵn: `org.postgresql:postgresql` + `com.mysql:mysql-connector-j` (mysql/mariadb) — scope `runtime`.
+- Validation hai tầng: `StepConfigValidator` (course-service) chặn `db_type` lạ lúc lưu; executor fail-fast lúc chấm (legacy rows) trước khi cấp port.
+- DB executors are **built and registered** in `StepRegistry`: `DB_QUERY`, `DB_SCHEMA_CHECK`, `DB_MIGRATION` now resolve to real executors (previously `UNKNOWN_STEP_TYPE` → `FAILED`). Connection failures wrap with `Constant.Message.Db` dialect hint; lecturer SQL errors wrap with `Constant.Message.Db.SQL_EXECUTION_ERROR`. Each executor runs inside the existing `runSteps` wrapper (after compose boot), so the `ENSURE_IMAGES` slot stays empty and Axis 2 image pre-pull remains an untouched future seam.
 
 ---
 

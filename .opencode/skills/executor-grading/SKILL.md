@@ -1,6 +1,6 @@
 ---
 name: executor-grading
-description: Executor-service grading pipeline - Kafka GRADE_SUBMISSION consume, RustFS zip download, Testcontainers compose boot via DinD, HTTP step execution, scoring, result reporting. Use when touching executor-service grading flow, GradingOrchestrator, DockerComposeRunner/Patcher, step executors, or the result-service internal write API.
+description: Executor-service grading pipeline - Kafka GRADE_SUBMISSION consume, RustFS zip download, Testcontainers compose boot via DinD, HTTP step execution, scoring, result reporting, multi-DBMS DB grading (connection.db_type dialect layer). Use when touching executor-service grading flow, GradingOrchestrator, DockerComposeRunner/Patcher, step executors, DbDialect/service-db package, DB port pre-scan, or the result-service internal write API.
 ---
 
 # Executor grading pipeline conventions
@@ -34,12 +34,28 @@ first service with `ports`, fallback first service; port rewrite
 `<allocated>:<dockerComposePort|8080>` from `PortAllocator` (20000–30000, in-pod
 map); `deploy.resources.limits` injected on every service; `privileged:true` and
 `docker.sock` mounts are rejected → job `FAILED`. All branches unit-tested, no
-daemon needed. DB port remapping is deferred (HTTP-only MVP).
+daemon needed. DB port patching (Phase 1, 2026-09-26): when any plan step has a
+`DB_*` type, `grade()` calls `scanDbRequirements(plans)` — reads the first DB
+step's `connection` block (`db_service`, `db_port`, `db_type`), resolves the
+engine through `DbDialectRegistry` (unknown `db_type` → job FAILED *before* any
+port is claimed; omitted `db_port` → dialect default 5432/3306) →
+`PortAllocator.claimDbPort()` (same 20000–30000 BitSet as `claim()`, so app/DB
+ports can't collide) →
+`writeEffectiveCompose` appends `<hostPort>:<containerPort>` to that service's
+`ports` list (never replaces); service missing from compose → WARN only, the DB
+step later fails with a clear connection error. Released in `finally`.
 
 ## 4. Step execution scope (MVP)
 
-Only `HTTP_REQUEST` has an executor. Unknown types (DB_*, etc.) resolve to a
+Four step executors are registered in `StepRegistry`: `HTTP_REQUEST`,
+`DB_QUERY`, `DB_SCHEMA_CHECK`, `DB_MIGRATION`. Unknown types resolve to a
 `FAILED` step row with "Unknown step type" — never throw out of the loop.
+Each DB executor runs inside the existing `runSteps` wrapper (after compose
+boot) so the `ENSURE_IMAGES` slot stays empty — Axis 2 image pre-pull
+remains a future seam. DB executors go through the dialect layer (§8) so
+they are engine-agnostic from day one; connection failures wrap with
+`Constant.Message.Db` dialect hint, lecturer SQL errors wrap with
+`Constant.Message.Db.SQL_EXECUTION_ERROR`.
 `planId != null` runs only that plan, else all plans sequentially.
 Required-step failure stops the plan (rest `SKIPPED` + persisted rows), next plan
 continues. Global `executionTimeoutMs` deadline → job `FAILED`.
@@ -96,3 +112,59 @@ queued/grading — callers poll. New internal endpoints need a Postman request w
 - `GradingOrchestrator.grade()` uses `safeMessage(e)` helper and `cleanupWorkDir()`
   instead of inline try-with-resources.
 - All production code follows Allman bracket style (`{` on next line).
+- **Jackson 3 (`tools.jackson`) uses `JsonNode.asString()`, not the deprecated
+  `asText()`** — if you touch any code reading a JsonNode, use `.asString()`.
+  See `java-spring-boot-backend/SKILL.md` §10 and `AGENTS.md`.
+
+## 9. Multi-DBMS dialect layer + future image pre-pull seam (v1.1, 2026-09-26)
+
+Two **orthogonal axes** — never conflate them:
+
+- **Axis 1: how to talk to the DB** (built). Engine comes from explicit
+  `connection.db_type` — default `postgres`, allow-set `{postgres, mysql,
+  mariadb}` (case-insensitive; `mariadb` = alias of the `mysql` dialect,
+  wire-compatible). No auto-inference from compose image names (user decision
+  2026-09-26 — a custom `myfork/postgres:15` image still uses the postgres
+  dialect). Package `service/db/`:
+  - `DbDialect` interface: `keys()`, `defaultPort()`, `jdbcUrl(hostPort, db)`,
+    4 schema-check SQLs (`tableExistsSql` → COUNT; `columnExistsSql` → returns
+    `data_type` so existence+type = one query; `primaryKeySql`/`indexExistsSql`
+    → COUNT), `sameType(expected, actual)` normalization.
+  - `PostgresDialect` (5432, `table_schema='public'`, `pg_indexes`,
+    alias normalization `character varying`→`varchar` etc.);
+    `MysqlDialect` (3306, `table_schema=DATABASE()`,
+    `information_schema.statistics`, strips display widths, `tinyint(1)`→boolean;
+    URL MUST carry `useSSL=false&allowPublicKeyRetrieval=true` or mysql:8
+    caching_sha2 auth fails).
+  - `DbDialectRegistry` is **bean-collected** (StepRegistry pattern): adding an
+    engine = 1 new `@Component` + maybe 1 driver dep, zero registry edits;
+    blank/null key → default engine; unknown key → `IllegalArgumentException`
+    listing `Constant.DbConnection.ALLOWED_DB_TYPES` (ordered list, not a
+    Set — deterministic message). Guards default engine presence at startup.
+  - Two-tier validation: `StepConfigValidator` (course-service) rejects unknown
+    `db_type` at save time; `scanDbRequirements()` fails fast during grading
+    (legacy rows) **before ports are claimed**. Connection-failure messages use
+    `Constant.Message.Db` dialect hint. Drivers: `org.postgresql:postgresql` +
+    `com.mysql:mysql-connector-j`, both `runtime` scope.
+  - DB_QUERY/DB_MIGRATION SQL stays **lecturer-written** (engine-specific by
+    nature); only schema-check SQL + JDBC URLs are dialect-owned.
+   - **DB error-labelling rule (durable):** `DbStepResults.message(SQLException)` is the single place that decides the `errorMessage` prefix. `DbConnectionException` (connect retry exhausted) and `DbStepTimeoutException` (budget exhausted) surface their message verbatim; every other `SQLException` is prefixed `Constant.Message.Db.SQL_EXECUTION_ERROR`. The three DB executors call `DbStepResults.message(e)`, never a local variant. `withConnection` throws `DbConnectionException` / `DbStepTimeoutException`; never a plain `SQLException`.
+     See `docs/design/vi/db-step-execution-flow-v1.0.md` §7.
+- **Axis 2: getting bytes on the box** (FUTURE — lecturer registers images
+  like DB images/Java SDKs; async task scans and pulls missing ones). NOT
+  built; structure reserved so it needs no surgery:
+  1. `GradingOrchestrator.scanDbRequirements(plans)` is the **named seam** —
+     its future sibling `scanImageRequirements(...)` sits beside it in `grade()`
+     (same pre-boot phase, independent concern).
+  2. Insertion point for a future `ENSURE_IMAGES` saga step: between the
+     pre-scan/port-claim block and `composeRunner.boot()` — or an independent
+     `@Scheduled` scanner if pulls must not block grading. Deliberately not
+     fixed yet; either choice never reorders existing steps.
+  3. `DockerComposePatcher.load()`/`servicesOf()` are static and
+     side-effect-free — reuse them to enumerate `image:` entries instead of
+     re-parsing YAML.
+  4. Config will follow the `ExecutorProperties` nested-record pattern (e.g.
+     a future `ImageScan` record). No placeholder config exists today (YAGNI).
+  5. Persistence already designed: `docker_images` +
+     `assignment_docker_images` (`design-db-v1.0.md` §2.2) — the feature needs
+     no schema change.
