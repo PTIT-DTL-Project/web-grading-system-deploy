@@ -693,3 +693,35 @@ while reorganizing constants; duplicate constructors cause
 `'Constant()' is already defined` compilation errors. Prefer an empty private
 constructor unless an explicit defensive exception is required by the project.
 
+## 18. Review-comment references must be real; bulk writes must be re-keyed per service
+
+Two hard rules surfaced by the Pullfrog review of the Docker-image feature:
+
+1. **Never leave `Pullfrog PR #N` in review comments.** Every `// Review:` marker
+   must cite the actual PR number the comment landed in. A `#N` placeholder
+   makes the trace unresolvable for future readers and is caught by reviewer
+   lint. Audit all comment sites when a PR merges.
+2. **Never copy a bulk repository call (a `@Modifying` update, or any call that
+   mutates a table keyed by an id) from one service to another without
+   verifying which column it binds.** `docker_images.id` and `assignments.id` are
+   independent UUID sequences from separate generators — a call keyed on
+   `assignment_id` with an image-id argument writes nothing in the normal case
+   and silently detaches another lecturer's data if it ever matches. Before
+   moving a repository call, trace the `@Param` binding against the argument's
+   domain identity, and re-check whether the source service's *comment*
+   describes its own behaviour or was copied verbatim.
+
+   Safe-pattern test: if the call's `@Param` name does not match the argument
+   you are passing, it is wrong.
+
+## 19. Unreachable cascade is still wrong
+
+If a repository query is guarded by `@SQLRestriction("deleted_at IS NULL")`
+(or equivalent), a caller that reaches its post-guard branch has **zero
+live rows to touch**. Adding a cascade `@Modifying` write there is a no-op
+and adds no value; if the guard's intent is to *refuse* (throw on live rows),
+the cascade is unreachable by design and should be removed rather than
+added. When in doubt, run a grep for the repository method and read its
+`@Query`/derived-name binding before assuming it operates on the same id
+space as the caller.
+
