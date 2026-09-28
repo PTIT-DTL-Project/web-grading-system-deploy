@@ -189,6 +189,24 @@ Two **orthogonal axes** — never conflate them:
       needs no schema change; V7 adds the per-pod `docker_image_state`
       table with a partial unique index on `(image_url, pod_id)`.
 
+   6. **Store matching (durable).** `DockerImageGatewayImpl` (via
+      `DockerClientFactory`) honors `DOCKER_HOST=tcp://localhost:2375`; the
+      containerized compose boot binds
+      `DockerClientFactory.getRemoteDockerUnixSocketPath()`, which resolves to
+      hardcoded `/var/run/docker.sock` when the scheme is `tcp`, and that bind
+      is resolved daemon-side by the `docker:27-dind` sidecar. Only `dind` is
+      `privileged: true`, so exactly one daemon exists in the pod — the two
+      endpoints reach the same image store. Latent fragility: switching
+      `DOCKER_HOST` to a `unix://` scheme or setting
+      `TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` would require this to be
+      re-verified.
+   7. **Grading-time pull is deliberately backoff-free.** `ensureImages` does
+      not consult `docker_image_state` FAIL backoff and has no cross-job
+      dedup. The exposure is bounded by the single-job `Semaphore(1)` gate
+      (one pull per pod at a time), `present()` short-circuits the steady
+      state, and `pull()` is capped by `pullTimeoutMs`. Known gap; tracked,
+      not fixed here.
+
 ## 10. DB integration tests (Testcontainers 2.x)
 
 Module artifacts renamed in Testcontainers 2.x (managed by the Spring Boot 4 parent BOM — no version needed):
