@@ -24,7 +24,7 @@
 
 ## 1. Tổng quan Assertion Engine
 
-Assertion Engine (`executor-service/service/AssertionEngine.java`) kiểm tra response từ app sinh viên so với các điều kiện được định nghĩa trong step config.
+Assertion Engine (`executor-service/service/scoring/AssertionEngine.java`) kiểm tra response từ app sinh viên so với các điều kiện được định nghĩa trong step config.
 
 ### Quy trình tổng thể
 

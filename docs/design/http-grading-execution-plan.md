@@ -60,10 +60,10 @@ Every HTTP step saves both, even on `ERROR` (timeout, connection refused).
 
 | File | Action |
 | `executor-service/pom.xml` | + `com.jayway.jsonpath:json-path:2.9.0` (Jackson provider) |
-| `service/VariableContext.java` | new — `${var}` substitution map |
+| `service/scoring/VariableContext.java` | new — `${var}` substitution map |
 | `util/GsonStructureComparator.java` | new — unordered structure compare |
-| `service/AssertionEngine.java` | new — 5-kind evaluator |
-| `service/step/HttpStepExecutor.java` | new — implements `StepExecutor`, uses `HttpClient` + `AssertionEngine` + `HttpLogService` |
+| `service/scoring/AssertionEngine.java` | new — 5-kind evaluator |
+| `service/step/impl/HttpStepExecutor.java` | new — implements `StepExecutor`, uses `HttpClient` + `AssertionEngine` + `HttpLogService` |
 
 ## 8. Verification
 

@@ -422,12 +422,12 @@ Tất cả 3 executor test dùng **mock** `DbConnectionHelper` (no Docker) → n
 | `service/db/DbConnectionHelper.java` | Mở JDBC connection, retry, dialect hint |
 | `service/db/DbDialectRegistry.java` | Bean-collect `DbDialect` |
 | `service/db/DbDialect.java` | Interface dialect (SQL, URL, `sameType`) |
-| `service/db/PostgresDialect.java` | Postgres dialect |
-| `service/db/MysqlDialect.java` | MySQL/MariaDB dialect |
-| `service/step/DbQueryExecutor.java` | `DB_QUERY` executor |
-| `service/step/DbSchemaCheckExecutor.java` | `DB_SCHEMA_CHECK` executor |
-| `service/step/DbMigrationExecutor.java` | `DB_MIGRATION` executor |
+| `service/db/impl/PostgresDialect.java` | Postgres dialect |
+| `service/db/impl/MysqlDialect.java` | MySQL/MariaDB dialect |
+| `service/step/impl/DbQueryExecutor.java` | `DB_QUERY` executor |
+| `service/step/impl/DbSchemaCheckExecutor.java` | `DB_SCHEMA_CHECK` executor |
+| `service/step/impl/DbMigrationExecutor.java` | `DB_MIGRATION` executor |
 | `service/step/DbStepResults.java` | Shared `GradingStepResult` factory |
 | `Constant.java` (`DbStep`, `DbConnection`, `Message.Db`) | String constants + messages |
 | `service/step/StepRegistry.java` | Bean-collected executor registry |
-| `service/GradingOrchestrator.java` (`runStep`) | Cầu nối → `executor.execute(StepContext)` |
+| `service/grading/GradingOrchestrator.java` (`runStep`) | Cầu nối → `executor.execute(StepContext)` |

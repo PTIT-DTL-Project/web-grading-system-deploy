@@ -252,3 +252,36 @@ Guard Docker availability with `org.testcontainers.DockerClientFactory.instance(
       Assert the parsed `actual` field (`.asString()`) to pin
       which projection the executor used.
     - **Reflection unit tests for private methods.** `GradingOrchestratorTest` exercises private `scanDbRequirements`/`autoInjectExtracts` through a reflected helper; `ImageEnsureTest` mirrors this for the new private `ensureImages`. When the constructor arity grows (GradingOrchestrator is now 15 positional args across 5 call sites) every site must be updated — the concrete reason the project bans >2 positional args in favor of `@Builder`.
+
+## 11. Package layout (responsibility split, 2026-09-28)
+
+`executor-service` source root `vn.edu.ptit.web_grading_system.executor_service`:
+
+- `service/grading/` — `GradingOrchestrator`, `SagaTracker`, `ResetGradingJobService`
+- `service/docker/` (+ `impl/` for `DockerImageGatewayImpl`) — `DockerImageGateway`,
+  `DockerComposeRunner`, `DockerComposePatcher`, `ImageScanner`, `StaleJobReaper`
+- `service/scoring/` — `ScoreCalculator`, `AssertionEngine`, `VariableContext`
+- `service/infra/` — `PortAllocator`, `ArtifactService`, `HttpLogService`
+- `service/step/` — `StepExecutor`, `StepRegistry`, `DbStepResults`; executors live in
+  `service/step/impl/` (`HttpStepExecutor`, `DbQueryExecutor`, `DbMigrationExecutor`,
+  `DbSchemaCheckExecutor`)
+- `service/db/` — `DbDialect`, `DbDialectRegistry`, `DbConnectionHelper`; dialect
+  implementations in `service/db/impl/` (`MysqlDialect`, `PostgresDialect`)
+- `exception/` — `ImagePullException`, `DbConnectionException`, `DbStepTimeoutException`
+- `entity/` (singular) and `repository/` (singular) — entity + Spring Data packages.
+
+Rules learned while doing the split:
+
+- An interface's hand-written implementation goes in `<pkg>/impl/`, and tests follow the
+  class they primarily exercise (`ImageEnsureTest` → `service/grading/`, `DbDialectTest` →
+  `service/db/impl/`). Test helpers `TestMysqlContainer`/`TestPostgresContainer` move with
+  their only users (they are package-private).
+- Splitting a package turns implicit same-package visibility into hard errors: every
+  cross-package reference needs a new explicit import (compile loop: `mvn -q clean compile`
+  until clean). Package-private types used from a sub/sibling package must become
+  `public` (`DbStepResults` + its two static factories).
+- `config/` must NOT be relocated: `logback-spring.xml` hardcodes the FQN
+  `…executor_service.config.ReadableLogstashEncoder`, and
+  `application.yaml` keys the root logger as `vn.edu.ptit.web_grading_system` (level only —
+  safe). Import statements *inside* `config/` still need rewriting when they point at moved
+  classes.

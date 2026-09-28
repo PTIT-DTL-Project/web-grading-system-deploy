@@ -192,7 +192,7 @@
 
   stdlib  VariableContext.substitute() — custom ${var} regex replacement;
           java.text.MessageFormat or String.replace covers it.
-          [executor-service/.../service/VariableContext.java]
+          [executor-service/.../service/scoring/VariableContext.java]
 
   stdlib  GsonStructureComparator.sameStructure() — Jackson JsonNode.equals()
           compares structure; custom deep comparison is redundant.

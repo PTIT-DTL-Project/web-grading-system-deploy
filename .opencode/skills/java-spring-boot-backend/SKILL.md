@@ -725,3 +725,63 @@ added. When in doubt, run a grep for the repository method and read its
 `@Query`/derived-name binding before assuming it operates on the same id
 space as the caller.
 
+## 20. Package structure: singular names + responsibility split (mandatory)
+
+### 20.1 Package names are singular
+
+Every package name is singular, matching the convention Spring itself uses
+(`@Service` → `service`, `@Repository` → `repository`, `@Controller` → `controller`):
+
+`entity`, `repository`, `service`, `config`, `controller`, `mapper`,
+`client`, `dto`, `event`, `util`, `exception`.
+
+Never `entities` or `repositories`. This is not optional on any service.
+
+### 20.2 `service/` splits by responsibility
+
+When a `service/` package holds more than roughly six unrelated classes,
+split it into job-named subpackages (executor-service uses
+`grading/`, `docker/`, `scoring/`, `step/`, `db/`, `infra/`).
+Pick the subpackage name from the *job* the class performs, not its
+adjective or noun form.
+
+### 20.3 Interface + hand-written impl live in `<pkg>/impl/`
+
+An interface with a hand-written implementation puts the implementation in
+`<pkg>/impl/`, and the test for that implementation follows the same path.
+
+Two deliberate exclusions:
+- **Spring Data repositories** stay flat — their implementation is a
+  Spring-generated proxy, and a physical impl file would conflict.
+- **MapStruct mappers** stay flat by default — generated code lands in the
+  mapper's own package. Nest them only if `implementationPackage` is set
+  explicitly on the `@Mapper` annotation.
+
+### 20.4 Exceptions live in `exception/`
+
+Top-level exception classes are never buried inside `service/` or a subpackage.
+They belong in `exception/` at the service root.
+
+### 20.5 `config/` is never relocated
+
+`config/` must not move. `logback-spring.xml` hardcodes the encoder FQN
+(`…config.ReadableLogstashEncoder`), and application config keys the root
+logger off the service root package. Moving `config/` silently breaks startup
+logging. Import statements *inside* `config/` may still need rewriting when a
+class it imports is moved elsewhere.
+
+### 20.6 Tests mirror the class they exercise
+
+A test class lives in the package of the class it primarily tests, not in a
+flat `service/` mirror. After a split, a test that used to sit next to the
+moved class is relocated alongside it.
+
+### 20.7 Splitting a package is not only renames
+
+Classes that shared a package had **no import statements** for each other.
+Moving one into a subpackage turns that implicit visibility into a compile
+error: add explicit imports for every formerly-adjacent type, then run a
+compile loop (`mvn -q clean compile` → fix → repeat) until clean. If a
+package-private type is used from the new subpackage, promote it to `public`
+and state why in a short in-file comment.
+
