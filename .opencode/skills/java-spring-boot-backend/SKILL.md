@@ -756,6 +756,14 @@ Two deliberate exclusions:
 - **MapStruct mappers** stay flat by default — generated code lands in the
   mapper's own package. Nest them only if `implementationPackage` is set
   explicitly on the `@Mapper` annotation.
+- **Impl-suffix convention — one impl → keep `Impl`; several → variant names.**
+  `DockerImageGatewayImpl` is the only class in any `impl/` folder that
+  keeps the suffix; the six others (`MysqlDialect`, `PostgresDialect`,
+  `HttpStepExecutor`, `DbQueryExecutor`, `DbMigrationExecutor`,
+  `DbSchemaCheckExecutor`) dropped it because they belong to groups of
+  several. Do **not** rename a lone impl to match its interface's simple
+  name — the two then share a simple name in adjacent packages and the
+  consumer must disambiguate which it means.
 
 ### 20.4 Exceptions live in `exception/`
 
