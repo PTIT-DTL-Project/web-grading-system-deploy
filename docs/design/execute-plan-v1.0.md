@@ -56,7 +56,7 @@ Toàn bộ grading là **bất đồng bộ**: sinh viên nộp xong nhận ngay
 **SubmissionService.handleUploadComplete** (khi RustFS webhook báo file đã lên — trigger duy nhất):
 
 1. Cập nhật `submissions.status = PENDING` (đã có).
-2. Nếu submission đang có `latest = true` cũ → set `latest = false` (đã có ở bước tạo presigned).
+2. Nếu submission đang có `latest = true` cũ → set `latest = false` cho **mọi** hàng cũ (tự-heal nếu đua cùng lúc; repository trả `List`).
 3. Publish message vào Kafka topic `wgs-events` (`action=GRADE_SUBMISSION`, envelope `{action, version, timestamp, traceId, payload}`), key = `submissionId`.
 
 ```json

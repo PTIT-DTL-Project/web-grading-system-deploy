@@ -398,6 +398,14 @@ Factories go on the DTO when no entity import is needed; otherwise put the
 builder chain directly at the call site in the service.
 The rule triggers at >2 positional args — 1-2 arg constructors are fine as-is.
 
+## 12.8. Controller @ExceptionHandler tests must use real Spring resolution
+
+A controller test that calls the `@ExceptionHandler` method directly (or
+calls the controller method and catches the raw exception) cannot fail if the
+`@ExceptionHandler` annotation is later deleted — it asserts a method's return
+value, not that Spring wires the handler. For any new/changed exception handler,
+use `MockMvcBuilders.standaloneSetup(new Controller(...)).setControllerAdvice(new GlobalExceptionHandler())` and `perform(...)` so the real `ExceptionHandlerExceptionResolver` runs. `spring-boot-starter-test` is already on every service's classpath. (This caught a `MissingRequestHeaderException` → 500 gap in submission-service.)
+
 ## 13. Verification
 
 - Compile success is NOT verification. Tests must pass (`./mvnw test`).

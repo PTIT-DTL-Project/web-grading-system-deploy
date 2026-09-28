@@ -262,10 +262,11 @@ plumbing is hidden from students:
 
 ```
 POST /api/v1/submissions/presigned-url?assignmentId={id}&zipFileName={name}&planId={planId}
+X-User-Id: <student-uuid>                    ← required (400 when absent)
 → 201 { submissionId, uploadUrl, objectName, expiresInMinutes }
 ```
 Query params only, no body. `planId` is optional: omitted ⇒ executor grades **all** plans; set ⇒ only that plan's
-steps run (`execute-plan-v1.0.md` §3 step 1). Identity is stubbed server-side (random student UUID per call).
+steps run (`execute-plan-v1.0.md` §3 step 1). `X-User-Id` (`class_students.student_user_id`) stamps `submissions.student_id`.
 Each plan gets its own zip (full student app per plan is acceptable). Student PUTs the zip to RustFS;
 no confirm call exists — the RustFS `ObjectCreated:Put` webhook on `submissions/*.zip` is the sole trigger:
 webhook → status `PENDING` → submission-service publishes `GRADE_SUBMISSION` to Kafka
@@ -284,6 +285,7 @@ status is patched `GRADING` → `DONE`/`FAILED` along the way.
 
 ```
 GET /api/v1/results/{submissionId}
+X-User-Id: <student-uuid>               (mismatch ⇒ 403 "Not owner")
 GET /api/v1/student/assignments/{id}   (re-read, shows score after result lands)
 ```
 One `results` row per graded plan (each with its `step_results`), enveloped as

@@ -239,8 +239,9 @@ Behind `/api/v1/internal/**`; gateway never routes these externally.
 ### 2.1 Upload flow
 
 **POST `/api/v1/submissions/presigned-url?assignmentId=<uuid>&zipFileName=lab01.zip`**
+`X-User-Id: <student-uuid>` (required)
 
-→ 200 with
+→ 201 with
 
 ```json
 { "data": { "submissionId": "…", "uploadUrl": "https://<rustfs-host>/submission-files/…zip?X-Amz-…",
@@ -307,7 +308,7 @@ once deployed on the cluster).
 | broken JSON body | 400 | "Malformed request body" |
 | wrong Content-Type on JSON POST/PUT | 415 | "Unsupported Content-Type" |
 | missing required query param | 400 | "Missing required parameter: <name>" |
-| missing `X-User-Id` | 400 | invalid UUID "anonymous" |
+| missing `X-User-Id` | 400 | `Missing required header: X-User-Id` (course-service paths still say `invalid UUID "anonymous"`) |
 | wrong-owner access everywhere | 404 | indistinguishable (no leak) |
 | duplicate unique (class name+semester, assignment title, plan seq, step order) | 400 | descriptive message |
 | deleted resource referenced | 404 | (soft-delete filter) |
