@@ -15,6 +15,7 @@ Bộ tài liệu thiết kế versioned của hệ thống. Mỗi thay đổi l�
 | [system-design-v1.0.md](system-design-v1.0.md) | v1.0 | Current | 2026-08-16 | Tách service theo use case, giao tiếp giữa services |
 | [design-db-v1.0.md](design-db-v1.0.md) | v1.0 | Current | 2026-08-16 | Schema DB cho từng service |
 | [execute-plan-v1.0.md](execute-plan-v1.0.md) | v1.0 | Current | 2026-08-16 | Cách thực thi grading thật từ nộp bài đến ra điểm |
+| [grading-assertion-engine-test-plan.md](grading-assertion-engine-test-plan.md) | v1.0 | Current | 2026-09-16 | Tất cả assertion types, test plan thực tế với API calls chi tiết |
 
 ## Mối quan hệ
 
