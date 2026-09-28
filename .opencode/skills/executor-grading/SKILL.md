@@ -285,11 +285,3 @@ Rules learned while doing the split:
   `application.yaml` keys the root logger as `vn.edu.ptit.web_grading_system` (level only —
   safe). Import statements *inside* `config/` still need rewriting when they point at moved
   classes.
-
-The grouping axis is deliberately **phase-first**. `grading/` is the sole
-orchestrator and is the only package that imports `service/docker/`;
-`service/db/` supports the step executors and the orchestrator.
-`service/step/`, `docker/`, `db/` are capability collaborators, not a
-second axis. Do **not** promote `db/` or `docker/` out of `service/` —
-they are business logic, not infrastructure layers. Any change to this
-decision should be recorded here before being made.
