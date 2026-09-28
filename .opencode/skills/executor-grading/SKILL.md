@@ -51,8 +51,7 @@ Four step executors are registered in `StepRegistry`: `HTTP_REQUEST`,
 `DB_QUERY`, `DB_SCHEMA_CHECK`, `DB_MIGRATION`. Unknown types resolve to a
 `FAILED` step row with "Unknown step type" — never throw out of the loop.
 Each DB executor runs inside the existing `runSteps` wrapper (after compose
-boot) so the `ENSURE_IMAGES` slot stays empty — Axis 2 image pre-pull
-remains a future seam. DB executors go through the dialect layer (§8) so
+boot). DB executors go through the dialect layer (§8) so
 they are engine-agnostic from day one; connection failures wrap with
 `Constant.Message.Db` dialect hint, lecturer SQL errors wrap with
 `Constant.Message.Db.SQL_EXECUTION_ERROR`.
@@ -116,7 +115,7 @@ queued/grading — callers poll. New internal endpoints need a Postman request w
   `asText()`** — if you touch any code reading a JsonNode, use `.asString()`.
   See `java-spring-boot-backend/SKILL.md` §10 and `AGENTS.md`.
 
-## 9. Multi-DBMS dialect layer + future image pre-pull seam (v1.1, 2026-09-26)
+## 9. Multi-DBMS dialect layer + image pre-pull (Axis 1 + Axis 2) (v1.1, 2026-09-26)
 
 Two **orthogonal axes** — never conflate them:
 
@@ -171,12 +170,14 @@ Two **orthogonal axes** — never conflate them:
    via `Assumptions.assumeTrue`, `DockerImageStateRepositoryTest` 4
    on H2) — all green, 205/205.
    1. `GradingOrchestrator.scanDbRequirements(plans)` is the **named seam** —
-      its existing sibling `scanImageRequirements(...)` sits beside it in `grade()`
-      (same pre-boot phase, independent concern).
-   2. Insertion point for a future `ENSURE_IMAGES` saga step: between the
-      pre-scan/port-claim block and `composeRunner.boot()` — or an independent
-      `@Scheduled` scanner if pulls must not block grading. Deliberately not
-      fixed yet; either choice never reorders existing steps.
+      its sibling `ensureImages(List<String>, long)` sits beside it in `grade()`
+      (same pre-boot phase, independent concern: Axis 2 image presence vs Axis 1 dialect).
+   2. **Two-layer image presence.** Axis 2 now has (a) the `@Scheduled`
+      scanner (background warmth, PR #20 — Phase 2) and (b) the **grading-time
+      `ENSURE_IMAGES` gate** (slot B, after both port claims + unzip, status
+      already `BUILDING`, before `sagaTracker.step(BOOT_COMPOSE)`). The gate is
+      **not a saga step** — `Constant.Saga` has no `ENSURE_IMAGES`; `fail()`
+      already persists the error. `enabled=false` is byte-for-byte pre-Phase-3.
    3. `DockerComposePatcher.load()`/`servicesOf()` are static and
       side-effect-free — reuse them to enumerate `image:` entries instead of
       re-parsing YAML.
@@ -232,3 +233,4 @@ Guard Docker availability with `org.testcontainers.DockerClientFactory.instance(
       normalize identically and the projection is untested.
       Assert the parsed `actual` field (`.asString()`) to pin
       which projection the executor used.
+    - **Reflection unit tests for private methods.** `GradingOrchestratorTest` exercises private `scanDbRequirements`/`autoInjectExtracts` through a reflected helper; `ImageEnsureTest` mirrors this for the new private `ensureImages`. When the constructor arity grows (GradingOrchestrator is now 15 positional args across 5 call sites) every site must be updated — the concrete reason the project bans >2 positional args in favor of `@Builder`.

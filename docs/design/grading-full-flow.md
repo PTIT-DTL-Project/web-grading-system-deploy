@@ -604,16 +604,20 @@ mvn -f src-services/executor-service/pom.xml test -Dtest='Db*Test'
 [grade(jobId, ...)]
    ├── 1. Load GradingJob từ DB
    ├── 2. Fetch grading config từ course-service
-   │      (AssignmentGradingConfigDto: strategy, ports, timeouts)
+   │      (AssignmentGradingConfigDto: strategy, ports, timeouts, dockerImageUrls)
    ├── 3. Fetch plans từ course-service
    │      (List<InternalPlanDto>)
    ├── 4. Download artifact từ RustFS (ZIP)
    │      (ArtifactService.fetchWorkDir)
    │      - Restore wrapper executable bit
    │      - Patch wrapper distribution URL
+   ├── 4.5. Ensure images + claim ports (slot B, status = BUILDING)
+   │      - PortAllocator.claim() → appPort, dbPort (20000-30000)
+   │      - writeLog "Ensuring images: [...]"
+   │      - DockerImageGateway.present() → absent → pull(pull-timeout-ms = 600s)
+   │      - pull fail → FAILED (message names the image); finally releases both ports
    ├── 5. Boot student app (DockerComposeRunner.boot)
    │      - DockerComposePatcher.patchCompose()
-   │      - PortAllocator.claim() (20000-30000)
    │      - Testcontainers ComposeContainer
    │      - Docker sidecar (docker:27-dind)
    ├── 6. Với mỗi plan:
@@ -657,6 +661,10 @@ mvn -f src-services/executor-service/pom.xml test -Dtest='Db*Test'
 - `ArtifactService.fetchWorkDir(submissionId, rustfsPath)` tải ZIP từ RustFS
 - `restoreWrapperPermissions()` → chmod +x cho `mvnw`/`gradlew`
 - `patchWrapperDistributionUrl()` → rewrite URL nếu cần
+
+#### Giai Đoạn 4.5: Ensure Images + Claim Ports
+- `PortAllocator.claim()` cấp appPort + dbPort từ 20000-30000 — hai port được giữ cho đến khi compose boot.
+- `GradingOrchestrator.ensureImages(images, pullTimeoutMs)` — gate `image-scan.enabled`, `pull-timeout-ms` (mặc định 600 s) thay vì `startup-timeout-ms` (60 s). Pull fail → job `FAILED` với tên image; boot saga row chưa bao giờ tạo; `finally` giải phóng cả hai port.
 
 #### Giai Đoạn 5: Boot Student App
 - `DockerComposePatcher.patchCompose()`:
@@ -886,6 +894,14 @@ Pod chết khi job đang RUNNING:
 - `StaleJobReaper` **không** re-enqueue RUNNING jobs
 - Phải reset thủ công qua `ResetGradingJobService`
 - Lý do: wall-clock không thể phân biệt job đang chạy vs dead job
+
+### 10.6 Image Not Available / Pull Failed
+
+Khi assignment khai báo image mà executor không thể có (pod DinD bị wipe trên restart, hoặc tên image sai):
+- Stage: **slot B**, trước `composeRunner.boot()`, sau cả hai port claim.
+- Kết quả: job `FAILED`, `errorMessage` chứa `Image pull failed: <url>: <registry message>` (naming the image).
+- Cả hai port đã claim (`appPort`, `dbPort`) đều được `finally` giải phóng; boot saga row chưa bao giờ tạo.
+- `enabled=false` hoặc không khai báo image → bỏ hoàn toàn, hành vi giống pre-Phase-3.
 
 ---
 

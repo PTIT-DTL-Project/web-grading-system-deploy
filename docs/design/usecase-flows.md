@@ -376,8 +376,8 @@ any other step.
 
 ### Notes
 
-- The `ENSURE_IMAGES` slot stays empty: DB executors run after compose boot
-  (inside `runSteps`), so the image pre-pull seam (Axis 2) is untouched.
+- `ENSURE_IMAGES` (UC-13 Step 2) runs before compose boot; DB executors
+  still run after boot inside `runSteps`, so neither gate touches the dialect layer.
 - `StepRegistry` bean-collects all four `StepExecutor` implementations;
   adding a new DB type = one `@Component` + `DbDialect` (zero registry changes).
 - `db_type` is validated at step-creation time by `StepConfigValidator`
@@ -502,16 +502,34 @@ Each executor pod, every `executor.image-scan.interval-ms` (default 5 min):
 
 ### Step 2 — Grading-time guarantee (`ENSURE_IMAGES`)
 
-Inside `GradingOrchestrator.grade()`, after the DB-port pre-scan and before
-`composeRunner.boot()`:
+Inside `GradingOrchestrator.grade()`, in **slot B** — after `appPort` and
+`dbPort` are claimed and the artifact is unzipped (status already `BUILDING`),
+immediately before `sagaTracker.step(BOOT_COMPOSE)` / `composeRunner.boot()`:
 
-1. For each image the assignment declares, inspect then pull (bounded) if absent.
-2. Pull failure → job `FAILED` naming the image (fail-fast, like the `db_type` guard).
-3. The existing `finally` still releases the port.
+0. **Skipped entirely** when `executor.image-scan.enabled` is `false`, or
+   `imageScan` is unconfigured, or the assignment declares no images
+   (the common case) — `enabled=false` is byte-for-byte pre-Phase-3 behavior.
+1. `writeLog(INFO, "Ensuring images: " + urls)`.
+2. For each declared URL, `DockerImageGateway.present()` → present ⇒ next;
+   absent ⇒ `pull(url, Duration.ofMillis(pull-timeout-ms))` (default 600 s —
+   its own budget, not the 60 s `startup-timeout-ms` compose budget).
+3. Pull failure ⇒ `ImagePullException` re-wrapped as
+   `Image pull failed: <url>: <registry message>` ⇒ `fail(...)` ⇒ job `FAILED`
+   with that message, `grade()` returns. The boot saga row is never created.
+4. The existing `finally` releases **both** `appPort` and `dbPort`.
 
 This closes the `emptyDir` race: a pod restart wipes its DinD store, so the
 periodic scanner re-warms each pod and `ENSURE_IMAGES` guarantees the image
 before compose boot.
+
+### Deliberate non-goals
+
+- **No saga step.** `Constant.Saga` has no `ENSURE_IMAGES`; the guarantee is an
+  inline pre-boot call, and `fail()` already persists the error.
+- **No `docker_image_state` write at grading time.** The periodic scanner
+  self-heals within one `interval-ms` (default 5 min) and upserts warmth on its
+  next cycle.
+- Status shown while ensuring is `BUILDING` (set before the slot), not `FETCHING`.
 
 ### Notes
 

@@ -133,7 +133,7 @@ if (parseError != null)
     → writeLog(WARN, "Failed to parse DB step connection config: ...")
 ```
 
-**Named seam**: phương thức tương lai `scanImageRequirements(...)` sẽ ngồi bên cạnh nó — cùng giai đoạn pre-boot, hai mối quan tâm độc lập (Axis 1 vs Axis 2).
+**Named seam**: `ensureImages(List<String>, long)` ngồi bên cạnh nó trong `grade()` — cùng giai đoạn pre-boot, hai mối quan tâm độc lập (Axis 1: dialect vs Axis 2: image presence, built 2026-09-28).
 
 ---
 
@@ -300,12 +300,12 @@ Driver đã sẵn sàng: `org.postgresql:postgresql` + `com.mysql:mysql-connecto
 
 ## 10. Giai đoạn image pre-pull (Axis 2) — future, chỉ giữ seam
 
-Tính năng lecturer đăng ký image (DB image, Java SDK…) rồi async scan/pull image thiếu **chưa build**, nhưng cấu trúc đã được dành sẵn, không cần phẫu thuật khi đến lúc:
+Tính năng lecturer đăng ký image (DB image, Java SDK…) rồi async scan/pull image thiếu **đã build** (Phase 2 scanner + Phase 3 grading-time guarantee, PR #21 follow-up, 2026-09-28), cấu trúc sẵn có, không cần phẫu thuật khi thêm bước:
 
-1. **`scanDbRequirements()` là named seam** — `scanImageRequirements(...)` tương lai sẽ ngồi bên cạnh nó trong `grade()`.
-2. **Điểm chèn `ENSURE_IMAGES` saga step**: giữa block pre-scan/claim port và `composeRunner.boot()` — **hoặc** một `@Scheduled` scanner độc lập nếu việc pull không nên chặn grading. Kế hoạch không cố định lựa chọn nào; cả hai đều không yêu cầu reordered bước hiện tại.
+1. **`scanDbRequirements()` là named seam** — `ensureImages(List<String>, long)` ngồi bên cạnh nó trong `grade()` (cùng giai đoạn pre-boot, hai mối quan tâm độc lập: Axis 1 dialect vs Axis 2 image presence).
+2. **Hai lớp đảm bảo ảnh.** (a) `@Scheduled` scanner làm ấm store nền (Phase 2). (b) Gate `ENSURE_IMAGES` grading-time tại slot B (sau cả hai port claim + unzip, status đã `BUILDING`, trước `sagaTracker.step(BOOT_COMPOSE)`). Gate **không phải saga step** — `Constant.Saga` không có `ENSURE_IMAGES`; `fail()` đã persist lỗi. `enabled=false` = byte-for-byte pre-Phase-3.
 3. **`DockerComposePatcher.load()` / `servicesOf()`** tĩnh + side-effect-free → tái sử dụng để duyệt entries `image:` thay vì parse lại YAML.
-4. **Config**: sẽ theo pattern nested-record của `ExecutorProperties` (ví dụ future `ImageScan` record). Hiện tại không có placeholder config nào (YAGNI).
+4. **Config**: theo pattern nested-record của `ExecutorProperties` (`ImageScan` record, `@Builder`). Placeholder config đã có (`executor.image-scan.*` trong `application.yaml`).
 5. **Persistence đã thiết kế**: bảng `docker_images` + `assignment_docker_images` (`design-db-v1.0.md` §2.2) → feature không cần thay đổi schema.
 
 ---

@@ -367,7 +367,7 @@ Kafka: wgs-events
 
 ### 7.3 Image warm-up
 
-- Khi giảng viên lưu bài tập, course-service có thể báo executor (hoặc executor định kỳ) pull sẵn các images trong `docker_images` → giảm thời gian build/pull khi SV nộp.
+- Khi giảng viên lưu bài tập, course-service có thể báo executor (hoặc executor định kỳ) pull sẵn các images trong `docker_images` → giảm thời gian build/pull khi SV nộp `(✅ 2026-09-27/28 — đã hiện thực hoá: ImageScanner chạy định kỳ + ENSURE_IMAGES chốt trước khi boot, xem UC-13)`.
 - Docker layer cache trong DinD volume (PVC cho `/var/lib/docker` nếu muốn giữ cache qua restart pod).
 
 ### 7.4 Concurrency của Spring Kafka
