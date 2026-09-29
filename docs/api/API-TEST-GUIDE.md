@@ -54,6 +54,19 @@ Negative: same `name`+`semester` same owner → `400` "Class '…' already exist
 
 **GET `/api/v1/classes?page=0&size=20` — list mine (paged)**
 
+Query params:
+- `search` (optional): structured filter expression. Format is `field:value` pairs
+  concatenated with `;`. Supported fields: `name`, `semester`.
+  Examples: `search=name:PTIT;semester:20261`, `search=semester:20261`.
+  Malformed expressions (missing `:`, unknown field, blank value) → `400`.
+- `status` (optional): `ACTIVE` or `ARCHIVED`; filters to that status only.
+- Both params can be combined. Blank/null values are ignored.
+
+Negative:
+- `?search=status:ACTIVE` → 400 "Unknown filter field: 'status'. Allowed fields: name, semester"
+- `?search=name:` → 400 "Filter value for 'name' must not be blank"
+- `?search=bareword` → 400 "Malformed filter 'bareword': expected 'field:value'. Allowed fields: name, semester"
+
 **GET `/api/v1/classes/{{classId}}` — detail** → 200 envelope or 404 if not your class.
 
 **PUT `/api/v1/classes/{{classId}}/archive`** (no body) → 200, flips `status` to `ARCHIVED`.

@@ -7,12 +7,13 @@ Helm charts repo checked out at `config-services/`.
 
 When the user gives requirements, standards, or corrections, and the work succeeds:
 
-1. After implementing AND verifying, update the matching skill file under
-   `.opencode/skills/`:
+1. After implementing AND verifying, update the matching skill file in **both**
+   `.opencode/skills/` and `.kilo/skills/` (they must stay identical):
    - Java backend patterns → `java-spring-boot-backend/SKILL.md`
    - A different domain (deploy scripts, frontend, DB, ...) → create
-     `.opencode/skills/<topic>/SKILL.md` with proper frontmatter
-     (`name` = folder name, lowercase-hyphenated; `description` front-loads trigger keywords)
+     `.opencode/skills/<topic>/SKILL.md` and `.kilo/skills/<topic>/SKILL.md`
+     with proper frontmatter (`name` = folder name, lowercase-hyphenated;
+     `description` front-loads trigger keywords)
 2. Record only durable conventions: patterns, decisions, gotchas, exact commands.
    Never one-off task details.
    - Postman + real-response duty for new endpoints → `java-spring-boot-backend/SKILL.md` §12.5.

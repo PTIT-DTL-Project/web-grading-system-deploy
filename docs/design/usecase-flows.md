@@ -17,6 +17,45 @@ use one consistent UUID for the whole flow).
 
 **Preconditions:** service running; lecturer UUID chosen.
 
+### Step 0 — List my classes (FE entry point)
+
+```
+GET /api/v1/classes?page=0&size=20
+GET /api/v1/classes?page=0&size=20&search=name:PTIT;semester:20261
+GET /api/v1/classes?page=0&size=20&search=semester:20261&status=ARCHIVED
+X-User-Id: <lecturer-uuid>
+```
+
+Expected: `200` with `data = {meta:{page,pageSize,pages,total}, result:[...]}` and a **0-based
+`page`**. Returns the caller's ACTIVE **and** ARCHIVED classes, ordered by `createdAt desc`.
+
+Query params:
+- `search` (optional): structured filter expression. Format is `field:value` pairs
+  concatenated with `;`. Supported fields: `name`, `semester`.
+  Examples: `search=name:PTIT;semester:20261`, `search=semester:20261`.
+  Malformed expressions (missing `:`, unknown field, blank value) → `400`.
+  Note: `;` is reserved as the token separator and has no escape mechanism;
+  class names containing `;` cannot be searched.
+- `status` (optional): `ACTIVE` or `ARCHIVED`; filters to that status only.
+- Both params can be combined. Blank/null values are ignored.
+
+Note: the `search` grammar on `/api/v1/classes` requires `field:value` tokens
+and returns `400` for bare words. This differs from `/api/v1/assignments` and
+`/api/v1/student/assignments`, where `search` is plain text. The strict grammar
+fails loudly rather than silently ignoring the parameter.
+
+Negative cases:
+- `?search=name:PTIT;semester:20261` → 200, AND of both filters
+- `?search=badfield:x` → 400 "Unknown filter field: 'badfield'. Allowed fields: name, semester"
+- `?search=bareword` → 400 "Malformed filter 'bareword': expected 'field:value'. Allowed fields: name, semester"
+- `?search=name:` → 400 "Filter value for 'name' must not be blank"
+- `?search=` → 200 unfiltered (blank input is ignored)
+
+`ownerId` is always the filter (someone else's class is simply not in the page).
+
+FE: `/classes` (`ClassesPage`) issues this call with `current = meta.page + 1`, and
+is guarded by `RequireRole` so only a LECTURER identity reaches it.
+
 ### Step 1 — Create class
 
 ```
@@ -100,6 +139,22 @@ GET /api/v1/classes/{classId}/transcript
 Expected: `200` with one entry per imported student: code, name, per-component
 entries, total + letterGrade + gpa (all null when incomplete).
 
+### Step 7 — Archive class (one-way)
+
+```
+PUT /api/v1/classes/{classId}/archive
+X-User-Id: <lecturer-uuid>
+```
+
+Expected: `200` with `data.status = "ARCHIVED"`. Idempotent (already archived → same
+`200`); unknown or not owned → `404 Class not found: <uuid>`. **There is no unarchive
+endpoint** — archive is permanent.
+
+FE: **Lưu trữ** sits behind a Popconfirm (`okButtonProps danger`), rendered only for
+`ACTIVE` rows; after success the row keeps rendering with an **Archived** tag and loses the
+action. The backend does not block score entry on an `ARCHIVED` class, so the FE has to
+(Phase 3).
+
 ### EXERCISE auto-grading chain
 
 `exercise = avg(score / max_score × 10)` over the student's latest results across the
@@ -143,8 +198,10 @@ LECTURER strategy without `dockerComposeTemplate` → 400 · field violations �
 GET /api/v1/assignments?classId=&published=&search=&page=0&size=20
 ```
 
-Expected: `200` paged envelope; filters combinable; search = case-insensitive title
-contains; sorted createdAt desc; page beyond last → empty result, correct meta.total.
+Expected: `200` paged envelope; filters combinable; `search` is plain text
+(case-insensitive title contains), not the structured `field:value` grammar
+used by `/api/v1/classes`. Sorted `createdAt desc`; page beyond last → empty
+result, correct `meta.total`.
 
 ### Step 3 — Detail
 
@@ -232,16 +289,19 @@ gateway-injected header. Must be enrolled in the assignment's class.
 **Service:** course-service (read) · submission-service (upload) · executor-service
 (Kafka consumer) · result-service (score). **FE not built yet — this UC is the contract.**
 Plans/steps API shape: `PlanResponse` / `StepResponse` (`course-service/.../dto/response`).
-
 ### Step 1 — List visible assignments
 
 ```
 GET /api/v1/student/assignments?classId=&search=&page=0&size=20
 X-User-Id: <student-uuid>
 ```
+
 Enrollment = `class_students.student_user_id = X-User-Id`. Only `published=true`
 assignments of enrolled classes are returned (otherwise empty page). Not enrolled /
 not published → `404` on detail (indistinguishable), never a list leak.
+
+`search` is plain text (case-insensitive title contains), not the structured
+`field:value` grammar used by `/api/v1/classes`.
 
 ### Step 2 — Read an assignment + its plans as a problem set
 

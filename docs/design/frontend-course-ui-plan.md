@@ -99,22 +99,237 @@ error path returned `ApiError{status:502, kind:'http'}`. Re-run the check once t
 is up. Screenshots/clicks were unavailable (desktop window not visible); DOM + a11y
 snapshot + network headers were used instead.
 
-### Phase 2 — Lecturer: class list (pending)
+### Phase 2 — Lecturer: class list (done, verified 2026-09-28)
 
-`GET /classes` paged `Table` (`rowKey="id"`, `current = meta.page + 1`) · create `Modal` +
-`Form` (400 duplicate rendered inline) · `PUT /{id}/archive` behind `Popconfirm` ·
-loading / empty / error states everywhere.
+**Scope:** paged class table, create-class modal, archive action, role guard,
+loading/empty/error states, 25 new i18n keys.
+**Out:** class detail (Phase 3), student screens (Phase 5), any backend change,
+search/status filter.
 
-### Phase 3 — Lecturer: class detail (`/classes/:classId`, antd `Tabs`) (pending)
+**Decisions (agreed 2026-09-28)**
+
+| # | Question | Decision |
+|---|---|---|
+| P2-D1 | `GET /classes` has no `sort` → row order undefined, a created class may not be where you look | **FE-only**: refetch the current page after create, rely on the success message. Server-side `sort` → backlog |
+| P2-D2 | Search / status filter | **Backlog** — a client-side filter only matches rows on the loaded page (≤20) and contradicts `meta.total`. Plan a `q` + `status` param alongside Phase 4 |
+| P2-D3 | Live verification target | **Local course-service** via `.env.development.local` → `VITE_API_PROXY_TARGET=http://localhost:8081` (still proxied ⇒ still same-origin, so the no-CORS property is what gets tested). k3s/gateway stays the default `:30195` |
+
+**Backend contract (read from source, not recalled)**
+
+| Method | Path | Success body |
+|---|---|---|
+| GET | `/api/v1/classes?page=0&size=20` | `200` `{status:200, message:"Success", data:{meta,result}}` — GETs carry **no `@ApiMessage`**, so `message` is `"Success"` |
+| POST | `/api/v1/classes` `{name, semester}` | `201` `{status:201, message:"Class created", data:{id,ownerId,name,semester,status,createdAt}}` |
+| PUT | `/api/v1/classes/{id}/archive` | `200` `{message:"Class archived", data:{…, status:"ARCHIVED"}}` |
+
+Errors (`GlobalExceptionHandler` / `ClassService`):
+
+| Status | `message` | Trigger |
+|---|---|---|
+| 400 | `Class 'X' already exists in semester Y` | duplicate `owner+name+semester` pre-check (`ClassService:44-48`) |
+| 400 | `Validation failed`, `error` = `name: must not be blank; …` | bean validation — the detail lives in `error` |
+| 400 | `Invalid UUID string: anonymous` | missing/tampered `X-User-Id` (`IllegalArgumentException` handler) |
+| 404 | `Class not found: <uuid>` | unknown **or not owned** — `findOwned()` filters by `ownerId`, so foreign classes are indistinguishable from missing ones |
+| 409 | `Resource already exists or violates a constraint` | race on `idx_classes_owner_name_sem`, or a value over the column limit |
+| 500 | `An unexpected error occurred` | anything unhandled |
+
+DB (`V1__2026-08-16__init_schema.sql`): `name VARCHAR(255)`, **`semester VARCHAR(20)`**,
+`status VARCHAR(20)`, unique partial index `(owner_id, name, semester) WHERE deleted_at IS NULL`.
+The entity declares no `length` and `ddl-auto: validate` does not check it, so an
+over-long `semester` reaches Postgres and comes back as a generic 409 — **the FE rule
+`semester ≤ 20` is therefore load-bearing**, not cosmetic.
+
+Behaviour the UI must respect: `listMine` returns ACTIVE **and** ARCHIVED (no filter);
+there is **no unarchive endpoint** (archive is one-way, idempotent); no `q`/`status`
+params exist.
+
+**Screen (`features/classes/ClassesPage.tsx`)**
+
+| State | Condition | Render |
+|---|---|---|
+| Error-first | `error && !rows.length` | `ErrorState` (`Result status="error"` + message + **Thử lại**) |
+| Loading | `loading` | Table spinner, headers stay (no layout shift) |
+| Empty | no rows, no error | `Empty` + hint + primary CTA opening the create modal |
+| Content | rows | table |
+| Stale-with-error | `error && rows.length` | keep rows + `Alert` above the table with message + retry |
+
+Columns (`rowKey="id"`): `name` (`ellipsis`, 255-char max) · `semester` (w110) · `status`
+(`ACTIVE` → `colors.primary` on `colors.primaryLight`, `ARCHIVED` → antd default gray,
+**label always carries the text**) · `createdAt` (via `Intl.DateTimeFormat(lang, {dateStyle:'medium', timeStyle:'short'})`,
+raw string on parse failure, no `dayjs` dependency) · actions (w170, right): **Mở** →
+`/classes/:id`, **Lưu trữ** → `Popconfirm` **only when `status === 'ACTIVE'`**.
+
+Pagination is server-side: `current = meta.page + 1`, `pageSize = meta.pageSize`,
+`total = meta.total`, `showSizeChanger: false`, `showTotal` → `classes.total`.
+
+**Create modal:** `name` required/whitespace + `max 255`; `semester` required/whitespace +
+`max 20`; no pattern (the backend enforces none). 201 → success message + reset + close +
+`reload()`. 400/409 → modal stays open, `message.error(text)` from `useApiErrorMessage`
+(the duplicate message is already fully descriptive), antd `App.useApp()` only.
+
+**Archive:** `Popconfirm` (`okButtonProps:{danger:true}`, `okText` = action label) →
+`archiveClass(id)` → success message → `reload()`. Button hidden for `ARCHIVED` because the
+action is irreversible from the FE; the confirm copy says so.
+
+**Shared-layer changes**
+
+- `useClasses(page, pageSize)` → `{ meta, rows, loading, error, reload }`, with an
+  `AbortController` cancelled on re-run/unmount and `CanceledError` swallowed — otherwise a
+  slow older response overwrites a newer page (stale rows, wrong `current`).
+- `getData`/`sendData`/`listClasses` gain an optional `{ signal }`.
+- `errors.ts`: replace the marker-string logic with
+  `getErrorMessage(error, t)` + a thin `useApiErrorMessage()` wrapper —
+  `network` → `errors.network`; `http` → `0`/`≥502` → `errors.network`, `≥500` →
+  `errors.server(status)`, `404` → `errors.notFound`, `403` → `errors.forbidden`, else
+  `errors.unknown`; `envelope` → server message (English, source of truth) plus
+  `: detail` when present (`"Validation failed: name: must not be blank"`).
+  Without the status mapping a dead gateway renders axios's raw
+  `"Request failed with status code 502"`.
+
+**New role guard:** `shared/auth/RequireRole.tsx` wraps `/classes` + `/classes/:classId`
+(`LECTURER`) and `/student/classes` (`STUDENT`); wrong identity → `<Navigate to="/" />`.
+Prevents a student typing `/classes` and meeting a bare 404.
+
+**i18n — 25 new keys, both files**
+
+`classes.title · create · createTitle · name · namePlaceholder · nameRequired · nameMax ·
+semester · semesterPlaceholder · semesterRequired · semesterMax · status · statusActive ·
+statusArchived · createdAt · open · archive · confirmArchive · archived · created ·
+loadFailed · empty · emptyHint · total` + `errors.server`.
+Reused: `common.actions · cancel · confirm · empty · retry`.
+
+| Key | vi | en |
+|---|---|---|
+| `classes.title` | Lớp học | Classes |
+| `classes.create` | Tạo lớp học | New class |
+| `classes.createTitle` | Tạo lớp học mới | Create a new class |
+| `classes.name` | Tên lớp | Class name |
+| `classes.namePlaceholder` | vd: PTIT CNTT-K68 | e.g. PTIT CNTT-K68 |
+| `classes.nameRequired` | Vui lòng nhập tên lớp | Please enter a class name |
+| `classes.nameMax` | Tên lớp tối đa 255 ký tự | Class name is at most 255 characters |
+| `classes.semester` | Học kỳ | Semester |
+| `classes.semesterPlaceholder` | vd: 20261 | e.g. 20261 |
+| `classes.semesterRequired` | Vui lòng nhập học kỳ | Please enter a semester |
+| `classes.semesterMax` | Học kỳ tối đa 20 ký tự | Semester is at most 20 characters |
+| `classes.status` | Trạng thái | Status |
+| `classes.statusActive` | Đang hoạt động | Active |
+| `classes.statusArchived` | Đã lưu trữ | Archived |
+| `classes.createdAt` | Ngày tạo | Created at |
+| `classes.open` | Mở | Open |
+| `classes.archive` | Lưu trữ | Archive |
+| `classes.confirmArchive` | Lưu trữ lớp này? Không thể hoàn tác từ giao diện. | Archive this class? This cannot be undone from the UI. |
+| `classes.archived` | Đã lưu trữ lớp học | Class archived |
+| `classes.created` | Đã tạo lớp học | Class created |
+| `classes.loadFailed` | Không tải được danh sách lớp học | Could not load your classes |
+| `classes.empty` | Chưa có lớp học nào | No classes yet |
+| `classes.emptyHint` | Tạo lớp học đầu tiên để bắt đầu | Create your first class to get started |
+| `classes.total` | Tổng cộng {{total}} lớp | {{total}} classes in total |
+| `errors.server` | Máy chủ trả về lỗi ({{status}}) | The server returned an error ({{status}}) |
+
+**Execution order**
+
+1. `errors.ts` rewrite + `errors.server` key
+2. `AbortSignal` through `http.ts` → `endpoints/classes.ts`
+3. `RequireRole` + `app/router.tsx`
+4. `features/classes/useClasses.ts`
+5. `shared/ui/ErrorState.tsx` + `shared/format/formatDateTime.ts`
+6. `ClassesPage`
+7. `CreateClassModal`
+8. Archive `Popconfirm`
+9. 25 i18n keys in both files
+10. Docs: this file + skill
+
+Steps 1–3 are shared-layer and independent of the UI; 6 depends on 4–5.
+
+**Verification prerequisites** (`course-service/src/main/resources/application.yaml`) —
+these three endpoints touch only course-service + Postgres (no Feign):
+
+1. Postgres on `localhost:5432`, database `assignment_db`, `postgres`/`postgres`
+2. `mvn spring-boot:run` in `src-services/course-service` (port 8081, Flyway `V1`–`V4`);
+   pre-check `curl -s localhost:8081/actuator/health`
+3. `.env.development.local` → `VITE_API_PROXY_TARGET=http://localhost:8081`
+
+**Definition of done**
+
+1. `npm run lint` → 0/0 · `npm run build` (i18n:check + `tsc -b` + vite) → exit 0
+2. Backend down: student bounces off `/classes`; empty state + CTA; validation in vi then
+   en; 502 → *"Không thể kết nối máy chủ"* + working retry; failed create keeps the modal open
+3. Backend up: network evidence for `GET …/classes?page=0&size=20` (same-origin +
+   `x-user-id`), `POST` → 201 → refetch, duplicate → 400 message, `PUT …/archive` → tag
+   flips + action disappears, pagination `current = meta.page + 1` across pages
+
+**Backlog (Phase 6):** server-side `sort`, `q`, `status`; Phase 3 must gate score editing on
+`ARCHIVED` (the backend does not).
+
+**Verification (2026-09-28, local course-service `:8081` + Docker `wgs-pg`, not the gateway)**
+
+| Check | Evidence |
+|---|---|
+| lint / build | `oxlint` **0 warnings / 0 errors**; `npm run build` exit **0**, `i18n:check OK — 57 keys in sync` |
+| list + same-origin + identity | `GET localhost:5173/api/v1/classes?page=0&size=20` → **200**, `x-user-id: 0b2e22e3-…`, `sec-fetch-site: same-origin`, `host: localhost:5173` (no CORS) |
+| empty state | "Chưa có lớp học nào" + hint + CTA, no table |
+| client validation (vi → en) | empty submit → "Vui lòng nhập tên lớp" / "Vui lòng nhập học kỳ" then "Please enter a class name" / "Please enter a semester"; modal stays open |
+| create 201 | `POST` → 201 → toast "Class created", row `Sep 28, 2026, 10:50 PM`, `Total classes: 1` |
+| duplicate 400 | `POST` → **400** (no second row), toast `Class 'PTIT CNTT-K68 TEST' already exists in semester 20261`; isolated re-run: modal still open at **+7 s** with both values retained |
+| archive | Popconfirm copy → `PUT` → 200 → tag **Active → Archived**, toast "Class archived", **Lưu trữ** action gone |
+| pagination | 22 rows: page 1 = 20 rows (`?page=0&size=20`), page 2 = 2 rows (`?page=1&size=20`), active item `1`/`2`, `current = meta.page + 1` |
+| role guard | STUDENT identity → `/classes` → lands on `/student/classes`, and **0** `/api/v1/classes` requests fired (`ClassesPage` never mounts) |
+| i18n switch | VI ↔ EN via the real segmented control switches page **and** antd locale: `22:50 28 thg 9, 2026` ↔ `Sep 28, 2026, 10:50 PM` |
+| backend down (proxy → dead port, **502**) | `ErrorState`: title "Không tải được danh sách lớp học", subtitle "Không thể kết nối máy chủ. Vui lòng kiểm tra API gateway.", **Thử lại** re-fires the request (network count 1 → 2) |
+| backend down (Postgres stopped → axios `timeout: 30_000`) | request `state: failed, durationMs: 30002` → same `errors.network` UI; after `docker start wgs-pg`, **Thử lại** → 200 → 20 rows rendered |
+| identity validation | `userId: 'anonymous'` in `localStorage` → `getIdentity()` returns `null` → bounced to `/login`. The backend's `Invalid UUID string` 400 is **unreachable from the FE** |
+
+Two adjustments made while verifying (behavior unchanged from the spec):
+`classes.total` reads `Tổng số lớp: {{total}}` / `Total classes: {{total}}` — the draft's
+`{{total}} classes in total` rendered "1 classes in total" — and `ErrorState` gained an
+optional `title` so `classes.loadFailed` is the headline and the specific reason (backend
+text or translated transport failure) is the subtitle.
+
+Test data: 22 rows (21 SQL `SEED class *` + 1 created through the UI) were soft-deleted
+afterwards (`deleted_at = now()`, matching the app's `@SQLRestriction`), so
+`GET /classes` returns `total: 0` again and the empty state is what a fresh run shows.
+
+**Environment note:** the three endpoints touch only course-service + Postgres, so local
+verification runs `VITE_API_PROXY_TARGET=http://localhost:8081` in
+`.env.development.local` — still proxied, so the no-CORS property is what gets tested.
+One earlier subagent report claimed this file was written correctly while it actually
+contained the tunnel hostname (proxy → **530**); always `cat` the file after a delegated task.
+
+### Phase 3 — Lecturer: class detail (`/classes/:classId`, antd `Tabs`) (done, 2026-09-29)
 
 | Tab | Endpoints | UI |
 |---|---|---|
-| Sinh viên | students list + import | paged table; `Upload` (`showUploadList:false`, `beforeUpload → false`, then `FormData{file}`) showing `{imported, skipped}`; template download from `public/samples/students-import.csv` |
-| Thành phần điểm | score-components GET/PUT | dynamic rows (type `Select` + weight `InputNumber`), client validation per §2, `EXERCISE` read-only ("tự động chấm") |
-| Bảng điểm | transcript | component columns + `total` + `letterGrade` tag + `gpa`; `null` → `—` + tooltip; per-row **Nhập điểm** → `Drawer` |
+| Sinh viên | students list + import | paged table; `Upload` showing `{imported, skipped}`; empty state with hint; removed dead shortcut buttons |
+| Thành phần điểm | score-components GET/PUT | local draft + explicit Save; delete-row button; client validation (FINAL_EXAM required, weight ≥ 0.40, Σ = 1.000 ± 0.001); sum display `.toFixed(3)` with green/red tint |
+| Bảng điểm | transcript | component columns + `total` + `letterGrade` tag (color-coded A/B/C/D/F) + `gpa`; per-row **Nhập điểm** → `StudentScoreDrawer` |
 | (Drawer) | student scores GET/PUT | `ATTENDANCE`/`FINAL_EXAM`/`ASSIGNMENT` 0–10, `EXERCISE` never sent; 404 surfaced from `message` |
 
 Maps 1:1 onto `docs/design/usecase-flows.md` UC-01 steps 1–6.
+
+Class header: back button (`ArrowLeftOutlined`), semester, localized status tag
+(`classes.statusActive` / `classes.statusArchived` with `colors.statusActive` /
+`colors.statusArchived` tokens). Single archived warning banner under the header;
+tabs keep mutations disabled via `archived` prop.
+
+Cross-tab freshness: parent `ClassDetailPage` owns a `refreshToken` counter and
+`refreshAll()` callback; tabs receive it as a prop and call `reload()` from their
+hooks when it changes, so imports/saves in one tab are visible in the others
+without remounting.
+
+List-view abstraction shipped in the same phase: `useList<F>` hook + `ListPage`
+render shell + `FilterBar` + `standardPagination`. `ClassesPage` migrated to it.
+Filters persist to URL query string via `history.replaceState`.
+
+Class list filter UI: builder-mode `FilterBar` with chips for active rules
+(`name: Test ×`, `semester: 2025.1 ×`), an **Add filter** dropdown of available
+fields (`Tên lớp`, `Học kỳ`, `Trạng thái`), and **Lọc** / **Xóa lọc** buttons.
+Rules serialize into `search=name:Test;semester:2025.1`. Backend parser will be
+added later to match this format.
+
+Class list table: client-side column sorting added. Sort applies to current page only
+(server-paginated). Default sort on load: `createdAt DESC`.
+
+Verified: `npm run lint` 0/0, `npm run build` exit 0, `i18n:check OK — 135 keys`.
 
 ### Phase 4 — Student endpoints (backend, pending)
 
