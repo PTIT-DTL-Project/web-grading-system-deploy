@@ -72,7 +72,13 @@ echo "  (Grafana + Loki + Mimir + Tempo + Alloy)"
 bash "$SCRIPT_DIR/deploy/observability/install.sh"
 print_success "Observability stack installed"
 
-print_step "7. Setup Cloudflare Tunnel"
+print_step "7. Deploy Keycloak"
+kubectl apply -n "$NAMESPACE" -f "$SCRIPT_DIR/deploy/keycloak/deployment.yaml"
+kubectl apply -n "$NAMESPACE" -f "$SCRIPT_DIR/deploy/keycloak/service.yaml"
+kubectl wait -n "$NAMESPACE" --for=condition=ready pod -l app=keycloak --timeout=120s || true
+print_success "Keycloak deployed"
+
+print_step "8. Setup Cloudflare Tunnel"
 bash "$SCRIPT_DIR/deploy/cloudflared/setup-tunnel.sh" \
   "vucongtuanduong.dpdns.org" \
   "web-dev1-web-grading" \

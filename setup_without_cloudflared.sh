@@ -74,6 +74,12 @@ kubectl apply -f "$SCRIPT_DIR/deploy/kafka-ui/service.yaml" \
   -f "$SCRIPT_DIR/deploy/kafka-ui/ingress.yaml"
 print_success "Kafka UI deployed"
 
+print_step "7. Deploy Keycloak"
+kubectl apply -n "$NAMESPACE" -f "$SCRIPT_DIR/deploy/keycloak/deployment.yaml"
+kubectl apply -n "$NAMESPACE" -f "$SCRIPT_DIR/deploy/keycloak/service.yaml"
+kubectl wait -n "$NAMESPACE" --for=condition=ready pod -l app=keycloak --timeout=120s || true
+print_success "Keycloak deployed"
+
 echo ""
 echo -e "${BLUE}============================================================${NC}"
 echo -e "${BLUE}  SETUP COMPLETE!${NC}"
@@ -95,6 +101,7 @@ echo "  RustFS API:   kubectl port-forward -n web-grading svc/rustfs 9000:9000"
 echo "  RustFS Web:   kubectl port-forward -n web-grading svc/rustfs 9001:9001"
 echo "  ArgoCD:       kubectl port-forward -n argocd svc/argocd-server 8080:80"
 echo "  Kafka UI:     kubectl port-forward -n web-grading svc/kafka-ui 8080:8080"
+echo "  Keycloak:     kubectl port-forward -n web-grading svc/keycloak 8080:8080"
 echo ""
 echo -e "${YELLOW}💡 Quick Commands:${NC}"
 echo "  Check status:     kubectl get pods -n web-grading"

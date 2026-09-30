@@ -47,4 +47,14 @@ kubectl create secret generic kafka-aiven-credentials \
   --from-file=ca.pem="${KAFKA_CA_PATH:-src-services/executor-service/docker/kafka-ca.pem}" \
   --dry-run=client -o yaml | kubectl apply -f -
 
+# Keycloak DB + admin bootstrap
+kubectl create secret generic keycloak-db \
+  --namespace "${NAMESPACE}" \
+  --from-literal=KEYCLOAK_DB_URL="${KEYCLOAK_DB_URL:-}" \
+  --from-literal=KEYCLOAK_DB_USERNAME="${KEYCLOAK_DB_USERNAME:-}" \
+  --from-literal=KEYCLOAK_DB_PASSWORD="${KEYCLOAK_DB_PASSWORD:-}" \
+  --from-literal=KEYCLOAK_ADMIN_USERNAME="${KEYCLOAK_ADMIN_USERNAME:-admin}" \
+  --from-literal=KEYCLOAK_ADMIN_PASSWORD="${KEYCLOAK_ADMIN_PASSWORD:-admin}" \
+  --dry-run=client -o yaml | kubectl apply -f -
+
 echo "Namespace and secrets created"
