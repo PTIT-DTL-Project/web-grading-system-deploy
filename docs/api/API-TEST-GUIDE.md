@@ -15,6 +15,22 @@ headers, params, request body, expected response, and the negative checks that m
 | result-service on `http://localhost:8084` | `src-services/result-service` |
 | executor-service on `http://localhost:8083` | `src-services/executor-service` (Kafka-demo: see `wgs-events` flow at the end) |
 
+**Local boot recipe** (verified 2026-09-30 against the Neon project in the repo `.env`;
+run from `src-services/<service>`):
+
+```bash
+set -a; . ../../.env; set +a
+unset JDBC_URL DB_NAME          # let each service use its own default schema
+                                # (assignment_db / submission_db / result_db)
+export GATEWAY_TRUSTED_SECRET=<pick-a-local-value>   # .env ships it EMPTY → every request 401
+export RESULT_SERVICE_URI=http://localhost:8084 \
+       SUBMISSION_SERVICE_URI=http://localhost:8082   # yaml defaults are in-cluster DNS
+./mvnw -DskipTests package && java -jar target/<service>-1.0.0.jar
+```
+
+`./mvnw test` needs the same `DB_*` vars: without them the `*ApplicationTests.contextLoads`
+tests try `localhost:5432` and fail on a connection refusal (the rest of the suite is DB-less).
+
 **Envelope contract (public endpoints)** — every non-excluded response is wrapped:
 
 ```json
@@ -43,11 +59,14 @@ Instead of running the services locally you can use the dev ingresses as the bas
 `https://web-dev1-result…` (same `X-User-Id` + `X-Gateway-Secret` rules apply).
 
 **Role (since 2026-09-30):** endpoints that write grading data — classes & students, score
-components, scores, transcripts, assignments, plans & steps, docker images — plus
-`GET /api/v1/submissions/assignment/{assignmentId}` additionally require
+components, scores, transcripts, assignments, plans & steps, docker images — plus the
+lecturer grading view `GET /api/v1/assignments/{assignmentId}/results` and
+`GET /api/v1/assignments/{assignmentId}/submissions` additionally require
 `X-User-Roles: LECTURER` (`403` without it; through the gateway it comes from the token's
-allowlisted `realm_access.roles`). Ownership, not role, still rules `GET /api/v1/submissions/{id}`
-(`404`) and `GET /api/v1/results/{submissionId}` (`403`) — `LECTURER` bypasses both.
+allowlisted `realm_access.roles`). Ownership, not role, rules `GET /api/v1/submissions/{id}`
+(`404`) and `GET /api/v1/results/{submissionId}` (`403`) — neither service reads roles, so a
+lecturer gets the same answer as any other caller on those two routes and uses the §1.6
+endpoints instead.
 
 ---
 
@@ -260,6 +279,31 @@ Behind `/api/v1/internal/**`; gateway never routes these externally.
   `config` as raw JSON string
 - `GET /api/v1/internal/assignments/{{id}}/exists` → `{"exists": bool}` (`not deleted && published`)
 
+### 1.6 Grading view (lecturer)
+
+Both routes need `X-User-Roles: LECTURER`, and the assignment must belong to a class the
+`X-User-Id` owns — otherwise `404`, same as a missing id. The owner check runs before
+course-service calls result-service / submission-service.
+
+**GET `/api/v1/assignments/{{assignmentId}}/results?studentCode=&includeSteps=`**
+
+`studentCode` omitted ⇒ whole class; given ⇒ that roster code only (unknown code → `[]`).
+`includeSteps=true` adds each plan's `steps[]`.
+
+→ `200` `data` = `[{ studentUserId, studentCode, studentName, exerciseScore,
+results: [{ submissionId, planId, planWeight, score, maxScore, status, summaryLog,
+latest, startedAt, completedAt, steps }] }]` — `exerciseScore` comes from result-service's
+weighted formula, so it matches `GET /api/v1/classes/{id}/transcript`.
+
+**GET `/api/v1/assignments/{{assignmentId}}/submissions`**
+
+→ `200` `data` = `[{ id, assignmentId, studentId, zipFileName, status, latest, createdAt }]`
+(every submission of the assignment; replaces the removed public route
+`GET /api/v1/submissions/assignment/{assignmentId}`).
+
+Negative: `STUDENT` or no role → `403` · another lecturer's assignment → `404` ·
+no `X-Gateway-Secret` → `401`.
+
 ---
 
 ## 2. submission-service — `http://localhost:8082`
@@ -286,16 +330,22 @@ via RustFS; publishing `GRADE_SUBMISSION` onto `wgs-events` happens here
 ### 2.2 Queries
 
 - `GET /api/v1/submissions` — `X-User-Id: <student-uuid>`, paged
-- `GET /api/v1/submissions/{{id}}` — detail; the caller must own it (`X-User-Roles: LECTURER`
-  bypasses), otherwise `404` indistinguishable from a missing id
-- `GET /api/v1/submissions/assignment/{{assignmentId}}` — `List<SubmissionResponse>`;
-  **`X-User-Roles: LECTURER` required**, otherwise `403` (this is the grading queue)
+- `GET /api/v1/submissions/{{id}}` — detail; the caller must own it, otherwise `404`
+  indistinguishable from a missing id (no role bypass — a lecturer uses
+  `GET /api/v1/assignments/{assignmentId}/submissions` in course-service, §1.6)
+
+The per-assignment list `GET /api/v1/submissions/assignment/{assignmentId}` was removed from
+this public API; it now lives at `GET /api/v1/internal/submissions/assignment/{assignmentId}`
+(raw, no envelope, not routed by the gateway) and is called only by course-service.
 
 ### 2.3 Status update (used by executor)
 
 **PUT `/api/v1/internal/submissions/{{id}}/status`** with body `{ "status": "GRADING" }` —
 values: `PENDING | GRADING | DONE | FAILED`. Executor-only: not routed by the
 api-gateway, call the service directly. Missing/invalid → 400. 404 if not found.
+
+**GET `/api/v1/internal/submissions/assignment/{{assignmentId}}`** — every submission of
+one assignment, raw `List<SubmissionResponse>`. Only caller: course-service (§1.6).
 
 ### 2.4 Webhook + health
 
@@ -306,13 +356,29 @@ api-gateway, call the service directly. Missing/invalid → 400. 404 if not foun
 
 ## 3. result-service — `http://localhost:8084` and executor internal contracts
 
-**POST `/api/v1/internal/results/average`** (raw, Feign-targeted by course-service)
+**GET `/api/v1/results/{{submissionId}}`** — `X-User-Id: <student-uuid>`; the student's
+poll from UC-04 Step 4.
+
+→ `200` `data` = `[{ id, submissionId, assignmentId, studentId, planId, planWeight,
+score, maxScore, status, summaryLog, latest, startedAt, completedAt, steps: [{ stepOrder,
+stepName, stepType, passed, weight, score, actualValue, expectedValue, errorMessage,
+durationMs }] }]`. `[]` while the submission is queued or grading — poll. Rows of another
+student → `403`; there is no role bypass, so a lecturer uses §1.6.
+
+**POST `/api/v1/internal/results/weighted`** (raw, Feign-targeted by course-service)
 
 ```json
 { "assignmentIds": ["<uuid>", "…"], "studentId": "<uuid>" }
 ```
 
 → `{ "average": 8.50 }` (or `null` when no results exist — null-safe by design review).
+This is the single weight-weighted exercise-score formula: both the transcript
+(UC-01 Step 6) and the lecturer's grading view (§1.6) read it.
+
+**GET `/api/v1/internal/results/assignment/{{assignmentId}}?studentUserId=&includeSteps=`**
+(raw) → `[{ studentUserId, exerciseScore, results: [...] }]` — latest rows of one
+assignment grouped per student, `exerciseScore` pre-computed by the same formula.
+Only caller: course-service (§1.6), which has already verified ownership.
 
 ### executor-service
 
@@ -340,7 +406,7 @@ once deployed on the cluster).
 | missing required query param | 400 | "Missing required parameter: <name>" |
 | missing `X-User-Id` | 400 | `Missing required header: X-User-Id` (course-service paths still say `invalid UUID "anonymous"`) |
 | wrong-owner access everywhere | 404 | indistinguishable (no leak) |
-| missing/wrong role on a lecturer-only endpoint (classes, scores, assignments, plans & steps, docker images, per-assignment submissions) | 403 | method security — a request carrying **no** `X-User-Roles` fails the same way |
+| missing/wrong role on a lecturer-only endpoint (classes, scores, assignments, plans & steps, docker images, assignment grading view §1.6) | 403 | method security — a request carrying **no** `X-User-Roles` fails the same way |
 | role header sent without `X-Gateway-Secret` | 401 | roles are only read after the secret matches, so a roleless caller never reaches a `@PreAuthorize` |
 | duplicate unique (class name+semester, assignment title, plan seq, step order) | 400 | descriptive message |
 | deleted resource referenced | 404 | (soft-delete filter) |

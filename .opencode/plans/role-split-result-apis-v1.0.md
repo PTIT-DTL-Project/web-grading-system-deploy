@@ -1,8 +1,8 @@
 # Plan: Tách API kết quả theo vai trò + gỡ LECTURER bypass không scope
 
-> **Date:** 2026-09-30 · **Status:** planned, not started · **Repo:** `web-grading-system-deploy`
+> **Date:** 2026-09-30 · **Status:** implemented & verified 2026-09-30 (steps 1–5) · **Repo:** `web-grading-system-deploy`
 > **Scope:** `src-services/{result,submission,course}-service` + docs + skills
-> **Depends on:** slice 1 (X-Gateway-Secret trust boundary, uncommitted) + slice 2 (role enforcement, uncommitted)
+> **Depends on:** slice 1 (X-Gateway-Secret trust boundary) + slice 2 (role enforcement) — both committed on `feat/gateway-routing`
 > **Origin:** user review of slice 2 — *"giảng viên không nên xem kết quả sinh viên qua API của sinh viên; cần API riêng cho giảng viên xem cả lớp và từng sinh viên"*
 
 ---
@@ -227,8 +227,9 @@ chưa có nơi nào gọi → **phải làm đủ cả 3 bước, không dừng 
 - Filter topology gotcha (đã ghi ở skill §12.10): MockMvc auto-config đặt `Filter` bean **trước**
   `springSecurityFilterChain`, đảo thứ tự so với container → mọi request 401. Test phải tự build
   chain-only MockMvc.
-- Các thay đổi chưa commit của slice 1 + slice 2 (44 file `src-services`, 10 file outer repo)
-  vẫn nằm ở nhánh `duong/feat/DAT-8` / `main` → plan này tiếp tục lên trên đó.
+- Slice 1 + slice 2 are already committed on `feat/gateway-routing`; this slice builds on
+  them (the code was already in place when this plan was executed — only docs/skills were
+  still stale, see §10).
 
 ---
 
@@ -247,7 +248,43 @@ chưa có nơi nào gọi → **phải làm đủ cả 3 bước, không dừng 
 
 ---
 
-## 10. Chưa được làm trong plan này
+## 10. Trạng thái sau khi implement (2026-09-30)
 
-- Chưa sửa bất kỳ file nào (trừ file plan này).
-- Chưa cập nhật skill khi viết plan — skill §12.9 vẫn còn quy tắc cũ, sẽ được sửa ở bước 4 khi implement.
+**Bước 1–3 (code)** đã có sẵn và đã commit trên `feat/gateway-routing` khi plan này được chạy:
+`ResultController` bỏ bypass · `ResultInternalController` + `ResultService.getByAssignment` +
+`findByAssignmentIdAndLatestTrue` · `SubmissionController` bỏ route public và bypass +
+`SubmissionInternalController` · `AssignmentGrading{Controller,Service}` + 2 Feign client +
+`feign.submission-service.url` · DTOs `@Builder`.
+
+**Bước 4 (docs + skills) — làm trong lần chạy này:**
+
+| File | Thay đổi |
+|---|---|
+| `docs/design/usecase-flows.md` | UC-04 Step 4 xoá dòng LECTURER bypass · thêm **UC-06** · sửa danh sách role (§ *Role requirements*) |
+| `docs/api/API-TEST-GUIDE.md` | §*Role* · thêm **§1.6 Grading view** · §2.2 gỡ route cũ · §2.3 + §3 thêm internal endpoints (sửa luôn `average` → `weighted`) · §4 negative matrix · thêm **local boot recipe** |
+| `src-services/docs/api/postman/FULL_FLOW_TESTING_GUIDE.md` | §0 *Role rule* · §5.3 gỡ route cũ + comment sai · thêm **§5.4** · §7 checklist |
+| Postman collection | gỡ `list by assignment` · thêm 2 request grading view + 2 internal request, mỗi request kèm response thật (200/403/404) |
+| `src-services/README.md` | bảng role: sửa 3 dòng, thêm 2 dòng mới |
+| `src-services/submission-service/README.md` | danh sách endpoint |
+| `docs/design/system-design-v1.0.md` | §3.2/3.3/3.5 move route sang internal + thêm 2 endpoint mới |
+| **skills `.opencode/` + `.kilo/` (giống hệt nhau)** | `java-spring-boot-backend` **§12.9 viết lại** (cấm role bypass trong ownership check) · `cicd-gitops-argocd` thêm lệnh `helm template` đúng |
+| `SecurityUtils.hasRole` Javadoc (3 services) | bỏ mô tả "owner **or** lecturer" — mô tả cũ dạy sai pattern |
+
+**Bước 5 — Validate:**
+
+- `./mvnw test`: result **48/48** · submission **44/44** · course **200/200** ·
+  api-gateway **9/9**. (Lần chạy đầu không set `DB_*` ⇒ 3 test `*ApplicationTests.contextLoads`
+  fail kết nối `localhost:5432`; chạy lại với env Neon ⇒ **cả 3 pass** — lỗi môi trường, không do code.)
+- `mvn -DskipTests package`: 4 service OK.
+- `helm template -f values-stg.yaml`: 5 chart OK (chart không có `values.yaml` mặc định).
+- **Verify live** (boot 3 service thật với Neon, không qua cluster — cluster `127.0.0.1:6443`
+  vẫn refused): giảng viên chủ lớp → **200** ở cả 2 endpoint mới (Feign call thật sang
+  result/submission) · giảng viên lớp khác → **404** · `STUDENT` / không role → **403** ·
+  không secret → **401** · route cũ `GET /api/v1/submissions/assignment/{id}` → **404 No
+  handler** · `GET /api/v1/results/{id}` với LECTURER → **403** (bypass đã gỡ) ·
+  `GET /api/v1/submissions/{id}` với LECTURER → **404** · owner đọc kết quả của mình → **200** ·
+  2 internal endpoint → **200**. Responses đã lưu vào Postman collection từ chính buổi boot này.
+
+**Chưa kiểm chứng được:** e2e qua Keycloak (realm `ptit-wgs` chưa có role) — như dự đoán ở §8.
+
+**Không commit** — working tree để lại thay đổi cho người review.

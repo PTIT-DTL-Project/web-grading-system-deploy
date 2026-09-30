@@ -143,6 +143,9 @@ DELETE /api/v1/assignments/{id}/plans/{pid}/steps/{sid} — Xoá step
 POST   /api/v1/docker-images               — Khai báo docker image
 GET    /api/v1/docker-images               — DS images
 DELETE /api/v1/docker-images/{id}          — Xoá
+
+GET    /api/v1/assignments/{id}/results    — Giảng viên: kết quả auto-grading cả lớp / 1 SV (role + owner)
+GET    /api/v1/assignments/{id}/submissions — Giảng viên: DS bài nộp của bài tập (role + owner)
 ```
 
 **Internal API (chỉ service khác gọi Feign):**
@@ -164,15 +167,15 @@ GET /api/v1/internal/assignments/{id}/exists          — submission: validate a
 ```
 POST  /api/v1/submissions/presigned-url     — Request upload URL
 GET   /api/v1/submissions                   — Bài nộp của tôi
-GET   /api/v1/submissions/{id}              — Chi tiết
-GET   /api/v1/submissions/assignment/{id}   — DS bài nộp của 1 bài tập
+GET   /api/v1/submissions/{id}              — Chi tiết (chỉ chủ submission, không bypass vai trò)
 POST  /api/v1/submissions/webhook/upload-complete  — RustFS webhook (trigger chấm duy nhất)
 ```
 
 **Internal API:**
 
 ```
-PUT /api/v1/internal/submissions/{id}/status       — executor cập nhật trạng thái (đã có)
+PUT  /api/v1/internal/submissions/{id}/status       — executor cập nhật trạng thái (đã có)
+GET  /api/v1/internal/submissions/assignment/{id}   — course-service: DS bài nộp của 1 bài tập
 ```
 
 **Thay đổi cần làm trong v1:**
@@ -230,6 +233,7 @@ GET  /api/v1/results/{submissionId}   — Kết quả 1 bài nộp (một row m�
 ```
 POST /api/v1/internal/results                            — executor ghi kết quả chấm
 POST /api/v1/internal/results/weighted                   — điểm exercise theo plan weight
+GET  /api/v1/internal/results/assignment/{id}            — course-service: kết quả auto-grading 1 bài tập, group theo SV
 ```
 
 ---

@@ -99,3 +99,11 @@ Symptom map:
   check rollout (`kubectl rollout status deployment/<svc> -n web-grading`).
 - publish.yml red at clone step → `CONFIG_REPO_TOKEN` missing/expired or repo renamed.
 - App Missing → chart path doesn't exist on that branch in the config repo.
+
+Render a chart locally before pushing (charts in `config-services/` ship **no** default
+`values.yaml`, only `values-stg.yaml`, so plain `helm template` dies on
+`nil pointer evaluating interface {}.type`):
+
+```bash
+helm template <name> config-services/<name> -f config-services/<name>/values-stg.yaml
+```

@@ -436,15 +436,39 @@ Roles ride the same trust boundary as identity, so nothing new is exposed:
 
 Split the two rules correctly: a **role** rule answers `403` (`@PreAuthorize`), an
 **ownership** rule answers `404` via `ResourceNotFoundException` so an existing id stays
-indistinguishable from a missing one. Where one endpoint needs *either* (read a result if
-owner **or** lecturer) `@PreAuthorize` cannot express it — use
-`SecurityUtils.hasRole("LECTURER")` inside the method (accepts `LECTURER` or `ROLE_LECTURER`;
-no authentication ⇒ `false`).
+indistinguishable from a missing one.
+
+**Never widen an ownership check with a role bypass** (rewritten 2026-09-30, role-split
+slice — this used to say "use `SecurityUtils.hasRole("LECTURER")` inside the method", and
+that was wrong). No `if (!hasRole("LECTURER") && !isOwner(...))` in a data-service
+controller: a bare `hasRole("LECTURER")` carries no class/row scope, so it lets *every*
+lecturer read *every* class, and it makes one route serve two audiences that then have to
+be told apart by `if`. When a role legitimately needs wider data, open a **separate route
+that is role-gated AND owner-scoped**, next to the other owned resources in course-service:
+
+```java
+@PreAuthorize("hasRole('LECTURER')")           // 403 before anything else
+@GetMapping("/results")
+public ... results(@PathVariable UUID assignmentId, ...) {
+    // service: assignmentRepository.findByIdAndOwnerId(assignmentId, ownerId)
+    //          .orElseThrow(() -> new ResourceNotFoundException(...));   // 404 first
+    //          THEN the Feign call — never call downstream for an unowned id
+}
+```
+
+Real endpoints: `GET /api/v1/assignments/{id}/results` and
+`GET /api/v1/assignments/{id}/submissions` (`AssignmentGradingController`). Data services
+stay role-blind: their public routes answer strictly for the caller's own rows (403/404),
+and their `/api/v1/internal/**` routes are `permitAll`, not gateway-routed, and rely on
+course-service having done the owner check.
 
 `SecurityUtils`/`UserPrincipal` are the only role-aware helpers; do not hand-roll a
-`SecurityContextHolder` reader. Existing `standaloneSetup` controller tests do **not**
-exercise `@PreAuthorize` (the controller is `new`-ed, so there is no proxy) — they keep
-passing and must be complemented by a `@WebMvcTest`, never treated as coverage.
+`SecurityContextHolder` reader. `SecurityUtils.hasRole` stays as a generic fail-closed role
+probe (accepts `LECTURER` or `ROLE_LECTURER`; no authentication ⇒ `false`) — but using it
+to bypass ownership is the bug §12.9 exists to prevent. Existing `standaloneSetup`
+controller tests do **not** exercise `@PreAuthorize` (the controller is `new`-ed, so there
+is no proxy) — they keep passing and must be complemented by a `@WebMvcTest`, never treated
+as coverage.
 
 ## 12.10. @WebMvcTest role-matrix recipe (Spring Boot 4) (mandatory)
 
