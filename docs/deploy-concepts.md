@@ -628,6 +628,7 @@ K8s Cluster
 └── Cloudflare Tunnel (docker-compose, host network)
     └── Mapping:
         web-dev1-argocd.vucongtuanduong.dpdns.org  → localhost (ArgoCD)
+        web-dev1-api.vucongtuanduong.dpdns.org      → localhost (api-gateway)
         web-dev1-submission.vucongtuanduong.dpdns.org → localhost (submission)
 ```
 

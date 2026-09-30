@@ -160,9 +160,13 @@ Verify by checking the compiled class has `RuntimeVisibleParameterAnnotations`.
 - CRITICAL: `FormatRestResponse.isExcluded()` MUST pass through `/v3/api-docs*` and
   `/swagger-ui*` paths — otherwise the advice wraps the OpenAPI JSON in the ApiResponse
   envelope and swagger-ui cannot parse it. Keep the exclusion when editing the advice.
-- When Keycloak resource-server security is wired into services, permit docs paths FIRST:
-  `.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()`
-  (comment is already inside each OpenApiConfig.java).
+- Security (wired 2026-09-30): each service's `config/SecurityConfig.java` permits
+  `/actuator/**`, `/swagger-ui/**`, `/swagger-ui.html`, `/v3/api-docs/**`,
+  `/api/v1/internal/**` — submission adds `/api/v1/submissions/webhook/**` — BEFORE
+  `anyRequest().authenticated()`. Docs paths must stay reachable without a token
+  (comment is already inside each OpenApiConfig.java). `PUBLIC_PATHS` is
+  `public static final` because `HeaderAuthenticationFilter.shouldNotFilter` reads it;
+  the two lists must stay in sync.
 - Verified live: raw openapi json at `/v3/api-docs`, UI 200, business endpoints still enveloped.
 
 ## 9. Configuration: @ConfigurationProperties, not @Value
@@ -300,8 +304,16 @@ Verify by checking the compiled class has `RuntimeVisibleParameterAnnotations`.
   HandlerMethodValidationException handler above.
 - Every business service carries `spring-boot-starter-validation`; api-gateway does not
   (no request bodies).
-- Identity: `X-User-Id` header (until Keycloak integration injects it at the gateway);
-   no endpoint trusts client-sent identity beyond that header today.
+- Identity: `X-User-Id` header, **no longer client-trusted** (Review: 2026-09-30, Pullfrog
+  review feat/DAT-8). `security/HeaderAuthenticationFilter` builds a SecurityContext only
+  when `X-Gateway-Secret` matches `gateway.security.secret` (env `GATEWAY_TRUSTED_SECRET`,
+  constant-time compare, blank config = fail closed → 401), and skips `permitAll` prefixes
+  via `shouldNotFilter` so nothing under them can inherit a context. Through the api-gateway
+  the value comes from the validated JWT `sub`; the gateway strips client-sent `X-User-*`
+  before it looks at the principal. `X-User-Roles` is deliberately **not** propagated —
+  no `@PreAuthorize` consumer exists yet, so roles may return only behind this boundary.
+  The three copies of the filter/config/properties are byte-identical modulo package; a fix
+  must land in all three.
 - Student-facing read endpoints live under `/api/v1/student/**` (gateway routes them to
    course-service). They are enrollment + `published` gated via `class_students.student_user_id`
    and sanitize `test_steps.config` (strip `connection`/`extract`/`expected`, drop
@@ -405,6 +417,80 @@ calls the controller method and catches the raw exception) cannot fail if the
 `@ExceptionHandler` annotation is later deleted — it asserts a method's return
 value, not that Spring wires the handler. For any new/changed exception handler,
 use `MockMvcBuilders.standaloneSetup(new Controller(...)).setControllerAdvice(new GlobalExceptionHandler())` and `perform(...)` so the real `ExceptionHandlerExceptionResolver` runs. `spring-boot-starter-test` is already on every service's classpath. (This caught a `MissingRequestHeaderException` → 500 gap in submission-service.)
+
+## 12.9. Role enforcement: @PreAuthorize over trust-chained X-User-Roles (mandatory)
+
+Roles ride the same trust boundary as identity, so nothing new is exposed:
+
+1. **gateway** — `AuthenticationContextFilter` reads `realm_access.roles` from the validated
+   JWT, keeps only `gateway.security.allowed-roles` (default `LECTURER,STUDENT`, yaml, not a
+   secret) and forwards `X-User-Roles`, only alongside `X-Gateway-Secret`. Empty intersection
+   ⇒ header omitted, never sent empty.
+2. **service** — `HeaderAuthenticationFilter` parses the header into `ROLE_`-prefixed
+   authorities **only after** `X-Gateway-Secret` matched (`shouldNotFilter` still skips the
+   whole filter otherwise). No header ⇒ no authorities ⇒ every `@PreAuthorize` fails closed.
+   Strip a caller-supplied `ROLE_` prefix before re-prefixing, so `ROLE_LECTURER` never
+   becomes `ROLE_ROLE_LECTURER`.
+3. **controller** — `@PreAuthorize("hasRole('LECTURER')")` placed directly above the mapping
+   annotation. `@EnableMethodSecurity` is already on every service's `SecurityConfig`.
+
+Split the two rules correctly: a **role** rule answers `403` (`@PreAuthorize`), an
+**ownership** rule answers `404` via `ResourceNotFoundException` so an existing id stays
+indistinguishable from a missing one. Where one endpoint needs *either* (read a result if
+owner **or** lecturer) `@PreAuthorize` cannot express it — use
+`SecurityUtils.hasRole("LECTURER")` inside the method (accepts `LECTURER` or `ROLE_LECTURER`;
+no authentication ⇒ `false`).
+
+`SecurityUtils`/`UserPrincipal` are the only role-aware helpers; do not hand-roll a
+`SecurityContextHolder` reader. Existing `standaloneSetup` controller tests do **not**
+exercise `@PreAuthorize` (the controller is `new`-ed, so there is no proxy) — they keep
+passing and must be complemented by a `@WebMvcTest`, never treated as coverage.
+
+## 12.10. @WebMvcTest role-matrix recipe (Spring Boot 4) (mandatory)
+
+Boilerplate for an authorization test, and the five things that break it:
+
+```java
+@WebMvcTest(controllers = XController.class)
+@Import({SecurityConfig.class, HeaderAuthenticationFilter.class})
+@EnableConfigurationProperties(GatewayTrustProperties.class)   // NOT @Import — see (2)
+@TestPropertySource(properties = "gateway.security.secret=" + XTest.SECRET)
+class XControllerAuthorizationTest {
+    @Autowired WebApplicationContext ctx;
+    @Autowired FilterChainProxy securityFilterChain;
+    @MockitoBean XService xService;      // (1) Boot 4: @MockBean is gone
+    @MockitoBean HttpLogService httpLogService;
+    private MockMvc mockMvc;
+
+    @BeforeEach void build() {           // (4) chain only — see below
+        mockMvc = MockMvcBuilders.webAppContextSetup(ctx).addFilters(securityFilterChain).build();
+    }
+}
+```
+
+1. `@MockitoBean` (from `spring-test`), not `@MockBean` — Spring Boot 4 removed `@MockBean`.
+   Besides the controller's own service you must mock `HttpLogService`: `HttpLoggingFilter`
+   is a `Filter`, and the `@WebMvcTest` slice includes `Filter` beans, so it fails to build
+   without its repository-backed dependency.
+2. `@EnableConfigurationProperties(Record.class)`, never `@Import(Record.class)` — a plain
+   `@Import` registers the record as an ordinary bean and its constructor gets autowired
+   instead of bound from `gateway.security.*` (`No qualifying bean of type 'java.lang.String'`).
+3. Dependency: Spring Boot 4 moved the slice annotations out of `spring-boot-test-autoconfigure`.
+   Add test-scoped `org.springframework.boot:spring-boot-webmvc-test`; the annotation is
+   `org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest`.
+4. Build `MockMvc` from the `FilterChainProxy` yourself. The auto-configured `MockMvc` adds
+   every `Filter` bean **ahead of** `springSecurityFilterChain`, which inverts the container's
+   order (there the chain's `-100` runs first and the chain-external filter copy is a
+   `OncePerRequestFilter` no-op). With the order flipped, the outer copy marks the request
+   already-filtered, the copy *inside* the chain is skipped, `SecurityContextHolderFilter`
+   resets the context, and **every** request answers 401 — including a correct secret.
+5. Drive requests with the real trust headers (`X-User-Id` + `X-Gateway-Secret` +
+   `X-User-Roles`), not `@WithMockUser`/`user()`: those test a wiring path no request in this
+   system takes. Assert the fail-closed case (no `X-User-Roles` ⇒ 403) explicitly — it is the
+   property that makes a missing gateway allowlist harmless.
+
+Java note: a text block needs a line terminator after `"""`, so `"""[{"a":1}]"""` is a
+compile error (`';' expected`). Use a normal escaped string for one-line JSON.
 
 ## 13. Verification
 

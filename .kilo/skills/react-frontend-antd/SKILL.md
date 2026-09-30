@@ -95,7 +95,13 @@ with a **0-based `page`** (antd `Table.pagination.current` is 1-based → `meta.
   that check on every read, so a hand-edited `wgs.identity` holding a malformed UUID
   bounces to `/login` instead of ever reaching the backend (verified: the
   `Invalid UUID string: anonymous` 400 is unreachable from the FE).
-- Pre-Keycloak there is no server-side session: gating is `RequireIdentity` +
+- **The backend now demands a token at the gateway (2026-09-30):** this app sends no
+  bearer token, so every API call returns `401`, the response interceptor clears identity
+  and redirects to `/login`. All screens are down until a Keycloak login flow lands here —
+  regression-test the API meanwhile with
+  `src-services/docs/api/postman/FULL_FLOW_TESTING_GUIDE.md` (direct mode needs
+  `X-Gateway-Secret`, not a token).
+- Until that login flow lands there is no server-side session: gating is `RequireIdentity` +
   role-based menus in `AppLayout`.
 
 ## 6. Theme: red + white, tokens only

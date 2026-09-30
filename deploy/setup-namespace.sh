@@ -38,6 +38,24 @@ kubectl create secret generic app-config \
   --from-literal=APP_LOG_LEVEL="${APP_LOG_LEVEL:-INFO}" \
   --dry-run=client -o yaml | kubectl apply -f -
 
+# Gateway ↔ services trust secret (stamped as X-Gateway-Secret by api-gateway, checked by
+# course/result/submission). A blank value is fail-closed in the services (401 on every
+# authenticated request), so fall back to the existing value, then to a fresh random one,
+# rather than silently pushing an empty secret on every re-run.
+GATEWAY_TRUSTED_SECRET="${GATEWAY_TRUSTED_SECRET:-}"
+if [ -z "${GATEWAY_TRUSTED_SECRET}" ]; then
+  GATEWAY_TRUSTED_SECRET="$(kubectl get secret gateway-trust \
+    --namespace "${NAMESPACE}" \
+    -o jsonpath='{.data.GATEWAY_TRUSTED_SECRET}' 2>/dev/null | base64 -d)" || true
+fi
+if [ -z "${GATEWAY_TRUSTED_SECRET}" ]; then
+  GATEWAY_TRUSTED_SECRET="$(openssl rand -hex 32)"
+fi
+kubectl create secret generic gateway-trust \
+  --namespace "${NAMESPACE}" \
+  --from-literal=GATEWAY_TRUSTED_SECRET="${GATEWAY_TRUSTED_SECRET}" \
+  --dry-run=client -o yaml | kubectl apply -f -
+
 # Kafka (Aiven SASL_SSL/SCRAM) credentials
 kubectl create secret generic kafka-aiven-credentials \
   --namespace "${NAMESPACE}" \

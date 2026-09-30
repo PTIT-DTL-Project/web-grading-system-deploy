@@ -30,9 +30,24 @@ Paged lists: `data.meta = { page, pageSize, pages, total }`, `data.result = […
 Excluded from wrapping: `/api/v1/internal/**`, `*/webhook*`, `/health`, `/version`,
 `/v3/api-docs*`, `/swagger-ui*`.
 
-**Identity (pre-Keycloak):** send `X-User-Id: <uuid>` on every request that cares about
-ownership. Missing header → `anonymous` → currently 400 (invalid UUID). Wrong owner's UUID
-→ indistinguishable 404.
+**Identity:** reaching a service directly requires `X-User-Id: <uuid>` **and**
+`X-Gateway-Secret: <GATEWAY_TRUSTED_SECRET>` — without the secret the request is rejected
+with `401` before the controller. Missing `X-User-Id` → `anonymous` → 400 (invalid UUID);
+wrong owner's UUID → indistinguishable 404. Through the api-gateway send
+`Authorization: Bearer <token>` instead: the gateway injects `X-User-Id` from the token
+subject and strips anything you send (both modes detailed in
+`docs/api/postman/FULL_FLOW_TESTING_GUIDE.md` §0).
+
+Instead of running the services locally you can use the dev ingresses as the base URL —
+`https://web-dev1-course…`, `https://web-dev1-submission…`,
+`https://web-dev1-result…` (same `X-User-Id` + `X-Gateway-Secret` rules apply).
+
+**Role (since 2026-09-30):** endpoints that write grading data — classes & students, score
+components, scores, transcripts, assignments, plans & steps, docker images — plus
+`GET /api/v1/submissions/assignment/{assignmentId}` additionally require
+`X-User-Roles: LECTURER` (`403` without it; through the gateway it comes from the token's
+allowlisted `realm_access.roles`). Ownership, not role, still rules `GET /api/v1/submissions/{id}`
+(`404`) and `GET /api/v1/results/{submissionId}` (`403`) — `LECTURER` bypasses both.
 
 ---
 
@@ -271,8 +286,10 @@ via RustFS; publishing `GRADE_SUBMISSION` onto `wgs-events` happens here
 ### 2.2 Queries
 
 - `GET /api/v1/submissions` — `X-User-Id: <student-uuid>`, paged
-- `GET /api/v1/submissions/{{id}}` — detail
-- `GET /api/v1/submissions/assignment/{{assignmentId}}` — `List<SubmissionResponse>`
+- `GET /api/v1/submissions/{{id}}` — detail; the caller must own it (`X-User-Roles: LECTURER`
+  bypasses), otherwise `404` indistinguishable from a missing id
+- `GET /api/v1/submissions/assignment/{{assignmentId}}` — `List<SubmissionResponse>`;
+  **`X-User-Roles: LECTURER` required**, otherwise `403` (this is the grading queue)
 
 ### 2.3 Status update (used by executor)
 
@@ -323,6 +340,8 @@ once deployed on the cluster).
 | missing required query param | 400 | "Missing required parameter: <name>" |
 | missing `X-User-Id` | 400 | `Missing required header: X-User-Id` (course-service paths still say `invalid UUID "anonymous"`) |
 | wrong-owner access everywhere | 404 | indistinguishable (no leak) |
+| missing/wrong role on a lecturer-only endpoint (classes, scores, assignments, plans & steps, docker images, per-assignment submissions) | 403 | method security — a request carrying **no** `X-User-Roles` fails the same way |
+| role header sent without `X-Gateway-Secret` | 401 | roles are only read after the secret matches, so a roleless caller never reaches a `@PreAuthorize` |
 | duplicate unique (class name+semester, assignment title, plan seq, step order) | 400 | descriptive message |
 | deleted resource referenced | 404 | (soft-delete filter) |
 | oversized CSV | 413 | "Uploaded file is too large" |

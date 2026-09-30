@@ -9,10 +9,42 @@ Rules for maintaining this file live in the project root `AGENTS.md`
 
 ---
 
+## Role requirements (slice 2, since 2026-09-30)
+
+Identity (`X-User-Id`) and role now travel together: the gateway reads
+`realm_access.roles` from the validated Keycloak token, keeps only what
+`gateway.security.allowed-roles` allows (default `LECTURER,STUDENT`) and forwards them as
+`X-User-Roles`; on the direct path the caller sends that header themselves next to
+`X-Gateway-Secret`. Either way a service only reads roles **after** the secret matched, so a
+missing or unknown role means *no* role.
+
+Everything that creates or edits grading data requires `LECTURER` and answers `403` to
+anyone else — including a request that carries no `X-User-Roles` at all:
+
+- UC-01: `GET/POST /api/v1/classes`, `PUT /api/v1/classes/{id}/archive`, students import/list,
+  score components, entering/reading scores, transcript — the one carve-out is
+  `GET /api/v1/classes/{id}`, which stays owner-scoped with no role gate so an enrolled
+  student can still open their own class
+- UC-02: every `/api/v1/assignments` endpoint (create, list, detail, update, publish,
+  soft delete, docker-image assignment)
+- UC-03: every `/api/v1/assignments/{assignmentId}` plan & step endpoint
+- docker images: every `/api/v1/docker-images` endpoint
+- `GET /api/v1/submissions/assignment/{assignmentId}` — the per-assignment grading queue
+
+Role is *not* what guards UC-04 (the student flow): `/api/v1/student/**` and the submission
+upload endpoints key off enrollment/ownership, and `GET /api/v1/submissions/{id}` answers
+`404` for a non-owner (unless `LECTURER`).
+
+**Actor line for each use case below still says who the flow is for; this section is the
+authoritative list of which endpoints actually enforce it.**
+
+---
+
 ## UC-01: Lecturer manages classes & scores
 
-**Actor:** lecturer (identified by `X-User-Id` header until Keycloak integration —
-use one consistent UUID for the whole flow).
+**Actor:** lecturer. Identity is `X-User-Id` — sent with `X-Gateway-Secret` on the direct
+path, or injected by the api-gateway from the Keycloak token subject when called through it
+(since 2026-09-30). Use one consistent UUID for the whole flow.
 **Service:** course-service (`http://localhost:8081` directly, or via gateway).
 
 **Preconditions:** service running; lecturer UUID chosen.
@@ -345,7 +377,8 @@ status is patched `GRADING` → `DONE`/`FAILED` along the way.
 
 ```
 GET /api/v1/results/{submissionId}
-X-User-Id: <student-uuid>               (mismatch ⇒ 403 "Not owner")
+X-User-Id: <student-uuid>               (rows of someone else ⇒ 403 "Not owner")
+                                X-User-Roles: LECTURER   ⇒ ownership rule skipped (grading view)
 GET /api/v1/student/assignments/{id}   (re-read, shows score after result lands)
 ```
 One `results` row per graded plan (each with its `step_results`), enveloped as

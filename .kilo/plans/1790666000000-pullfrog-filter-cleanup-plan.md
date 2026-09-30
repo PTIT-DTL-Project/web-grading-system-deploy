@@ -230,3 +230,40 @@ The three cases after edit:
 - `escapeContains_lowercasesInput` → input `"PTIT"`, expected `"%ptit%"`
 
 No source-code changes required for this item; it is test-only.
+
+---
+
+## Security fix: Redact X-Gateway-Secret from http_log
+
+**Blocker:** `X-Gateway-Secret` is attached to every forwarded request by `api-gateway` (`AuthenticationContextFilter.java:98`) and is currently persisted in cleartext in `http_log.request_headers` by the `HttpLoggingFilter` in course-service, submission-service, and result-service. Anyone with read access to that table can call the services directly and forge `X-User-Id` + `X-User-Roles`.
+
+The `headersToJson` method in each service's `HttpLogService` redacts headers listed in `SENSITIVE_HEADERS`, but `"x-gateway-secret"` is absent from all three lists.
+
+### 1. Add `x-gateway-secret` to SENSITIVE_HEADERS in all four services
+
+**Files:**
+- `course-service/.../service/HttpLogService.java:26-27`
+- `submission-service/.../service/HttpLogService.java:26-27`
+- `result-service/.../service/HttpLogService.java:25-26`
+- `executor-service/.../service/infra/HttpLogService.java:27-28`
+
+Add `"x-gateway-secret"` to each `SENSITIVE_HEADERS` set. The executor-service does not currently receive the gateway secret (no `gateway.trusted-secret` config), but adding it there is defense-in-depth and keeps the four lists symmetric.
+
+### 2. Add test asserting redaction in each service
+
+**Files:**
+- `course-service/src/test/.../service/HttpLogServiceTest.java`
+- `submission-service/src/test/.../service/HttpLogServiceTest.java`
+- `result-service/src/test/.../service/HttpLogServiceTest.java`
+- `executor-service/src/test/.../service/infra/HttpLogServiceTest.java`
+
+Add a test method `headersToJson_redactsXGatewaySecret` following the existing `headersToJson_dropsSensitiveHeaders` pattern. Input: a headers map containing `X-Gateway-Secret` with a dummy value plus one non-sensitive header. Assert the parsed JSON contains the non-sensitive header and does not contain `X-Gateway-Secret`.
+
+### 3. Historical data note
+
+Existing `http_log` rows keep the old value. After this fix lands, rotate `GATEWAY_TRUSTED_SECRET` in the deploy config so any previously leaked value is useless. This is a deployment/repo outside this codebase; flag it in the MR description.
+
+### 4. Verify
+
+- Run `./mvnw test -Dtest='HttpLogServiceTest'` in each of the four service modules.
+- Expected: all four services pass, including the new redaction test.
