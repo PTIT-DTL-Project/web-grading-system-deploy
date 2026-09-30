@@ -107,8 +107,10 @@ GET /api/v1/assignments/{assignmentId}/submissions
 ```
 result-service    GET /api/v1/internal/results/assignment/{assignmentId}?studentUserId=&includeSteps=
                   → [{ studentUserId, exerciseScore,
-                       plans: [{ planId, planWeight, score, maxScore, status, summaryLog,
-                                 latest, submissionId, startedAt, completedAt, steps[] }]}]
+                       results: [{ planId, planWeight, score, maxScore, status, summaryLog,
+                                   latest, submissionId, startedAt, completedAt, steps[] }]}]
+                  (field is `results`, not `plans` — same record type binds the Feign payload
+                   and the FE response in course-service, no duplicated DTO)
                   exerciseScore tính bằng ĐÚNG formula `weightedScoreByPlan` đang có
                   (không được nhân bản công thức bên course-service)
 
