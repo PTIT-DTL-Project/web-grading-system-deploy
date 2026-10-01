@@ -51,9 +51,11 @@ fi
 if [ -z "${GATEWAY_TRUSTED_SECRET}" ]; then
   GATEWAY_TRUSTED_SECRET="$(openssl rand -hex 32)"
 fi
+GATEWAY_ALLOWED_ROLES="${GATEWAY_ALLOWED_ROLES:-ROLE_LECTURER,ROLE_STUDENT}"
 kubectl create secret generic gateway-trust \
   --namespace "${NAMESPACE}" \
   --from-literal=GATEWAY_TRUSTED_SECRET="${GATEWAY_TRUSTED_SECRET}" \
+  --from-literal=GATEWAY_ALLOWED_ROLES="${GATEWAY_ALLOWED_ROLES}" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 # Kafka (Aiven SASL_SSL/SCRAM) credentials

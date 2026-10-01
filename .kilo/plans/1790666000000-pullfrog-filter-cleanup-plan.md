@@ -267,3 +267,83 @@ Existing `http_log` rows keep the old value. After this fix lands, rotate `GATEW
 
 - Run `./mvnw test -Dtest='HttpLogServiceTest'` in each of the four service modules.
 - Expected: all four services pass, including the new redaction test.
+
+---
+
+## Remaining Pullfrog review items (role-split slice, round 4)
+
+Three correctness/cleanup items from the latest review. The first is a blocker.
+
+### 1. Fix studentCode null widening in AssignmentGradingService (BLOCKER)
+
+**File:** `course-service/src/main/java/.../service/AssignmentGradingService.java:86`
+
+`ClassStudent.studentUserId` is nullable (`@Column(name = "student_user_id")`, no `nullable = false`). After the code match at line 78-85, line 86 assigns `studentUserId = match.getStudentUserId()` without a null check. When null, it's passed to `resultServiceClient.assignmentResults(assignmentId, null, includeSteps)` at line 93. Feign drops null query parameters, so the call returns **every student's results** — the filter silently widens to the whole class.
+
+Fix: after line 86, add `if (studentUserId == null) { return List.of(); }`. This folds the null case into the same branch as "unknown code returns empty list", which is the documented contract.
+
+Add a test: `results_studentWithNullUserIdReturnsEmptyWithoutCallingResultService` — stub a roster row where `studentUserId = null`, call with that student's code, assert `List.of()` and `verifyNoInteractions(resultServiceClient)`.
+
+### 2. Add trust-boundary test: valid secret, absent/empty X-User-Id
+
+**Files:**
+- `result-service/src/test/.../controller/ResultControllerAuthorizationTest.java`
+- `course-service/src/test/.../controller/AssignmentGradingAuthorizationTest.java`
+
+Current `asCaller` always stamps `X-User-Id: CALLER`. The 401 tests omit the secret entirely, which exercises `shouldNotFilter` (public-path bypass), not the `hasText` gate that runs after authentication. The gap: a request carrying a correct `X-Gateway-Secret` but no `X-User-Id` (or `X-User-Id: ""`, which `AuthenticationContextFilter` emits when JWT `sub` is null).
+
+Add one test per service:
+- `requestWithValidSecretButNoUserIdIsRejected` — `asCaller` variant that omits `X-User-Id` entirely; assert 401.
+- (Optional, if Keycloak can emit tokens without `sub`) `requestWithValidSecretButEmptyUserIdIsRejected` — send `X-User-Id: ""`; assert 401.
+
+The existing `asCaller` helpers should gain a private variant that skips the id header so the new tests don't duplicate setup.
+
+### 3. Delete dead SecurityUtils.hasRole from three services
+
+**Files:**
+- `course-service/src/main/java/.../security/SecurityUtils.java`
+- `result-service/src/main/java/.../security/SecurityUtils.java`
+- `submission-service/src/main/java/.../security/SecurityUtils.java`
+
+After the role-split, `hasRole("LECTURER")` has zero production callers and zero test callers in all three services. The method and its Javadoc (~30 lines of comments explaining a bypass that no longer exists) should be deleted. `getCurrentUserId()` and `getCurrentUserRoles()` remain in use.
+
+Before deleting, confirm no other call sites exist:
+```
+grep -rn "hasRole" src-services/course-service/src/main/java
+grep -rn "hasRole" src-services/result-service/src/main/java
+grep -rn "hasRole" src-services/submission-service/src/main/java
+```
+If any `hasRole(...)` call remains, list it here; otherwise delete the method.
+
+### 4. Fix ResultController ownership comment and dead guard
+
+**File:** `result-service/src/main/java/.../controller/ResultController.java:36-48`
+
+The comment claims "this route answers strictly for its owner", but:
+- Line 42: `xUserId != null` is dead — `HeaderAuthenticationFilter` only builds a SecurityContext for non-blank UUIDs, so authenticated requests always have a non-null id. The anonymous token is rejected by `anyRequest().authenticated()` before the controller.
+- Line 42: `!results.isEmpty()` skips ownership when results are empty, so a non-owner gets 200 `[]` instead of 403.
+
+Two options:
+- **A (recommended, preserves 403-vs-404 semantics):** Delete `xUserId != null &&` from line 42, leaving only `!results.isEmpty()`. Update the comment to say ownership is enforced when results are non-empty; empty results return 200 regardless (acceptable given UUIDv4 submission ids).
+- **B:** Make ownership unconditional — always check, return 403 for non-owner even when empty. This changes the documented empty-list response and needs a decision on the API contract.
+
+Go with option A unless the API contract review says otherwise.
+
+### 5. Correct exerciseScore wording in docs/Postman
+
+The claim that the grading view's exercise score "matches the class transcript" is inaccurate:
+- `ScoreService.computeExercise` (line 176-199) averages across **all assignments in the class** for the transcript.
+- `ResultService.getByAssignment` scores **one assignment** for the grading view.
+
+The formula (weight-weighted average of per-plan scores) is the same, but the scope differs. Update any docs/Postman descriptions that say "matches the transcript" to: "uses the same weight-weighted formula as the transcript, scoped to this assignment".
+
+### 6. Credential in testing guide (out of scope if file absent)
+
+Pullfrog flagged `docs/api/postman/FULL_FLOW_TESTING_GUIDE.md:370` containing a Neon connection string. This file does not exist in the current tree (`glob` returned no match). If it appears in a later commit, replace the credential with `postgresql://<user>:<password>@<host>/<db>` and point readers to `.env`. Not a blocker for the current code state.
+
+### Verification
+
+- `./mvnw test -Dtest='AssignmentGradingAuthorizationTest'` in course-service — green, including new null-userId test.
+- `./mvnw test -Dtest='ResultControllerAuthorizationTest'` in result-service — green, including new absent-id test.
+- `grep -rn "hasRole"` in main/java of all three services — zero hits after deletion.
+- `./mvnw compile` in all four services — clean.

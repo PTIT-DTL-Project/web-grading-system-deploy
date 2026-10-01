@@ -29,15 +29,18 @@ anyone else — including a request that carries no `X-User-Roles` at all:
   soft delete, docker-image assignment)
 - UC-03: every `/api/v1/assignments/{assignmentId}` plan & step endpoint
 - docker images: every `/api/v1/docker-images` endpoint
-- UC-06: `GET /api/v1/assignments/{assignmentId}/results` and
-  `GET /api/v1/assignments/{assignmentId}/submissions` — the lecturer's grading view
-  (role gate `403`, then owner check `404` for an assignment outside the caller's classes)
+- **UC-06 (slice 3):** `GET /api/v1/assignments/{assignmentId}/results` and
+  `GET /api/v1/assignments/{assignmentId}/submissions` — the lecturer's grading view.
+  Each carries the role gate **and** an ownership check inside the service, so an assignment
+  the caller does not own answers `404`. These two replaced the role-only guards that used to
+  sit on `GET /api/v1/results/{submissionId}` and `GET /api/v1/submissions/assignment/{id}`.
 
 Role is *not* what guards UC-04 (the student flow): `/api/v1/student/**` and the submission
 upload endpoints key off enrollment/ownership, and `GET /api/v1/submissions/{id}` answers
-`404` for a non-owner. Since the 2026-09-30 role split neither `submission-service` nor
-`result-service` reads roles at all — they answer strictly for the caller's own rows, and a
-lecturer's wider view is UC-06 in course-service.
+`404` for a non-owner — for **every** role, `LECTURER` included. `GET /api/v1/results/{submissionId}`
+is the same rule with `403`: its rows belong to whoever submitted them. Since slice 3 neither
+data service carries role logic at all; a lecturer sees another student's rows only through a
+course-service endpoint they own.
 
 **Actor line for each use case below still says who the flow is for; this section is the
 authoritative list of which endpoints actually enforce it.**
@@ -382,6 +385,7 @@ status is patched `GRADING` → `DONE`/`FAILED` along the way.
 ```
 GET /api/v1/results/{submissionId}
 X-User-Id: <student-uuid>               (rows of someone else ⇒ 403 "Not owner")
+                                X-User-Roles: LECTURER   ⇒ ownership rule skipped (grading view)
 GET /api/v1/student/assignments/{id}   (re-read, shows score after result lands)
 ```
 One `results` row per graded plan (each with its `step_results`), enveloped as
@@ -483,74 +487,48 @@ any other step.
 
 ---
 
-## UC-06: Lecturer reads the auto-grading results of one assignment
+## UC-06: Lecturer reviews auto-grading results and submissions (slice 3)
 
-**Actor:** lecturer (`X-User-Id` = the `owner_id` that created the class, `X-User-Roles:
-LECTURER`).
-**Service:** course-service (`http://localhost:8081` directly, or via gateway) — it alone
-decides ownership and pulls rows from result-service / submission-service over internal
-Feign calls.
+**Actor:** lecturer. **Service:** course-service (proxies result-service and
+submission-service).
 
-**Preconditions:** the assignment belongs to a class the lecturer owns; at least one
-student has submitted (otherwise `results` comes back empty, not an error).
+**Preconditions:** the lecturer owns the assignment's class.
 
-**Why this exists:** UC-04 Step 4 is the student's poll of *their own* submission. The
-lecturer's class-wide view used to piggyback on that route behind a bare role check, which
-let any lecturer read any class. Both reads below are role-gated *and* owner-scoped.
-
-### Step 1 — Auto-grading results for the whole class (or one student)
+### Step 1 — Request the class-wide results (with optional filters)
 
 ```
-GET /api/v1/assignments/{assignmentId}/results
-GET /api/v1/assignments/{assignmentId}/results?studentCode=SV0001&includeSteps=true
+GET /api/v1/assignments/{assignmentId}/results?studentCode=&includeSteps=false
 X-User-Id: <lecturer-uuid>
 X-User-Roles: LECTURER
+X-Gateway-Secret: <secret>
 ```
 
-Query params:
-- `studentCode` (optional) — roster code of one student; omitted ⇒ every student of the
-  class. Unknown code for this class ⇒ empty list, not an error.
-- `includeSteps` (optional, default `false`) — `true` adds each plan's `steps[]`
-  (pass/fail, actual/expected, duration) for the step-level drill-down.
+`studentCode` narrows to one roster row (trimmed; unknown code → `[]`).
+`includeSteps=true` batch-loads step rows in one extra query; default `false`
+keeps the class-wide read to the result rows only.
 
-→ `200` `List<StudentResultResponse>`:
+**Expected:** `200` — `[{ studentUserId, studentCode, studentName, exerciseScore,
+results: [{ planId, planWeight, score, maxScore, status, summaryLog, latest,
+startedAt, completedAt, steps[] }] }]`. A student gone from the roster keeps
+their row with null code/name. A result row whose student left the roster keeps
+its raw `studentUserId` with null code/name rather than being hidden.
+An assignment the caller does not own → `404`. A non-lecturer → `403`. No trust
+secret → `401`.
 
-```json
-[{ "studentUserId": "…", "studentCode": "SV0001", "studentName": "Nguyen Van A",
-   "exerciseScore": 8.55,
-   "results": [{ "submissionId": "…", "planId": "…", "planWeight": 2,
-                 "score": 8.5, "maxScore": 10, "status": "PASSED",
-                 "summaryLog": "…", "latest": true,
-                 "startedAt": "…", "completedAt": "…", "steps": null }] }]
-```
+`exerciseScore` uses the **same weight-weighted formula** as the transcript,
+**scoped to this assignment** (the transcript applies it across all class
+assignments — figures agree only when the class has one assignment).
 
-`exerciseScore` is computed by result-service's own `weightedScoreByPlan` formula, so this
-view can never disagree with the transcript (`GET /api/v1/classes/{id}/transcript`, UC-01
-Step 6). `steps` is `null` unless `includeSteps=true`. A student who left the roster keeps
-`studentUserId` with null `studentCode`/`studentName`.
-
-### Step 2 — Submissions of the assignment
+### Step 2 — Request the submissions list
 
 ```
 GET /api/v1/assignments/{assignmentId}/submissions
 X-User-Id: <lecturer-uuid>
 X-User-Roles: LECTURER
+X-Gateway-Secret: <secret>
 ```
 
-→ `200` `List<SubmissionResponse>` — `{ id, assignmentId, studentId, zipFileName,
-status, latest, createdAt }` for every submission of the assignment. This replaces the
-removed public route `GET /api/v1/submissions/assignment/{assignmentId}`.
-
-### Error behavior
-
-| Case | Code |
-|---|---|
-| missing/wrong role, or no `X-User-Roles` | `403` (method security) |
-| assignment belongs to another lecturer's class | `404` indistinguishable from missing |
-| request without `X-Gateway-Secret` (direct path) | `401` before any rule |
-
-The ownership check runs **before** either Feign call, so an unowned id never reaches
-result-service or submission-service.
+**Expected:** `200` — all submissions of the owned assignment. Not owner → `404`.
 
 ---
 

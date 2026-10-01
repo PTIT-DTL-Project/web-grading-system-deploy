@@ -84,25 +84,22 @@ with a **0-based `page`** (antd `Table.pagination.current` is 1-based → `meta.
 - `401` clears the identity and redirects to `/login`. `403` is a normal refusal
   (e.g. "Not owner") and must **not** log the user out.
 
-## 5. Identity = `X-User-Id` header
+## 5. Identity = Keycloak JWT (`Authorization: Bearer`)
 
-- All identity lives in `shared/auth/identity.ts` (`localStorage['wgs.identity']` =
-  `{role: 'LECTURER'|'STUDENT', userId}`); `http.ts` injects the header.
-  **This module is the only seam** — when Keycloak lands, replace the read there and drop
-  the header injection. Do not read `localStorage` anywhere else.
-- The UUID is validated in the login form (`isValidUuid`) because the backend runs
-  `UUID.fromString` → a bad value becomes a 400 on every request. `getIdentity()` re-runs
-  that check on every read, so a hand-edited `wgs.identity` holding a malformed UUID
-  bounces to `/login` instead of ever reaching the backend (verified: the
-  `Invalid UUID string: anonymous` 400 is unreachable from the FE).
-- **The backend now demands a token at the gateway (2026-09-30):** this app sends no
-  bearer token, so every API call returns `401`, the response interceptor clears identity
-  and redirects to `/login`. All screens are down until a Keycloak login flow lands here —
-  regression-test the API meanwhile with
-  `src-services/docs/api/postman/FULL_FLOW_TESTING_GUIDE.md` (direct mode needs
-  `X-Gateway-Secret`, not a token).
-- Until that login flow lands there is no server-side session: gating is `RequireIdentity` +
-  role-based menus in `AppLayout`.
+- All identity is derived from the Keycloak access JWT stored in
+  `localStorage['wgs.auth']` (`{accessToken, refreshToken, expiresAt, userId, email, role}`).
+  `http.ts` sends `Authorization: Bearer <token>`; the gateway strips any client-supplied
+  `X-User-*` and re-stamps identity from the validated token. `shared/auth/identity.ts`
+  reads the session — it is the only seam.
+- Role normalization accepts both forms in `realm_access.roles`: `LECTURER` and
+  `ROLE_LECTURER` (strip `ROLE_` prefix). A token with no allowed role renders the
+  `/no-role` page with a sign-out button — avoids the `RequireRole ↔ HomeRedirect` loop.
+- Login form (`LoginPage`) is username + password (Keycloak password grant).
+  Errors map to i18n: `invalid_credentials` → `auth.loginError`, network → `auth.networkError`.
+- `401` → silent refresh once, then clear session → `/login`. `403` is a normal refusal
+  (ownership) and must **not** log the user out.
+- `401` on refresh → clear session → `/login`. `AppLayout` shows `session.email`
+  (fallback `userId`) + logout which calls `keycloak.logout()`.
 
 ## 6. Theme: red + white, tokens only
 
