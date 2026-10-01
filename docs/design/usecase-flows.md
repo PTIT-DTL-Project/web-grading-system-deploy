@@ -11,12 +11,12 @@ Rules for maintaining this file live in the project root `AGENTS.md`
 
 ## Role requirements (slice 2, since 2026-09-30)
 
-Identity (`X-User-Id`) and role now travel together: the gateway reads
-`realm_access.roles` from the validated Keycloak token, keeps only what
-`gateway.security.allowed-roles` allows (default `LECTURER,STUDENT`) and forwards them as
-`X-User-Roles`; on the direct path the caller sends that header themselves next to
-`X-Gateway-Secret`. Either way a service only reads roles **after** the secret matched, so a
-missing or unknown role means *no* role.
+Identity and role now travel via the Keycloak JWT: the FE sends `Authorization: Bearer`.
+The gateway validates the JWT against `KEYCLOAK_ISSUER_URI`, derives `X-User-Id` (`sub`),
+`X-User-Email` (`email`) and `X-User-Roles` (`realm_access.roles` ∩ the configured
+`gateway.security.allowed-roles`), then forwards them. Direct mode (`X-User-Id` + `X-Gateway-Secret`)
+is deprecated — the secret cannot live in a browser. A service only reads roles **after**
+the gateway stamps them; a missing/unknown role means *no* role.
 
 Everything that creates or edits grading data requires `LECTURER` and answers `403` to
 anyone else — including a request that carries no `X-User-Roles` at all:
@@ -49,9 +49,7 @@ authoritative list of which endpoints actually enforce it.**
 
 ## UC-01: Lecturer manages classes & scores
 
-**Actor:** lecturer. Identity is `X-User-Id` — sent with `X-Gateway-Secret` on the direct
-path, or injected by the api-gateway from the Keycloak token subject when called through it
-(since 2026-09-30). Use one consistent UUID for the whole flow.
+**Actor:** lecturer. Identity is the Keycloak token `sub`, injected by the api-gateway as `X-User-Id` (since 2026-09-30). The FE sends `Authorization: Bearer`; the gateway validates the JWT, derives identity, and stamps headers. Use one consistent UUID for the whole flow.
 **Service:** course-service (`http://localhost:8081` directly, or via gateway).
 
 **Preconditions:** service running; lecturer UUID chosen.

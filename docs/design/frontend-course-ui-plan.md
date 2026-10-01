@@ -12,7 +12,7 @@
 | # | Topic | Decision |
 |---|---|---|
 | D1 | Student has no "my class / my score" API | **Add 3 student endpoints** in `course-service` — they ride the existing `/api/v1/student/**` gateway predicate, so **no api-gateway change** |
-| D2 | Identity (`X-User-Id`) | **Dev identity picker** at `/login` (role + UUID) → `localStorage`, axios interceptor sends the header. One module is the swap seam for Keycloak. No backend change. |
+| D2 | Identity (Keycloak JWT) | **Password grant via Keycloak** at `/login` (username + password) → `localStorage['wgs.auth']`; `http.ts` sends `Authorization: Bearer`. Gateway validates the JWT, strips/stamps `X-User-*`. No backend change. |
 | D3 | UI language | **i18n**: `src/locales/vi.json` + `en.json`, antd locale follows. **Every new key added to BOTH files**, enforced by `npm run i18n:check` (wired into `npm run build`) |
 | D4 | Phase-1 screen scope | **Lecturer course module only** (class list → class detail: roster, score components, score entry, transcript). Student screens = Phase 5 |
 | D5 | Deployment | **Local dev only** (Vite proxy → gateway). Dockerfile / CI / Helm / ArgoCD = backlog |
@@ -20,7 +20,7 @@
 | D7 | Rules persistence | `.opencode/skills/react-frontend-antd/SKILL.md` + FE `README.md` |
 
 Rejected: mock/MSW student data · FE-only student screens (nothing to render) ·
-Keycloak now (blocks the first UI) · Redux/TanStack Query (no need yet).
+Redux/TanStack Query (no need yet).
 
 ---
 
@@ -31,8 +31,8 @@ Keycloak now (blocks the first UI) · Redux/TanStack Query (no need yet).
   `/api/v1/student/**` → course-service · `/api/v1/submissions/**` → submission ·
   `/api/v1/results/**` → result. `/api/v1/internal/**` is **not** routed — the FE must
   never call it.
-- The gateway injects **nothing** today (no filter, no CORS) → the **client sends
-  `X-User-Id`**.
+- The gateway validates JWTs and stamps identity headers (`X-User-Id`, `X-User-Email`,
+  `X-User-Roles`) — the client sends **only** `Authorization: Bearer`.
 - Envelope (`course-service/util/FormatRestResponse.java`): `{status, message, data, error}`;
   `Page<T>` → `data = {meta:{page,pageSize,pages,total}, result:[…]}`, **0-based `page`**;
   excluded paths (`/internal/`, `webhook`, `health`, `version`) stay raw.
@@ -353,8 +353,7 @@ this plan in sync with what shipped.
 ### Backlog
 
 Assignment & plan/step authoring · docker-image library · submission upload + result
-polling · Dockerfile/CI/Helm/ArgoCD deploy · Keycloak JWT + gateway header injection ·
-bundle split (antd ≈930 kB single chunk today).
+polling · Dockerfile/CI/Helm/ArgoCD deploy · bundle split (antd ≈930 kB single chunk today).
 
 ---
 

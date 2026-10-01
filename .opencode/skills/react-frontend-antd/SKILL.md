@@ -163,7 +163,7 @@ src/
   app/        App.tsx · providers.tsx · router.tsx · HomeRedirect.tsx
   shared/
     api/      http.ts · errors.ts · endpoints/<domain>.ts
-    auth/     identity.ts · RequireIdentity.tsx · RequireRole.tsx
+    auth/     keycloak.ts · identity.ts · RequireIdentity.tsx · RequireRole.tsx · NoRolePage.tsx
     theme/    tokens.ts
     layout/   AppLayout.tsx
     types/    envelope.ts · pagination.ts · <domain>.ts
