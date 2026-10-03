@@ -3,6 +3,10 @@
 > Ngày: 2026-10-01 · FE root: `frontend-src/web-grading-system-fe/` · Realm: `ptit-wgs`
 > Stack: React 19 + TypeScript · Vite 8 · antd 6 · axios · i18next
 > Luồng interim: **password grant** qua Keycloak token API (HTTP thuần, không dùng `keycloak-js` — `keycloak-js` chỉ dùng cho Phase B authorization-code+PKCE).
+>
+> **Cập nhật 2026-10-03 (Phase 1):** đổi mật khẩu chuyển vào **api-gateway** — FE không còn
+> gọi Keycloak Admin API, không còn `VITE_KEYCLOAK_ADMIN_*`; logout nay **revoke** phiên
+> Keycloak. Chi tiết ở mục 10.
 
 ---
 
@@ -144,6 +148,12 @@ VITE_KEYCLOAK_CLIENT_ID=web-grading-fe
 
 `.env.development` — giữ comment gợi ý 2 dòng cuối cho `VITE_KEYCLOAK_AUTHORITY` / `VITE_KEYCLOAK_CLIENT_ID`.
 
+> **Từ 2026-10-03:** FE **không đọc** `VITE_KEYCLOAK_ADMIN_URI`,
+> `VITE_KEYCLOAK_ADMIN_CLIENT_ID`, `VITE_KEYCLOAK_ADMIN_CLIENT_SECRET` nữa — đổi mật khẩu
+> đi qua api-gateway, secret chỉ nằm trong K8s Secret `keycloak-admin-client` ở cluster.
+> (Lưu ý: `frontend-src/web-grading-system-fe/.env.development` vẫn còn 3 dòng này tính đến
+> lúc viết — theo plan §6.5 chúng phải bị xoá; chưa verify ai xoá.) Xem mục 10.
+
 ### 4.2 Các file thay đổi
 
 | File | Thay đổi |
@@ -167,6 +177,12 @@ VITE_KEYCLOAK_CLIENT_ID=web-grading-fe
 - Refresh: khi `expiresAt - now < 30s` hoặc nhận 401 → POST cùng endpoint với `grant_type=refresh_token` + `refresh_token`; ghi đè session; **dedupe** (một request đang refresh → đợi promise chung)
 - Decode JWT payload: `base64url → decodeURIComponent(escape(atob(...))) → JSON` (không cần library)
 - Xoá session khi logout / 401 không phải hết hạn → `/login`
+- **Từ 2026-10-03 — logout revoke**: trước khi xoá session, `POST {authority}/protocol/openid-connect/logout`
+  với `client_id` + `refresh_token` (form-urlencoded; `web-grading-fe` là public client →
+  **không** cần secret), fire-and-forget `.catch(() => {})` để lỗi mạng không block logout
+- **Từ 2026-10-03 — `keycloakChangePassword` đã bị xoá**: FE không còn gọi
+  `{adminUri}/admin/realms/.../reset-password`; gọi thay bằng
+  `POST /api/v1/account/change-password` trên gateway (xem mục 10)
 
 ### 4.4 Nhận diện vai trò từ token
 
@@ -240,7 +256,7 @@ Chạy `npm run dev` rồi kiểm tra:
 4. **Wrong password** → toast lỗi, không crash, không redirect
 5. **401 (token hết hạn/mock)** → clear session → `/login`
 6. **403** (ví dụ student thử `/classes`) → thông báo "Không có quyền", **không** logout
-7. **Logout** → xoá `wgs.auth`, về `/login`
+7. **Logout** → redirect toàn trang `GET /protocol/openid-connect/logout` (`client_id` + `id_token_hint` + `post_logout_redirect_uri=/login`) → Keycloak terminate session → quay về `/login` → hiện form đăng nhập (D12, 2026-10-03)
 8. **Student login** → `/student/classes`
 9. **Trạng thái "no allowed role"** → `/no-role` + nút đăng xuất (chỉ khi token không có vai trò hợp lệ)
 
@@ -252,17 +268,49 @@ Chạy `npm run dev` rồi kiểm tra:
 
 ---
 
-## 7. Phase B — thay thế password grant
+## 7. Phase B / Phase 3 — thay thế password grant (keycloak-js + PKCE)
 
-Password grant bị OAuth 2.1/OWASP khuyến cáo không dùng cho SPA. Khi sẵn sàng:
+> **Viết lại 2026-10-03.** Bản sketch cũ trong mục này (2026-10-01) đề nghị tạo một client
+> **confidential** riêng cho SPA — **sai ở 2 chỗ**: (1) secret confidential nhúng vào bundle
+> trình duyệt chính là lỗ hổng R1/R2 mà Phase 1 vừa dọn (`VITE_KEYCLOAK_ADMIN_CLIENT_SECRET`);
+> SPA **bắt buộc public + PKCE**; (2) tên client đặt riêng đó chưa từng tồn tại trong realm —
+> client dùng thật là **`web-grading-fe`**. Nguồn sự thật: `.opencode/plan/phase-3-pkce.md`
+> (quyết định **D7–D12**); runtime commands ở `docs/guide/PASSWORD-GATEWAY-RUNBOOK.md` **§10**.
 
-1. Cài `keycloak-js` (hoặc `@react-keycloak/web`)
-2. Tạo confidential SPA client `web-grading-fe-spa` (Standard Flow + PKCE, redirect `http://localhost:5173/*`, web origins match)
-3. Thay `keycloak.ts`: `keycloak.init({ onLoad: 'login-required' })` → lấy token `keycloak.token`
-4. `http.ts` interceptor **không đổi** (vẫn gửi Bearer) — seam giữ nguyên
-5. Xoá `VITE_KEYCLOAK_CLIENT_SECRET` nếu có
+Password grant bị OAuth 2.1/OWASP khuyến cáo không dùng cho SPA (R3: password đi qua JS;
+R4: token trong `localStorage`). Thay bằng:
 
-Toàn bộ change chỉ nằm `src/shared/auth/keycloak.ts`; `identity.ts`, `http.ts`, `LoginPage`, `AppLayout` không đụng.
+1. **Cài dependency duy nhất**: `keycloak-js` (`npm i keycloak-js`).
+2. **Client `web-grading-fe` — giữ PUBLIC, bật PKCE** (không tạo client mới, không có secret):
+   ```
+   publicClient: true
+   standardFlowEnabled: true
+   pkceMethod: S256
+   redirectUris: ["http://localhost:5173/*"]
+   webOrigins:   ["http://localhost:5173"]     ← explicit, KHÔNG bao giờ "*" khi có credentials
+   directAccessGrantsEnabled: false            ← CHỈ SAU khi gateway đã deploy client wgs-password-verify
+   ```
+   Lệnh Admin Console / Admin REST: runbook §10.3.
+3. **Login = redirect toàn trang** (D7): `keycloak.login()` → trang login của Keycloak →
+   callback về `http://localhost:5173/*`. FE không còn nhận mật khẩu, không còn form password
+   gửi lên token endpoint. Keycloak **tự hiện trang `UPDATE_PASSWORD`** cho user có required
+   action → nhánh forced-change 2-field của FE thành thừa (D10).
+4. **Token chỉ ở memory** (D8): `keycloak.init({ onLoad: 'check-sso' })` +
+   `silent-check-sso.html`; iframe bị third-party cookie chặn → bắt `onError` và init lại với
+   `silentCheckSsoRedirect: false` (redirect toàn trang, không mất session).
+   **Không bao giờ** ghi token vào `localStorage`/`sessionStorage`.
+5. **Bootstrap gate**: `keycloak.init()` bất đồng bộ còn `RequireIdentity`/`RequireRole` đọc
+   session đồng bộ → phải render loading cho tới khi `init()` settle, nếu không reload nào
+   cũng bị đá về `/login`.
+6. `http.ts` interceptor **không đổi** (vẫn gửi Bearer) — `keycloak.ts` giữ nguyên là seam duy
+   nhất; `identity.ts`, `LoginPage`, `AppLayout` chỉ đổi theo.
+7. **Gateway không đụng tới login của FE, nhưng đổi client xác minh MK** (D11): Direct Access
+   Grants tắt trên `web-grading-fe` sẽ làm hỏng `POST /api/v1/account/change-password` nếu
+   gateway còn ROPC trên chính client đó → client riêng confidential **`wgs-password-verify`**
+   (secret nằm trong K8s Secret `keycloak-admin-client`, env `KEYCLOAK_PASSWORD_CLIENT_*`).
+   **Thứ tự bắt buộc**: gateway deploy xong (§10.4) rồi mới tắt direct grants (§10.6).
+8. Không còn secret nào của FE: `VITE_KEYCLOAK_CLIENT_SECRET` / `VITE_KEYCLOAK_ADMIN_*` đều
+   không tồn tại — nếu thấy lại là regression.
 
 ---
 
@@ -270,13 +318,13 @@ Toàn bộ change chỉ nằm `src/shared/auth/keycloak.ts`; `identity.ts`, `htt
 
 | Triệu chứng | Nguyên nhân | Fix |
 |---|---|---|
-| POST /token 401 | sai client_id / secret / grant_type | kiểm tra client `web-grading-fe`, Direct Access Grants ON |
-| POST /token 403 CORS | `webOrigins` thiếu origin hoặc `*` không đủ với credentials | set `webOrigins: ["http://localhost:5173"]`, không dùng `*` khi credentials |
+| POST /token 401 *(chỉ luồng interim, ROPC)* | sai client_id / secret / grant_type | kiểm tra client `web-grading-fe`, Direct Access Grants ON. **Sau Phase 3:** trình duyệt **không còn** POST `/token` (login = redirect) — nếu vẫn thấy, hoặc direct grants bị tắt sớm, row này áp cho gateway (`wgs-password-verify`, xem runbook §10.6) chứ không phải FE |
+| POST /token 403 CORS *(interim)* | `webOrigins` thiếu origin hoặc `*` không đủ với credentials | set `webOrigins: ["http://localhost:5173"]`, không dùng `*` khi credentials. Sau Phase 3 không còn POST `/token` từ browser, nhưng `webOrigins` vẫn quyết định CORS cho các call XHR còn lại (silent-check-sso, logout revoke) — vẫn phải set explicit |
 | 401 trên mọi request | `KEYCLOAK_ISSUER_URI` gateway ≠ realm issuer | phải khớp chính xác (`.../realms/ptit-wgs`) |
 | 403 Lecturer sau khi login | `GATEWAY_ALLOWED_ROLES` chưa set / sai tên role | set `ROLE_LECTURER,ROLE_STUDENT`, restart gateway |
-| Vòng lặp `/login` → `/` → `/login` | `RequireRole` navigate `/` khi sai role → HomeRedirect → RequireRole | đã fix bằng route `/no-role` |
-| `wgs.auth` bị clear khi reload | dùng `sessionStorage` thay `localStorage` | phải `localStorage` để tồn tại reload |
-| refresh token fail | refresh_token hết hạn / revoked | clear session → buộc login lại |
+| Vòng lặp `/login` → `/` → `/login` | `RequireRole` navigate `/` khi sai role → HomeRedirect → RequireRole | đã fix bằng route `/no-role`. **Phase 3 thêm một vòng lặp nữa:** route guard chạy trước khi `keycloak.init()` settle → luôn thấy session rỗng → phải có bootstrap loading gate (skill `react-frontend-antd` §23) |
+| Reload bị đá về `/login` *(sai từ Phase 3)* | Cũ: nghĩ `localStorage['wgs.auth']` mất → sửa bằng `sessionStorage` | **KHÔNG được lưu token vào storage** (D8 — memory-only). Reload do `keycloak.init({ onLoad: 'check-sso' })` khôi phục; iframe bị chặn thì `onError` → fallback redirect (`silentCheckSsoRedirect: false`). Session "mất" thật khi đó là guard chạy trước `init()` xong |
+| refresh token fail | refresh_token hết hạn / revoked | clear session → buộc login lại. Sau Phase 3 vòng đời do `keycloak-js` lo, replay refresh token cũ vẫn phải fail (revoke còn chạy) |
 
 ---
 
@@ -295,3 +343,44 @@ Toàn bộ change chỉ nằm `src/shared/auth/keycloak.ts`; `identity.ts`, `htt
 - `frontend-src/web-grading-system-fe/src/app/router.tsx`
 - `frontend-src/web-grading-system-fe/src/locales/vi.json`, `en.json`
 - `src-services/api-gateway/src/main/resources/application.yaml` (default giữ nguyên, ghi chú)
+
+---
+
+## 10. Cập nhật 2026-10-03 — đổi mật khẩu qua gateway + logout revoke (Phase 1)
+
+Plan: `docs/design/keycloak-password-gateway-plan-2026-10-03-v1.md` (nguồn sự thật).
+
+### 10.1 Đổi mật khẩu — FE gọi gateway, KHÔNG gọi Keycloak Admin API
+
+Trước 2026-10-03 `LoginPage`/`keycloak.ts` gọi trực tiếp Keycloak Admin API
+(`GET /admin/realms/.../users` + `PUT .../reset-password`) với
+`VITE_KEYCLOAK_ADMIN_CLIENT_SECRET` nhúng trong bundle trình duyệt — secret có role
+`manage-users` ⇒ ai lấy được bundle reset được mọi password (R1/R2 Critical).
+
+Nay (theo plan §6.5 — phần FE đang được viết song song, **chưa verify runtime**):
+
+- Endpoint duy nhất: `POST /api/v1/account/change-password` trên **api-gateway**
+  (không cần Bearer, không bao giờ trả 401). Contract đầy đủ + curl:
+  `docs/design/usecase-flows.md` UC-14 và `docs/api/API-TEST-GUIDE.md` §5.
+- **Forced change**: password grant trả `Account is not fully set up` → form 2 ô →
+  FE lấy mật khẩu vừa gõ làm `currentPassword` (chỉ nằm trong React state) → 204 →
+  đăng nhập lại bằng mật khẩu mới.
+- **Self-service**: menu user ở header → modal 3 ô → 204 → **ở lại app, không logout**.
+- `VITE_KEYCLOAK_ADMIN_*` không còn được dùng — secret nằm server-side
+  (K8s Secret `keycloak-admin-client`, chỉ api-gateway đọc).
+- Realm-side (flat reset-password body, service-account roles, brute force) → xem
+  skill `keycloak` của repo, không lặp lại ở đây.
+
+### 10.2 Logout — full-page end-session (D12, chốt 2026-10-03)
+
+`logout()` trong `keycloak.ts` gọi `keycloak.logout({ redirectUri: <origin>/login })` —
+keycloak-js dựng `GET {authority}/protocol/openid-connect/logout?client_id&
+id_token_hint&post_logout_redirect_uri` rồi `location.replace` tới đó: Keycloak
+terminate browser SSO session (token trong session bị revoke ngay) và điều hướng về
+`/login`. XHR revoke (`POST .../logout` với `client_id` + `refresh_token`) **đã bỏ** —
+nó không xoá được cookie SSO nên sau logout lần `/login` kế tiếp bounce thẳng vào app.
+Yêu cầu realm: attribute `post.logout.redirect.uris` trên `web-grading-fe` (skill
+`keycloak` §7). Access token đã phát hành vẫn sống tới `accessTokenLifespan` (300s).
+
+> **Trạng thái ghi nhận:** các thay đổi FE/BE nay **chưa được e2e verify** lúc viết
+> (cluster down 2026-10-03) — xem checklist §7 của plan.

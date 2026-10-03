@@ -69,4 +69,48 @@ kubectl create secret generic keycloak-db \
   --from-literal=KEYCLOAK_ADMIN_PASSWORD="${KEYCLOAK_ADMIN_PASSWORD:-admin}" \
   --dry-run=client -o yaml | kubectl apply -f -
 
+# Keycloak Admin client (service account of client wgs-user-service) — the ONLY
+# credential with which api-gateway calls the Keycloak Admin API (user lookup +
+# reset-password for POST /api/v1/account/change-password). The frontend used to
+# ship this secret to every browser bundle (VITE_KEYCLOAK_ADMIN_CLIENT_SECRET) —
+# that is exactly why it now lives only in this K8s Secret. An empty value would
+# silently disable password change at runtime, and the value comes from Keycloak
+# (not from us, so no auto-generation): fail loudly instead of pushing an empty secret.
+#
+# Same secret also carries the Phase 3 (D11) password-verification client: since
+# Direct Access Grants go OFF on the browser client web-grading-fe, the gateway
+# verifies currentPassword with its own confidential client wgs-password-verify.
+# A half-set pair is always a misconfiguration (the grant answers invalid_client → 502),
+# so it fails loudly like the admin keys; BOTH EMPTY stays legal — the gateway then
+# falls back to web-grading-fe with no secret, exactly the pre-Phase-3 behaviour a
+# fresh Phase 1 setup (runbook §4) runs with before runbook §10.2 creates the client.
+if [ -z "${KEYCLOAK_ADMIN_CLIENT_ID:-}" ] || [ -z "${KEYCLOAK_ADMIN_CLIENT_SECRET:-}" ]; then
+  echo "ERROR: KEYCLOAK_ADMIN_CLIENT_ID and KEYCLOAK_ADMIN_CLIENT_SECRET must both be set" >&2
+  echo "in .env (values come from Keycloak client wgs-user-service credentials)." >&2
+  echo "Refusing to create an empty keycloak-admin-client secret." >&2
+  exit 1
+fi
+if [ -n "${KEYCLOAK_PASSWORD_CLIENT_ID:-}" ] && [ -z "${KEYCLOAK_PASSWORD_CLIENT_SECRET:-}" ]; then
+  echo "ERROR: KEYCLOAK_PASSWORD_CLIENT_SECRET is empty while KEYCLOAK_PASSWORD_CLIENT_ID is set." >&2
+  echo "Set it in .env from Keycloak client wgs-password-verify credentials (runbook §10.2)." >&2
+  echo "Refusing to push a partial password-verify credential." >&2
+  exit 1
+fi
+if [ -z "${KEYCLOAK_PASSWORD_CLIENT_ID:-}" ] && [ -n "${KEYCLOAK_PASSWORD_CLIENT_SECRET:-}" ]; then
+  echo "ERROR: KEYCLOAK_PASSWORD_CLIENT_ID is empty while KEYCLOAK_PASSWORD_CLIENT_SECRET is set." >&2
+  echo "Set KEYCLOAK_PASSWORD_CLIENT_ID=wgs-password-verify in .env (runbook §10.2)." >&2
+  echo "Refusing to push a partial password-verify credential." >&2
+  exit 1
+fi
+# The ID default mirrors password-client-id in the gateway's application.yaml — the key
+# must NEVER be pushed empty, because an empty env var overrides that yaml default and
+# the gateway would send client_id= (invalid_client → 502) instead of falling back.
+kubectl create secret generic keycloak-admin-client \
+  --namespace "${NAMESPACE}" \
+  --from-literal=KEYCLOAK_ADMIN_CLIENT_ID="${KEYCLOAK_ADMIN_CLIENT_ID}" \
+  --from-literal=KEYCLOAK_ADMIN_CLIENT_SECRET="${KEYCLOAK_ADMIN_CLIENT_SECRET}" \
+  --from-literal=KEYCLOAK_PASSWORD_CLIENT_ID="${KEYCLOAK_PASSWORD_CLIENT_ID:-web-grading-fe}" \
+  --from-literal=KEYCLOAK_PASSWORD_CLIENT_SECRET="${KEYCLOAK_PASSWORD_CLIENT_SECRET:-}" \
+  --dry-run=client -o yaml | kubectl apply -f -
+
 echo "Namespace and secrets created"

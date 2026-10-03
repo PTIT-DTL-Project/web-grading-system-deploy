@@ -1,6 +1,6 @@
 ---
 name: react-frontend-antd
-description: Frontend conventions for this project's React + TypeScript + antd + axios app under frontend-src/web-grading-system-fe - use when writing or reviewing FE components, API calls, theming, i18n/translation files, routing, identity (X-User-Id), vite proxy config, or when adding a new screen, translation key, or endpoint consumer. Covers the ApiResponse envelope unwrap, red/white Roboto theme tokens, vi.json/en.json parity, and the FE definition of done.
+description: Frontend conventions for this project's React + TypeScript + antd + axios app under frontend-src/web-grading-system-fe - use when writing or reviewing FE components, API calls, theming, i18n/translation files, routing, identity (X-User-Id), vite proxy config, keycloak-js init/bootstrap gate, memory-only token rule, or when adding a new screen, translation key, or endpoint consumer. Covers the ApiResponse envelope unwrap, red/white Roboto theme tokens, vi.json/en.json parity, and the FE definition of done.
 ---
 
 # React + TypeScript + antd frontend conventions
@@ -86,6 +86,11 @@ with a **0-based `page`** (antd `Table.pagination.current` is 1-based → `meta.
 
 ## 5. Identity = Keycloak JWT (`Authorization: Bearer`)
 
+> **Phase 3 (2026-10-03, D7/D8):** the bullets below describe the interim password-grant
+> flow. Under Phase 3 the session is **memory-only** (`keycloak-js`, no
+> `localStorage['wgs.auth']`) and login is a **redirect** to Keycloak — see **§23** for the
+> rules that then apply; storage-related steps here are historical.
+
 - All identity is derived from the Keycloak access JWT stored in
   `localStorage['wgs.auth']` (`{accessToken, refreshToken, expiresAt, userId, email, role}`).
   `http.ts` sends `Authorization: Bearer <token>`; the gateway strips any client-supplied
@@ -100,6 +105,71 @@ with a **0-based `page`** (antd `Table.pagination.current` is 1-based → `meta.
   (ownership) and must **not** log the user out.
 - `401` on refresh → clear session → `/login`. `AppLayout` shows `session.email`
   (fallback `userId`) + logout which calls `keycloak.logout()`.
+
+### 5.1 Keycloak temporary password → forced change (must_change_password)
+
+> **Phase 3 (D7/D10):** with login being a redirect, Keycloak renders its **own**
+> `UPDATE_PASSWORD` page during the flow — the FE 2-field branch described here is then
+> dead code (delete only after D10 is confirmed; see plan `.opencode/plan/phase-3-pkce.md`).
+> The voluntary header modal is unchanged and still goes through the gateway.
+
+- When a user has `requiredActions: ["UPDATE_PASSWORD"]` (or `credentials.temporary: true`),
+  Keycloak password-grant returns
+  `{"error":"invalid_grant","error_description":"Account is not fully set up"}`.
+  `keycloak.ts` catches this **before** `invalid_grant` and throws `must_change_password`.
+- **Since 2026-10-03 the FE does NOT call the Keycloak Admin API at all.**
+  `VITE_KEYCLOAK_ADMIN_URI` / `VITE_KEYCLOAK_ADMIN_CLIENT_ID` /
+  `VITE_KEYCLOAK_ADMIN_CLIENT_SECRET` are gone — the admin secret lives only in the
+  K8s Secret `keycloak-admin-client`; never reintroduce it in FE env or code.
+- Both entry points submit to the **gateway** endpoint (public, no Bearer, never 401):
+  `POST /api/v1/account/change-password` via `shared/api/endpoints/account.ts`
+  (`{username, currentPassword, newPassword}` → 204; errors are machine codes:
+  `current_password_invalid` · `weak_password` · `validation_failed` · `rate_limited`
+  (429) · `identity_provider_unavailable` (502)).
+  - **Forced change:** `LoginPage` keeps the just-typed login password as
+    `currentPassword` (React state only) and shows a 2-field form (new + confirm).
+  - **Voluntary change:** header user menu → 3-field `ChangePasswordModal` → on 204 the
+    user **stays logged in**.
+- Logout is a **full-page end-session redirect** (D12, 2026-10-03): `logout()` in
+  `keycloak.ts` calls `keycloak.logout({ redirectUri: <origin>/login })` — Keycloak
+  terminates the SSO session and sends the browser back to `/login`. The old
+  fire-and-forget XHR revoke is gone (it left the SSO cookie alive → `/login` bounced
+  back into the app). Realm must allow it: `post.logout.redirect.uris` on
+  `web-grading-fe` (see `keycloak` skill §7). Never `clearSession()` first — keycloak-js
+  needs `idToken` for `id_token_hint`.
+- Realm-side details (flat reset-password body, service-account roles, brute force,
+  `Account is not fully set up` semantics) live in the repo **`keycloak` skill** —
+  read it instead of duplicating them here (drift risk).
+
+### 5.2 `sub` missing in user tokens → gateway `X-User-Id` empty (client scope `basic`)
+
+- Since Keycloak 24+/26 the **`sub` claim is produced by a protocol mapper inside the
+  `basic` client scope**, not hardcoded. A client whose `defaultClientScopes` are only
+  `web-origins, roles, profile, email` issues user access tokens **without `sub`** →
+  `AuthenticationContextFilter.jwt.getSubject()` returns `null` → `X-User-Id` is stamped
+  empty → downstream `HeaderAuthenticationFilter` rejects. `email`/`realm_access` still
+  decode fine, so the token itself is valid (misleading).
+- Diagnosis (2 independent signals):
+  1. Decode the token payload → `sub` absent, claim count 16.
+  2. `POST .../token -d "...&scope=basic"` → `invalid_scope: Invalid scopes: basic`
+     (scope not assigned to that client).
+- Note `client_credentials` (service-account) tokens **still carry `sub`**, so admin/change-password
+  flows work — only user (password grant) tokens break. Do not use them to test.
+- Fix via Admin API (creds: `admin` / `KEYCLOAK_ADMIN_PASSWORD` from repo `.env`):
+  ```
+  BID=$(GET /admin/realms/ptit-wgs/client-scopes  → id of "basic")
+  CID=$(GET /admin/realms/ptit-wgs/clients?clientId=web-grading-fe → id)
+  PUT /admin/realms/ptit-wgs/clients/$CID/default-client-scopes/$BID   # expect 204
+  ```
+  Verify: fresh password-grant token has `sub` = user UUID.
+- Clients that needed it: `web-grading-fe`, `wgs-postman`, `wgs-user-service` (all three
+  had the 4-scope list). `web-grading-fe` is **not** in `ptit-wgs-realm.json`, so it is created
+  by hand — the JSON now carries `"basic"` in each client's `defaultClientScopes`; re-importing
+  the old file silently drops it again.
+- Tokens issued **before** the fix keep lacking `sub` for their whole lifetime — the user must
+  log out/in (or clear `localStorage['wgs.auth']`) to obtain a fresh one.
+- If `GET /clients/{id}/client-scopes` returns 404, that endpoint does not exist — use
+  `/default-client-scopes` and `/optional-client-scopes`.
 
 ## 6. Theme: red + white, tokens only
 
@@ -690,3 +760,114 @@ drifts visually from the list it persists.
 - `align="center"` (not `baseline`) keeps mixed-size children on one line.
 - Bottom bars that mirror a column (total weight, save) must use the same `padding`
   as the row cards so the text lands at the same edge.
+
+## 22. Phase 2 hardening: mirror realm password policy + cross-tab refresh lock
+
+`Review: 2026-10-03, Phase 2 hardening (D1–D6).` Plan: `.opencode/plan/keycloak-hardening-phase-2.md`.
+
+### 22.1 Mirror the Keycloak password policy in antd form rules
+
+- Realm `ptit-wgs` policy (decisions D2 + D6) is
+  `length(8) and specialChars(1) and upperCase(1) and digits(1) and notUsername`. The antd
+  rules in `LoginPage` and `ChangePasswordModal` must mirror it exactly (≥8 chars, ≥1
+  uppercase, ≥1 digit, ≥1 special char) so client and realm **cannot drift**: anything the
+  form accepts must be accepted by the server too, and vice versa (otherwise the user gets
+  a `400 weak_password` they were never warned about).
+- `notUsername` cannot be checked client-side (the form does not reliably know the target
+  username in every flow) → skip it in FE rules; the realm enforces it server-side.
+- New rule messages go into BOTH `locales/vi.json` and `locales/en.json` (i18n parity is
+  enforced by `npm run i18n:check` — §9).
+- If the realm policy ever changes, update the antd rules **and** both locale files in the
+  same task — one source of truth, mirrored, never assumed.
+
+### 22.2 Serialise token refresh across tabs with `navigator.locks` (Web Locks API)
+
+- Once refresh rotation is on (`revokeRefreshToken: true`, `refreshTokenMaxReuse: 0`, one
+  refresh token = one use), two tabs refreshing the **same** refresh token concurrently
+  means exactly one wins; the loser gets `invalid_grant` +
+  "Maximum allowed refresh token reuse exceeded" and is redirected to `/login`. The
+  per-tab dedup (`refreshPromise` in `keycloak.ts`, `isRefreshing` in `http.ts`) does not
+  span tabs — there is no `storage` listener and no `BroadcastChannel`.
+- Fix: wrap the **whole** refresh window — read RT from `localStorage` → POST `/token` →
+  persist new tokens — inside `navigator.locks.request('wgs.token.refresh', ...)`, so the
+  browser grants one tab at a time across tabs. Locking only the POST is not enough: the
+  stale read happens before it.
+- **Skip-if-already-fresh check inside the lock:** after acquiring the lock, if the session
+  is no longer expired (another tab refreshed while this one waited — reuse the existing
+  `isSessionExpired(bufferMs = 30_000)` helper, do not write a new one), return the current
+  session instead of POSTing to Keycloak again.
+- Fallback: `navigator.locks` missing (non-secure context) → previous per-tab behaviour, no
+  regression. TypeScript 6 types `navigator.locks` in `lib.dom` — no cast needed; secure
+  context is `localhost` in dev and https in prod.
+- No FE test runner exists → verify manually: 2 tabs of the same user, refresh nearly
+  simultaneously ×10, no tab may land on `/login`; replay the used refresh token via curl →
+  `invalid_grant` (protocol in `docs/guide/PASSWORD-GATEWAY-RUNBOOK.md` §9.6).
+
+## 23. Phase 3: keycloak-js bootstrap gate + memory-only tokens
+
+`Review: 2026-10-03, Phase 3 PKCE plan (D7–D12).` Plan: `.opencode/plan/phase-3-pkce.md`;
+runtime checklist `docs/guide/PASSWORD-GATEWAY-RUNBOOK.md` §10.
+
+### 23.1 Bootstrap gate: route guards must NOT run before `keycloak.init()` settles
+
+- `keycloak.init()` is **async**, while `RequireIdentity`/`RequireRole` read
+  `getIdentity()` **synchronously** during render. Rendering routes while `init()` is still
+  pending means every guarded route sees a null/expired session — **every reload bounces to
+  `/login`** even when the SSO session is perfectly valid (plan §2.8). This is the single
+  most likely "it logs in but reloads kick me out" cause.
+- Pattern: async bootstrap in `main.tsx` / router entry —
+  `await keycloak.init({ onLoad: 'check-sso', ... })` → flip a `ready` flag → only then
+  mount `<RouterProvider>`; until then render a loading state (antd `Spin`), **never** the
+  route tree. Guards stay synchronous and unchanged afterwards.
+- **Third-party-cookie fallback (D8):** Keycloak is a different origin, so the
+  `check-sso` iframe can be blocked (Chrome phaseout, Safari ITP). Catch `onError` of
+  `init()` and re-run with `silentCheckSsoRedirect: false` (full-page redirect) — one flash,
+  session survives. Do not "handle" a blocked iframe by persisting tokens (§23.2).
+- Files: `frontend-src/web-grading-system-fe/public/silent-check-sso.html` must exist
+  (keycloak-js reads that path by default).
+
+### 23.2 Memory-only tokens — never persist to storage (R4)
+
+- Access + refresh tokens live **only in the `keycloak-js` instance's memory**. Never write
+  them to `localStorage`, `sessionStorage`, a cookie, or any custom store — that is exactly
+  R4 (XSS steals a session valid ≤ 10 h), which Phase 3 exists to cut.
+- Read tokens fresh at call time: `http.ts` uses `keycloak.token` in the interceptor;
+  drop `AUTH_KEY` / `persist()` / decode-from-storage — anything that "fixes" a reload
+  problem by saving the token **reopens R4**. A reload that loses the session is a §23.1
+  gate/`check-sso` problem, not a storage problem.
+- Session shape for consumers (`identity.ts`, `RequireRole`, `AppLayout`) is **derived from
+  the in-memory token on read**, not restored from storage.
+- `localStorage['wgs.auth']` must not exist after login (runbook §10.9 check #4).
+
+### 23.3 Login is a redirect, not a form post (D7/R3)
+
+- `keycloak.login()` → full-page Keycloak login → callback with `?code=` + PKCE. The FE
+  never handles the password and never calls the token endpoint with
+  `grant_type=password` → `grep -r "grant_type=password" dist/assets/*.js` must return
+  nothing (runbook §10.9 check #3).
+- Forced password change renders **Keycloak's own `UPDATE_PASSWORD` page** — no FE branch
+  (§5.1 note). The voluntary 3-field modal still posts to the gateway endpoint.
+- Verify = `npm run build` + `npm run lint` + the 12-item matrix (no FE test runner):
+  reload each protected route, 2-tab refresh, logout replay, `/no-role` gate.
+
+### 23.4 `/login` MUST guard an existing session — otherwise infinite redirect
+
+`Review: 2026-10-03, infinite-redirect fix (LoginPage).`
+
+- keycloak-js's callback handling **keeps the path**: `#parseCallback` only strips the
+  query/hash (`replaceState`, `keycloak.js` ~:807) and `login()`'s default `redirect_uri`
+  is `location.href`. So after a successful sign-in the app is still at `/login`.
+- If `LoginPage` auto-fires `login()` on mount, that round-trip hits Keycloak with a live
+  SSO session → immediate new code → back to `/login` → **endless ping-pong** (reported
+  2026-10-03: "sau khi đăng nhập thành công bị redirect vô hạn").
+- Guard is required in **TWO places, same commit**: (1) inside the auto-redirect
+  `useEffect` (`if (authenticated) return`) and (2) render-time
+  `if (authenticated) return <Navigate to="/" replace />`. Guarding only the render does
+  not work — returning `<Navigate>` does not cancel the effect scheduled by that commit,
+  so the redirect fires once before navigation.
+- Read the session via `getIdentity()` (the identity seam, §5); `AuthGate` has already
+  settled `keycloak.init()` before the router mounts, so the synchronous read is reliable.
+- Hook order stays unconditional (Rules of Hooks): all hooks first, conditional return last.
+- Left as known risk: `http.ts` 401 → `assign('/login')` can still bounce if the API keeps
+  answering 401 (dead/wrong proxy target) — a persistent-401 loop is a gateway/proxy
+  problem, not an FE one; check `VITE_API_PROXY_TARGET` first.

@@ -687,4 +687,169 @@ before compose boot.
   (compose decides the runtime image). Deleting an image still referenced by a
   live assignment is blocked with `409`.
 
+---
+
+## UC-14: Đổi mật khẩu (Self-service + Forced change)
+
+**Actor:** any realm `ptit-wgs` user — the endpoint itself requires **no session**.
+**Service:** api-gateway (`POST /api/v1/account/change-password`).
+**Since:** 2026-10-03, plan `docs/design/keycloak-password-gateway-plan-2026-10-03-v1.md`.
+
+**Preconditions:** the path is on the gateway's `PUBLIC_PATHS` — it must **never** answer
+`401` (a `401` makes the FE interceptor silent-refresh and redirect `/login`, which loops
+in the forced-change flow, where no token exists yet).
+
+### The endpoint (shared by both entry points)
+
+```
+POST /api/v1/account/change-password
+Content-Type: application/json
+NO Authorization header — public by design, never 401
+
+{
+  "username": "lecturer_test",     // username OR email (realm loginWithEmailAllowed=true)
+  "currentPassword": "...",
+  "newPassword": "..."
+}
+```
+
+Expected responses:
+
+| HTTP | Body | When |
+|---|---|---|
+| `204` | (empty) | password changed |
+| `400` | `{"status":400,"message":"current_password_invalid","data":null}` | wrong current password **OR** unknown user — deliberately the same code (no user enumeration) |
+| `400` | `{"status":400,"message":"weak_password","data":null}` | Keycloak password policy rejected the new password |
+| `400` | `{"status":400,"message":"validation_failed","data":null}` | missing/blank field |
+| `429` | `{"status":429,"message":"rate_limited","data":null}` | over the limit for this IP+username (see below) |
+| `502` | `{"status":502,"message":"identity_provider_unavailable","data":null}` | Keycloak token/admin API unreachable or errored (envelope `status` is `502` too) |
+
+Server order (plan §5): rate limit (Valkey, per IP+username, fail-open) → verify current
+password via a password grant — since Phase 3 (2026-10-03, D11) with the gateway's own
+**confidential** client **`wgs-password-verify`** (`client_id` + `client_secret`, env
+`KEYCLOAK_PASSWORD_CLIENT_*`; before Phase 3 it was the public `web-grading-fe` with no
+secret, and a blank configured secret keeps that exact behaviour) (an
+`Account is not fully set up` answer counts as *password correct*) → lookup user via the
+admin API with the `wgs-user-service` service account — the query parameter comes from the
+identifier's shape (`@` → `?email=`, otherwise `?username=`) and the returned row is matched
+**exactly**, because Keycloak's search is a prefix query →
+`PUT /admin/realms/{realm}/users/{id}/reset-password` with the **flat** body
+`{"type":"password","value":"<new>","temporary":false}`. Verify runs before lookup so an
+unauthenticated caller cannot enumerate users.
+
+**Realm password policy (Phase 2, 2026-10-03):** once `passwordPolicy` is enabled on realm
+`ptit-wgs` (recipe in `docs/guide/PASSWORD-GATEWAY-RUNBOOK.md` §9.4), a non-compliant
+`newPassword` on this endpoint yields `400` with error code `weak_password` (whether the
+admin reset path enforces the policy is settled by the runtime probe, runbook §9.5). The
+policy is **not retroactive** — existing passwords keep working until the next change
+(Keycloak: *"will not be effective for existing users"*). The FE mirrors the same rules
+client-side in antd form rules (skill `react-frontend-antd` §22.1) so client and realm
+cannot drift.
+
+### Flow A — Forced change (temporary password)
+
+**Preconditions:** user's password was set `temporary: true` (required action
+`UPDATE_PASSWORD` pending).
+
+**Since Phase 3 (2026-10-03, D7/D10) this flow no longer touches the FE or the gateway:**
+login is an authorization-code + PKCE **redirect**, and Keycloak renders its **own**
+`UPDATE_PASSWORD` page for the pending required action — the FE's 2-field form is gone
+and the gateway endpoint plays no role here (it stays for the voluntary Flow B).
+
+1. App → `keycloak.login()` → full-page redirect to Keycloak:
+
+   ```
+   GET {issuer}/protocol/openid-connect/auth
+     ?client_id=web-grading-fe
+     &redirect_uri=http%3A%2F%2Flocalhost%3A5173%2F
+     &response_type=code&scope=openid&state=...&nonce=...
+     &code_challenge=...&code_challenge_method=S256
+   ```
+
+   → login page (`200`, hosted by Keycloak — the password never enters FE JS).
+2. After the credentials check Keycloak sees the pending required action and redirects to
+   **its own** `UPDATE_PASSWORD` form (still on the Keycloak origin):
+
+   ```
+   GET {issuer}/login-actions/required-action?...&execution=UPDATE_PASSWORD&client_id=web-grading-fe
+   ```
+
+   User submits the new password → Keycloak applies the realm `passwordPolicy` itself
+   (the very same page enforces it — no `400 weak_password` code is involved, the FE never
+   sees the request) → required action cleared.
+3. Keycloak redirects back to `http://localhost:5173/?code=...&state=...` → `keycloak-js`
+   exchanges the code (+ PKCE verifier) at `POST {issuer}/protocol/openid-connect/token` →
+   tokens in **memory only** → app renders with the user's role.
+4. Next login with the new password proceeds straight through step 1–3 with no
+   `UPDATE_PASSWORD` page.
+
+<details>
+<summary>Interim flow (pre-Phase 3, kept for rollback reference)</summary>
+
+1. Login `POST /protocol/openid-connect/token` (`grant_type=password`) →
+   `400 {"error":"invalid_grant","error_description":"Account is not fully set up"}`
+   (password correct, forced change pending) → FE keeps the just-typed password in React
+   state and shows a **2-field** form (new + confirm).
+2. `POST /api/v1/account/change-password` with
+   `{"username":"lecturer_test","currentPassword":"<just-typed password>","newPassword":"Dev2026!!"}`
+   → `204` (errors: `current_password_invalid` / `weak_password` / `validation_failed` /
+   `rate_limited`).
+3. User logs in again with the new password → tokens, `requiredActions` cleared.
+
+</details>
+
+### Flow B — Voluntary change (header user menu, stays logged in)
+
+**Preconditions:** user is logged in — a live session from `keycloak-js` held **in memory**
+(Phase 3, D8; pre-Phase 3 it lived in `localStorage['wgs.auth']` — same session shape,
+different storage).
+
+1. Header user menu → **Đổi mật khẩu** → modal with **3 fields** (current, new, confirm).
+   Client-side rules block short (<8) and mismatched passwords before any request.
+2. Submit:
+
+   ```
+   POST /api/v1/account/change-password
+   { "username": "<session.email>", "currentPassword": "...", "newPassword": "..." }
+   ```
+
+   → `204` → success toast, modal closes, **session unchanged — the user stays logged in**.
+3. Errors: same table as "The endpoint" above; `429 rate_limited` after too many attempts.
+
+### Rate limit (the 429)
+
+Fixed window in Valkey, key `rl:pwd:{ip}:{lowercase(username)}` (IP from the first
+`X-Forwarded-For` hop, fallback socket address); defaults `rate-limit.max-attempts=10` /
+`window-seconds=300`, switch `RATE_LIMIT_ENABLED`. Valkey down or `VALKEY_URL` empty →
+**fail-open** (request passes, one ERROR log). Independent of — and complementary to —
+Keycloak brute force (`bruteForceProtected: true`, `failureFactor: 30`,
+`permanentLockout: false` → a locked account waits ~15 min; E2E tests that guess passwords
+can lock `lecturer_test`).
+
+---
+
+## Logout: revoke the Keycloak session
+
+**Actor:** logged-in user. **Service:** FE `keycloak.ts` → Keycloak directly (public
+client, no secret). **Since:** 2026-10-03.
+
+1. `POST {authority}/protocol/openid-connect/logout`, form-urlencoded:
+
+   ```
+   client_id=web-grading-fe
+   refresh_token=<the session's refresh token>
+   ```
+
+   → `204`. Fire-and-forget: a failed call is swallowed (`.catch(() => {})`) so logout
+   never blocks the UX.
+2. FE clears `localStorage['wgs.auth']` → redirect `/login`.
+   *(Phase 3 note, 2026-10-03: with D8 the session is **memory-only**, so "clears
+   localStorage" becomes dropping the in-memory session + `keycloak.clearToken()`; the XHR
+   revoke above is kept as-is — the redirect-vs-in-place question is decision **D12**, still
+   open in `.opencode/plan/phase-3-pkce.md`, do not treat this step as settled for Phase 3.)*
+
+Before this change logout only cleared localStorage, leaving the refresh token alive up
+to `ssoSessionMaxLifespan` (10 h). Revocation kills the **refresh** token; an
+access token issued earlier still lives until `accessTokenLifespan` (300 s) expires.
+
 

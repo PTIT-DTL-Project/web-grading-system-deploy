@@ -416,3 +416,60 @@ once deployed on the cluster).
 
 Webhook/internal endpoints deliberately NOT enveloped; every other error path returns
 `{ status, message, error }` with `data` absent or null.
+
+---
+
+## 5. api-gateway — `POST /api/v1/account/change-password` (public, since 2026-10-03)
+
+**No `Authorization` header is needed — and none must be sent for this endpoint.** It is
+on the gateway's `PUBLIC_PATHS` and never answers `401` (a `401` would trigger the FE
+silent-refresh loop in the forced-change flow). Same envelope as everywhere else.
+
+Base URL examples: local gateway `http://localhost:8080`, deployed
+`https://web-dev1-api.vucongtuanduong.dpdns.org`.
+
+**Success → 204** (no body):
+
+```bash
+curl -i -X POST http://localhost:8080/api/v1/account/change-password \
+  -H "Content-Type: application/json" \
+  -d '{"username":"lecturer_test","currentPassword":"Dev2026!","newPassword":"Dev2026!!"}'
+# HTTP/1.1 204
+```
+
+**Wrong current password → 400:**
+
+```bash
+curl -i -X POST http://localhost:8080/api/v1/account/change-password \
+  -H "Content-Type: application/json" \
+  -d '{"username":"lecturer_test","currentPassword":"wrong-pass","newPassword":"Dev2026!!"}'
+# 400  {"status":400,"message":"current_password_invalid","data":null}
+```
+
+**Unknown user → 400, the SAME code** (deliberate — proves the endpoint does not
+enumerate users; do not "fix" this into a 404):
+
+```bash
+curl -i -X POST http://localhost:8080/api/v1/account/change-password \
+  -H "Content-Type: application/json" \
+  -d '{"username":"no_such_user","currentPassword":"whatever","newPassword":"Dev2026!!"}'
+# 400  {"status":400,"message":"current_password_invalid","data":null}
+```
+
+**Rate limited → 429** (needs `RATE_LIMIT_ENABLED=true` + `VALKEY_URL` on the gateway;
+default budget is 10 attempts per IP+username per 300 s — the 11th wrong attempt trips it):
+
+```bash
+for i in $(seq 1 11); do
+  curl -s -o /dev/null -w "%{http_code}\n" -X POST \
+    http://localhost:8080/api/v1/account/change-password \
+    -H "Content-Type: application/json" \
+    -d '{"username":"lecturer_test","currentPassword":"wrong","newPassword":"Dev2026!!"}'
+done
+# last line: 429  {"status":429,"message":"rate_limited","data":null}
+```
+
+Other answers on the same endpoint: `400 weak_password` (Keycloak password policy),
+`400 validation_failed` (missing/blank field), `502 identity_provider_unavailable`
+(Keycloak unreachable; the envelope `status` is `502` as well). Flow-level walkthrough
+of both entry points: `docs/design/usecase-flows.md` UC-14.
