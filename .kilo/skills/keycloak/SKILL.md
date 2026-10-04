@@ -18,7 +18,9 @@ Plan that drove the Phase 1 changes:
   the one field → `PUT` the whole body back. A partial/detached body silently wipes every
   other realm setting (brute force, SMTP, themes, …).
 - The export contains only `wgs-postman` and `wgs-user-service` — **`web-grading-fe` is
-  NOT in it** (created by hand in the live realm; `frontend-keycloak-login.md` §3).
+  NOT in it** (created by hand in the live realm; `frontend-keycloak-login.md` §3), and
+  neither is **`wgs-password-verify`** (created live 2026-10-03, §10) → re-export (§10.7)
+  before trusting it as a mirror.
   Re-importing the export does not recreate it.
 
 ## 2. `sub` claim lives in the `basic` client scope (Keycloak >= 24)
@@ -217,19 +219,27 @@ Plan/decisions: `.opencode/plan/phase-3-pkce.md` (**D7–D12**) · runtime comma
 - **Direct Access Grants off on `web-grading-fe` breaks the gateway — that is why
   `wgs-password-verify` exists (D11).** Step 2 of `POST /api/v1/account/change-password` is
   a resource-owner-password grant; it used to run on `web-grading-fe`. Once
-  `directAccessGrantsEnabled: false` on that client (P3-4), the gateway gets
-  `invalid_client` → `502 identity_provider_unavailable` on every password change. The fix
-  is client **`wgs-password-verify`**: confidential, Direct Access Grants **ON**, Standard
-  Flow OFF, Service Accounts OFF; id + secret via env `KEYCLOAK_PASSWORD_CLIENT_ID/SECRET`
-  → K8s Secret `keycloak-admin-client` → `keycloak.admin.password-client-id/secret`
-  (`KeycloakAdminProperties.passwordClientSecret`, form carries `client_secret` only when
-  configured — blank = old public-client behaviour).
+  `directAccessGrantsEnabled: false` on that client (**done 2026-10-03**, runbook §10.6 ✓),
+  the gateway gets `unauthorized_client` → `502 identity_provider_unavailable` on every
+  password change. The fix is client **`wgs-password-verify`**: confidential, Direct Access
+  Grants **ON**, Standard Flow OFF, Service Accounts OFF — **CREATED live 2026-10-03**
+  (§10.2 ✓, secret only in `.env` gitignored + K8s Secret, never in chat/git); id + secret
+  via env `KEYCLOAK_PASSWORD_CLIENT_ID/SECRET` → K8s Secret `keycloak-admin-client` →
+  `keycloak.admin.password-client-id/secret` (`KeycloakAdminProperties.passwordClientSecret`,
+  form carries `client_secret` only when configured — **blank = 502 now**, the "old
+  public-client" fallback is dead while fe direct grants are off).
 - **Ordering constraint (runbook §10.2 → §10.6):** CREATE `wgs-password-verify`, put its
   secret in `.env`, `./deploy/setup-namespace.sh`, and DEPLOY the gateway **BEFORE**
   disabling direct grants on `web-grading-fe`. Never reverse it — the endpoint returns 502
   in between, and a `502` there always means "the env var was not wired" (check `.env` →
-  secret → deployment env → pod).
+  secret → deployment env → pod). **Current state (2026-10-03): both steps done but in the
+  "wrong" order on purpose** (user accepted the window): fe direct grants OFF while the
+  cluster still runs old image → deployed change-password answers **502 until the backend
+  MR deploys**; local gateway already has the pair and returns 400/204 (verified).
+  `lecturer_test` password is `Dev2026!!` (reset 2026-10-03 — same-day change-password
+  tests had silently changed it; a wrong-password answer on BOTH clients means the password
+  moved, not the client config).
 - **Realm export:** partial-export the live realm afterwards — the export in the repo does
-  not contain `web-grading-fe` at all (§1), so it is not a faithful mirror; strip every
-  client's `secret` field before committing, and check `wgs-postman`
+  not contain `web-grading-fe` nor `wgs-password-verify` (§1), so it is not a faithful
+  mirror; strip every client's `secret` field before committing, and check `wgs-postman`
   (`redirectUris: ["*"]`, direct ON) is still used before keeping it that permissive.

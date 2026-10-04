@@ -81,8 +81,10 @@ with a **0-based `page`** (antd `Table.pagination.current` is 1-based → `meta.
 
   Never render a raw caught `error`: without this mapping a dead gateway shows axios's
   "Request failed with status code 502".
-- `401` clears the identity and redirects to `/login`. `403` is a normal refusal
-  (e.g. "Not owner") and must **not** log the user out.
+- `401` gets **exactly one** refresh-and-retry per request, then signs out and redirects
+  to `/login`; a transport failure during the refresh fails the request and **keeps** the
+  session (§23.5). `403` is a normal refusal (e.g. "Not owner") and must **not** log the
+  user out.
 
 ## 5. Identity = Keycloak JWT (`Authorization: Bearer`)
 
@@ -792,10 +794,14 @@ drifts visually from the list it persists.
   persist new tokens — inside `navigator.locks.request('wgs.token.refresh', ...)`, so the
   browser grants one tab at a time across tabs. Locking only the POST is not enough: the
   stale read happens before it.
-- **Skip-if-already-fresh check inside the lock:** after acquiring the lock, if the session
-  is no longer expired (another tab refreshed while this one waited — reuse the existing
-  `isSessionExpired(bufferMs = 30_000)` helper, do not write a new one), return the current
-  session instead of POSTing to Keycloak again.
+- **Skip-if-fresh inside the lock was REMOVED (2026-10-04)** — and must not come back:
+  after Phase 3's memory-only tokens each tab owns its own keycloak-js token pair, so a
+  peer tab's refresh can never make *this* tab's session fresh and there is no shared
+  refresh token for a peer to have spent. The branch read only the local session, could
+  never fire, and its comment promised a cross-tab dedup that does not exist
+  (serialization alone cannot dedupe a spent refresh token). What remains is exactly what
+  the lock name says: **serialization**. The lock stays only because D9 retained it until
+  Phase 3 is verified end-to-end — do not treat it as a dedup guarantee.
 - Fallback: `navigator.locks` missing (non-secure context) → previous per-tab behaviour, no
   regression. TypeScript 6 types `navigator.locks` in `lib.dom` — no cast needed; secure
   context is `localhost` in dev and https in prod.
@@ -868,6 +874,53 @@ runtime checklist `docs/guide/PASSWORD-GATEWAY-RUNBOOK.md` §10.
 - Read the session via `getIdentity()` (the identity seam, §5); `AuthGate` has already
   settled `keycloak.init()` before the router mounts, so the synchronous read is reliable.
 - Hook order stays unconditional (Rules of Hooks): all hooks first, conditional return last.
-- Left as known risk: `http.ts` 401 → `assign('/login')` can still bounce if the API keeps
-  answering 401 (dead/wrong proxy target) — a persistent-401 loop is a gateway/proxy
-  problem, not an FE one; check `VITE_API_PROXY_TARGET` first.
+- A persistent 401 (dead/wrong proxy target) is now **capped**: one refresh-and-retry per
+  request, then sign-out → `/login` (§23.5) — check `VITE_API_PROXY_TARGET` first when a
+  user reports being bounced to `/login` with a live IdP session.
+
+### 23.5 401 handling: one retry, and only a dead grant may sign out
+
+`Review: 2026-10-04, Pullfrog (Keycloak session PR).`
+
+- **Exactly one refresh-and-retry per logical request.** `http.ts` marks the request
+  config (`RetriableConfig._retried`, set before the refresh) and a **second** 401 skips
+  the refresh path and signs out → `/login`. Without the cap a 401 the gateway keeps
+  answering (audience/issuer mismatch, SSO session killed server-side) loops forever:
+  `updateToken(30)` resolves `false` without contacting Keycloak while the token is still
+  "fresh", so the retry is byte-identical and the caller's promise never settles.
+- **Two refresh outcomes, one branch point.** `refreshOnce()` classifies the failure
+  **inside its `catch`, on kc's token state** (`!kc.authenticated || !kc.token ||
+  !kc.refreshToken` → `clearSession()` + `REFRESH_DEAD`; otherwise
+  `REFRESH_UNREACHABLE`). The classification MUST live in the catch, not after it:
+  keycloak-js clears its own tokens **and rejects in the same tick** on a 400
+  invalid_grant (`keycloak.js` updateToken catch: `clearToken()` then `p.reject`), and
+  `updateToken` never resolves with cleared tokens — so a `buildSession(kc) === null`
+  check after `await updateToken()` only ever sees resolve-path failures
+  (`token_no_allowed_role`), while the genuinely dead grant (idle tab past the 30 min
+  default, SSO ended, admin revoke) gets filed as UNREACHABLE, keeps a tokenless
+  session, and never reaches `/login` (Pullfrog caught exactly this inversion,
+  2026-10-04). Transport failures (network/5xx) leave kc's tokens intact → session
+  kept, request fails, no redirect. Never collapse every `updateToken` rejection into
+  a sign-out either: a one-second blip would discard a still-valid refresh token.
+- **Waiters adopt the leader's outcome** (the failedQueue no longer swallows failures):
+  a rejected refresh rejects every queued request too, otherwise waiters would retry
+  with the very token that just 401'd.
+- **Attach the token whenever one exists** — including within 30 s of expiry. Skipping it
+  made every request in that window go out anonymous, 401, and spend a refresh round-trip.
+  Expiry tracking lives in keycloak-js alone; the session carries no `expiresAt`.
+- **Logout call sites must NOT clear the session first.** `clearSession()` →
+  `keycloak.clearToken()` drops `idToken` → empty `id_token_hint` → Keycloak's
+  logout-confirmation screen instead of `/login`. Drop `clearIdentity()` from
+  `AppLayout.handleLogout` and `NoRolePage.handleLogout`; the navigation after
+  `logout()` wipes the in-memory session (invariant documented on `logout()` itself).
+- **Role allow-list governs every branch:** strip the realm `ROLE_` prefix for matching,
+  then accept the result only if it equals `LECTURER`/`STUDENT`. Casting an untested
+  `ROLE_*` string to `Role` lets `ROLE_ADMIN` through, and `HomeRedirect` treats
+  anything that is not `STUDENT` as a lecturer.
+- **`AuthGate` failed state:** `token_no_allowed_role` renders a **sign-out** button
+  (reload reproduces the identical failure — Retry is a dead end, and the router's
+  `/no-role` page is unreachable because no session exists); a `KeycloakConfigError`
+  shows the thrown message verbatim (it names the offending `VITE_KEYCLOAK_AUTHORITY`)
+  instead of the generic `auth.initFailed`. Both keys are documented in
+  `.env.example` — a production build cannot start without
+  `VITE_KEYCLOAK_AUTHORITY`.

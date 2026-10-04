@@ -43,3 +43,7 @@ replay_pid*
 
 # Local rolling log files (per-service .log/ dirs, WAL-style)
 **/.log/
+
+**/ptit-wgs-realm.json
+**/realm-export.json
+/src-services/keycloak/realm-export.json

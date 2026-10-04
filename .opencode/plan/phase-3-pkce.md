@@ -16,7 +16,7 @@
 |---|---|---|
 | **D7** | UX login | **A** — redirect toàn trang sang login của Keycloak (`keycloak.login()`) |
 | **D8** | Token lưu ở đâu | **A** — memory-only + `check-sso` iframe, **tự fallback sang redirect** nếu iframe bị chặn |
-| **D11** | Gateway xác minh `currentPassword` | **A** — client riêng `wgs-password-verify` **confidential** + property `passwordClientSecret` |
+| **D11** | Gateway xác minh `currentPassword` | **A** — client riêng `wgs-password-verify` **confidential** + property `passwordClientSecret` · **✅ client tạo 2026-10-03** (ROPC 200/401 verify, secret trong `.env`) |
 | — | Origin FE | **chỉ dev `http://localhost:5173`** — FE chưa deploy, không có ingress/Dockerfile |
 | **D9** | Xóa Web Lock Phase 2 | ⏳ *đề xuất: giữ tới khi Phase 3 verify xong, dọn ở commit riêng* — **chưa chốt** |
 | **D10** | Xóa nhánh forced-change FE | ⏳ *đề xuất: Keycloak tự hiện trang `UPDATE_PASSWORD`* — **chưa chốt** |
@@ -129,7 +129,9 @@ Client `web-grading-fe` — sửa trên realm **live**:
 ```
 publicClient: true
 standardFlowEnabled: true
-directAccessGrantsEnabled: false      ← CHỈ SAU khi P3-3 (D11) deploy xong
+directAccessGrantsEnabled: false      ← ĐÃ LÀM 2026-10-03, TRƯỚC khi deploy (user chấp
+                                         nhận cửa sổ 502 cho gateway cluster; verify dứt
+                                         điểm = curl §10.4 sau deploy)
 attributes: {                          ← KHÔNG có field pkceMethod top-level
   "pkce.code.challenge.method": "S256",              # body pkceMethod → 400 (2026-10-03)
   "post.logout.redirect.uris": "http://localhost:5173/*"   # D12 full-page logout

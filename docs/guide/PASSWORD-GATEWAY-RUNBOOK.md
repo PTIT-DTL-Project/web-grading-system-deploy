@@ -29,7 +29,9 @@ thêm test → 37/37 pass.
 `pkce.code.challenge.method` — body `pkceMethod` top-level bị KC 400, xem §10.3), thêm
 `post.logout.redirect.uris`; D12 logout chuyển `kc.logout()` full-page (FE `keycloak.ts`).
 Behavioral test §10.3 ✓ (không challenge → `invalid_request`; có S256 → login page).
-**Browser E2E của login/logout sau 2 thay đổi này chưa chạy** — checklist §6.3 + verify #9.
+**Cũng 2026-10-03:** §10.2 client `wgs-password-verify` đã tạo + secret trong `.env`;
+§10.6 đã tắt direct grants `web-grading-fe` (lệch thứ tự, user chấp nhận — chi tiết ở §10.6).
+**Browser E2E của login/logout sau các thay đổi này chưa chạy** — checklist §6.3 + verify #9.
 
 ---
 
@@ -538,6 +540,12 @@ curl -sS -o /dev/null -w 'gw wrong-pw   -> %{http_code}\n' -X POST \
 
 ### 10.2 Tạo client `wgs-password-verify` + secret vào `.env`
 
+> **✓ Đã chạy 2026-10-03** (qua Admin REST, không cần cluster): client tạo `201`, secret
+> ghi vào `.env` local (gitignored, 2 dòng `KEYCLOAK_PASSWORD_CLIENT_*`), verify ROPC
+> `200` với MK đúng / `401 invalid_grant` với MK sai. Recipe bên dưới giữ lại để chạy lại
+> khi cần. **Lưu ý:** các test change-password cùng ngày đã vô tình đổi mật khẩu
+> `lecturer_test` → đã reset về `Dev2026!!` bằng `PUT …/users/{id}/reset-password`.
+
 Bước 2 của `POST /api/v1/account/change-password` là ROPC xác minh `currentPassword`.
 Tắt Direct Access Grants trên `web-grading-fe` (10.6) sẽ làm hỏng nó **nếu gateway vẫn ROPC
 trên client đó** → client **riêng** (D11): confidential, Direct Access Grants **ON**,
@@ -720,8 +728,11 @@ curl -sS -o /dev/null -w 'change        -> HTTP %{http_code}\n' -X POST \
 
 **Verify:** `printenv KEYCLOAK_PASSWORD_CLIENT_ID` = `wgs-password-verify` · secret độ dài
 `> 0` · (a) `400` · (b) `204` — tức là gateway đang xác thực qua `wgs-password-verify`
-(không `502`). *Lưu ý trung thực:* tới đây `web-grading-fe` vẫn còn direct grants nên (b)
-một mình **chưa** chứng minh được client nào đang được dùng — chứng minh dứt điểm ở **10.6**.
+(không `502`). *Lưu ý trung thực:* ~~tới đây `web-grading-fe` vẫn còn direct grants nên (b)
+một mình **chưa** chứng minh được client nào đang được dùng~~ → **với 10.6 đã chạy
+(2026-10-03, xem §10.6)**: ROPC `web-grading-fe` đã chết, nên curl (b) `400`/`204` **chính là
+chứng minh dứt điểm** gateway đang dùng `wgs-password-verify` — curl nào trả `502` là
+env chưa wiring.
 
 ### 10.5 Deploy FE + verify login redirect
 
@@ -740,6 +751,13 @@ npm run dev                              # FE hiện chỉ dev tại localhost:5
 - [ ] Application → Local Storage: **không** có `wgs.auth` (R4 đã cắt).
 
 ### 10.6 BẬT OFF Direct Access Grants trên `web-grading-fe` — chỉ SAU 10.4/10.5
+
+> **✓ Đã chạy 2026-10-03 — TRƯỚC 10.4/10.5, lệch thứ tự có chủ đích** (user chấp nhận
+> cửa sổ): `directAccessGrantsEnabled=false` (PUT full-replace, attrs pkce/post-logout giữ
+> nguyên), ROPC `web-grading-fe` → `400 unauthorized_client`, gateway **local** đổi MK vẫn
+> `400`/`204` = chứng minh đi qua `wgs-password-verify`. Hệ quả: gateway **cluster** (image
+> cũ chưa có env password) đổi MK trả `502` tới khi MR backend được deploy (§10.4) — curl
+> verify §10.4 chạy sau đó là verify dứt điểm luôn.
 
 ```bash
 curl -sS -H "Authorization: Bearer $TOKEN" \

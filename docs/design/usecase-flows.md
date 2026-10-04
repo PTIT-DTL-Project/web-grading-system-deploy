@@ -728,7 +728,8 @@ Server order (plan §5): rate limit (Valkey, per IP+username, fail-open) → ver
 password via a password grant — since Phase 3 (2026-10-03, D11) with the gateway's own
 **confidential** client **`wgs-password-verify`** (`client_id` + `client_secret`, env
 `KEYCLOAK_PASSWORD_CLIENT_*`; before Phase 3 it was the public `web-grading-fe` with no
-secret, and a blank configured secret keeps that exact behaviour) (an
+secret — but since 2026-10-03 `web-grading-fe` has Direct Access Grants **OFF** (§10.6), so
+a blank/missing pair now fails with `502`: the pair is mandatory in practice) (an
 `Account is not fully set up` answer counts as *password correct*) → lookup user via the
 admin API with the `wgs-user-service` service account — the query parameter comes from the
 identifier's shape (`@` → `?email=`, otherwise `?username=`) and the returned row is matched
