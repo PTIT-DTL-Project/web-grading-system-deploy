@@ -366,15 +366,20 @@ MANDATORY before telling the user a task is done:
    NOT be verified (e.g. no local DB), say so explicitly instead of claiming done.
 
 5. **Postman collection is part of done**: every new public endpoint (and every
-    changed endpoint's new param/behavior) gets a request in
-    `src-services/docs/api/postman/Web grading service.postman_collection.json` under
-    its service folder, with a saved **real** `response` for the happy path (200/201)
-    **and** at least one error case (e.g. 404 Not Found, 400). Capture the bodies from
-    a live boot of the service — never hand-write or guess response JSON. Internal
-    `/api/v1/internal/**` endpoints are included when they have a caller contract worth
-    exercising (e.g. `POST /api/v1/internal/results/weighted`). If the service cannot
-    be booted in the environment, add the request definition (method/URL/headers/body)
-    but leave `response` empty and say so — do not fabricate responses.
+   changed endpoint's new param/behavior) gets a request in
+   `src-services/docs/api/postman/Web grading service.postman_collection.json` under
+   its service folder, with a saved **real** `response` for the happy path (200/201)
+   **and** at least one error case (e.g. 404 Not Found, 400). Capture the bodies from
+   a live boot of the service — never hand-write or guess response JSON. Internal
+   `/api/v1/internal/**` endpoints are included when they have a caller contract worth
+   exercising (e.g. `POST /api/v1/internal/results/weighted`). If the service cannot
+   be booted in the environment, add the request definition (method/URL/headers/body)
+   but leave `response` empty and say so — do not fabricate responses.
+   **Gateway-hosted endpoints** (e.g. `POST /api/v1/account/change-password`) go in
+   `Web grading service - gateway.postman_collection.json` under the matching
+   folder of `Gateway (production-like)` instead; a throwaway Keycloak probe user
+   (with an **email** — see keycloak skill §4) is the way to capture its live
+   responses, and delete the probe afterwards.
 6. **No all-args positional constructors**: every record constructor call with more
     than 2 positional arguments must use a builder (`X.builder().field(val)...build()`)
     or a named static factory method. This applies at all call sites AND inside helper
@@ -918,3 +923,32 @@ Security rules:
 Error semantics: malformed input returns 400 with a message naming the offending
 field and listing allowed fields. Blank/null `search` returns unfiltered 200.
 
+
+## 21. Public endpoint that must never answer 401: split SecurityWebFilterChain (mandatory)
+
+`permitAll()` does NOT guarantee "never 401" on a chain that also carries
+`oauth2ResourceServer`: a request with an invalid/expired `Authorization` header hits the
+resource-server entry point *before* authorization and gets 401 anyway (Pullfrog review
+2026-10-04, `POST /api/v1/account/change-password`). If an endpoint's contract says
+"public, and a stray bearer must be ignored" (forced-change login flow would otherwise
+loop through the FE's silent-refresh → `/login` redirect):
+
+- Give the path its **own `@Bean @Order(1)` chain** with
+  `.securityMatcher(ServerWebExchangeMatchers.pathMatchers("/api/v1/account/**"))`
+  (Spring Security 7: `securityMatcher(...)` takes a `ServerWebExchangeMatcher`, not
+  varargs — the `pathMatchers` overload is gone) and **no `oauth2ResourceServer`**.
+- The main chain keeps `oauth2ResourceServer` and lists only `/actuator/**` (etc.) in
+  `PUBLIC_PATHS` — do not leave the public path in both.
+- Make exposure **conditional**: `@ConditionalOnProperty(prefix = "rate-limit",
+  name = "enabled", havingValue = "true")` on the controller + base default
+  `false` in `application.yaml` → an unconfigured deployment answers 404 (fail-closed)
+  instead of exposing the path. Local/dev profile sets `true`. This switch is a gate,
+  not a limiter — never document 429s for it until a limiter exists.
+- **Test the invariant with the filter chain in the path**: `WebTestClient
+  .bindToApplicationContext(ctx)` keeps `WebFilterChainProxy` in the route
+  (`bindToController` / controller-only tests cannot see it and pass even when the
+  split chain regresses). `@AutoConfigureWebTestClient` is unavailable in Boot 4 —
+  build the client in `@BeforeEach`. Use `@SpringBootTest(properties =
+  "rate-limit.enabled=true")` because the base default now hides the controller.
+- Config knob goes through `@ConfigurationProperties` if it grows past the one
+  `@ConditionalOnProperty`; a lone boolean switch on the controller is fine as-is.

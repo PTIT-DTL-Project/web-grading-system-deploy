@@ -39,7 +39,11 @@ kubectl apply -f generated/submission-service.yaml
 ```bash
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 ```
+### Gateway secret
 
+```bash
+kubectl get secret gateway-trust -n web-grading -o jsonpath='{.data.GATEWAY_TRUSTED_SECRET}' | base64 -d
+```
 ### Verify Applications
 
 ```bash

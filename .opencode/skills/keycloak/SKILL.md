@@ -42,7 +42,8 @@ Plan that drove the Phase 1 changes:
 - Config to have in the **live** realm: `bruteForceProtected: true`, `failureFactor: 30`,
   `permanentLockout: false`, `maxFailureWaitSeconds: 900`. Verify before trusting it —
   `GET /admin/realms/ptit-wgs | grep bruteForce` (the change is applied via the admin
-  API, cluster-side; as of 2026-10-03 the cluster was down, so confirm rather than assume).
+  API, cluster-side; as of 2026-10-03 the cluster was down, so confirm rather than assume —
+  **confirmed `bruteForceProtected: true` live 2026-10-04**).
 - With `permanentLockout: false` a lock is **temporary (~15 min wait)**; 30 wrong
   passwords on one account locks that victim — accepted trade-off, documented in the
   plan §6.1. **E2E tests that guess passwords can lock `lecturer_test`** → wait it out or
@@ -75,6 +76,13 @@ Plan that drove the Phase 1 changes:
   `invalid_grant` + `error_description: "Account is not fully set up"` — that means
   "password correct, forced change pending", NOT "wrong password".** The gateway's
   change-password endpoint treats it as a successful current-password verification.
+- **The same marker fires for a user created with NO email** (live-verified 2026-10-04:
+  `emailVerified: true` but no `email` field → correct password answers
+  `Account is not fully set up`, `requiredActions` shows `[]`; a `PUT …/users/{id}`
+  adding the email flips the very next grant to 200). Wrong password still answers
+  `Invalid user credentials`, so verification semantics hold either way — but **probe
+  users for captures/tests must be given an email**, or every correct-password attempt
+  looks like a pending required action.
 - **Wrong credentials answer `401` + `invalid_grant` / `"Invalid user credentials"`, NOT
   400** (live-verified 2026-10-03 against Keycloak 26.8). Code that only accepts 400 maps
   every wrong-password case to `identity_provider_unavailable` (502). Accept 400 **and**
@@ -192,6 +200,10 @@ Plan: `.opencode/plan/keycloak-hardening-phase-2.md` (decisions D1–D6); runtim
   password to `abcdefgh` after the policy is on → `400 weak_password` = enforced,
   `204` = bypass (only then add gateway-side validation). Do not assume either outcome
   and do not write gateway validation code before the probe decides (D5).
+  **Still unresolved 2026-10-04: the live realm's `passwordPolicy` is `None`** (the
+  Phase 2 policy was never applied to the live realm), so a weak new password answers
+  `204` today and the gateway's `weak_password` branch is unreachable until the policy
+  lands.
 
 ## 10. Phase 3 (2026-10-03): PKCE client config, direct grants, and the gateway's OWN client
 
@@ -213,9 +225,18 @@ Plan/decisions: `.opencode/plan/phase-3-pkce.md` (**D7–D12**) · runtime comma
 - **`redirectUris` / `webOrigins` gotcha:** list the exact origins —
   `redirectUris: ["http://localhost:5173/*"]`, `webOrigins: ["http://localhost:5173"]` —
   and **never `*`/`+` when credentials are involved**. The team hit a CORS failure on
-  2026-10-01 (no ACAO without matching `webOrigins`). The FE is dev-only today; the moment
-  it deploys elsewhere, the new origin must be added to BOTH lists or login cannot return
-  to the app (runbook §10.8 checklist).
+  2026-10-01 (no ACAO without matching `webOrigins`). **Every deployed FE origin must be
+  in THREE places: `redirectUris`, `webOrigins`, AND the client attribute
+  `post.logout.redirect.uris`** (§7) — missing `redirectUris` is not a silent problem:
+  `GET …/protocol/openid-connect/auth` answers **400** for that origin, which kills
+  `silent-check-sso` (console: 400 + a `frame-ancestors 'self'` CSP error, because the
+  400 page carries that header inside the iframe) and makes `login()` show Keycloak's
+  "Invalid parameter: redirect_uri" instead of the login form. Probe before/after with a
+  plain authorize GET: registered → `302`/`200` (login page), unregistered → `400`.
+  Origins so far: `http://localhost:5173` (dev) and
+  `https://web-dev1-fe.vucongtuanduong.dpdns.org` (Vercel, added 2026-10-04). The live
+  client is NOT in the realm export (§1) — these live-only entries vanish from any
+  export/re-import unless re-added (runbook §10.8 checklist).
 - **Direct Access Grants off on `web-grading-fe` breaks the gateway — that is why
   `wgs-password-verify` exists (D11).** Step 2 of `POST /api/v1/account/change-password` is
   a resource-owner-password grant; it used to run on `web-grading-fe`. Once

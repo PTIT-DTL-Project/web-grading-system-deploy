@@ -81,9 +81,12 @@ kubectl create secret generic keycloak-db \
 # Direct Access Grants go OFF on the browser client web-grading-fe, the gateway
 # verifies currentPassword with its own confidential client wgs-password-verify.
 # A half-set pair is always a misconfiguration (the grant answers invalid_client → 502),
-# so it fails loudly like the admin keys; BOTH EMPTY stays legal — the gateway then
-# falls back to web-grading-fe with no secret, exactly the pre-Phase-3 behaviour a
-# fresh Phase 1 setup (runbook §4) runs with before runbook §10.2 creates the client.
+# so it fails loudly like the admin keys; BOTH EMPTY stays legal — the gateway default
+# (application.yaml password-client-id) and this script's fallback are BOTH
+# wgs-password-verify with a blank secret, i.e. fail-loud 502 until runbook §10.2
+# creates the client. (The old web-grading-fe fallback was removed 2026-10-04: fe direct
+# grants are OFF, so that default could only ever 502 — Pullfrog review.)
+# Review: 2026-10-04, Pullfrog review (shipped default contradicted Phase 3).
 if [ -z "${KEYCLOAK_ADMIN_CLIENT_ID:-}" ] || [ -z "${KEYCLOAK_ADMIN_CLIENT_SECRET:-}" ]; then
   echo "ERROR: KEYCLOAK_ADMIN_CLIENT_ID and KEYCLOAK_ADMIN_CLIENT_SECRET must both be set" >&2
   echo "in .env (values come from Keycloak client wgs-user-service credentials)." >&2
@@ -109,7 +112,7 @@ kubectl create secret generic keycloak-admin-client \
   --namespace "${NAMESPACE}" \
   --from-literal=KEYCLOAK_ADMIN_CLIENT_ID="${KEYCLOAK_ADMIN_CLIENT_ID}" \
   --from-literal=KEYCLOAK_ADMIN_CLIENT_SECRET="${KEYCLOAK_ADMIN_CLIENT_SECRET}" \
-  --from-literal=KEYCLOAK_PASSWORD_CLIENT_ID="${KEYCLOAK_PASSWORD_CLIENT_ID:-web-grading-fe}" \
+  --from-literal=KEYCLOAK_PASSWORD_CLIENT_ID="${KEYCLOAK_PASSWORD_CLIENT_ID:-wgs-password-verify}" \
   --from-literal=KEYCLOAK_PASSWORD_CLIENT_SECRET="${KEYCLOAK_PASSWORD_CLIENT_SECRET:-}" \
   --dry-run=client -o yaml | kubectl apply -f -
 

@@ -422,8 +422,17 @@ Webhook/internal endpoints deliberately NOT enveloped; every other error path re
 ## 5. api-gateway — `POST /api/v1/account/change-password` (public, since 2026-10-03)
 
 **No `Authorization` header is needed — and none must be sent for this endpoint.** It is
-on the gateway's `PUBLIC_PATHS` and never answers `401` (a `401` would trigger the FE
-silent-refresh loop in the forced-change flow). Same envelope as everywhere else.
+served by a dedicated gateway filter chain **without** resource-server processing, so it
+never answers `401` — not even when a stale `Authorization` header rides along (a `401`
+would trigger the FE silent-refresh loop in the forced-change flow). Same envelope as
+everywhere else.
+
+**Gate (since 2026-10-04):** the controller only exists when `RATE_LIMIT_ENABLED=true`
+(base default `false`; the local profile sets it). With the gate off the path answers
+**404** — fail-closed on purpose, not a routing bug. **There is no rate limiter yet**:
+the switch only exposes/hides the endpoint (Pullfrog review 2026-10-04); the earlier
+`429 rate_limited` example that documented a Valkey limiter was removed because that code
+path never existed.
 
 Base URL examples: local gateway `http://localhost:8080`, deployed
 `https://web-dev1-api.vucongtuanduong.dpdns.org`.
@@ -456,17 +465,13 @@ curl -i -X POST http://localhost:8080/api/v1/account/change-password \
 # 400  {"status":400,"message":"current_password_invalid","data":null}
 ```
 
-**Rate limited → 429** (needs `RATE_LIMIT_ENABLED=true` + `VALKEY_URL` on the gateway;
-default budget is 10 attempts per IP+username per 300 s — the 11th wrong attempt trips it):
+**404 when the gate is off** (`RATE_LIMIT_ENABLED` unset/false — expected fail-closed):
 
 ```bash
-for i in $(seq 1 11); do
-  curl -s -o /dev/null -w "%{http_code}\n" -X POST \
-    http://localhost:8080/api/v1/account/change-password \
-    -H "Content-Type: application/json" \
-    -d '{"username":"lecturer_test","currentPassword":"wrong","newPassword":"Dev2026!!"}'
-done
-# last line: 429  {"status":429,"message":"rate_limited","data":null}
+curl -i -X POST http://localhost:8080/api/v1/account/change-password \
+  -H "Content-Type: application/json" \
+  -d '{"username":"lecturer_test","currentPassword":"x","newPassword":"y"}'
+# HTTP/1.1 404  (no controller bean registered — NOT a route-predicate problem)
 ```
 
 Other answers on the same endpoint: `400 weak_password` (Keycloak password policy),

@@ -128,6 +128,17 @@ curl -sS -H "Authorization: Bearer $TOKEN" "$BASE/admin/realms/ptit-wgs" \
 
 **Rollback:** chạy lại đúng recipe với `r["bruteForceProtected"] = False`.
 
+**✅ Đã verify 2026-10-04:** `GET /admin/realms/ptit-wgs` → `bruteForceProtected: true`
+(cùng capture §6.2.1). Lưu ý hai sự thật về quyền truy cập:
+
+- **Token bước 1 bằng `.env` `admin`/`admin` THẤT BẠI** trên bản deploy này
+  (`401 invalid_grant / Invalid user credentials`) — `.env` mặc định admin/admin đã lệch
+  với realm live (xem §9.2 P2-1 / R8). Nếu bước 1 fail thì **không** được kết luận realm
+  chưa bật brute force.
+- **Client `wgs-user-service` (service account) GET được realm** (`client_credentials` →
+  `GET /admin/realms/ptit-wgs` → 200) — đây là nguồn verify đã dùng ngày 2026-10-04 khi
+  admin console creds lệch.
+
 **⚠️ Cảnh báo DoS lên tài khoản nạn nhân:** `failureFactor=30` + `permanentLockout=false` →
 ai nhập sai 30 lần sẽ **lock tạm那个人 ~15 phút** (`maxFailureWaitSeconds=900`). Chấp nhận được
 vì không lock vĩnh viễn, nhưng các ca E2E cố ý nhập sai nhiều lần sẽ tự khóa `lecturer_test` —
@@ -189,6 +200,14 @@ Việc cần có trước khi deploy:
 
 ### 6.1 Endpoint không được 404
 
+**Cửa sổ `rate-limit.enabled` (từ 2026-10-04, Pullfrog review):** controller
+`ChangePasswordController` chỉ đăng ký khi `rate-limit.enabled=true`. Base
+`application.yaml` mặc định `false` (chưa có rate limiter thật — switch này chỉ đóng/mở
+endpoint, không throttling) nên **404 khi chưa bật là ĐÚNG hành vi fail-closed**, không
+phải lỗi route. Profile `local` đặt `true` sẵn (`api-gateway/.../application-local.yaml`);
+deployment phải set `RATE_LIMIT_ENABLED=true` (env gateway, config repo) thì endpoint mới
+tồn tại.
+
 Controller (`RequestMappingHandlerMapping` order 0) phải thắng route predicate
 (`RoutePredicateHandlerMapping` order 1) — **đây là điều mới chỉ verify bằng bytecode, chưa e2e.**
 
@@ -203,7 +222,7 @@ curl -i -X POST https://web-dev1-api.vucongtuanduong.dpdns.org/api/v1/account/ch
   -d '{"username":"lecturer_test","currentPassword":"x","newPassword":"y"}'
 ```
 
-**Phải KHÔNG phải `404`.** Nếu vẫn 404 → fallback (ghi vào code):
+**Phải KHÔNG phải `404`** (khi gate đã bật). Nếu vẫn 404 → fallback (ghi vào code):
 `RouterFunction` (order `-1`) hoặc `spring.cloud.gateway.server.webflux.handler-mapping.order`.
 
 ### 6.2 Contract
@@ -216,6 +235,30 @@ curl -i -X POST https://web-dev1-api.vucongtuanduong.dpdns.org/api/v1/account/ch
 | Thành công | `currentPassword` đúng, `newPassword` ≥ 8 | `204` |
 | MK mới quá yếu | `newPassword` < 8 (nếu realm có policy) | `400 weak_password` |
 | Keycloak chết | chặn network tới Keycloak | `502 identity_provider_unavailable` |
+
+### 6.2.1 Live capture — marker forced-change + trạng thái sai MK (2026-10-04)
+
+Chạy thật against realm deploy (`web-dev1-keycloak.vucongtuanduong.dpdns.org`), client
+`wgs-password-verify` (password grant). User probe tạm tạo với credential
+`temporary=true` → `requiredActions: ["UPDATE_PASSWORD"]`, **xóa ngay sau khi đo**
+(HTTP 204, xác nhận còn 0 user probe).
+
+| Case | HTTP status | Body raw |
+|---|---|---|
+| Password **đúng** nhưng `UPDATE_PASSWORD` pending | **400** | `{"error": "invalid_grant", "error_description": "Account is not fully set up"}` |
+| Sai password (control) | **401** | `{"error": "invalid_grant", "error_description": "Invalid user credentials"}` |
+
+Kết luận (dùng cho `KeycloakAdminWebClient.passwordVerdict`):
+
+- Marker `Account is not fully set up` **khớp đúng** bản deploy → flow A (forced change)
+  xác thực được current password. Cảnh báo "bản build khác trả 401 + `Invalid user
+  credentials` cho required-action pending" (Red Hat KB) **không xảy ra trên bản này** —
+  vẫn giữ `requiredActions` làm corroboration nếu đổi version.
+- Sai MK trả **401** trên bản deploy này. Nguồn release thì 26.0→401, có nguồn nói 400 —
+  code gateway chấp nhận **cả 400 và 401** (chỉ khi body vẫn mang `invalid_grant` /
+  `Invalid user credentials`); **không** được bỏ nhánh nào khi "dọn comment".
+- Cùng ngày, `GET /admin/realms/ptit-wgs` trả **`bruteForceProtected: true`** → §3 đã
+  có hiệu lực thật trên realm live (compensating control thứ hai của endpoint).
 
 ### 6.3 E2E trên browser (dev local)
 

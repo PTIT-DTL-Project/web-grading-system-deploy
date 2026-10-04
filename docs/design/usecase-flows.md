@@ -695,16 +695,27 @@ before compose boot.
 **Service:** api-gateway (`POST /api/v1/account/change-password`).
 **Since:** 2026-10-03, plan `docs/design/keycloak-password-gateway-plan-2026-10-03-v1.md`.
 
-**Preconditions:** the path is on the gateway's `PUBLIC_PATHS` — it must **never** answer
-`401` (a `401` makes the FE interceptor silent-refresh and redirect `/login`, which loops
-in the forced-change flow, where no token exists yet).
+**Preconditions:**
+- **Gate:** the controller only exists when `rate-limit.enabled=true`
+  (`RATE_LIMIT_ENABLED`, base default `false`; the local profile sets it) — with the gate
+  off the path answers **404** (fail-closed: no anonymous password oracle on an
+  unconfigured deployment). There is no limiter behind the switch yet.
+- **Never `401`** — structural, since 2026-10-04: the path is served by a dedicated
+  `SecurityWebFilterChain` *without* `oauth2ResourceServer`, so an expired/invalid
+  `Authorization` header on the request is never validated (on the old single chain,
+  `permitAll` could not prevent the resource-server entry point from answering `401`).
+  A `401` would make the FE interceptor silent-refresh and redirect `/login`, which loops
+  in the forced-change flow, where no token exists yet.
+- Realm brute-force protection (`bruteForceProtected=true`, **live-verified 2026-10-04**,
+  runbook §3 + §6.2.1) is the compensating control for the open password-grant surface.
 
 ### The endpoint (shared by both entry points)
 
 ```
 POST /api/v1/account/change-password
 Content-Type: application/json
-NO Authorization header — public by design, never 401
+NO Authorization header needed — if one is sent it is ignored (the dedicated chain
+does no bearer processing), never validated, never answered with 401
 
 {
   "username": "lecturer_test",     // username OR email (realm loginWithEmailAllowed=true)
@@ -717,15 +728,15 @@ Expected responses:
 
 | HTTP | Body | When |
 |---|---|---|
+| `404` | (framework) | gate off (`rate-limit.enabled=false`) — no controller registered; expected fail-closed, **not** a routing bug |
 | `204` | (empty) | password changed |
 | `400` | `{"status":400,"message":"current_password_invalid","data":null}` | wrong current password **OR** unknown user — deliberately the same code (no user enumeration) |
-| `400` | `{"status":400,"message":"weak_password","data":null}` | Keycloak password policy rejected the new password |
+| `400` | `{"status":400,"message":"weak_password","data":null}` | Keycloak password policy rejected the new password — **unreachable today**: the live realm's `passwordPolicy` is `None` (verified 2026-10-04), so a weak `newPassword` answers `204` until the Phase 2 policy is applied |
 | `400` | `{"status":400,"message":"validation_failed","data":null}` | missing/blank field |
-| `429` | `{"status":429,"message":"rate_limited","data":null}` | over the limit for this IP+username (see below) |
 | `502` | `{"status":502,"message":"identity_provider_unavailable","data":null}` | Keycloak token/admin API unreachable or errored (envelope `status` is `502` too) |
 
-Server order (plan §5): rate limit (Valkey, per IP+username, fail-open) → verify current
-password via a password grant — since Phase 3 (2026-10-03, D11) with the gateway's own
+Server order: gate (`rate-limit.enabled` decides whether this controller exists) →
+verify current password via a password grant — since Phase 3 (2026-10-03, D11) with the gateway's own
 **confidential** client **`wgs-password-verify`** (`client_id` + `client_secret`, env
 `KEYCLOAK_PASSWORD_CLIENT_*`; before Phase 3 it was the public `web-grading-fe` with no
 secret — but since 2026-10-03 `web-grading-fe` has Direct Access Grants **OFF** (§10.6), so
@@ -794,7 +805,7 @@ and the gateway endpoint plays no role here (it stays for the voluntary Flow B).
 2. `POST /api/v1/account/change-password` with
    `{"username":"lecturer_test","currentPassword":"<just-typed password>","newPassword":"Dev2026!!"}`
    → `204` (errors: `current_password_invalid` / `weak_password` / `validation_failed` /
-   `rate_limited`).
+   `identity_provider_unavailable`; `404` when the gate is off).
 3. User logs in again with the new password → tokens, `requiredActions` cleared.
 
 </details>
@@ -815,17 +826,27 @@ different storage).
    ```
 
    → `204` → success toast, modal closes, **session unchanged — the user stays logged in**.
-3. Errors: same table as "The endpoint" above; `429 rate_limited` after too many attempts.
+3. Errors: same table as "The endpoint" above. A stale bearer token on this request can
+   no longer produce `401` (dedicated chain, see Preconditions); Keycloak brute force is
+   what throttles repeated wrong passwords realm-side.
 
-### Rate limit (the 429)
+### Exposure gate (the 404) and what actually throttles
 
-Fixed window in Valkey, key `rl:pwd:{ip}:{lowercase(username)}` (IP from the first
-`X-Forwarded-For` hop, fallback socket address); defaults `rate-limit.max-attempts=10` /
-`window-seconds=300`, switch `RATE_LIMIT_ENABLED`. Valkey down or `VALKEY_URL` empty →
-**fail-open** (request passes, one ERROR log). Independent of — and complementary to —
-Keycloak brute force (`bruteForceProtected: true`, `failureFactor: 30`,
-`permanentLockout: false` → a locked account waits ~15 min; E2E tests that guess passwords
-can lock `lecturer_test`).
+`rate-limit.enabled` (`RATE_LIMIT_ENABLED`, base default `false`, local profile `true`)
+only decides whether the controller is registered — **no limiter is implemented** (the
+original Valkey fixed-window design from plan §5 was never built; its `rate_limited`/429
+code was removed 2026-10-04 as unreachable). Until a real limiter ships:
+
+- unconfigured deployment → endpoint **absent** (404), so there is no open
+  password-guessing oracle;
+- an opted-in deployment relies on **Keycloak brute force** as the throttle:
+  `bruteForceProtected=true` (live-verified 2026-10-04), `failureFactor=30`,
+  `permanentLockout=false` → a locked account waits ~15 min; E2E tests that guess
+  passwords can lock `lecturer_test`.
+- Known trade-off (accepted, plan §6.1): the counter is **per user**, not per IP — an
+  anonymous caller can drive a targeted account into temporary lockout, and a successful
+  login clears the counter. Lockout and a wrong password both surface as
+  `current_password_invalid` here (the gateway does not distinguish them).
 
 ---
 
