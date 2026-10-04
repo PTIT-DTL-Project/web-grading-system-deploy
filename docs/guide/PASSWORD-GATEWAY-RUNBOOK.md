@@ -696,6 +696,10 @@ attrs = c.setdefault("attributes", {})
 attrs["pkce.code.challenge.method"] = "S256"
 # D12 (2026-10-03): logout chuyển sang kc.logout() full-page — thiếu attribute này
 # Keycloak từ chối post_logout_redirect_uri và chỉ hiện trang "logged out" của nó.
+# Multi-origin PHẢI join bằng "##" (KC Constants.CFG_DELIMITER), KHÔNG space/phẩy:
+# join sai → KC split ra 1 entry rác → mọi logout 400 "Invalid redirect uri"
+# (xác minh 2026-10-04). Hai origin:
+#   "http://localhost:5173/* ## https://web-dev1-fe.vucongtuanduong.dpdns.org/*"
 attrs["post.logout.redirect.uris"] = "http://localhost:5173/*"
 c["redirectUris"] = ["http://localhost:5173/*"]
 c["webOrigins"] = ["http://localhost:5173"]

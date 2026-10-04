@@ -137,7 +137,9 @@ with a **0-based `page`** (antd `Table.pagination.current` is 1-based → `meta.
   terminates the SSO session and sends the browser back to `/login`. The old
   fire-and-forget XHR revoke is gone (it left the SSO cookie alive → `/login` bounced
   back into the app). Realm must allow it: `post.logout.redirect.uris` on
-  `web-grading-fe` (see `keycloak` skill §7). Never `clearSession()` first — keycloak-js
+  `web-grading-fe` (see `keycloak` skill §7 — multi-origin separator is `##`, a
+  comma/space-joined value gives 400 "Invalid redirect uri" on every logout). Never
+  `clearSession()` first — keycloak-js
   needs `idToken` for `id_token_hint`.
 - Realm-side details (flat reset-password body, service-account roles, brute force,
   `Account is not fully set up` semantics) live in the repo **`keycloak` skill** —

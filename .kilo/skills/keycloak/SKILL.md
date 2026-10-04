@@ -142,6 +142,16 @@ Plan that drove the Phase 1 changes:
 - Realm requirement: client attribute `post.logout.redirect.uris` must include the app
   origin (`http://localhost:5173/*`), else Keycloak renders its own "logged out" page
   and never returns to the app.
+- **Multivalued separator in `post.logout.redirect.uris` is `##`, NOT comma or space**
+  (`Constants.CFG_DELIMITER = "##"`; KC 26.0 `AbstractClientConfigWrapper.getAttributeMultivalued`
+  splits on `\s*##\s*`). Two origins:
+  `http://localhost:5173/* ## https://web-dev1-fe.vucongtuanduong.dpdns.org/*`.
+  A comma/space-joined value parses as ONE garbage entry that matches no URI →
+  `GET …/openid-connect/logout?client_id=…&post_logout_redirect_uri=…` answers
+  **400 "Invalid redirect uri"** (`LogoutEndpoint` → `RedirectUtils` null).
+  Verified 2026-10-04: switching the separator to `##` turned that probe from 400 into
+  `302 Location: <origin>/login`. Probe recipe (hint optional): registered uri →
+  `302 Location: <uri>`, unregistered uri → `400` (negative control must stay 400).
 - Session termination revokes the refresh token (runbook verify #9 still holds); an
   already-issued access token lives until `accessTokenLifespan` (300 s) expires.
 - Do not call `keycloak.clearToken()` before building the logout URL — it drops
@@ -227,7 +237,8 @@ Plan/decisions: `.opencode/plan/phase-3-pkce.md` (**D7–D12**) · runtime comma
   and **never `*`/`+` when credentials are involved**. The team hit a CORS failure on
   2026-10-01 (no ACAO without matching `webOrigins`). **Every deployed FE origin must be
   in THREE places: `redirectUris`, `webOrigins`, AND the client attribute
-  `post.logout.redirect.uris`** (§7) — missing `redirectUris` is not a silent problem:
+  `post.logout.redirect.uris`** (§7 — its multivalue separator is `##`) — missing
+  `redirectUris` is not a silent problem:
   `GET …/protocol/openid-connect/auth` answers **400** for that origin, which kills
   `silent-check-sso` (console: 400 + a `frame-ancestors 'self'` CSP error, because the
   400 page carries that header inside the iframe) and makes `login()` show Keycloak's
