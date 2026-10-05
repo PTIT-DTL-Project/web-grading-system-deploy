@@ -831,6 +831,13 @@ runtime checklist `docs/guide/PASSWORD-GATEWAY-RUNBOOK.md` §10.
   `check-sso` iframe can be blocked (Chrome phaseout, Safari ITP). Catch `onError` of
   `init()` and re-run with `silentCheckSsoRedirect: false` (full-page redirect) — one flash,
   session survives. Do not "handle" a blocked iframe by persisting tokens (§23.2).
+- **Callback loads skip the 3p-cookies probe** (2026-10-04): when the URL already carries
+  an OIDC callback (`state` + `code|error`, hash or query — `response_mode=fragment` puts
+  it in the hash), `runInit` omits `silentCheckSsoRedirectUri`, so keycloak-js skips its
+  3p-cookies probe (~2 tunnel round trips ≈ 0.5 s) before the code exchange; the silent
+  path is never used on a callback load. `vite.config.ts` also injects `preconnect` links
+  to the Keycloak origin (derived from `VITE_KEYCLOAK_AUTHORITY`) so DNS/TLS overlaps
+  bundle parsing.
 - Files: `frontend-src/web-grading-system-fe/public/silent-check-sso.html` must exist
   (keycloak-js reads that path by default).
 
@@ -876,6 +883,12 @@ runtime checklist `docs/guide/PASSWORD-GATEWAY-RUNBOOK.md` §10.
 - Read the session via `getIdentity()` (the identity seam, §5); `AuthGate` has already
   settled `keycloak.init()` before the router mounts, so the synchronous read is reliable.
 - Hook order stays unconditional (Rules of Hooks): all hooks first, conditional return last.
+- **`/login` renders a spinner while the auto-redirect is in flight** (2026-10-04):
+  the card with the login button is the fallback only when
+  `redirectToKeycloakLogin()` rejected (blocked navigation / uninitialized
+  adapter). keycloak-js's `login()` always calls `window.location.assign` and
+  its promise never settles, so the spinner can never hang. A reload of a deep
+  link (`/classes/:id`) shows loading, never the card flash.
 - A persistent 401 (dead/wrong proxy target) is now **capped**: one refresh-and-retry per
   request, then sign-out → `/login` (§23.5) — check `VITE_API_PROXY_TARGET` first when a
   user reports being bounced to `/login` with a live IdP session.

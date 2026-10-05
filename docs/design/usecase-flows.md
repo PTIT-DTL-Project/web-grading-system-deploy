@@ -767,6 +767,11 @@ cannot drift.
 login is an authorization-code + PKCE **redirect**, and Keycloak renders its **own**
 `UPDATE_PASSWORD` page for the pending required action — the FE's 2-field form is gone
 and the gateway endpoint plays no role here (it stays for the voluntary Flow B).
+While the automatic `keycloak.login()` redirect is pending, `/login` renders
+**only a spinner** (2026-10-04): the card with the **Đăng nhập** button is the
+fallback for a redirect that could not start (blocked navigation / uninitialized
+adapter) — so reloading a deep link such as `/classes/:id` shows loading and is
+sent to Keycloak, never the card.
 
 1. App → `keycloak.login()` → full-page redirect to Keycloak:
 
