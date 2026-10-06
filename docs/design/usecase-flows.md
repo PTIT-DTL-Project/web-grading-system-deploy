@@ -296,6 +296,19 @@ Errors: duplicate step_order → 400 naming it · invalid config structure → 4
 the key · unknown `connection.db_type` (DB_* steps) → 400 listing allowed engines
 `postgres, mysql, mariadb` · step of another assignment → 404.
 
+FE notes: the step editor auto-assigns `stepOrder` as `max + 1` and sends `config` /
+`expectedResult` as parsed JSON objects (backend `StepResponse` returns `type`, not
+`stepType`, plus JSON values — normalized once in `endpoints/assignments.ts`). HTTP steps
+use a Postman-style editor (method+path bar, Params/Headers/Body/Tests/Variables tabs,
+per-row enabled toggles, variable panel with copy, runtime warnings for unchecked steps /
+ignored bodies / restricted headers / unresolved `${var}`). DB types share one connection
+editor; schema-check and migration have list builders; EXTRACT/DELAY show an unsupported
+banner because no executor exists yet. DB-query `expected` is mirrored into top-level
+`expectedResult`. Steps support edit (Advanced JSON prefilled from the stored step) and
+delete; the config preview redacts `password` and `authorization` values because step
+config is stored in cleartext. When editing, the variable panel only lists variables
+from earlier steps.
+
 ### Step 4 — Update / reorder
 
 PUT `…/steps/{stepId}` partial; moving onto an occupied order → 400 (free the slot first);

@@ -173,19 +173,21 @@ Lưu ý multi-DBMS:
 
 | Kind | Cấu hình | Kiểm tra gì | Ví dụ |
 |------|----------|--------------|--------|
-| `STATUS` | `{ "kind": "STATUS", "equals": 200 }` | HTTP status code | So sánh actual == expected |
-| `CONTAINS` | `{ "kind": "CONTAINS", "text": "hello" }` | Substring trong response body | actualBody.contains(text) |
-| `JSON_PATH` | `{ "kind": "JSON_PATH", "path": "$.id", "exists": true }` | Trường tồn tại trong JSON | JsonPath.compile(path).read(body) != null |
-| `BODY_EQUALS` | `{ "kind": "BODY_EQUALS", "json": { "id": "abc" } }` | Toàn bộ body bằng nhau | Gson deep equals |
-| `BODY_STRUCTURE` | `{ "kind": "BODY_STRUCTURE", "json": { "id": "" } }` | Cấu trúc JSON (không giá trị) | Same key set, same types |
-| `FIELD_EQUALS` | `{ "kind": "FIELD_EQUALS", "path": "$.id", "equals": "${bookId}" }` | 1 field = giá trị kỳ vọng | JsonPath read + equals |
+| `status` | `{ "kind": "status", "equals": 200 }` | HTTP status code | So sánh actual == expected |
+| `contains` | `{ "kind": "contains", "text": "hello" }` | Substring trong response body | actualBody.contains(text) |
+| `json_path` | `{ "kind": "json_path", "path": "$.id", "exists": true }` | Trường tồn tại trong JSON | JsonPath.compile(path).read(body) != null |
+| `body_equals` | `{ "kind": "body_equals", "json": { "id": "abc" } }` | Toàn bộ body bằng nhau | Gson deep equals |
+| `body_structure` | `{ "kind": "body_structure", "json": { "id": "" } }` | Cấu trúc JSON (không giá trị) | Same key set, same types |
+| `field_equals` | `{ "kind": "field_equals", "path": "$.id", "equals": "${bookId}" }` | 1 field = giá trị kỳ vọng | JsonPath read + equals |
+
+> Kind là chữ thường và phân biệt hoa/thường — validator (`StepConfigValidator`) và executor (`AssertionEngine`) đều dùng chữ thường. Viết hoa sẽ rớt validation lúc lưu step.
 
 ### 4.2 Chi Tiết Từng Loại
 
-#### STATUS
+#### status
 
 ```json
-{ "kind": "STATUS", "equals": 200 }
+{ "kind": "status", "equals": 200 }
 ```
 
 | `equals` | Khi nào dùng |
@@ -196,20 +198,20 @@ Lưu ý multi-DBMS:
 | `400` | Dữ liệu không hợp lệ |
 | `404` | Không tìm thấy tài nguyên |
 
-#### CONTAINS
+#### contains
 
 ```json
-{ "kind": "CONTAINS", "text": "Test Book" }
+{ "kind": "contains", "text": "Test Book" }
 ```
 
 - **Phân biệt chữ hoa/thường**: `Test Book` ≠ `test book`
 - **Tìm trong toàn bộ response body** (string)
 - Dùng kiểm tra: `body.contains(text)`
 
-#### JSON_PATH
+#### json_path
 
 ```json
-{ "kind": "JSON_PATH", "path": "$.id", "exists": true }
+{ "kind": "json_path", "path": "$.id", "exists": true }
 ```
 
 | `path` | Ý nghĩa | Ví dụ response | Kết quả |
@@ -225,10 +227,10 @@ Lưu ý multi-DBMS:
 | `true` | Kiểm tra trường **có tồn tại** |
 | `false` | Kiểm tra trường **không tồn tại** |
 
-#### BODY_EQUALS
+#### body_equals
 
 ```json
-{ "kind": "BODY_EQUALS", "json": { "id": "abc-123", "title": "Test Book" } }
+{ "kind": "body_equals", "json": { "id": "abc-123", "title": "Test Book" } }
 ```
 
 - So sánh JSON response với JSON kỳ vọng
@@ -236,10 +238,10 @@ Lưu ý multi-DBMS:
 - **Giá trị phải khớp chính xác**
 - Dùng Gson deep equals
 
-#### BODY_STRUCTURE
+#### body_structure
 
 ```json
-{ "kind": "BODY_STRUCTURE", "json": { "id": "", "title": "" } }
+{ "kind": "body_structure", "json": { "id": "", "title": "" } }
 ```
 
 - So sánh **cấu trúc** (có những trường nào), **không so sánh giá trị**
@@ -247,10 +249,10 @@ Lưu ý multi-DBMS:
 - Kiểu dữ liệu phải khớp (string, number, boolean, object, array)
 - Giá trị trong expected **bị bỏ qua** (để `""` thay vì giá trị thật)
 
-#### FIELD_EQUALS
+#### field_equals
 
 ```json
-{ "kind": "FIELD_EQUALS", "path": "$.id", "equals": "${book1Id}" }
+{ "kind": "field_equals", "path": "$.id", "equals": "${book1Id}" }
 ```
 
 - Đọc giá trị tại JsonPath `path` từ response body
@@ -301,6 +303,13 @@ Lưu ý multi-DBMS:
 - Phân biệt chữ hoa/thường
 - `${bookId}` ≠ `${bookid}`
 - Dùng camelCase: `${bookId}`, `${studentName}`
+
+### 5.5 Lưu ý runtime: EXTRACT / DELAY độc lập
+
+`StepConfigValidator` chấp nhận config của step type `EXTRACT` (`variables[]`) và `DELAY`
+(`duration_ms`), nhưng `StepRegistry` hiện chỉ có executor cho `HTTP_REQUEST`, `DB_QUERY`,
+`DB_SCHEMA_CHECK`, `DB_MIGRATION`. Step `EXTRACT`/`DELAY` độc lập sẽ FAIL `UNKNOWN_STEP_TYPE`
+lúc chấm — cơ chế tạo biến duy nhất đang chạy là `extract[]` nằm trong HTTP step (§5.1–5.3).
 
 ---
 
@@ -628,12 +637,12 @@ services:
 
 | Kind | Cấu hình | Kiểm tra |
 |------|----------|----------|
-| `STATUS` | `{ "kind": "STATUS", "equals": 200 }` | HTTP status code |
-| `CONTAINS` | `{ "kind": "CONTAINS", "text": "hello" }` | Substring trong body |
-| `JSON_PATH` | `{ "kind": "JSON_PATH", "path": "$.id", "exists": true }` | Trường tồn tại |
-| `BODY_EQUALS` | `{ "kind": "BODY_EQUALS", "json": { ... } }` | Body bằng nhau |
-| `BODY_STRUCTURE` | `{ "kind": "BODY_STRUCTURE", "json": { ... } }` | Cấu trúc khớp |
-| `FIELD_EQUALS` | `{ "kind": "FIELD_EQUALS", "path": "$.id", "equals": "${bookId}" }` | 1 field = giá trị |
+| `status` | `{ "kind": "status", "equals": 200 }` | HTTP status code |
+| `contains` | `{ "kind": "contains", "text": "hello" }` | Substring trong body |
+| `json_path` | `{ "kind": "json_path", "path": "$.id", "exists": true }` | Trường tồn tại |
+| `body_equals` | `{ "kind": "body_equals", "json": { ... } }` | Body bằng nhau |
+| `body_structure` | `{ "kind": "body_structure", "json": { ... } }` | Cấu trúc khớp |
+| `field_equals` | `{ "kind": "field_equals", "path": "$.id", "equals": "${bookId}" }` | 1 field = giá trị |
 
 ### 13.2 Tất Cả Các HTTP Methods
 
