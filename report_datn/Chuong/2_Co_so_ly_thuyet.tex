@@ -1,6 +1,333 @@
 \documentclass[../BTL.tex]{subfiles}
-
 \begin{document}
 
+\section{Mở đầu}
+\label{section:2.1}
+
+Chương này trình bày các cơ sở lý thuyết và công nghệ được sử dụng trong việc xây dựng hệ thống chấm bài tự động môn Lập trình Web. Việc lựa chọn các công nghệ được thực hiện dựa trên những yêu cầu cụ thể của đề tài, bao gồm khả năng cách ly môi trường thực thi mã nguồn của sinh viên, khả năng xử lý bất đồng bộ khi chấm bài hàng loạt, cơ chế xác thực và phân quyền chặt chẽ, cũng như khả năng quan trắc để đánh giá hiệu năng hệ thống. \textit{Tiêu chí lựa chọn gồm: tính mã nguồn mở (giúp giảm chi phí licence và dễ dàng tùy biến theo nghiệp vụ), khả năng mở rộng độc lập cho từng thành phần, tính an toàn của luồng xác thực trên trình duyệt, và việc tách biệt lưu trữ bài nộp sang hệ thống object storage riêng nhằm bảo đảm hiệu năng và độ tin cậy khi số lượng bài nộp tăng lớn.} Các công nghệ được giới thiệu trong chương này đều là các giải pháp mã nguồn mở, hiện đại và được áp dụng rộng rãi trong thực tiễn công nghiệp. Mỗi công nghệ sẽ được trình bày về khái niệm cơ bản, nguyên lý hoạt động, cùng với lý do lựa chọn và cách thức áp dụng cụ thể vào hệ thống.
+
+\section{Kiến trúc vi dịch vụ}
+\label{section:2.2}
+
+\subsection{Khái niệm kiến trúc vi dịch vụ}
+\label{section:2.2.1}
+
+Kiến trúc vi dịch vụ (microservices architecture) là một phương pháp thiết kế phần mềm, trong đó một ứng dụng được cấu trúc thành một tập hợp các dịch vụ độc lập, nhẹ, mỗi dịch vụ thực hiện một chức năng nghiệp vụ riêng biệt và được triển khai, mở rộng riêng rẽ. Các dịch vụ giao tiếp với nhau thông qua các cơ chế giao tiếp nhẹ, phổ biến nhất là các giao thức HTTP với RESTful API (REST) hoặc qua các hệ thống trao đổi tin nhắn.
+
+Mỗi vi dịch vụ (microservice) trong hệ thống có cơ sở dữ liệu quan hệ (RDBMS) riêng, không chia sẻ trực tiếp dữ liệu với các dịch vụ khác (pattern DB-per-Service). Việc này đảm bảo tính độc lập về triển khai và khả năng lựa chọn công nghệ phù hợp cho từng nghiệp vụ.
+
+\subsection{So sánh với kiến trúc đơn khối}
+\label{section:2.2.2}
+
+Kiến trúc đơn khối (monolithic architecture) --- mô hình truyền thống --- đóng gói toàn bộ các chức năng của ứng dụng vào một tiến trình duy nhất. Trong mô hình này, mọi thành phần đều chia sẻ cùng một cơ sở dữ liệu và cùng một không gian tên. Khi hệ thống phát triển, monolith trở nên cồng kềnh, việc sửa đổi một chức năng nhỏ có thể ảnh hưởng đến toàn hệ thống, và khả năng mở rộng bị giới hạn bởi việc bắt buộc phải nhân bản toàn bộ ứng dụng.
+
+Bảng \ref{tab:monolith-vs-microservices} so sánh hai kiến trúc này:
+
+\begin{table}[ht]
+\centering
+\caption{So sánh kiến trúc đơn khối và kiến trúc vi dịch vụ.}
+\label{tab:monolith-vs-microservices}
+\begin{tabularx}{\textwidth}{@{}p{3.2cm}XX@{}}
+\toprule
+Tiêu chí & Đơn khối (Monolith) & Vi dịch vụ (Microservices) \\
+\midrule
+Cấu trúc & Toàn bộ ứng dụng trong một tiến trình duy nhất & Nhiều dịch vụ độc lập, mỗi dịch vụ một tiến trình \\
+Cơ sở dữ liệu & Chia sẻ chung một nguồn dữ liệu & Mỗi dịch vụ có cơ sở dữ liệu riêng \\
+Triển khai & Build và deploy toàn bộ cùng lúc & Mỗi dịch vụ được deploy độc lập \\
+Mở rộng & Phải nhân bản toàn bộ ứng dụng & Chỉ nhân bản dịch vụ cần thiết \\
+Sai phạm & Lỗi ở một module có thể làm sập toàn hệ thống & Lỗi bị giới hạn trong phạm vi dịch vụ \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+So với kiến trúc đơn khối, kiến trúc vi dịch vụ mang lại các lợi ích phù hợp với yêu cầu của đề tài:
+\begin{itemize}
+    \item \textit{Cô lập sai phạm:} khi một dịch vụ gặp sự cố, các dịch vụ khác vẫn hoạt động bình thường.
+    \item \textit{Tách biệt trách nhiệm:} mỗi dịch vụ có một mục tiêu nghiệp vụ duy nhất, giúp việc phát triển và bảo trì đơn giản hơn.
+    \item \textit{Mở rộng có chọn lọc:} những dịch vụ tốn tài nguyên có thể được nhân bản độc lập mà không cần mở rộng toàn bộ ứng dụng.
+    \item \textit{Độc lập về triển khai:} mỗi dịch vụ có thể được build, deploy và cập nhật mà không ảnh hưởng đến các dịch vụ khác.
+\end{itemize}
+
+\subsection{Áp dụng cho hệ thống chấm bài}
+\label{section:2.2.3}
+
+Hệ thống được thiết kế theo kiến trúc vi dịch vụ gồm năm dịch vụ chính, mỗi dịch vụ đảm nhận một vai trò rõ ràng:
+\begin{itemize}
+    \item API Gateway: điểm vào duy nhất, chịu trách nhiệm xác thực, phân quyền và định tuyến request.
+    \item course-service: quản lý lớp học, sinh viên, bài tập và cấu hình chấm.
+    \item submission-service: quản lý việc nộp bài của sinh viên.
+    \item executor-service: thực thi và chấm bài tự động.
+    \item result-service: lưu trữ và cung cấp kết quả chấm.
+\end{itemize}
+Mỗi dịch vụ có một cơ sở dữ liệu quan hệ riêng, đảm bảo tính độc lập và cô lập dữ liệu.
+
+Hình \ref{fig:architecture} vẽ lại kiến trúc tổng thể của hệ thống.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_1_kien_truc_tong_the}
+\caption{Kiến trúc tổng thể hệ thống.}
+\label{fig:architecture}
+\end{figure}
+
+\section{Ngôn ngữ lập trình và nền tảng ứng dụng}
+\label{section:2.3}
+
+\subsection{Ngôn ngữ Java}
+\label{section:2.3.1}
+
+Java là ngôn ngữ lập trình hướng đối tượng, mạnh và phổ biến trong phát triển ứng dụng doanh nghiệp, với hiệu năng cao cùng hệ sinh thái phụ trợ phong phú. Phiên bản Java 21 --- phiên bản phát hành dài hạn (LTS) mới nhất --- cung cấp nhiều tính năng hiện đại như \textit{records} (định dạng dữ liệu gọn nhẹ), \textit{pattern matching} (khớp mẫu) và \textit{virtual threads} (luồng ảo, hỗ trợ xử lý I/O với chi phí tài nguyên thấp). Những tính năng này giúp giảm đáng kể lượng code không cần thiết (boilerplate) và nâng cao hiệu năng cho các tác vụ I/O nặng như giao tiếp mạng và truy vấn cơ sở dữ liệu quan hệ.
+
+\subsection{Framework Spring Boot}
+\label{section:2.3.2}
+
+Spring Boot là một framework ứng dụng dựa trên nền tảng Java, cung cấp cơ chế tự động cấu hình (auto-configuration), nhúng server web (Tomcat) và các starter --- tập hợp các phụ thuộc được cấu hình sẵn cho từng tính năng. Spring Boot giúp giảm tối đa khối lượng cấu hình thủ công, cho phép nhà phát triển tập trung vào nghiệp vụ kinh doanh. Trong hệ thống, mỗi vi dịch vụ được xây dựng bằng Spring Boot, đảm bảo tính nhất quán và dễ bảo trì cho toàn bộ hệ thống.
+
+\subsection{Spring Cloud OpenFeign}
+\label{section:2.3.3}
+
+Spring Cloud OpenFeign là một thư viện cho phép định nghĩa các client HTTP theo cách khai báo (declarative). Thay vì viết code HTTP thủ công, nhà phát triển chỉ cần định nghĩa một interface với các phương thức tương ứng với các endpoint cần gọi, và OpenFeign tự động tạo phần triển khai để thực hiện gọi HTTP. Trong hệ thống, OpenFeign được sử dụng để các vi dịch vụ nội bộ gọi nhau một cách đơn giản và nhất quán.
+
+\subsection{Xác thực với Spring Security và OAuth2}
+\label{section:2.3.4}
+
+Spring Security là module bảo mật của Spring, cung cấp cơ chế xác thực (authentication) và phân quyền (authorization) mạnh mẽ. Kết hợp với OAuth2 --- giao thức ủy quyền mở --- Spring Boot cung cấp cơ chế OAuth2 Resource Server, cho phép xác thực JWT (JSON Web Token) nhận được từ máy chủ xác thực (Keycloak) mà không cần duy trì trạng thái session phía server.
+
+\subsection{RESTful API}
+\label{section:2.3.5}
+
+REST (Representational State Transfer) là một kiểu kiến trúc cho các hệ thống phân tán, dựa trên các nguyên tắc: tài nguyên (resource) được xác định bằng URI, các thao tác thực hiện qua các phương thức HTTP (GET, POST, PUT, DELETE), và truyền thông không trạng thái (stateless). Toàn bộ giao diện của hệ thống đều được xây dựng theo REST, giúp client dễ dàng tương tác và tích hợp.
+
+\section{Cơ sở dữ liệu và công nghệ ORM}
+\label{section:2.4}
+
+\subsection{Hệ quản trị cơ sở dữ liệu quan hệ}
+\label{section:2.4.1}
+
+Cơ sở dữ liệu quan hệ (RDBMS --- Relational Database Management System) lưu trữ dữ liệu dưới dạng các bảng gồm các hàng và cột, tuân theo mô hình quan hệ và các tính chất ACID (tính nguyên tử, tính nhất quán, tính cô lập, tính bền vững). PostgreSQL --- hệ quản trị cơ sở dữ liệu quan hệ mã nguồn mở hàng đầu --- được chọn làm hệ thống lưu trữ cho hệ thống nhờ tính chuẩn SQL cao, độ tin cậy, khả năng mở rộng và các tiện ích mở rộng phong phú. Mỗi vi dịch vụ trong hệ thống có một schema CSDL riêng, đảm bảo tính độc lập.
+
+\subsection{ORM và JPA}
+\label{section:2.4.2}
+
+ORM (Object-Relational Mapping) là kỹ thuật ánh xạ giữa các đối tượng trong code và các bảng trong cơ sở dữ liệu quan hệ, giúp nhà phát triển thao tác dữ liệu thông qua đối tượng mà không cần viết SQL thủ công. JPA (Java Persistence API) là chuẩn ORM cho Java, được thực thi bởi Hibernate. Việc sử dụng JPA giúp code sạch hơn, dễ bảo trì và dễ dàng thay đổi hệ quản trị CSDL ở mức cấu hình.
+
+\subsection{Quản lý di chuyển schema}
+\label{section:2.4.3}
+
+Flyway là công cụ quản lý các thay đổi schema cơ sở dữ liệu (migration) --- mỗi lần thay đổi cấu trúc bảng (tạo bảng, thêm cột) được ghi dưới dạng một phiên bản migration có thể kiểm soát và tái lập. Điều này đảm bảo schema của cơ sở dữ liệu luôn đồng bộ với code của ứng dụng, giảm thiểu sai sót khi deploy.
+
+\textit{Lưu ý:} ngoài cơ sở dữ liệu quan hệ quản lý chính (PostgreSQL), executor-service còn cần kết nối tới cơ sở dữ liệu quan hệ của bài tập mà sinh viên viết (có thể là PostgreSQL, MySQL hoặc MariaDB). Để hỗ trợ đa dạng này, hệ thống sử dụng các driver JDBC tương ứng cùng một lớp trừu tượng (dialect) để điều hướng kiểu truy vấn.
+
+\section{Giao tiếp bất đồng bộ qua hệ thống trao đổi tin nhắn}
+\label{section:2.5}
+
+\subsection{Khái niệm hệ thống trao đổi tin nhắn}
+\label{section:2.5.1}
+
+Hệ thống trao đổi tin nhắn (message queue) là một phương thức giao tiếp giữa các thành phần phần mềm thông qua việc gửi và nhận các tin nhắn được lưu trữ tạm thời trong hàng đợi. Mô hình này cho phép các bên gửi và nhận hoạt động \textit{bất đồng bộ} --- bên gửi không cần chờ bên nhận xử lý xong. Điều này giúp giảm thời gian chờ, tăng khả năng chịu tải và tách biệt hoàn toàn các thành phần với nhau.
+
+\subsection{Apache Kafka}
+\label{section:2.5.2}
+
+Apache Kafka là một hệ thống trao đổi tin nhắn phân tán, được thiết kế để xử lý luồng dữ liệu lớn với throughput cao, độ trễ thấp và khả năng tái sử dụng dữ liệu. Kafka tổ chức tin nhắn theo các topic (chủ đề), mỗi topic được chia thành nhiều partition (phân vùng) để có thể mở rộng song song. Các nhóm consumer (người tiêu thụ) đọc tin nhắn từ topic, cho phép nhiều tác vụ xử lý cùng lúc.
+
+Trong hệ thống, Apache Kafka được dùng để thông báo sự kiện nộp bài: sau khi bài nộp của sinh viên được lưu lên lưu trữ đối tượng, submission-service publish một sự kiện vào Kafka, và executor-service (với vai trò consumer) sẽ nhận tin và bắt đầu quy trình chấm. Cách làm này đảm bảo:
+\begin{itemize}
+    \item Nộp bài và chấm bài là hai quá trình độc lập; sinh viên không phải chờ kết quả ngay lập tức.
+    \item Nếu executor-service bị quá tải hoặc tạm dừng, các tin nhắn vẫn được lưu trong Kafka và sẽ được xử lý khi hệ thống phục hồi.
+    \item Khả năng mở rộng: nhiều instance của executor-service có thể cùng đọc từ một topic để xử lý song song.
+\end{itemize}
+
+Hình \ref{fig:grading-flow} vẽ lại luồng xử lý bất đồng bộ khi sinh viên nộp bài.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_3_lua_ng_cham_bai}
+\caption{Luồng xử lý bất đồng bộ khi sinh viên nộp bài.}
+\label{fig:grading-flow}
+\end{figure}
+
+\section{Lưu trữ đối tượng}
+\label{section:2.6}
+
+\subsection{Khái niệm lưu trữ đối tượng}
+\label{section:2.6.1}
+
+Lưu trữ đối tượng (object storage) là phương thức lưu trữ dữ liệu phi cấu trúc (file, ảnh, video, kết quả chấm...) dưới dạng các \textit{đối tượng} gồm nội dung và metadata (thông tin mô tả), thay vì lưu theo cấu trúc thư mục như filesystem truyền thống. Object storage có khả năng mở rộng gần như vô hạn và phù hợp cho việc lưu trữ khối lượng lớn file nhỏ như bài nộp của sinh viên.
+
+Việc sử dụng một máy chủ lưu trữ đối tượng chuyên dụng (object storage server) thay vì lưu bài nộp trực tiếp vào filesystem của server ứng dụng xuất phát từ ba lý do.
+\begin{enumerate}
+    \item Bài nộp của sinh viên là các file zip có kích thước biến động lớn; việc xử lý upload qua server ứng dụng sẽ chiếm dụng tài nguyên (CPU, bộ nhớ, băng thông) của các service nghiệp vụ — tách riêng object storage giúp giảm tải cho backend và cho phép scale lưu trữ độc lập.
+    \item Presigned URL cho phép sinh viên tải lên trực tiếp vào object storage mà không cần request đi qua backend, từ đó tăng tốc độ upload và giảm nguy cơ nghẽn ở server ứng dụng.
+    \item Object storage cung cấp cơ chế sao lưu, nhân bản và truy cập qua giao thức chuẩn (S3) mà filesystem truyền thống không có, giúp hệ thống đáng tin cậy hơn và dễ phục hồi dữ liệu.
+\end{enumerate}
+
+\subsection{RustFS và presigned URL}
+\label{section:2.6.2}
+
+RustFS là hệ thống lưu trữ đối tượng mã nguồn mở, tương thích với giao thức S3, được viết bằng ngôn ngữ Rust nhằm tận dụng hiệu năng cao và an toàn bộ nhớ của Rust. Hệ thống lưu trữ các file bài nộp dưới dạng zip.
+
+\textit{Tiêu chí lựa chọn RustFS gồm:}
+\begin{enumerate}
+    \item Tương thích cao với giao thức S3, cho phép sử dụng các thư viện MinIO/AWS S3 đã có sẵn cho Java mà không cần thay đổi code.
+    \item Hỗ trợ webhook sẵn, giúp object storage tự động thông báo cho backend khi file bài nộp được upload xong — sự kiện này dùng làm tín hiệu để bắt đầu quy trình chấm bài.
+    \item Hiệu năng cao nhờ được viết bằng Rust.
+    \item Mã nguồn mở, phù hợp với định hướng của đồ án.
+\end{enumerate}
+
+Một cơ chế quan trọng được áp dụng là presigned URL: server tạo một đường dẫn truy cập tạm thời (kèm chữ ký) cho phép sinh viên upload/download trực tiếp bài nộp vào object storage mà không cần đi qua server ứng dụng. Cơ chế này giúp:
+\begin{itemize}
+    \item Giảm tải cho backend (không phải truyền file qua server).
+    \item Tiết kiệm băng thông và tài nguyên của server.
+    \item Tăng tốc độ upload cho sinh viên.
+\end{itemize}
+
+\section{Đóng gói và điều phối ứng dụng}
+\label{section:2.7}
+
+\subsection{Container và Docker}
+\label{section:2.7.1}
+
+Docker là nền tảng container hóa ứng dụng, cho phép đóng gói ứng dụng và tất cả các phụ thuộc (runtime, thư viện, cấu hình) vào một docker image (hình ảnh). Image khi được chạy sẽ tạo thành một docker container --- một tiến trình chạy trong môi trường cô lập về file hệ thống, mạng và quá trình. Sự cô lập này rất quan trọng với đề tài, vì nó cho phép thực thi mã nguồn của sinh viên mà không ảnh hưởng đến môi trường hệ thống.
+
+Docker Compose là công cụ định nghĩa và chạy các ứng dụng đa container thông qua một file cấu hình, cho phép khởi động đồng thời các container liên quan (ví dụ: container bài làm của sinh viên cùng các service phụ trợ).
+
+\subsection{Kubernetes (k3s)}
+\label{section:2.7.2}
+
+Kubernetes (thường gọi tắt là K8s) là hệ thống điều phối container (container orchestration), tự động hóa việc triển khai, mở rộng và quản lý các container trên một cụm máy chủ. k3s là phiên bản Kubernetes nhẹ, được tối ưu cho môi trường edge và các cụm nhỏ --- phù hợp với hạ tầng hiện tại của hệ thống.
+
+Trong hệ thống, mỗi vi dịch vụ được đóng gói thành một Docker image và được Kubernetes điều phối, giúp tự động khởi động lại (restart) khi có sự cố, cân bằng tải và mở rộng số lượng bản sao theo nhu cầu. Một yêu cầu quan trọng của hệ thống là executor-service phải thực thi được container của sinh viên; để làm được điều này, executor pod chạy kèm Docker socket (mô hình Docker-in-Docker), cho phép tạo và chạy container mới trong cùng môi trường cluster.
+
+\subsection{Helm và ArgoCD}
+\label{section:2.7.3}
+
+Helm là công cụ quản lý gói (package manager) cho Kubernetes, cho phép đóng gói cấu hình deployment của một dịch vụ thành một chart (bao gồm template Kubernetes và các giá trị cấu hình). Việc sử dụng Helm giúp quản lý phiên bản và tái sử dụng cấu hình cho nhiều môi trường (local, staging, production).
+
+ArgoCD là công cụ triển khai theo mô hình GitOps: toàn bộ cấu hình hệ thống được lưu trữ trong Git, và ArgoCD tự động đồng bộ hóa trạng thái của cluster với Git. Khi cấu hình thay đổi, ArgoCD phát hiện và áp dụng thay đổi một cách liên tục, đồng thời tự động phát hiện và sửa lỗi nếu cluster bị lệch khỏi cấu hình (self-healing). Quy trình này giúp việc triển khai trở nên minh bạch, có thể kiểm soát và dễ dàng rollback. Cả Helm và ArgoCD đều là các giải pháp mã nguồn mở, giúp hệ thống có công cụ versioning và GitOps mà không phát sinh chi phí licence.
+
+\section{Quản lý danh tính và truy cập}
+\label{section:2.8}
+
+\subsection{Khái niệm IAM}
+\label{section:2.8.1}
+
+IAM (Identity and Access Management --- quản lý danh tính và quyền truy cập) là tập hợp các quy trình và công nghệ để quản lý danh tính số của người dùng và kiểm soát quyền truy cập tài nguyên. IdP (Identity Provider --- nhà cung cấp danh tính) là dịch vụ chịu trách nhiệm xác thực danh tính người dùng.
+
+\subsection{OAuth 2.0 — Khái niệm chung về ủy quyền}
+\label{section:2.8.2}
+
+OAuth 2.0 là một \textit{khung ủy quyền} (authorization framework) mở, cho phép một ứng dụng bên thứ ba truy cập tài nguyên của người dùng trên server mà không cần biết mật khẩu của người dùng đó. Khác với xác thực (authentication — trả lời câu hỏi "ai là bạn?"), OAuth 2.0 giải quyết bài toán ủy quyền — "bạn được phép làm gì?". Giao thức này định nghĩa bốn vai trò cơ bản:
+
+\begin{itemize}
+    \item Resource Owner: chủ sở hữu tài nguyên, chính là người dùng cuối.
+    \item Client: ứng dụng xin quyền truy cập tài nguyên.
+    \item Resource Server: server chứa tài nguyên được bảo vệ (ở hệ thống, đây là các vi dịch vụ nội bộ).
+    \item Authorization Server: server xác thực người dùng và cấp phát token ủy quyền (ở hệ thống, đây là Keycloak).
+\end{itemize}
+
+OAuth 2.0 định nghĩa một số grant type (phương thức cấp token), mỗi loại phù hợp với một bối cảnh sử dụng. Authorization Code Grant — phương thức gồm hai bước: client xin một mã ngắn hạn (authorization code) qua trình duyệt của người dùng, rồi đổi mã đó lấy token tại một endpoint server mà không qua trình duyệt. Đây là grant type an toàn nhất, phù hợp cho các ứng dụng có backend. Resource Owner Password Credentials Grant (\textit{password grant}) cho phép client nhận trực tiếp username/password của người dùng; vì mật khẩu đi qua client nên chỉ được dùng cho các client được tin cậy tuyệt đối, không phù hợp cho ứng dụng web công cộng. Client Credentials Grant dùng cho giao tiếp máy-máy (machine-to-machine), khi client tự xác thực bằng secret của mình mà không cần người dùng.
+
+Bên cạnh đó, OAuth 2.0 định nghĩa hai loại token: access token — token ngắn hạn dùng khi gọi API để truy cập tài nguyên; và refresh token — token dài hạn hơn, dùng để lấy một access token mới mà không cần người dùng đăng nhập lại.
+
+\textit{Lý do chọn:} Hệ thống lựa chọn Authorization Code Grant vì nó không để token đi qua trình duyệt (chỉ authorization code ngắn hạn), giảm thiểu rủi ro đánh cắp token, đồng thời phù hợp với vai trò của API Gateway làm OAuth2 Resource Server.
+
+\subsection{OpenID Connect và JWT}
+\label{section:2.8.3}
+
+OpenID Connect (OIDC) là một lớp xác thực dựa trên OAuth2, cho phép client xác minh danh tính người dùng dựa trên xác thực được thực hiện bởi IdP. Quá trình xác thực kết quả là việc phát hành JWT --- một dạng token mã hóa, chứa các thông tin về người dùng (danh tính, vai trò...) và được ký số bởi IdP. JWT cho phép các dịch vụ xác minh danh tính mà không cần gọi lại IdP cho mỗi request.
+
+Trong hệ thống, Keycloak được triển khai làm IdP. Khi người dùng đăng nhập, Keycloak xác thực thông tin đăng nhập và trả về JWT. API Gateway, với vai trò là OAuth2 Resource Server, xác thực chữ ký của JWT trước khi chuyển request tới các vi dịch vụ. Gateway tự động trích xuất thông tin người dùng (danh tính, vai trò) từ JWT và chuyển tiếp dưới dạng header cho các service phía sau. Cách thiết kế này đảm bảo tính an toàn: mọi request từ client đều phải mang JWT hợp lệ, và các service nội bộ không cần trực tiếp xử lý đăng nhập.
+
+Hình \ref{fig:auth-flow} vẽ lại luồng xác thực JWT qua API Gateway.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_2_lua_ng_xac_thuc}
+\caption{Luồng xác thực JWT qua API Gateway.}
+\label{fig:auth-flow}
+\end{figure}
+
+\subsection{Xác thực trên trình duyệt — Authorization Code Flow và PKCE}
+\label{section:2.8.4}
+
+Luồng ở mục 2.8.3 mô tả giao tiếp giữa Keycloak, API Gateway và các vi dịch vụ. Phần này nói về cách luồng đó được triển khai trên client trình duyệt — nơi có những ràng buộc bảo mật đặc thù.
+
+Vì ứng dụng frontend là một SPA (Single Page Application) chạy 100\% trên trình duyệt, nó là một client công cộng (public client) — không thể lưu trữ một bí mật (client secret) an toàn trong code JavaScript, vì bất kỳ bí mật nào cũng có thể bị đọc được. Do đó, hệ thống không dùng password grant (yêu cầu client giữ mật khẩu người dùng) mà dùng Authorization Code Grant kết hợp với PKCE (Proof Key for Code Exchange, chuẩn hóa trong RFC 7636 và bắt buộc đối với client công cộng theo RFC 8252).
+
+PKCE là cơ chế bảo vệ authorization code: thay vì dùng client secret, trình duyệt tự sinh một chuỗi ngẫu nhiên entropy cao gọi là code_verifier, tính giá trị băm (hash) của nó theo phương thức S256 (tức giá trị \texttt{Base64URL-ENCODE(SHA-256(code_verifier))}) và gửi kèm code_challenge này vào yêu cầu xin mã xác thực. Sau khi Keycloak trả về authorization code, trình duyệt đổi code thành token bằng cách gửi lại code_verifier thật; Keycloak tính lại giá trị băm và so khớp với code_challenge đã lưu. Nếu khớp, token được cấp phát.
+
+Cơ chế này giải quyết bài toán interception attack: nếu một attacker có thể chặn hoặc đánh cắp authorization code (ví dụ qua URL redirect bị giả mạo), chúng vẫn không thể đổi code thành token vì không biết code_verifier — mã chỉ vô dụng nếu không đi kèm chuỗi bí mật sinh tại chỗ. Đồng thời, vì mật khẩu người dùng được nhập trực tiếp trên form do Keycloak quản lý (hosted login page) và không bao giờ đi qua ứng dụng frontend, rủi ro lộ mật khẩu tại client cũng được loại bỏ.
+
+\textit{Lý do chọn:} Authorization Code Flow + PKCE là phương án an toàn nhất có thể áp dụng cho SPA public client; cơ chế đã được chuẩn hóa (RFC) và được hỗ trợ rộng rãi bởi các thư viện như keycloak-js nên không cần tự triển khai; việc giữ token trong bộ nhớ (memory-only) giúp phiên làm việc chỉ tồn tại trong vòng đời tab, hạn chế thiệt hại nếu trình duyệt bị xâm nhập.
+
+Hình \ref{fig:pkce-flow} minh họa luồng PKCE.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_5_lua_ng_pkce}
+\caption{Luồng xác thực trên trình duyệt với Authorization Code Flow và PKCE.}
+\label{fig:pkce-flow}
+\end{figure}
+
+\section{Quan trắc hệ thống}
+\label{section:2.9}
+
+\subsection{Ba trụ cột của quan trắc}
+\label{section:2.9.1}
+
+Observability (quan trắc) là khả năng hiểu được trạng thái nội bộ của một hệ thống thông qua việc quan sát các đầu ra bên ngoài của nó. Trong phát triển phần mềm hiện đại, observability được xây dựng trên ba trụ cột:
+\begin{itemize}
+    \item Metrics (số liệu): các giá trị định lượng về hiệu năng hệ thống theo thời gian (tỷ lệ request thành công, độ trễ, tài nguyên sử dụng).
+    \item Logs (nhật ký): các bản ghi sự kiện do ứng dụng và hệ thống ghi lại theo thời gian thực.
+    \item Traces (theo dõi): hồ sơ ghi lại đường đi của một request xuyên qua các dịch vụ, giúp xác định nút thắt cổ chai và lỗi.
+\end{itemize}
+
+\subsection{Các thành phần quan trắc cụ thể}
+\label{section:2.9.2}
+
+Hệ thống sử dụng bộ công cụ quan trắc toàn diện:
+\begin{itemize}
+    \item Prometheus thu thập metrics từ endpoint `/actuator/prometheus` của các dịch vụ Spring Boot, cùng các exporter để thu thập số liệu về host và về trạng thái Kubernetes.
+    \item Grafana là nền tảng trực quan hóa, cung cấp dashboard cho metrics, logs và traces.
+    \item Loki tập hợp logs từ các container (thông qua promtail) và cho phép truy vấn theo nhãn.
+    \item Tempo (cùng Alloy --- bộ thu thập telemetry OTLP) lưu trữ và cho phép truy vấn traces, giúp theo dõi request xuyên microservices.
+    \item Pyroscope cung cấp profiling liên tục, ghi nhận cách các thread của ứng dụng sử dụng CPU theo thời gian thực, giúp phát hiện các đoạn code kém hiệu quả.
+    \item k6 là công cụ kiểm tra hiệu năng (load testing), mô phỏng nhiều user truy cập đồng thời để đánh giá khả năng mở rộng của hệ thống khi có nhiều sinh viên nộp bài cùng lúc --- một trong những thách thức chính của đề tài.
+\end{itemize}
+
+Hình \ref{fig:observability} vẽ lại ba trụ cột quan trắc và các thành phần cụ thể.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_4_lua_ng_cham_bai}
+\caption{Ba trụ cột quan trắc và các thành phần cụ thể.}
+\label{fig:observability}
+\end{figure}
+
+\section{Giao diện người dùng phía trước}
+\label{section:2.10}
+
+\subsection{React và TypeScript}
+\label{section:2.10.1}
+
+React là thư viện JavaScript mã nguồn mở do Meta phát triển, dùng để xây dựng giao diện người dùng dựa trên mô hình component (thành phần) độc lập, có thể tái sử dụng. React sử dụng mô hình declarative: nhà phát triển mô tả giao diện mong muốn ở mỗi trạng thái, và React tự động cập nhật DOM. TypeScript là ngôn ngữ lập trình mở rộng JavaScript với hệ thống kiểu tĩnh (static typing), giúp phát hiện lỗi cú pháp và lỗi kiểu dữ liệu ngay trong quá trình phát triển, giảm thiểu lỗi runtime và tăng độ tin cậy cho codebase lớn.
+
+\subsection{Các thư viện hỗ trợ}
+\label{section:2.10.2}
+
+\begin{itemize}
+    \item Vite: công cụ build (build tool) hiện đại, tận dụng ESM native để cho phép khởi động server phát triển gần như tức thì và build nhanh.
+    \item Ant Design: bộ thành phần giao diện (UI library) phong phú, mang lại giao diện chuyên nghiệp, nhất quán cho ứng dụng.
+    \item React Router: thư viện định tuyến (routing) cho ứng dụng React, quản lý chuyển đổi giữa các trang mà không cần tải lại trang (SPA).
+    \item TanStack Query: thư viện quản lý dữ liệu từ server (remote data), tự động quản lý cache, làm tươi dữ liệu nền và xử lý lỗi.
+    \item keycloak-js: thư viện JavaScript chính thức của Keycloak, tích hợp luồng đăng nhập OIDC vào frontend.
+    \item i18next: thư viện quốc tế hóa, cho phép ứng dụng hỗ trợ nhiều ngôn ngữ (tiếng Việt, tiếng Anh).
+\end{itemize}
+
+\section{Kết luận chương}
+\label{section:2.11}
+
+Chương này đã trình bày các cơ sở lý thuyết và công nghệ được lựa chọn cho việc xây dựng hệ thống chấm bài tự động. Việc áp dụng kiến trúc vi dịch vụ, kết hợp với Docker và Kubernetes, đảm bảo tính cô lập môi trường thực thi cho bài làm của từng sinh viên; cơ chế giao tiếp bất đồng bộ qua Apache Kafka cho phép hệ thống mở rộng và xử lý hàng loạt bài nộp; việc tách riêng object storage giúp lưu trữ bài nộp an toàn, hiệu năng cao và dễ mở rộng; Keycloak kết hợp OAuth 2.0, OIDC và PKCE đảm bảo xác thực phân quyền chặt chẽ trên trình duyệt; bộ công cụ quan trắc toàn diện giúp theo dõi và đánh giá hiệu năng hệ thống. Tổng thể, các công nghệ được chọn đều là các giải pháp mã nguồn mở, ổn định, có cộng đồng hỗ trợ lớn, phù hợp với mục tiêu xây dựng một hệ thống chấm bài hiện đại, có khả năng mở rộng và bền vững.
 
 \end{document}

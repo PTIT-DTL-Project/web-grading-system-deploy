@@ -1,17 +1,93 @@
 \documentclass[../BTL.tex]{subfiles}
 \begin{document}
-\begin{longtable}{l p{6cm} p{7cm}}
-	\hline
-   \textbf{Viết tắt}  & \textbf{Tên tiếng Anh}	& \textbf{Tên tiếng Việt} \\ \hline 
-	\textbf{API} & Application Programming Interface & Giao diện lập trình ứng dụng\\
-	\textbf{EUD} & End-User Development & Phát triển ứng dụng người dùng cuối\\
-	\textbf{GWT} & Google Web Toolkit & Công cụ lập trình Javascript bằng Java của Google\\
-	\textbf{HTML} & HyperText Markup Language & Ngôn ngữ đánh dấu siêu văn bản\\
-	\textbf{CNTT }  &   & Công nghệ thông tin\\
-	\textbf{ĐATN} &  & Đồ án tốt nghiệp \\
-	\textbf{SV} &  & Sinh viên \\
 
-    \hline
+\section{Danh mục thuật ngữ và từ viết tắt}
+
+\begin{longtable}{@{}p{2cm} p{3cm} p{10cm}@{}}
+	\hline
+   \textbf{Viết tắt} & \textbf{Tên tiếng Anh} & \textbf{Tên tiếng Việt} \\ \hline
+	\endfirsthead
+	\hline
+   \textbf{Viết tắt} & \textbf{Tên tiếng Anh} & \textbf{Tên tiếng Việt} \\ \hline
+	\endhead
+	\hline
+	\endfoot
+	\hline
+	\endlastfoot
+	\textbf{ACID} & Atomicity, Consistency, Isolation, Durability & Các tính chất đảm bảo của giao dịch cơ sở dữ liệu\\
+	\textbf{Ad} & Advertisement & Quảng cáo\\
+	\textbf{API} & Application Programming Interface & Giao diện lập trình ứng dụng\\
+	\textbf{ArgoCD} & ArgoCD & Công cụ triển khai theo mô hình GitOps\\
+	\textbf{CI/CD} & Continuous Integration / Continuous Deployment & Tích hợp liên tục và triển khai liên tục\\
+	\textbf{CNTT} & & Công nghệ thông tin\\
+	\textbf{Container} & Container & Đơn vị thực thi ứng dụng được cô lập\\
+	\textbf{CSS} & Cascading Style Sheets & Ngôn ngữ định dạng giao diện\\
+	\textbf{ĐATN} & & Đồ án tốt nghiệp\\
+	\textbf{Docker} & Docker & Nền tảng đóng gói và chạy ứng dụng dưới dạng container\\
+	\textbf{EUD} & End-User Development & Phát triển ứng dụng người dùng cuối\\
+	\textbf{GWT} & Google Web Toolkit & Công cụ lập trình JavaScript bằng Java\\
+	\textbf{GitOps} & GitOps & Phương pháp quản lý hạ tầng và triển khai dựa trên Git\\
+	\textbf{Grafana} & Grafana & Nền tảng trực quan hóa và phân tích số liệu\\
+	\textbf{HTML} & HyperText Markup Language & Ngôn ngữ đánh dấu siêu văn bản\\
+	\textbf{HTTP} & HyperText Transfer Protocol & Giao thức truyền tải siêu văn bản\\
+	\textbf{HTTPS} & HTTP Secure & Giao thức truyền tải siêu văn bản an toàn\\
+	\textbf{IdP} & Identity Provider & Nhà cung cấp danh tính\\
+	\textbf{IAM} & Identity and Access Management & Quản lý danh tính và quyền truy cập\\
+	\textbf{JPA} & Java Persistence API & API chuẩn ánh xạ đối tượng-hệ quan hệ cho Java\\
+	\textbf{JSON} & JavaScript Object Notation & Ký hiệu đối tượng JavaScript\\
+	\textbf{JWT} & JSON Web Token & Token trao đổi thông tin định dạng JSON, có ký số\\
+	\textbf{k3s} & k3s & Phiên bản Kubernetes nhẹ, tối ưu cho môi trường edge\\
+	\textbf{k6} & k6 & Công cụ kiểm tra hiệu năng (load testing)\\
+	\textbf{Keycloak} & Keycloak & Nền tảng quản lý danh tính và truy cập mã nguồn mở\\
+	\textbf{Loki} & Loki & Hệ thống tập hợp và truy vấn nhật ký\\
+	\textbf{Microservices} & Microservices & Kiến trúc ứng dụng chia thành các dịch vụ nhỏ độc lập\\
+	\textbf{Monolith} & Monolith & Kiến trúc đơn khối, toàn bộ ứng dụng trong một tiến trình\\
+  \textbf{OAuth2} & OAuth 2.0 & Giao thức ủy quyền mở\\
+  \textbf{Access Token} & Access Token & Token ngắn hạn dùng để gọi API truy cập tài nguyên\\
+  \textbf{Authorization Code Grant} & Authorization Code Grant & Phương thức cấp token gồm 2 bước: xin mã ngắn hạn rồi đổi thành token\\
+  \textbf{Authorization Server} & Authorization Server & Server xác thực người dùng và cấp phát token\\
+  \textbf{Code Challenge} & Code Challenge & Giá trị băm của code_verifier, gửi kèm yêu cầu xin mã xác thực\\
+  \textbf{Code Verifier} & Code Verifier & Chuỗi ngẫu nhiên entropy cao, dùng để chứng minh quyền sở hữu authorization code\\
+  \textbf{Client Credentials Grant} & Client Credentials Grant & Phương thức cấp token cho giao tiếp máy-máy, không qua người dùng\\
+  \textbf{ID Token} & ID Token & JWT chứa thông tin danh tính người dùng, được ký số bởi IdP\\
+  \textbf{Public Client} & Public Client & Client không thể giữ bí mật (ví dụ: SPA)\\
+  \textbf{Refresh Token} & Refresh Token & Token dài hạn dùng để làm mới access token\\
+  \textbf{Resource Owner Password Credentials Grant} & Resource Owner Password Credentials Grant & Phương thức cho phép client nhận trực tiếp username/password; chỉ dùng cho client được tin cậy\\
+  \textbf{Resource Server} & Resource Server & Server chứa tài nguyên được bảo vệ\\
+  \textbf{SPA} & Single Page Application & Ứng dụng web chạy một trang, tải lại nội dung động thay vì chuyển trang\\
+  \textbf{PKCE} & Proof Key for Code Exchange & Cơ chế bảo vệ authorization code cho client công cộng, dùng cặp code_challenge/code_verifier (S256)\\
+  \textbf{Object Storage} & Object Storage & Phương thức lưu trữ dữ liệu dưới dạng đối tượng\\
+	\textbf{OIDC} & OpenID Connect & Lớp xác thực dựa trên OAuth2\\
+	\textbf{ORM} & Object-Relational Mapping & Kỹ thuật ánh xạ đối tượng-hệ quan hệ\\
+	\textbf{Presigned URL} & Presigned URL & Đường dẫn truy cập tạm thời có ký, cho phép tải lên/xuống trực tiếp\\
+	\textbf{Prometheus} & Prometheus & Hệ thống lưu trữ và truy vấn số liệu (metrics)\\
+	\textbf{Pyroscope} & Pyroscope & Nền tảng profiling liên tục\\
+	\textbf{React} & React & Thư viện JavaScript xây dựng giao diện người dùng\\
+	\textbf{React Router} & React Router & Thư viện định tuyến cho ứng dụng React\\
+	\textbf{REST} & Representational State Transfer & Kiến trúc giao tiếp ứng dụng phân tán\\
+	\textbf{RDBMS} & Relational Database Management System & Hệ quản trị cơ sở dữ liệu quan hệ\\
+	\textbf{PostgreSQL} & PostgreSQL & Hệ quản trị cơ sở dữ liệu quan hệ mã nguồn mở\\
+	\textbf{RustFS} & RustFS & Hệ thống lưu trữ đối tượng tương thích S3, viết bằng Rust\\
+	\textbf{SQL} & Structured Query Language & Ngôn ngữ truy vấn có cấu trúc\\
+	\textbf{SV} & & Sinh viên\\
+	\textbf{TanStack Query} & TanStack Query & Thư viện quản lý dữ liệu từ server\\
+	\textbf{Tempo} & Tempo & Hệ thống lưu trữ và truy vấn traces\\
+	\textbf{TypeScript} & TypeScript & Ngôn ngữ lập trình mở rộng JavaScript có kiểu tĩnh\\
+	\textbf{Vite} & Vite & Công cụ xây dựng (build tool) cho ứng dụng web\\
+	\textbf{Alloy} & Alloy & Bộ thu thập telemetry OTLP của Grafana\\
+	\textbf{Ant Design} & Ant Design & Bộ thành phần giao diện cho React\\
+	\textbf{Docker Compose} & Docker Compose & Công cụ định nghĩa và chạy ứng dụng đa container\\
+	\textbf{Flyway} & Flyway & Công cụ quản lý di chuyển schema cơ sở dữ liệu\\
+	\textbf{Helm} & Helm & Công cụ quản lý gói cho Kubernetes\\
+	\textbf{Java} & Java & Ngôn ngữ lập trình hướng đối tượng\\
+	\textbf{keycloak-js} & keycloak-js & Thư viện tương tác với Keycloak dành cho JavaScript\\
+	\textbf{kafka} & Apache Kafka & Hệ thống trao đổi tin nhắn phân tán\\
+	\textbf{Observability} & Observability & Khả năng quan sát trạng thái nội bộ hệ thống\\
+	\textbf{OpenFeign} & Spring Cloud OpenFeign & Thư viện client HTTP khai báo cho Spring\\
+	\textbf{Spring Boot} & Spring Boot & Framework ứng dụng dựa trên Java\\
+	\textbf{Spring Security} & Spring Security & Module bảo mật của Spring\\
+	\textbf{i18next} & i18next & Thư viện quốc tế hóa ứng dụng\\
+\hline
 \end{longtable}
 
 \end{document}
