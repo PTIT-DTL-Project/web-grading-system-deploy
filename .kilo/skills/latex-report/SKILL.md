@@ -1,6 +1,6 @@
 ---
 name: latex-report
-description: LaTeX thesis report formatting conventions for report_datn/ - no bold in body text, enumerate/itemize for all listings, glossary longtable column widths, figure naming. Use when writing or reviewing any .tex chapter, glossary entries, or report figures.
+description: LaTeX thesis report formatting conventions for report_datn/ - no bold in body text, enumerate/itemize for all listings, underscore escaping in text, glossary longtable column widths, figure naming. Use when writing or reviewing any .tex chapter, glossary entries, or report figures.
 ---
 
 # LaTeX report conventions (`report_datn/`)
@@ -25,15 +25,28 @@ or prose sequences like `Thứ nhất / Thứ hai / Thứ ba` inside a
 paragraph. Split the lead-in sentence from the items; strip the markers
 and joining words (`và`, `Thứ nhất,`), end each `\item` with a period.
 
+## Escape underscores in text, never in code (mandatory)
+
+LaTeX treats a bare `_` in running text as math subscript and fails
+to render it — write `code\_verifier`, `code\_challenge`. This applies
+inside `\texttt{...}` too (still text mode). Never escape `_` where it
+is not typeset: `\label`, `\ref`, `\cite`, file paths
+(`\includegraphics{Hinhve/Hinh2_5_lua_ng_pkce}`), `\url`,
+`\addbibresource`, command names, math mode (`$...$`).
+
 ## Glossary longtable must fit textwidth (gotcha)
 
 `Chuong/0_5_Danh_muc_viet_tat.tex` uses `longtable`. Column widths must
-sum to ≤ 15cm including `~0.4cm` inter-column gaps, otherwise content
-spills past the right margin. `X` (tabularx) does not size reliably
-inside `longtable` here — use fixed `p{}` columns that wrap, e.g.
-`@{}p{2cm} p{3cm} p{10cm}@{}` (= 15cm, fills the line exactly).
-Keep the Vietnamese description column widest; abbreviation and English
-columns narrow (long entries wrap to multiple lines, which is expected).
+sum to ≤ 15cm including `~0.4cm` inter-column gaps (`@{}` only trims the
+outer edges), otherwise the last column is clipped at the right margin.
+`X` (tabularx) does not size reliably inside `longtable` here — use
+fixed `p{}` columns that wrap, e.g. `@{}p{2.6cm} p{2.6cm} p{9.2cm}@{}`.
+Keep the Vietnamese description column widest. A `p{}` column must be
+wider than its longest unbreakable word (no spaces to wrap at, e.g.
+13-char `Microservices` ≈ 3cm bold 13pt Times overflows `p{1.8cm}`
+into the next column); either widen the column or insert `\-`
+discretionary hyphens (`Micro\-services`, invisible unless TeX breaks
+there, works regardless of hyphenation patterns).
 
 ## Figures
 
