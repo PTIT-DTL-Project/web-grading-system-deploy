@@ -893,3 +893,52 @@ to `ssoSessionMaxLifespan` (10 h). Revocation kills the **refresh** token; an
 access token issued earlier still lives until `accessTokenLifespan` (300 s) expires.
 
 
+
+---
+
+## UC-15: Student views enrolled classes
+
+**Actor:** student (`X-User-Id` header).
+**Service:** course-service.
+
+**Preconditions:** rows in `class_students` linking `student_user_id` to classes.
+Students see only enrolled classes; anything else answers 404,
+indistinguishable from missing — the project's ownership convention.
+
+### Step 1 — List enrolled classes (paged + filtered)
+
+```
+GET /api/v1/student/classes?page=0&size=20
+X-User-Id: aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
+X-Gateway-Secret: <secret>
+```
+
+Real response (verified 2026-10-08 against local course-service; student
+enrolled in 2 of 3 classes):
+
+```json
+{"status":200,"message":"Success","data":{"meta":{"page":0,"pageSize":20,"pages":1,"total":2},"result":[
+{"id":"11111111-1111-1111-1111-111111111111","name":"Lop Test A","semester":"20261","status":"ACTIVE","createdAt":"2026-10-08T16:10:20.950669Z"},
+{"id":"22222222-2222-2222-2222-222222222222","name":"Lop Test B Archive","semester":"20261","status":"ARCHIVED","createdAt":"2026-10-08T16:10:20.950669Z"}]}}
+```
+
+- No `ownerId` in the payload (lecturer linkage is not the student's business).
+- A student with no enrollments gets `total: 0`, `result: []` (not 404).
+- `search` reuses the lecturer structured format (`name:..;semester:..`,
+  `ClassFilter.parse`); malformed input → `400 Malformed filter 'foo':
+  expected 'field:value'. Allowed fields: name, semester`.
+- `status` optional (`ACTIVE`/`ARCHIVED`); absent = both, like the lecturer list.
+- Missing `X-Gateway-Secret` → `401 Unauthorized: Missing or invalid identity
+  header` (fail-closed, same as every service).
+
+### Step 2 — Class detail (enrollment-checked)
+
+```
+GET /api/v1/student/classes/11111111-1111-1111-1111-111111111111
+X-User-Id: aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
+X-Gateway-Secret: <secret>
+```
+
+Expected: `200` with the single class object (same shape as list rows).
+A class the caller is not enrolled in → `404 {"status":404,"message":"Class
+not found: <id>"}` (verified).
