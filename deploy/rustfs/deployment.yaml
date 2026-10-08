@@ -44,9 +44,10 @@ spec:
             # Browser origins allowed to call the S3 API (presigned PUTs from
             # the FE / upload-test page). Without this, preflight OPTIONS
             # returns no Access-Control-Allow-Origin and browsers block the PUT.
-            # Append the production FE origin here when it gets a public hostname.
+            # Comma-separated exact origins, no spaces, no trailing slash.
+            # Never "*" (disables credentials + flagged by RustFS advisory).
             - name: RUSTFS_CORS_ALLOWED_ORIGINS
-              value: "http://localhost:5173"
+              value: "http://localhost:5173,https://web-dev1-fe.vucongtuanduong.dpdns.org"
           volumeMounts:
             - name: data
               mountPath: /data
