@@ -948,3 +948,46 @@ X-Gateway-Secret: <secret>
 Expected: `200` with the single class object (same shape as list rows).
 A class the caller is not enrolled in → `404 {"status":404,"message":"Class
 not found: <id>"}` (verified).
+
+---
+
+## UC-16: Student views own scores
+
+**Actor:** student (`X-User-Id` header).
+**Service:** course-service.
+
+**Preconditions:** caller enrolled in the class (resolved from
+`class_students.student_user_id`, same convention as UC-15). Computation is the
+shared `buildScores` core also serving the lecturer transcript row, so the two
+can never drift.
+
+### Step 1 — Read my scores
+
+```
+GET /api/v1/student/classes/{id}/my-scores
+X-User-Id: <student-uuid>
+X-Gateway-Secret: <secret>
+```
+
+Real responses (verified 2026-10-09 against local course-service; class with
+ATTENDANCE 0.5 + FINAL_EXAM 0.5):
+
+Complete (S001: 9.00 + 8.00):
+```json
+{"status":200,"message":"Success","data":{"studentCode":"S001","entries":[
+{"type":"ATTENDANCE","weight":0.5000,"score":9.00},
+{"type":"FINAL_EXAM","weight":0.5000,"score":8.00}],
+"total":8.50,"letterGrade":"A","gpa":3.7}}
+```
+
+Incomplete (S002: only ATTENDANCE scored):
+```json
+{"status":200,"message":"Success","data":{"studentCode":"S002","entries":[
+{"type":"ATTENDANCE","weight":0.5000,"score":7.00},
+{"type":"FINAL_EXAM","weight":0.5000,"score":null}],
+"total":null,"letterGrade":null,"gpa":null}}
+```
+
+Not enrolled → `404 {"status":404,"message":"Class not found: <id>"}`.
+`total`/`letterGrade`/`gpa` are null while any component score is missing;
+EXERCISE degrades to null when grading data is unavailable (never fails the call).
