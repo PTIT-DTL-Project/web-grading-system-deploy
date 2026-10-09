@@ -120,6 +120,12 @@ Expected: `200` with `data = {imported, skipped}`. Re-importing the same file �
 rows skipped (unique per class + student code). Wrong content type (not multipart) →
 `400 "Malformed multipart request"`.
 
+Identity linking (no Keycloak change needed): rows imported without the UUID
+column stay `student_user_id = NULL` and self-heal — on the student's next
+student-API call, `StudentIdentityService` fills their UUID into still-unlinked
+rows whose email matches `X-User-Email` (case-insensitive), never overwriting
+an owned row. Precondition: CSV email must equal the Keycloak account email.
+
 ### Step 3 — Configure score components (required before entering scores)
 
 ```

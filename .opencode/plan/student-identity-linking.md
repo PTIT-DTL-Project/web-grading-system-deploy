@@ -1,6 +1,6 @@
 # Plan: Student identity linking — auto-bind Keycloak UUID from CSV email
 
-> Status: PLAN ONLY (written 2026-10-08, not yet implemented).
+> Status: IMPLEMENTED + VERIFIED live twice (2026-10-08 and 2026-10-09).
 > Goal: when a lecturer imports a CSV, students whose email matches automatically
 > get linked (`class_students.student_user_id` filled), without touching Keycloak.
 > Decided: match by **email** (must match Keycloak account email, case-insensitive).
@@ -108,13 +108,16 @@ No response shape changes, no FE changes, no new i18n keys.
 
 ## 6. Verification (live)
 
+Verified live twice against local course-service + Postgres (2026-10-08 and
+2026-10-09), real responses recorded in `usecase-flows.md` UC-15/import note:
+
 1. Import CSV **without** the UUID column.
 2. Log in as the matching student → class list / assignments visible.
 3. Check DB: `student_user_id` filled on exactly the matching rows.
 4. Log in again → idempotent, no duplicates, no errors.
 5. Seed a row already owned by user X, log in as user Y with the same email →
    row keeps X (no overwrite).
-6. `npm run` suites green; add a note to `usecase-flows.md` UC import section
+6. `npm run` suites green; note added to `usecase-flows.md` UC import section
    documenting the email-matching convention.
 
 ## 7. Explicit non-goals (do NOT expand scope here)
