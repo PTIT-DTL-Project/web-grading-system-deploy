@@ -34,13 +34,15 @@ password and a forced change on first login. No Keycloak Console handwork per us
   `Location` id; non-201 → typed `CreateUserException` carrying status so
   `409`→skip vs `400`→invalid vs rest→provider-error),
   `setTemporaryPassword` (flat credential, `temporary: true`, reusing
-  `resetVerdict`), `findRealmRole` (`{id, name}`), `assignRealmRoles` (204).
-  Existing `resetCredential(temporary: false)` untouched.
+   `resetVerdict`), `findRealmRole` (`{id, name}`), `assignRealmRoles` (204),
+   plus a `bulk()` session sharing one memoized token across an import.
+   Existing `resetCredential(temporary: false)` untouched.
 - `UserImportService`: caps (2 MB, 2000 rows), header heuristic mirroring
   `ClassService.parseCsv`, sequential per-row orchestration (deterministic
-  report order, gentle on Keycloak), realm-role reps resolved once per import,
-  admin token still fetched per call (matches the existing low-volume pattern —
-  deliberately not cached; bulk imports are rare admin ops).
+  report order, gentle on Keycloak), one `BulkOperations` session per import
+  sharing a single memoized admin token, role reps resolved lazily per used
+  role (a student-only file never touches ROLE_LECTURER, so a missing lecturer
+  role cannot abort it; a failed role lookup fails that row only).
 - `UserImportController`: `POST /api/v1/admin/users/import`, ADMIN gate via
   explicit in-handler JWT role check (gateway has no `@PreAuthorize`; 403
   envelope otherwise). Must stay admin-only precisely because it can mint
@@ -69,8 +71,9 @@ password and a forced change on first login. No Keycloak Console handwork per us
 
 ## Verification
 
-- [x] Gateway: 50/50 tests (8 new: 5 client wire + 3 service incl. mixed batch
-      with role caching asserted; pre-existing 42 untouched).
+- [x] Gateway: 52/52 tests (10 new: 6 client wire incl. single-token-grant
+      session test + 4 service incl. mixed batch and student-only lazy-role
+      test; pre-existing 42 untouched).
 - [x] FE `npm run build` (i18n:check 402 keys + tsc + vite), `npm run lint`
       (only 2 pre-existing warnings).
 - [ ] Live: service account holds `manage-users` on the live realm (export file

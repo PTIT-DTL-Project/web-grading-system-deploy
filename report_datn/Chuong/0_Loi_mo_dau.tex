@@ -1,22 +1,21 @@
 \documentclass[../BTL.tex]{subfiles}
 \begin{document}
+{
+\renewcommand{\thesection}{\arabic{section}}
 
-\section*{Vấn đề}
-\phantomsection\addcontentsline{toc}{section}{Vấn đề}
+\section{Vấn đề}
 \label{section:0.1}
 
 Trong các môn lập trình ứng dụng, đặc biệt là môn Lập trình Web, việc chấm bài thủ công bộc lộ nhiều hạn chế: giảng viên mất nhiều thời gian chạy thử từng bài làm, kết quả thiếu nhất quán giữa các lần chấm, sinh viên phải chờ lâu mới nhận được phản hồi. Khó khăn tăng lên khi sĩ số lớp đông và mỗi sinh viên nộp nhiều bài tập trong kỳ.
 
 Yêu cầu đặc thù của môn học khiến bài toán phức tạp hơn: bài làm của sinh viên là mã nguồn phía máy chủ (backend), nên chấm tĩnh dựa trên mã nguồn là không khả thi — hệ thống bắt buộc phải dựng và chạy được server từ bài nộp để kiểm tra hành vi thực tế qua API, đồng thời kiểm tra các điều kiện của cơ sở dữ liệu mà bài tập sử dụng. Việc thực thi mã nguồn không tin cậy đòi hỏi một cơ chế cách ly an toàn, và hệ thống phải chịu được tải khi nhiều sinh viên nộp bài cùng lúc.
 
-\section*{Giải pháp}
-\phantomsection\addcontentsline{toc}{section}{Giải pháp}
+\section{Giải pháp}
 \label{section:0.2}
 
 Đồ án xây dựng hệ thống chấm bài tự động môn Lập trình Web theo kiến trúc vi dịch vụ, gồm cổng API Gateway, các service quản lý lớp học và bài tập, service quản lý nộp bài, service thực thi chấm bài và service quản lý kết quả. Sinh viên đóng gói bài làm thành file zip và tải lên hệ thống lưu trữ đối tượng; sự kiện nộp bài được đưa qua hàng đợi tin nhắn để service chấm bài xử lý bất đồng bộ mà không bắt sinh viên chờ đợi. Mỗi bài làm được dựng và chạy trong container Docker cách ly, sau đó hệ thống thực hiện các kịch bản kiểm tra đã được giảng viên cấu hình — từ các phương thức HTTP cơ bản đến kiểm tra cấu trúc bảng, ràng buộc dữ liệu và cách xử lý ngoại lệ. Xác thực và phân quyền tập trung qua Keycloak với vai trò giảng viên và sinh viên; toàn bộ công nghệ sử dụng là mã nguồn mở.
 
-\section*{Cấu trúc báo cáo}
-\phantomsection\addcontentsline{toc}{section}{Cấu trúc báo cáo}
+\section{Cấu trúc báo cáo}
 \label{section:0.3}
 
 Ngoài phần Lời mở đầu, báo cáo gồm ba chương:
@@ -25,5 +24,6 @@ Ngoài phần Lời mở đầu, báo cáo gồm ba chương:
     \item Chương 2 phân tích yêu cầu và thiết kế hệ thống.
     \item Chương 3 trình bày triển khai, đánh giá hệ thống và hướng phát triển.
 \end{itemize}
+}
 
 \end{document}

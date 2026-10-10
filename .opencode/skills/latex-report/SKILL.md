@@ -65,6 +65,8 @@ plus `\phantomsection\addcontentsline{toc}{chapter}{LỜI MỞ ĐẦU}` and
 `\markboth{LỜI MỞ ĐẦU}{LỜI MỞ ĐẦU}` (starred chapters don't update
 `\leftmark`, so the running header would otherwise show stale text).
 The `\titlecontents{chapter}` unnumbered `{}` format renders the entry
-without a number, ahead of Chapter 1. Preface subsections use
-`\section*` + `\addcontentsline{toc}{section}{...}` to avoid `0.x`
-numbering.
+without a number, ahead of Chapter 1. Preface subsections are plain
+numbered `\section` (manual `\addcontentsline` would duplicate them);
+they print as 1, 2, 3 via `\renewcommand{\thesection}{\arabic{section}}`
+scoped inside a group in the preface file, so Chapter 1 numbering is
+unaffected and no `0.x` numbers appear.

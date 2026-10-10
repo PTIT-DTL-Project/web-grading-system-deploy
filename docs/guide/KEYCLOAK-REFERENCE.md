@@ -12,6 +12,7 @@
 |---|---|
 | Realm | `ptit-wgs` |
 | Keycloak host | `https://web-dev1-keycloak.vucongtuanduong.dpdns.org` |
+| Admin Console (realm `ptit-wgs`, bypass master landing) | `https://web-dev1-keycloak.vucongtuanduong.dpdns.org/admin/ptit-wgs/console/` — log in with the realm `admin` user (granted `realm-management` `manage-users` + `view-users`, 2026-10-10); FE import stays for routine bulk ops, console for ad-hoc management |
 | Issuer | `https://web-dev1-keycloak.vucongtuanduong.dpdns.org/realms/ptit-wgs` |
 | Admin user | `admin` (from `.env` `KEYCLOAK_ADMIN_USERNAME`) |
 
