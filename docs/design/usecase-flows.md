@@ -991,3 +991,28 @@ Incomplete (S002: only ATTENDANCE scored):
 Not enrolled → `404 {"status":404,"message":"Class not found: <id>"}`.
 `total`/`letterGrade`/`gpa` are null while any component score is missing;
 EXERCISE degrades to null when grading data is unavailable (never fails the call).
+
+### Step 3 — Class roster (enrolled students only)
+
+```
+GET /api/v1/student/classes/{id}/students?page=0&size=20
+X-User-Id: <student-uuid>
+X-Gateway-Secret: <secret>
+```
+
+Expected: `200` with classmates as `{studentCode, studentName}` only — no
+emails, no user ids (privacy decision, 2026-10-09). Includes not-yet-linked
+rows (imported = member). Sorted by `studentCode`. Not enrolled → `404
+{"status":404,"message":"Class not found: <id>"}` (verified live 2026-10-09).
+
+### Step detail views (FE, 2026-10-09)
+
+- Lecturer plan rows expand to the full authored config (connection, expected,
+  extract, per-kind assertions, weight/timeout/required).
+- Student step rows expand to the request/response contract only: method, path,
+  query, headers, body, expected status / query / checks / statements. No
+  assertions, extract, expected values, or connection block.
+- Sensitive header values (`authorization`, `cookie`, `set-cookie`,
+  `proxy-authorization`, `x-api-key`, `x-gateway-secret` — same set as backend
+  `HttpLogService`) render masked student-side; follow-up filed to strip them
+  in `sanitizeConfig` server-side as well.
