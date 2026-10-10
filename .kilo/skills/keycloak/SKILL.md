@@ -106,6 +106,20 @@ Plan that drove the Phase 1 changes:
 - `wgs-user-service` (confidential, `serviceAccountsEnabled: true`) service-account
   roles: `manage-users, view-users, query-users, query-groups, create-client`
   (plan R2; `manage-users` is what allows `reset-password` — 403 without it).
+  Bulk import additionally needs **`view-realm`** on the service account:
+  `GET /admin/realms/{realm}/roles/{name}` answers 403 without it (hit
+  2026-10-10; user search + create/reset kept working, only role lookup failed).
+- **User creation must always send `lastName`.** Keycloak 26's default user
+  profile requires it; an account created with only `firstName` stalls on the
+  "Update Account Information" wall right after login (hit 2026-10-10 — new
+  lecturers and students alike; pre-existing accounts were unaffected).
+  Backend splits Vietnamese `fullName` (first token = family name → `lastName`,
+  rest → `firstName`); blank falls back to the username, never a reject.
+- **Bulk import lowercases usernames.** Keycloak stores the username lowercased
+  but keeps the initial password verbatim — importing `B22DCCN001` as-is minted
+  user `b22dccn001` with password `B22DCCN001`, unguessable (hit 2026-10-10).
+  Normalize (`trim().toLowerCase(ROOT)`) once at CSV parse so lookup, creation
+  and password all use the stored form.
 - **Its client secret must NEVER appear in frontend code** — Phase 1 (2026-10-03) moved
   the password-change call into api-gateway; the secret lives only in the K8s Secret
   `keycloak-admin-client` (created by `deploy/setup-namespace.sh`, fail-loud if unset)

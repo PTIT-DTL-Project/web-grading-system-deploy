@@ -409,11 +409,16 @@ One `results` row per graded plan (each with its `step_results`), enveloped as
 `{status, message, data, error}`. Empty list while the submission is queued or
 grading — poll until rows appear.
 `results.is_latest` is unique per `(student_id, assignment_id, plan_id)`, so each plan
-keeps its own latest result. Assignment exercise score = **weight-weighted average of
-per-plan scores** (`result_service ResultService.weightedScoreByPlan`, weighted by
-`test_plans.weight` carried into `results.plan_weight`); unsubmitted plans are ignored
-(live partial). `course-service` `ScoreService.computeExercise` calls
-`POST /api/v1/internal/results/weighted`.
+keeps its own latest result. Every row carries explicit `scope`: `FULL` =
+whole-assignment run (`plan_id` null, supersedes all per-plan latests on write),
+`PLAN` = single-plan run (demotes only its own plan). Assignment exercise score
+= **weight-weighted average of per-plan BEST scores (max over every attempt)**:
+a `PLAN` row contributes its normalized score; a `FULL` row is decomposed into
+per-plan subtotals from its step rows (skipped steps excluded exactly —
+`step_results.skipped`, 2026-10-10); plan weights come from course-service
+(`GET /api/v1/internal/assignments/{id}/plans`, carried `plan_weight` fallback).
+Unsubmitted plans are ignored (live partial). `course-service`
+`ScoreService.computeExercise` calls `POST /api/v1/internal/results/weighted`.
 
 ### Error behavior
 

@@ -36,6 +36,9 @@ password and a forced change on first login. No Keycloak Console handwork per us
   `setTemporaryPassword` (flat credential, `temporary: true`, reusing
    `resetVerdict`), `findRealmRole` (`{id, name}`), `assignRealmRoles` (204),
    plus a `bulk()` session sharing one memoized token across an import.
+   `createUser` sends `firstName` + `lastName` (realm user profile requires
+   lastName — without it fresh accounts stall on the update-profile wall;
+   backend splits Vietnamese `fullName`, blank falls back to username).
    Existing `resetCredential(temporary: false)` untouched.
 - `UserImportService`: caps (2 MB, 2000 rows), header heuristic mirroring
   `ClassService.parseCsv`, sequential per-row orchestration (deterministic
@@ -71,9 +74,9 @@ password and a forced change on first login. No Keycloak Console handwork per us
 
 ## Verification
 
-- [x] Gateway: 52/52 tests (10 new: 6 client wire incl. single-token-grant
-      session test + 4 service incl. mixed batch and student-only lazy-role
-      test; pre-existing 42 untouched).
+- [x] Gateway: 54/54 tests (12 new: 6 client wire incl. single-token-grant
+      session test + 6 service incl. mixed batch, student-only lazy-role test,
+      name-split and blank-name fallback tests; pre-existing 42 untouched).
 - [x] FE `npm run build` (i18n:check 402 keys + tsc + vite), `npm run lint`
       (only 2 pre-existing warnings).
 - [ ] Live: service account holds `manage-users` on the live realm (export file
