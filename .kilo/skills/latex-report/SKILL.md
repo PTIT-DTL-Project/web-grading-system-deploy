@@ -46,7 +46,10 @@ wider than its longest unbreakable word (no spaces to wrap at, e.g.
 13-char `Microservices` ≈ 3cm bold 13pt Times overflows `p{1.8cm}`
 into the next column); either widen the column or insert `\-`
 discretionary hyphens (`Micro\-services`, invisible unless TeX breaks
-there, works regardless of hyphenation patterns).
+there, works regardless of hyphenation patterns). The glossary table
+uses a full grid: outer border plus rules between all columns
+(`{|p{2.6cm}|p{2.6cm}|p{9.2cm}|}`) and `\hline` at the end of every
+data row (`...\\ \hline`).
 
 ## Figures
 
@@ -54,3 +57,14 @@ PNGs live in `report_datn/Hinhve/`, named `Hinh2_<n>_<slug>.png`
 (e.g. `Hinh2_5_lua_ng_pkce.png`), included at `width=\textwidth` with
 `\label{fig:<slug>}`. Graphviz `dot` is available for regenerating
 flowcharts; keep node font sizes so text stays legible at text width.
+
+## Unnumbered preface in TOC before Chapter 1
+
+`Chuong/0_Loi_mo_dau.tex` is included via `\chapter*{LỜI MỞ ĐẦU}`
+plus `\phantomsection\addcontentsline{toc}{chapter}{LỜI MỞ ĐẦU}` and
+`\markboth{LỜI MỞ ĐẦU}{LỜI MỞ ĐẦU}` (starred chapters don't update
+`\leftmark`, so the running header would otherwise show stale text).
+The `\titlecontents{chapter}` unnumbered `{}` format renders the entry
+without a number, ahead of Chapter 1. Preface subsections use
+`\section*` + `\addcontentsline{toc}{section}{...}` to avoid `0.x`
+numbering.

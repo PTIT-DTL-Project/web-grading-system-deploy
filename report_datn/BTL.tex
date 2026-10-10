@@ -299,28 +299,29 @@
 %\fancyhead[LE]{\rightmark}
 \fancyfoot[RE, LO]{\thepage}
 
-\chapter{GIỚI THIỆU ĐỀ TÀI}
-\label{chapter:Introduction}
-\subfile{Chuong/1_Gioi_thieu} % Phần mở đầu
+\chapter*{LỜI MỞ ĐẦU}
+\phantomsection\addcontentsline{toc}{chapter}{LỜI MỞ ĐẦU}
+\markboth{LỜI MỞ ĐẦU}{LỜI MỞ ĐẦU}
+\subfile{Chuong/0_Loi_mo_dau} % Lời mở đầu: vấn đề, giải pháp, cấu trúc báo cáo
 
 \newpage
 %\pagestyle{fancy} % Áp dụng header và footer
 \chapter{CƠ SỞ LÝ THUYẾT VÀ CÔNG NGHỆ SỬ DỤNG}
 \label{chapter:TheoryAndTech}
-\subfile{Chuong/2_Co_so_ly_thuyet} %Trình bày cơ sở lý thuyết
+\subfile{Chuong/1_Co_so_ly_thuyet} %Trình bày cơ sở lý thuyết
 
 
 \newpage
 %\pagestyle{fancy} % Áp dụng header và footer
-\chapter{THỰC NGHIỆM VÀ ĐÁNH GIÁ KẾT QUẢ} %Thực nghiệm và kết quả
-\label{chapter:Experiment}
-\subfile{Chuong/3_Thuc_nghiem_va_ket_qua}
+\chapter{PHÂN TÍCH VÀ THIẾT KẾ HỆ THỐNG} %Phân tích và thiết kế
+\label{chapter:AnalysisDesign}
+\subfile{Chuong/2_Phan_tich_thiet_ke}
 
 \newpage
 %\pagestyle{fancy} % Áp dụng header và footer
-\chapter{KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN} %Kết luận và hướng phát triển
-\label{chapter:conclusion}
-\subfile{Chuong/4_Ket_luan}
+\chapter{TRIỂN KHAI VÀ ĐÁNH GIÁ HỆ THỐNG} %Triển khai, đánh giá và hướng phát triển
+\label{chapter:DeployEval}
+\subfile{Chuong/3_Trien_khai_danh_gia}
 
 \newpage
 % \pagestyle{fancy} % Áp dụng header và footer

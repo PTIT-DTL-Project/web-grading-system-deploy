@@ -1016,3 +1016,54 @@ rows (imported = member). Sorted by `studentCode`. Not enrolled → `404
   `proxy-authorization`, `x-api-key`, `x-gateway-secret` — same set as backend
   `HttpLogService`) render masked student-side; follow-up filed to strip them
   in `sanitizeConfig` server-side as well.
+
+---
+
+## UC-17: System admin bulk-imports user accounts
+
+**Actor:** system admin (JWT must carry the realm `ADMIN` role; anything else →
+`403 forbidden`). Lecturers and students can never reach this endpoint.
+**Service:** api-gateway (owns every Keycloak Admin interaction so the
+service-account secret never enters the browser bundle).
+
+**Preconditions:** the admin client's service account holds `manage-users`
+(realm-management) on the live realm; Keycloak default user profile does not
+require `lastName`.
+
+### Step 1 — Upload the CSV
+
+```
+POST /api/v1/admin/users/import
+Authorization: Bearer <admin-jwt>
+Content-Type: multipart/form-data; file = users-import.csv
+```
+
+Columns: `username, fullName, email, role?` — `role` is `STUDENT`/`LECTURER`
+(optional `ROLE_` prefix tolerated), blank means `STUDENT` (secure default).
+Unknown role values fail the row, never the batch. Caps: 2 MB, 2000 rows.
+
+### Step 2 — Per-row orchestration (server-side, sequential)
+
+For each row: duplicate check by username, then email (either hit → `skipped`
+with reason) → `POST users` (`enabled: true`,
+`requiredActions: ["UPDATE_PASSWORD"]`) → temporary password (= the username)
+→ realm role from a per-import cache. A `409` race on create degrades to
+`skipped`; any other row failure lands in the report with a machine reason
+(`unknown_role`, `not_enough_columns`, `blank_username_or_email`,
+`invalid_input`, `weak_password`, `provider_error`, `role_not_assigned`,
+`duplicate_username`, `duplicate_email`).
+
+### Step 3 — Read the report
+
+Expected: `200` with
+`data = {created: {STUDENT, LECTURER}, skipped, failed: [{row, username, role,
+reason}]}`. Re-running a file is safe (created rows skip as duplicates), with
+one caveat: a row that failed at role assignment stays role-less on re-run —
+repair it manually, the report names it via `role_not_assigned`.
+
+### Step 4 — First login (no app changes needed)
+
+The temporary credential auto-stamps `UPDATE_PASSWORD`, so Keycloak forces a
+password change at first sign-in and the existing `must_change_password` flow
+handles it. The initial password equals the username (known to both admin and
+account holder), so no out-of-band secret exchange is needed.
