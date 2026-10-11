@@ -47,7 +47,7 @@ spec:
             # Comma-separated exact origins, no spaces, no trailing slash.
             # Never "*" (disables credentials + flagged by RustFS advisory).
             - name: RUSTFS_CORS_ALLOWED_ORIGINS
-              value: "http://localhost:5173,https://web-dev1-fe.vucongtuanduong.dpdns.org"
+              value: "http://localhost:5173,https://web-dev1-fe.vucongtuanduong.dpdns.org,http://localhost:5174"
           volumeMounts:
             - name: data
               mountPath: /data
