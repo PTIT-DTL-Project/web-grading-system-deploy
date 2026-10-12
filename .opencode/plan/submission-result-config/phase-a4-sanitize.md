@@ -31,13 +31,16 @@ public static String redact(String input)
 ```
 
 Algorithm (order matters):
-1. `null` → `null` (field absent stays absent; fail-closed rule below never
-   invents a placeholder for missing data).
-2. Try parse as JSON (existing Jackson `ObjectMapper`):
-   - Success → recursive walk mirroring the FE `redactSecrets` shape, with an
-     **exact** key set (lowercased, camelCase flattened: password, passwd, pwd,
-     authorization, secret, token, api_key[variants], access_token[variants],
-     client_secret, auth_token[variants], refresh_token, id_token, private_key).
+1. `null`/blank → return as-is (never turn an empty field into a mask).
+2. Try parse as JSON:
+   - Success → recursive walk: objects mask exact-match keys; descent
+     continues into string values that are themselves JSON objects/arrays
+     (escaped verdict bodies — the regex sweep cannot see through escaping).
+     Pre-check trims and requires a leading `{`/`[`; unchanged subtrees return
+     original bytes (byte-identical passthrough preserved at every level).
+     No depth cap: nesting follows the finite input; pathological depth
+     fail-closes via the catch-all (Pullfrog nested-string review).
+   - Failure → sweep only.
      Substring matching was tried and rejected — it over-masked legit fields
      (`"tokens"`, caught by test). Exotic names fall through to the sweep layer.
    - Jackson 3 notes: iterate a **snapshot** (`new ArrayList<>(properties())`)
@@ -49,7 +52,9 @@ Algorithm (order matters):
 3. Regex sweep on the raw text (applied to non-JSON input AND to the
    re-serialized output — belt and braces for secrets embedded in strings):
    - `Bearer|Basic <token>` → `$1 ***`.
-   - `(?i)(password|passwd|secret|token)\s*[:=]\s*\S+` → `$1=***`.
+   - `(?i)(password|passwd|secret|token)\s*[:=]\s*[^\s&]+` → `$1=***`
+     (stops at `&`: one secret query param must not eat innocent params after
+     it — `?token=abc&x=1` keeps `x=1`).
    - JDBC `(://user:)<pass>(@)` → `$1***$2`, matching up to the LAST `@`
      before a slash so passwords containing `@` stay fully covered
      (a password containing `/` is out of reach — documented limitation).

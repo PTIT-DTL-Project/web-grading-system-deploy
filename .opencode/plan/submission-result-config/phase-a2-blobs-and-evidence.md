@@ -48,8 +48,8 @@ Same 5 fields, same names, same nullability (all nullable), in order:
 2. result-service `CreateResultRequest.StepResultItem`: same 5.
 3. Entity `StepResult`: same 5 with `@Column(name=...)` matching migration.
 4. `ResultService.createResult` persist block: set all 5 from the item
-   (each through `EvidenceRedactor.redact(...)` — Strings; `responseStatus`
-   passes straight, it's an int).
+   (no re-redact: the executor's `stepItem` is the trust boundary — separate
+   Maven projects, so the redactor class cannot be shared; verified 2026-10-11).
 5. `toStepResponse` + `StepResultResponse`: same 5.
 6. Executor `stepItem` fill (the only logic touch, ~8 lines):
    - `assertionDetails(item)` = `result.getAssertionResult()` as-is (raw JSON
