@@ -70,3 +70,34 @@ numbered `\section` (manual `\addcontentsline` would duplicate them);
 they print as 1, 2, 3 via `\renewcommand{\thesection}{\arabic{section}}`
 scoped inside a group in the preface file, so Chapter 1 numbering is
 unaffected and no `0.x` numbers appear.
+
+## Citations complete and correctly formed (mandatory)
+
+Every theory/technology claim cites its source with `~\cite{key}`
+(IEEE numeric style, `backend=bibtex`). Prefer verified primaries:
+IETF RFCs (`@techreport`), books/papers with confirmed
+author/title/year/venue, and official vendor docs (`@online` with
+stable landing URLs). Never invent bibliographic details — verify each
+entry (web search) before adding. Bib entries stay ASCII-only (bibtex
+backend breaks on UTF-8); Vietnamese stays in `.tex` body only. Author
+rationale sentences ("Lý do chọn") take no citation. Before finishing,
+script-check: every cited key exists in the `.bib`, braces balance per
+entry, and no stale entries break the build.
+
+## Theory chapters name no project services
+
+Chapter 1 (theory/technology) explains methods and technologies only:
+no service proper nouns (`course-service`, `submission-service`,
+`executor-service`, `result-service`), no per-system wiring
+(who-publishes-what, DinD pods, password-reset flows). Such details
+belong to Chapter 2 (analysis/design). Generic pattern terms
+(`producer`/`consumer`, `gateway`, `IdP`) and technology examples
+(`ví dụ Keycloak`) are allowed; domain scenario words
+(sinh viên/bài nộp) may stay in rationale sentences. Figures showing
+project actors move with their paragraphs to Chapter 2.
+
+## Single hyphen only, never em-dash (mandatory)
+
+Body text uses the single hyphen `-` for parenthetical breaks — never
+the LaTeX em-dash `---`. (The en-dash `--` stays reserved for numeric
+ranges such as page numbers in `.bib` entries.)
