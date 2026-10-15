@@ -71,10 +71,30 @@ Template facts (`argocd-app-template.yaml`, single var `${SERVICE_NAME}`):
 - Destination: `https://kubernetes.default.svc`, namespace `web-grading`.
 - SyncPolicy: `automated: {prune: true, selfHeal: true}`.
 
-Add-a-service checklist:
-1. Append name to `deploy/argocd-apps/services.env`.
-2. Chart must exist in config repo: `<service>/Chart.yaml` + `values-stg.yaml`.
-3. Regenerate + apply. ArgoCD creates the app; chart owns the rest.
+Add-a-service checklist (full onboarding surface, distilled 2026-10-15 from
+the ai-assistant-service onboarding):
+1. CI: add the dir to `build-services.yml` in BOTH places — `on.push.paths`
+   AND the `dorny/paths-filter` block (same defect class as the rename fix).
+   `publish.yml` needs no change (generic loop over changed-services.json).
+2. Add the service's Dockerfile if missing (context = service dir, so it MUST
+   be at the service root) + mvnw/.mvn wrapper (sibling Dockerfile copies them).
+3. Append name to `deploy/argocd-apps/services.env`.
+4. Chart must exist in config repo: `<service>/Chart.yaml` + `values-stg.yaml`
+   with exactly one `tag:` line (sed rewrites the first); seed `tag: "v1.0.0"`
+   — publish.yml only warns and skips when the chart dir is absent, it never
+   creates one.
+5. New secrets → `deploy/setup-namespace.sh` + chart env; chart env names must
+   match the service's own placeholders (no auto-mapping).
+6. Ingress debug host → `deploy/ingress/<service>.yaml` (install-ingress.sh
+   globs the folder, nothing else to register).
+7. DB must ALREADY exist on the target server — no script provisions databases.
+8. Cloudflare public hostname → manual, dashboard-only (see cloudflare-tunnel
+   skill).
+9. Regenerate + apply: `./generate-argocd-apps.sh && kubectl apply -f generated/`.
+   ArgoCD creates the app; chart owns the rest.
+Note: `set-log-level.sh` and `dev-scale.sh` read `services.env` dynamically —
+no edit needed there. Fresh-install scripts need no per-service edit either
+(install-ingress globs, install-argocd regenerates, setup-namespace owns secrets).
 
 PAST FIX — wrong manifest config repo: repoURL/targetRevision in the template
 must match the real config repo branch ArgoCD can reach. If apps show

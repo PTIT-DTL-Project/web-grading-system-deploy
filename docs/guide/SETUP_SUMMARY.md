@@ -14,7 +14,8 @@ Tổng hợp những gì đã được setup cho Web Grading System Mono-Repo Ar
   - executor-service  
   - api-gateway
   - result-service
-  - assignment-service
+  - course-service
+  - ai-assistant-service
 - ✅ Core shared library
 - ✅ GitHub Actions workflow thông minh
 - ✅ README.md với hướng dẫn đầy đủ
@@ -187,8 +188,8 @@ web-grading-system-deploy/
 │   ├── executor-service/
 │   ├── api-gateway/
 │   ├── result-service/
-│   ├── assignment-service/
-│   └── core/
+│   ├── course-service/
+│   └── ai-assistant-service/
 │
 ├── config-services/               ✅ Config template
 │   ├── README.md
@@ -197,7 +198,8 @@ web-grading-system-deploy/
 │   ├── executor-service/
 │   ├── api-gateway/
 │   ├── result-service/
-│   └── assignment-service/
+│   ├── course-service/
+│   └── ai-assistant-service/
 │
 └── deploy/
     ├── argocd-apps/               ✅ ArgoCD setup
@@ -254,8 +256,8 @@ web-grading-system-deploy/
    ```
 
 2. **Create GitHub Repos:**
-   - web-grading-system-services
-   - web-grading-system-config
+   - web-grading-system-backend-services
+   - web-grading-system-services-config
 
 3. **Push Repos:**
    ```bash
@@ -311,7 +313,7 @@ web-grading-system-deploy/
                            ↓
 ┌─────────────────────────────────────────────────────────────┐
 │ Update config repo                                         │
-│ - Clone web-grading-system-config                         │
+│ - Clone web-grading-system-services-config                         │
 │ - Update submission-service/values-stg.yaml                │
 │ - Commit and push                                          │
 └──────────────────────────┬──────────────────────────────────┘

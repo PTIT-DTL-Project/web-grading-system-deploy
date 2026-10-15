@@ -1072,3 +1072,125 @@ The temporary credential auto-stamps `UPDATE_PASSWORD`, so Keycloak forces a
 password change at first sign-in and the existing `must_change_password` flow
 handles it. The initial password equals the username (known to both admin and
 account holder), so no out-of-band secret exchange is needed.
+
+---
+
+## UC-18: Student requests an AI explanation of a graded submission
+
+**Actor:** the student who owns the submission.
+**Service:** `ai-assistant-service` (port 8086), gateway-routed at `/api/v1/ai/**`
+(`AI_ASSISTANT_SERVICE_URI`); controller `AiExplanationController`, request mapping
+`/api/v1/ai`.
+**Since:** 2026-10-15 (service onboarding). Design background:
+`docs/design/ai-integration/AI_INTEGRATION_SPECIFICATION.md`.
+
+### Preconditions
+
+- The submission already has grading results in `result-service`
+  (`GET /api/v1/results/{submissionId}` returns at least one row); otherwise step 2
+  answers `404`.
+- `X-User-Id` must equal `result.studentId` — the Keycloak user UUID, the same value
+  exposed as `studentUserId` in the lecturer results payload. The code throws `403` on a
+  mismatch, but live requests answer `401` (see Notes / known divergence).
+- Gateway trust is on: without `X-Gateway-Secret` (or with a wrong one) every request is
+  `401` before the controller runs; a non-UUID `X-User-Id` is also `401` (the identity
+  filter fails closed). Local direct calls therefore need both headers.
+- A **blank `AI_API_KEY` is legal**: the service answers from a local pedagogical
+  template instead of calling the provider (`LlmClient` treats blank / `dummy*` /
+  `your_api_key_here` as fallback mode). So an unconfigured deployment still returns `200`.
+- **No `ApiResponse` envelope**: this service returns the DTO raw (no `FormatRestResponse`),
+  unlike the other services.
+
+### Step 1 — Read the cached explanation
+
+```
+GET /api/v1/ai/submissions/{submissionId}/explain
+X-User-Id: <student uuid>
+X-Gateway-Secret: <gateway secret>
+```
+
+Cache-only lookup by `(submission_id, category='FULL_ANALYSIS')`. Never calls the LLM.
+
+| HTTP | Body | When |
+|---|---|---|
+| `200` | `AiExplanationResponse` | cached row exists and belongs to the caller |
+| `404` | (empty) | nothing cached yet — call step 2 to generate |
+| `403` intended, `401` observed | `{"statusCode":401,...}` (observed) | cached row exists but belongs to a different student — see Notes |
+| `401` | `{"statusCode":401,...}` | missing/invalid `X-Gateway-Secret` or non-UUID `X-User-Id` |
+
+### Step 2 — Generate the explanation
+
+```
+POST /api/v1/ai/submissions/{submissionId}/explain
+X-User-Id: <student uuid>
+X-Gateway-Secret: <gateway secret>
+```
+
+Order of operations (all in `AiExplanationService.explainSubmission`):
+
+1. Idempotency: if a `FULL_ANALYSIS` row already exists for the submission it is returned
+   as-is with `fromCache=true`; the provider is not called and nothing is written.
+2. Fetch results from `result-service` (`GET /api/v1/results/{submissionId}`, forwarding
+   `X-User-Id` + `X-Gateway-Secret`). Empty list → `404`. This Feign call is **not** wrapped,
+   so an unreachable `result-service` surfaces as `500`, not a graceful fallback.
+3. Ownership: `results[0].studentId` must equal the caller's `X-User-Id`, else `403` is
+   thrown — but the live response is `401` (see Notes / known divergence).
+4. Best-effort assignment metadata from `course-service`
+   (`GET /api/v1/student/assignments/{assignmentId}`). Failure here is **tolerated** — the
+   prompt is built without it rather than failing the request.
+5. Build the prompt, call the provider (`POST {AI_BASE_URL}/chat/completions`, bearer
+   `AI_API_KEY`). Provider error or non-200 → fallback template; unparsable model output →
+   the default summary with empty `stepAnalyses` (still `200`, never raw model text).
+6. Persist one `FULL_ANALYSIS` row and return it with `fromCache=false`.
+
+Expected response (`200`, raw JSON):
+
+```json
+{
+  "id": "<row uuid>",
+  "submissionId": "<uuid>",
+  "category": "FULL_ANALYSIS",
+  "fromCache": false,
+  "overallSummary": "…",
+  "stepAnalyses": [
+    {
+      "stepId": "<uuid>",
+      "stepName": "create book",
+      "stepType": "HTTP_REQUEST",
+      "passed": false,
+      "category": "DEBUG_FAIL",
+      "diagnosis": "…",
+      "suspectedLocation": "…",
+      "actionableHints": ["…"],
+      "learningKeywords": ["…"],
+      "telemetryAudit": {
+        "durationMs": 120, "expectedThresholdMs": 200, "nPlusOneDetected": false,
+        "queryCount": 1, "sensitiveFieldsExposed": [], "peakMemoryMb": 64
+      }
+    }
+  ],
+  "createdAt": "2026-10-15T12:00:00Z"
+}
+```
+
+### Notes / known divergence from the specification
+
+`AI_INTEGRATION_SPECIFICATION.md` is **ahead of the code** in three places. The code is the
+contract; the spec needs an update before it is used as a reference:
+
+- Spec shows `?stepId={stepId}&mode={mode}` query params and per-step rows; the controller
+  accepts no query params and only ever reads/writes `category='FULL_ANALYSIS'`
+  (`step_id` does not exist in `V1__2026-10-15__init_ai_db.sql`).
+- Spec has the agent call `GET /api/v1/internal/assignments/{assignmentId}`; the code calls
+  the student endpoint `GET /api/v1/student/assignments/{assignmentId}` with `X-User-Id`.
+- Spec's `result-service` sequence block says "Port 8083"; the real port is `8084`
+  (8083 is executor-service).
+- Ownership mismatch answers **`401`**, not the `403` the code throws. Live 2026-10-15,
+  three probes with non-owner UUIDs (valid UUIDs, valid `X-Gateway-Secret`) all returned the
+  security entry-point body `{"statusCode":401,"message":"Unauthorized: Missing or invalid
+  identity header","data":null}`, while the owner UUID returned `200`. Cause not confirmed;
+  the leading candidate is Boot's error dispatch to `/error`, which is absent from
+  `SecurityConfig.PUBLIC_PATHS`, so the security chain answers before the `403` renders.
+  Follow-up: add `/error` to `PUBLIC_PATHS` (or map the exception) and re-probe. Consequence
+  today: the FE reads `401` on someone else's submission as an expired session, so it would
+  refresh or log out instead of reporting "not your submission".

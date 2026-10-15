@@ -64,9 +64,10 @@ fi
 
 echo ""
 echo -e "${YELLOW}🌐 Cloudflare Tunnel:${NC}"
-if docker ps | grep -q cloudflared; then
-    echo -e "  ${GREEN}✓ Running${NC}"
-    docker ps | grep cloudflared
+# Zero Trust tunnel runs as a foreground process (cloudflare_tunnel_run.sh),
+# not as a docker container (Review: 2026-10-15, post cloudflared removal).
+if pgrep -f "cloudflared tunnel" >/dev/null 2>&1; then
+    echo -e "  ${GREEN}✓ Running (Zero Trust)${NC}"
 else
     echo -e "  ${RED}✗ Not running${NC}"
 fi
@@ -84,7 +85,12 @@ echo "  RustFS API: https://web-dev1-rustfs-api.vucongtuanduong.dpdns.org"
 echo ""
 echo -e "${YELLOW}🚀 Services:${NC}"
 echo "  API Gateway:   https://web-dev1-api.vucongtuanduong.dpdns.org"
+echo "  Course:        https://web-dev1-course.vucongtuanduong.dpdns.org"
 echo "  Submission:    https://web-dev1-submission.vucongtuanduong.dpdns.org"
+echo "  Result:        https://web-dev1-result.vucongtuanduong.dpdns.org"
+echo "  Executor:      https://web-dev1-grading.vucongtuanduong.dpdns.org"
+echo "  AI Assistant:  https://web-dev1-ai.vucongtuanduong.dpdns.org"
+echo "  Keycloak:      https://web-dev1-keycloak.vucongtuanduong.dpdns.org"
 echo ""
 echo -e "${YELLOW}💡 Commands:${NC}"
 echo "  Watch pods:        kubectl get pods -n web-grading -w"

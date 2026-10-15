@@ -399,10 +399,6 @@ deploy/
 │   ├── argocd-app-template.yaml   # Template Application ArgoCD
 │   └── services.env               # Danh sách service:config_repo
 ├── argocd-ingress.yaml            # Ingress cho ArgoCD UI
-├── cloudflared/
-│   ├── config.yml                 # Config Cloudflare Tunnel
-│   ├── docker-compose.yml         # Chạy cloudflared bằng Docker
-│   └── setup-tunnel.sh            # Script setup tunnel
 ├── cleanup-old-images.sh          # Dọn Docker image cũ trên node
 ├── install-argocd.sh              # Cài ArgoCD + tạo Application từ template
 ├── install-rustfs.sh              # Deploy RustFS (PVC + Service + Deployment)
@@ -438,9 +434,8 @@ setup.sh (tổng điều phối)
 │   ├── Apply argocd-ingress.yaml
 │   └── Sinh Application từ template + services.env
 │
-├── 5. cloudflared
-│   ├── setup-tunnel.sh
-│   └── docker-compose up cloudflared
+├── 5. Cloudflare Tunnel (Zero Trust, dashboard-only)
+│   └── thêm Public Hostname trỏ về Traefik NodePort
 │
 └── Done → ArgoCD tự sync submission-service từ config repo
 ```
@@ -450,7 +445,7 @@ setup.sh (tổng điều phối)
 | File | Mục đích |
 |------|----------|
 | `setup.sh` | Chạy toàn bộ deploy sequence (ở trên) |
-| `start.sh` | Sau reboot: k3s + cloudflared |
+| `start.sh` | Sau reboot: k3s (+ hint Zero Trust tunnel) |
 | `stop.sh` | Dừng sạch sẽ |
 | `clean.sh` | Xoá toàn bộ cluster resource |
 
@@ -573,25 +568,26 @@ vì chạy trên host machine, không qua K8s DNS.
 
 ## 8. Cloudflare Tunnel
 
-**Cloudflare Tunnel** (cloudflared) tạo một kết nối an toàn từ internet vào
-K8s cluster mà không cần mở port firewall. Nó chạy như một Docker container
-với `--network host` và ánh xạ domain → ingress của cluster.
+**Cloudflare Zero Trust Tunnel** tạo một kết nối an toàn từ internet vào
+K8s cluster mà không cần mở port firewall. Tunnel được quản lý hoàn toàn trên
+Cloudflare Dashboard (Zero Trust → Networks → Tunnels): mỗi hostname là một
+Public Hostname trỏ về Traefik NodePort của node. Không còn file cấu hình
+trong repo.
 
 ```
-Internet ──► Cloudflare Edge ──► cloudflared (tunnel) ──► localhost ──► Ingress ──► Service
+Internet ──► Cloudflare Edge ──► Zero Trust Tunnel ──► Traefik NodePort ──► Ingress ──► Service
 ```
 
 ### File liên quan
 
-- `deploy/cloudflared/docker-compose.yml` — chạy `cloudflared` container
-- `deploy/cloudflared/config.yml` — mapping URL → localhost (ArgoCD, service)
-- `deploy/cloudflared/setup-tunnel.sh` — đăng ký tunnel với Cloudflare (chạy 1 lần)
+- `cloudflare_tunnel_run.sh` — chạy tunnel foreground bằng token (Zero Trust)
+- `deploy/ingress/*.yaml` — Ingress của từng service (hostname Cloudflare trỏ tới)
 
-### Tại sao cloudflared ở docker-compose không phải K8s?
+### Tại sao không chạy tunnel trong K8s?
 
-Vì cloudflared cần `--network host` để truy cập ingress trên localhost.
-Trong K8s, pod có network riêng, không truy cập được localhost của node.
-Do đó chạy docker-compose riêng.
+Tunnel cần truy cập ingress trên localhost của node; pod có network riêng nên
+không truy cập được localhost của node. Zero Trust tunnel chạy ngoài cluster
+(hoặc dashboard-managed connector) thay vì pod.
 
 ---
 

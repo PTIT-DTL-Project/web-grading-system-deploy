@@ -20,9 +20,9 @@ api-gateway-config-repo/        (Helm values)
 ### Kiến trúc mới (Mono-Repo)
 
 ```
-web-grading-system-services/    (All source code + CI/CD)
-web-grading-system-config/      (All Helm charts)
-web-grading-system-deploy/      (ArgoCD orchestration)
+web-grading-system-backend-services/    (All source code + CI/CD)
+web-grading-system-services-config/     (All Helm charts)
+web-grading-system-deploy/              (ArgoCD orchestration)
 = 3 repositories
 ```
 
@@ -50,11 +50,11 @@ web-grading-system-deploy/      (ArgoCD orchestration)
 
 ```bash
 # Tạo repo mới trên GitHub
-# Repository name: web-grading-system-services
+# Repository name: web-grading-system-backend-services
 
 # Clone và setup
-git clone https://github.com/PTIT-DTL-Project/web-grading-system-services.git
-cd web-grading-system-services
+git clone https://github.com/PTIT-DTL-Project/web-grading-system-backend-services.git
+cd web-grading-system-backend-services
 
 # Copy cấu trúc từ deploy repo
 cp -r ../web-grading-system-deploy/src-services/* .
@@ -69,11 +69,11 @@ git push origin main
 
 ```bash
 # Tạo repo mới trên GitHub
-# Repository name: web-grading-system-config
+# Repository name: web-grading-system-services-config
 
 # Clone và setup
 git clone https://github.com/Duong-Vu-practice-workspace/web-grading-system-config-test
-cd web-grading-system-config
+cd web-grading-system-services-config
 
 # Copy cấu trúc từ deploy repo
 cp -r ../web-grading-system-deploy/config-services/* .
@@ -88,14 +88,14 @@ git push origin main
 
 Cả 2 repos cần các secrets sau:
 
-**web-grading-system-services:**
+**web-grading-system-backend-services:**
 ```
 DOCKERHUB_USERNAME     - Docker Hub username
 DOCKERHUB_TOKEN        - Docker Hub access token
 CONFIG_REPO_TOKEN      - GitHub PAT with write access to config repo
 ```
 
-**web-grading-system-config:**
+**web-grading-system-services-config:**
 ```
 (No secrets needed - read-only by ArgoCD)
 ```
@@ -125,7 +125,7 @@ kubectl get applications -n argocd
 
 ```bash
 # Test build workflow
-cd web-grading-system-services
+cd web-grading-system-backend-services
 
 # Make a change to a service
 echo "// Test change" >> submission-service/README.md
@@ -187,7 +187,7 @@ config-services/
 File: `deploy/argocd-apps/argocd-app-template.yaml`
 
 **Points to:**
-- Repo: `web-grading-system-config`
+- Repo: `web-grading-system-services-config`
 - Path: `${SERVICE_NAME}` (dynamic)
 - Values: `values-stg.yaml`
 
@@ -197,7 +197,7 @@ File: `deploy/argocd-apps/argocd-app-template.yaml`
 
 1. **Add to source repo:**
 ```bash
-cd web-grading-system-services
+cd web-grading-system-backend-services
 mkdir new-service
 # Add source code, pom.xml, Dockerfile
 ```
@@ -211,7 +211,7 @@ new-service:
 
 3. **Create Helm chart:**
 ```bash
-cd web-grading-system-config
+cd web-grading-system-services-config
 ./generate-charts.sh  # Or create manually
 ```
 

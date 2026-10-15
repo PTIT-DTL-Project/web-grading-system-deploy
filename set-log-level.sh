@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -11,7 +13,10 @@ NAMESPACE="web-grading"
 SECRET_NAME="app-config"
 SECRET_KEY="APP_LOG_LEVEL"
 ENV_NAME="LOGGING_LEVEL_VN_EDU_PTIT_WEB_GRADING_SYSTEM"
-SERVICES=(grading-course-service grading-submission-service grading-result-service grading-executor-service grading-api-gateway)
+# Deployment list derived from the ArgoCD service registry so a newly onboarded
+# service is never forgotten here again (Review: 2026-10-15, ai-assistant-service
+# onboarding; mirrors the dynamic read in dev-scale.sh).
+mapfile -t SERVICES < <(grep -vE '^[[:space:]]*(#|$)' "$SCRIPT_DIR/deploy/argocd-apps/services.env" | sed 's|^|grading-|')
 
 # Level: $1 wins, else LOG_LEVEL from .env, else INFO
 LEVEL="${1:-}"

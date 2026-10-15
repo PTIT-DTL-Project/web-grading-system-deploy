@@ -20,9 +20,10 @@ kubectl wait --for=condition=Ready nodes --all --timeout=120s
 echo -e "${GREEN}✓ k3s is running${NC}"
 
 echo ""
-echo -e "${YELLOW}➜ Starting Cloudflare Tunnel...${NC}"
-docker compose -f "$SCRIPT_DIR/deploy/cloudflared/docker-compose.yml" up -d --no-build
-echo -e "${GREEN}✓ Cloudflare Tunnel is running${NC}"
+echo -e "${YELLOW}➜ Cloudflare Zero Trust tunnel (optional, manual):${NC}"
+# deploy/cloudflared/ was removed with the Zero Trust migration; the old
+# docker-compose call aborted this script on every run (Review: 2026-10-15).
+echo "  bash cloudflare_tunnel_run.sh   (separate terminal, Ctrl+C to stop)"
 
 echo ""
 echo -e "${YELLOW}➜ Checking cluster status...${NC}"
@@ -49,9 +50,13 @@ echo "  RustFS:     https://web-dev1-rustfs.vucongtuanduong.dpdns.org"
 echo "  RustFS API: https://web-dev1-rustfs-api.vucongtuanduong.dpdns.org"
 echo ""
 echo -e "${YELLOW}🚀 Microservices:${NC}"
-echo "  API Gateway:      https://web-dev1-api.vucongtuanduong.dpdns.org"
-echo "  Submission:       https://web-dev1-submission.vucongtuanduong.dpdns.org"
-echo "  Executor:         https://web-dev1-executor.vucongtuanduong.dpdns.org"
+echo "  API Gateway:   https://web-dev1-api.vucongtuanduong.dpdns.org"
+echo "  Course:        https://web-dev1-course.vucongtuanduong.dpdns.org"
+echo "  Submission:    https://web-dev1-submission.vucongtuanduong.dpdns.org"
+echo "  Result:        https://web-dev1-result.vucongtuanduong.dpdns.org"
+echo "  Executor:      https://web-dev1-grading.vucongtuanduong.dpdns.org"
+echo "  AI Assistant:  https://web-dev1-ai.vucongtuanduong.dpdns.org"
+echo "  Keycloak:      https://web-dev1-keycloak.vucongtuanduong.dpdns.org"
 echo ""
 echo -e "${YELLOW}💡 Useful commands:${NC}"
 echo "  Watch pods:       kubectl get pods -n web-grading -w"

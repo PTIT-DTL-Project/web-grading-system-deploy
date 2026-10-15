@@ -1,6 +1,6 @@
 # Database Design v1 — Web Grading System
 
-> Dành cho 4 service: Assignment, Submission, Grading, Result.
+> Dành cho 4 service: Course, Submission, Grading, Result.
 > Thiết kế hỗ trợ grading linh hoạt: HTTP request đơn lẻ, plan-based multi-step, DB schema check,...
 
 ---
@@ -9,7 +9,7 @@
 
 1. [Nguyên tắc thiết kế](#1-nguyên-tắc-thiết-kế)
 2. [Core Library — Shared Entities](#2-core-library--shared-entities)
-3. [Assignment Service](#3-assignment-service)
+3. [Course Service](#3-course-service)
 4. [Submission Service](#4-submission-service)
 5. [Grading Service](#5-grading-service)
 6. [Result Service](#6-result-service)
@@ -80,11 +80,11 @@ CREATE INDEX idx_http_logs_direction ON http_exchange_logs(direction);
 
 ---
 
-## 3. Assignment Service
+## 3. Course Service
 
 ### 3.1 Tổng quan
 
-Assignment Service quản lý:
+Course Service quản lý:
 - Bài tập (`assignments`)
 - Docker image cho bài tập (`docker_images`)
 - Test plan — tập hợp các bước kiểm tra (`test_plans`, `test_steps`)

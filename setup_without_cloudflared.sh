@@ -90,13 +90,14 @@ LB_IP=$(kubectl get svc traefik -n kube-system -o jsonpath='{.status.loadBalance
 if [ -n "${LB_IP}" ]; then
   echo "  Traefik LB IP: ${LB_IP}"
   echo "  Example:       curl -k -H 'Host: web-dev1-rustfs.vucongtuanduong.dpdns.org' https://${LB_IP}"
-  echo "  Tip:           add '${LB_IP}  web-dev1-api.vucongtuanduong.dpdns.org web-dev1-rustfs.vucongtuanduong.dpdns.org ...' to /etc/hosts"
+  echo "  Tip:           add '${LB_IP}  web-dev1-api.vucongtuanduong.dpdns.org web-dev1-rustfs.vucongtuanduong.dpdns.org web-dev1-ai.vucongtuanduong.dpdns.org ...' to /etc/hosts"
 else
   echo "  Traefik LB IP not found; check: kubectl get svc traefik -n kube-system"
 fi
 echo ""
 echo -e "${YELLOW}🚀 Services (via kubectl port-forward):${NC}"
-echo "  API Gateway:  kubectl port-forward -n web-grading svc/gateway ${GATEWAY_PORT}:8080"
+echo "  API Gateway:  kubectl port-forward -n web-grading svc/grading-api-gateway ${GATEWAY_PORT}:8080"
+echo "  AI Assistant: kubectl port-forward -n web-grading svc/grading-ai-assistant-service 8086:8086"
 echo "  RustFS API:   kubectl port-forward -n web-grading svc/rustfs 9000:9000"
 echo "  RustFS Web:   kubectl port-forward -n web-grading svc/rustfs 9001:9001"
 echo "  ArgoCD:       kubectl port-forward -n argocd svc/argocd-server 8080:80"

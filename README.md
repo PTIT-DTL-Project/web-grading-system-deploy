@@ -8,7 +8,7 @@ This system uses a **mono-repo architecture** for better management:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  web-grading-system-services (Source Mono-Repo)        │
+│  web-grading-system-backend-services (Source Mono-Repo) │
 │  - All microservices source code                        │
 │  - Smart CI/CD with change detection                    │
 │  - Builds only affected services                        │
@@ -17,7 +17,7 @@ This system uses a **mono-repo architecture** for better management:
                     Docker Images
                           ↓
 ┌─────────────────────────────────────────────────────────┐
-│  web-grading-system-config (Config Mono-Repo)          │
+│  web-grading-system-services-config (Config Mono-Repo)  │
 │  - Helm charts for all services                         │
 │  - Auto-updated by CI/CD pipeline                       │
 └─────────────────────────────────────────────────────────┘
@@ -44,14 +44,16 @@ web-grading-system-deploy/
 │   ├── executor-service/
 │   ├── api-gateway/
 │   ├── result-service/
-│   ├── assignment-service/
+│   ├── course-service/
+│   └── ai-assistant-service/
 │
 ├── config-services/           # Template for config mono-repo
 │   ├── submission-service/    # Helm chart
 │   ├── executor-service/
 │   ├── api-gateway/
 │   ├── result-service/
-│   └── assignment-service/
+│   ├── course-service/
+│   └── ai-assistant-service/
 │
 ├── deploy/                    # Deployment configurations
 │   ├── argocd-apps/          # ArgoCD Application templates
@@ -80,12 +82,12 @@ This will:
 - Provide next steps instructions
 
 2. **Create GitHub repositories:**
-- `web-grading-system-services` - Source code
-- `web-grading-system-config` - Helm charts
+- `web-grading-system-backend-services` - Source code
+- `web-grading-system-services-config` - Helm charts
 
 3. **Configure GitHub Secrets:**
 
-For `web-grading-system-services`:
+For `web-grading-system-backend-services`:
 ```
 DOCKERHUB_USERNAME
 DOCKERHUB_TOKEN
@@ -168,10 +170,11 @@ Chi tiết xem [SCRIPTS_GUIDE.md](./SCRIPTS_GUIDE.md)
 | Service | Port | Description |
 |---------|------|-------------|
 | api-gateway | 8080 | Main API Gateway |
+| course-service | 8081 | Manage classes, assignments, test plans, scores |
 | submission-service | 8082 | Handle code submissions |
 | executor-service | 8083 | Execute code in sandbox |
 | result-service | 8084 | Manage grading results |
-| assignment-service | 8085 | Manage assignments |
+| ai-assistant-service | 8086 | Explain grading results via LLM |
 
 ## 🛠️ Development Workflow
 
@@ -179,8 +182,8 @@ Chi tiết xem [SCRIPTS_GUIDE.md](./SCRIPTS_GUIDE.md)
 
 1. Clone source repo:
 ```bash
-git clone https://github.com/PTIT-DTL-Project/web-grading-system-services.git
-cd web-grading-system-services
+git clone https://github.com/PTIT-DTL-Project/web-grading-system-backend-services.git
+cd web-grading-system-backend-services
 ```
 
 2. Create feature branch:

@@ -216,6 +216,7 @@ Script hiển thị:
   NAME                          SYNC STATUS   HEALTH STATUS
   grading-submission-service    Synced        Healthy
   grading-api-gateway           Synced        Healthy
+  grading-ai-assistant-service  Synced        Healthy
   ...
 ```
 

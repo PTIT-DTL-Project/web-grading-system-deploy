@@ -54,8 +54,8 @@ cd ../../frontend-src/web-grading-system-fe && npm run build && npm run lint
 ./start.sh                       # bắt đầu k3s (start.sh dòng 17: sudo systemctl start k3s)
 sudo systemctl is-active k3s     # active
 kubectl get nodes
-# tunnel (docker compose, xem stop.sh để biết file)
-docker compose -f deploy/cloudflared/docker-compose.yml up -d
+# tunnel: Cloudflare Zero Trust (dashboard-only). Chạy foreground bằng
+# ./cloudflare_tunnel_run.sh (token), hoặc để tunnel đang chạy sẵn.
 ```
 
 Kiểm tra tunnel + Keycloak sống (phải **200**, không phải 530):

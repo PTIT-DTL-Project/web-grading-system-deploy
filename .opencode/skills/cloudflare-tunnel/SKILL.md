@@ -15,7 +15,7 @@ machine's gateway (Traefik NodePort 30195) → Traefik Ingress → k8s service.
 ## 1. Hostnames
 
 Pattern: `web-dev{N}-<sub>.vucongtuanduong.dpdns.org`.
-Current subs: api, course, submission, result, grading, rustfs, rustfs-api,
+Current subs: api, course, submission, result, grading, ai, rustfs, rustfs-api,
 argocd, keycloak, grafana, otlp, pyroscope, kafka-ui.
 
 ## 2. Adding a new public hostname

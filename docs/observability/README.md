@@ -840,10 +840,10 @@ kubectl create configmap grafana-dashboards-submission \
 
 ## 10. Cloudflare Tunnel
 
-### 10.1 Tại sao cần cloudflared
+### 10.1 Tại sao cần Cloudflare Tunnel
 
 - K3s chạy trên máy local (8GB RAM), không có public IP
-- Cloudflare Tunnel tạo encrypted tunnel từ cloudflared → Cloudflare edge → user
+- Cloudflare Tunnel tạo encrypted tunnel từ tunnel connector → Cloudflare edge → user
 - Không cần mở port trên router/firewall
 - Được SSL/TLS certificate miễn phí
 
@@ -856,10 +856,10 @@ User (trình duyệt)
 Cloudflare Edge (vucongtuanduong.dpdns.org)
     │
     ▼ Encrypted Tunnel
-cloudflared (container, network_mode: host)
+Zero Trust tunnel (dashboard-managed connector)
     │
     ▼ HTTP
-localhost:30566 (Traefik NodePort)
+Traefik NodePort
     │
     ▼ Ingress routing
 Traefik → Ingress rule → Service → Pod
@@ -876,6 +876,10 @@ M mỗi service có 1 subdomain riêng:
 | Keycloak | `web-dev1-keycloak.vucongtuanduong.dpdns.org` |
 | ArgoCD | `web-dev1-argocd.vucongtuanduong.dpdns.org` |
 | RustFS | `web-dev1-rustfs.vucongtuanduong.dpdns.org` |
+| AI Assistant | `web-dev1-ai.vucongtuanduong.dpdns.org` |
+
+Mỗi hostname là một Public Hostname trên Cloudflare Zero Trust dashboard
+(Networks → Tunnels → tunnel → Public Hostnames), trỏ về Traefik NodePort.
 
 Pattern: `web-dev1-{service}.vucongtuanduong.dpdns.org`
 
@@ -1044,7 +1048,7 @@ curl -G "http://localhost:3100/loki/api/v1/query_range" \
   python3 -m json.tool dashboards/k8s-general.json
 ```
 
-### 13.5 Grafana không accessible qua cloudflared
+### 13.5 Grafana không accessible qua Cloudflare Tunnel
 
 ```
 □ Kiểm tra Grafana ingress:
@@ -1052,13 +1056,11 @@ curl -G "http://localhost:3100/loki/api/v1/query_range" \
   kubectl describe ingress grafana -n observability
 
 □ Kiểm tra Traefik có route đúng không:
-  curl -H "Host: web-dev1-grafana.vucongtuanduong.dpdns.org" http://localhost:30566
+  curl -H "Host: web-dev1-grafana.vucongtuanduong.dpdns.org" http://localhost:30195
 
-□ Kiểm tra cloudflared config:
-  cat ~/.cloudflared/config.yml | grep grafana
-
-□ Kiểm tra DNS routing:
-  cloudflared tunnel route dns web-dev1-web-grading web-dev1-grafana.vucongtuanduong.dpdns.org
+□ Kiểm tra Public Hostname trên Cloudflare Zero Trust dashboard:
+  Zero Trust → Networks → Tunnels → tunnel → Public Hostnames
+  khớp đúng chuỗi web-dev1-grafana.vucongtuanduong.dpdns.org → http://localhost:30195
 ```
 
 ---
