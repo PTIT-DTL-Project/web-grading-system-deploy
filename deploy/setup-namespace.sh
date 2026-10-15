@@ -116,4 +116,15 @@ kubectl create secret generic keycloak-admin-client \
   --from-literal=KEYCLOAK_PASSWORD_CLIENT_SECRET="${KEYCLOAK_PASSWORD_CLIENT_SECRET:-}" \
   --dry-run=client -o yaml | kubectl apply -f -
 
+# AI assistant (LLM) credentials — read by ai-assistant-service as AI_*.
+# Blank AI_API_KEY is legal: the service answers from its local pedagogical
+# fallback template instead of calling the provider.
+kubectl create secret generic ai-credentials \
+  --namespace "${NAMESPACE}" \
+  --from-literal=AI_PROVIDER="${AI_PROVIDER:-openai}" \
+  --from-literal=AI_API_KEY="${AI_API_KEY:-}" \
+  --from-literal=AI_MODEL_NAME="${AI_MODEL_NAME:-gpt-4o-mini}" \
+  --from-literal=AI_BASE_URL="${AI_BASE_URL:-https://api.openai.com/v1}" \
+  --dry-run=client -o yaml | kubectl apply -f -
+
 echo "Namespace and secrets created"
