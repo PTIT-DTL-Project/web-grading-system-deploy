@@ -2,12 +2,152 @@
 \begin{document}
 \section{Phân tích hệ thống}
 \subsection{Xác định các tác nhân trong hệ thống}
-\subsubsection{}
 
+Hệ thống chấm bài tự động có bốn tác nhân, trong đó User là tác nhân chung còn Quản trị viên, Giảng viên và Sinh viên là các vai trò cụ thể kế thừa từ User:
+\begin{itemize}
+    \item Người dùng (User): tác nhân chung đại diện cho mọi tài khoản truy cập hệ thống; các tác nhân còn lại đều kế thừa User nên đều thực hiện được hai usecase chung là đăng nhập và đổi mật khẩu.
+    \item Quản trị viên (Admin): quản trị tài khoản ở mức hệ thống; là tác nhân duy nhất được phép nhập danh sách tài khoản người dùng từ tệp CSV để cấp tài khoản ban đầu cho giảng viên và sinh viên.
+    \item Giảng viên (Lecturer): quản lý lớp học của mình gồm tạo lớp, nhập danh sách sinh viên, cấu hình thành phần điểm và xem bảng điểm; quản lý bài tập kèm các bước chấm tự động; xem kết quả chấm bài của cả lớp.
+    \item Sinh viên (Student): tham gia các lớp đã được ghi danh, nộp bài thực hành để hệ thống chấm điểm tự động và xem điểm, kết quả chấm của bản thân.
+\end{itemize}
 
 \subsection{Biểu đồ ca chức năng (usecase) tổng quan của hệ thống}
 
+Hình \ref{fig:usecase-tong-quan} mô tả các ca chức năng tổng quan của hệ thống và các tác nhân tương tác với chúng.
 
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_6_usecase_tong_quan}
+\caption{Biểu đồ usecase tổng quan của hệ thống.}
+\label{fig:usecase-tong-quan}
+\end{figure}
+
+Mô tả các usecase của hệ thống:
+\begin{itemize}
+    \item Đăng nhập: Usecase này cho phép người dùng (quản trị viên, giảng viên và sinh viên) truy cập vào hệ thống bằng tài khoản đã có để thực hiện được các chức năng theo đúng quyền quy định của mình.
+    \item Đổi mật khẩu: Usecase này cho phép người dùng đã đăng nhập thay đổi mật khẩu tài khoản của mình để tiếp tục sử dụng hệ thống một cách an toàn với thông tin đăng nhập mới.
+    \item Import users accounts (nhập danh sách tài khoản): Usecase này cho phép quản trị viên tạo hàng loạt tài khoản cho giảng viên và sinh viên từ tệp CSV để cấp tài khoản ban đầu mà không phải tạo thủ công từng tài khoản. Mỗi tài khoản mới nhận một mật khẩu tạm và bắt buộc đổi mật khẩu ở lần đăng nhập đầu tiên.
+    \item Classes management (quản lý lớp học): Usecase này cho phép giảng viên tạo và lưu trữ lớp học của mình, nhập danh sách sinh viên vào lớp, cấu hình các thành phần điểm và xem bảng điểm của lớp để quản lý toàn bộ hoạt động của một lớp học trong một học kỳ.
+    \item Assignment management (quản lý bài tập): Usecase này cho phép giảng viên tạo, sửa, công bố và xoá bài tập thực hành trong lớp của mình, kèm theo các bước chấm tự động để hệ thống chấm bài nộp của sinh viên theo đúng yêu cầu đề ra.
+    \item Review class assignment results (xem kết quả chấm của cả lớp): Usecase này cho phép giảng viên xem kết quả chấm bài tập của toàn bộ sinh viên trong lớp, bao gồm điểm tổng hợp của từng sinh viên, điểm từng bài nộp và chi tiết từng bước chấm, để theo dõi và đánh giá tình hình học tập của lớp.
+    \item Review assignment results (xem chi tiết kết quả chấm một bài tập): Usecase này là bước chung khi xem chi tiết kết quả chấm của một bài tập: giảng viên đi tới usecase này từ Review class assignment results, còn sinh viên đi tới từ Review own assignment results; phạm vi kết quả nhìn thấy phụ thuộc vào tác nhân gọi nó.
+    \item Submit assignments (nộp bài): Usecase này cho phép sinh viên nộp bài thực hành của mình dưới dạng tệp nén để hệ thống tải lên và chấm điểm tự động, đồng thời theo dõi trạng thái chấm và xem lại kết quả của các lần nộp.
+    \item View personal scores and results (xem điểm tổng kết cá nhân): Usecase này cho phép sinh viên xem điểm thành phần, điểm tổng kết, điểm chữ và điểm hệ 4 của mình trong mỗi lớp đã ghi danh để tự đánh giá kết quả học tập của bản thân.
+    \item Review own assignment results (xem kết quả chấm bài tập của bản thân): Usecase này cho phép sinh viên xem điểm và chi tiết từng bước chấm của các bài tập mình đã nộp, giúp hiểu rõ vì sao bài làm đạt hay chưa đạt yêu cầu của đề bài.
+\end{itemize}
+
+\subsection{Usecase Classes management của giảng viên}
+
+Hình \ref{fig:uc-classes-management} mô tả chi tiết usecase Classes management của giảng viên.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_7_usecase_quan_ly_lop_hoc}
+\caption{Biểu đồ usecase chi tiết Classes management của giảng viên.}
+\label{fig:uc-classes-management}
+\end{figure}
+
+Usecase này được phân rã thành các usecase con sau:
+\begin{itemize}
+    \item Lecturer login (đăng nhập của giảng viên): usecase con được bao gồm (quan hệ include) trong Classes management, đảm bảo giảng viên đã đăng nhập đúng vai trò trước khi quản lý lớp học; Lecturer login kế thừa (quan hệ generalization) từ usecase Đăng nhập.
+    \item View class's students list (xem danh sách sinh viên của lớp): mở rộng (quan hệ extend) từ Classes management khi giảng viên cần xem danh sách sinh viên hiện có trong lớp.
+    \item Import students to class (nhập sinh viên vào lớp): mở rộng từ Classes management khi giảng viên thêm danh sách sinh viên vào lớp từ tệp CSV.
+    \item Config course score components (cấu hình thành phần điểm): mở rộng từ Classes management khi giảng viên khai báo các thành phần điểm và trọng số tương ứng của lớp.
+    \item View class transcript (xem bảng điểm của lớp): bao gồm (quan hệ include) Config course score components, cho phép giảng viên xem điểm tổng hợp của toàn bộ sinh viên theo đúng cấu trúc điểm đã cấu hình.
+\end{itemize}
+
+\subsection{Usecase Assignment management của giảng viên}
+
+Hình \ref{fig:uc-assignment-management} mô tả chi tiết usecase Assignment management của giảng viên.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_8_usecase_quan_ly_bai_tap}
+\caption{Biểu đồ usecase chi tiết Assignment management của giảng viên.}
+\label{fig:uc-assignment-management}
+\end{figure}
+
+Usecase này được phân rã thành các usecase con sau:
+\begin{itemize}
+    \item Lecturer login (đăng nhập của giảng viên): usecase con được bao gồm (quan hệ include) trong Assignment management, đảm bảo giảng viên đã đăng nhập đúng vai trò trước khi quản lý bài tập.
+    \item View class (chọn lớp): bao gồm (quan hệ include), cho phép giảng viên chọn lớp cần quản lý bài tập.
+    \item author assignment exercises (soạn nội dung bài tập): mở rộng từ Assignment management khi giảng viên soạn đề bài và các bước chấm tự động cho bài tập.
+    \item View assignment grading results (xem kết quả chấm bài tập): mở rộng từ Assignment management khi giảng viên muốn xem kết quả chấm của bài tập.
+\end{itemize}
+
+\subsection{Usecase Review class assignment results của giảng viên}
+
+Hình \ref{fig:uc-review-class-results} mô tả chi tiết usecase Review class assignment results của giảng viên.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_9_usecase_xem_ket_qua_lop}
+\caption{Biểu đồ usecase chi tiết Review class assignment results của giảng viên.}
+\label{fig:uc-review-class-results}
+\end{figure}
+
+Usecase này được phân rã thành các usecase con sau:
+\begin{itemize}
+    \item Lecturer login (đăng nhập của giảng viên): usecase con được bao gồm (quan hệ include), đảm bảo giảng viên đã đăng nhập đúng vai trò trước khi xem kết quả chấm của lớp.
+    \item View classes (chọn lớp): bao gồm (quan hệ include), cho phép giảng viên chọn lớp cần xem kết quả chấm.
+    \item View assignments (chọn bài tập): bao gồm (quan hệ include), cho phép giảng viên chọn bài tập cần xem kết quả chấm.
+    \item Review detail assignment step results (xem chi tiết kết quả từng bước chấm): mở rộng từ Review class assignment results khi giảng viên cần xem chi tiết kết quả từng bước chấm của bài nộp.
+\end{itemize}
+
+\subsection{Usecase Submit assignments của sinh viên}
+
+Hình \ref{fig:uc-submit-assignment} mô tả chi tiết usecase Submit assignments của sinh viên.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_10_usecase_nop_bai}
+\caption{Biểu đồ usecase chi tiết Submit assignments của sinh viên.}
+\label{fig:uc-submit-assignment}
+\end{figure}
+
+Usecase này được phân rã thành các usecase con sau:
+\begin{itemize}
+    \item Student login (đăng nhập của sinh viên): usecase con được bao gồm (quan hệ include) trong Submit assignments, đảm bảo sinh viên đã đăng nhập đúng vai trò trước khi nộp bài; Student login kế thừa (quan hệ generalization) từ usecase Đăng nhập.
+    \item View class (chọn lớp): bao gồm (quan hệ include), cho phép sinh viên chọn lớp có bài tập cần nộp.
+    \item View assignments (chọn bài tập): bao gồm (quan hệ include), cho phép sinh viên chọn bài tập cần nộp.
+    \item View assignment grading results (xem kết quả chấm bài tập): mở rộng từ Submit assignments khi sinh viên muốn xem lại kết quả chấm của bài đã nộp.
+\end{itemize}
+
+\subsection{Usecase View personal scores and results của sinh viên}
+
+Hình \ref{fig:uc-view-scores} mô tả chi tiết usecase View personal scores and results của sinh viên.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_11_usecase_xem_diem_ca_nhan}
+\caption{Biểu đồ usecase chi tiết View personal scores and results của sinh viên.}
+\label{fig:uc-view-scores}
+\end{figure}
+
+Usecase này được phân rã thành các usecase con sau:
+\begin{itemize}
+    \item Student login (đăng nhập của sinh viên): usecase con được bao gồm (quan hệ include), đảm bảo sinh viên đã đăng nhập đúng vai trò trước khi xem điểm cá nhân.
+    \item View classes (chọn lớp): bao gồm (quan hệ include), cho phép sinh viên chọn lớp cần xem điểm.
+\end{itemize}
+
+\subsection{Usecase Review own assignment results của sinh viên}
+
+Hình \ref{fig:uc-review-own-results} mô tả chi tiết usecase Review own assignment results của sinh viên.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_12_usecase_xem_ket_qua_bai_nop}
+\caption{Biểu đồ usecase chi tiết Review own assignment results của sinh viên.}
+\label{fig:uc-review-own-results}
+\end{figure}
+
+Usecase này được phân rã thành các usecase con sau:
+\begin{itemize}
+    \item Student login (đăng nhập của sinh viên): usecase con được bao gồm (quan hệ include), đảm bảo sinh viên đã đăng nhập đúng vai trò trước khi xem kết quả bài nộp.
+    \item View classes (chọn lớp): bao gồm (quan hệ include), cho phép sinh viên chọn lớp cần xem.
+    \item View assignments (chọn bài tập đã nộp): bao gồm (quan hệ include), cho phép sinh viên chọn bài tập đã nộp cần xem kết quả.
+    \item View detail assignment steps result (xem chi tiết kết quả từng bước chấm): mở rộng từ Review own assignment results khi sinh viên cần xem chi tiết kết quả từng bước chấm của bài nộp.
+\end{itemize}
 
 \section{Kiến trúc tổng thể hệ thống}
 \label{section:2.2}

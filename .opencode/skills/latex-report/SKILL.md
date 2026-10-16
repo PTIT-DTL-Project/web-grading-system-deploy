@@ -58,6 +58,33 @@ PNGs live in `report_datn/Hinhve/`, named `Hinh2_<n>_<slug>.png`
 `\label{fig:<slug>}`. Graphviz `dot` is available for regenerating
 flowcharts; keep node font sizes so text stays legible at text width.
 
+## Use-case diagrams and descriptions (Chapter 2)
+
+Chapter 2 section 2.1 holds the use-case analysis: 2.1.1 lists the four
+actors (User parent, Admin/Lecturer/Student inheriting from it) as an
+`itemize`; 2.1.2 shows the overview diagram plus the full use-case list;
+each detailed use case then gets its own `\subsection` (2.1.3 onward,
+lecturer use cases then student ones) with its figure and a
+sub-use-case `itemize`. List-item pattern, one sentence naming actor
+and capability then the purpose:
+`Tên usecase (nghĩa tiếng Việt): Usecase này cho phép <tác nhân> ...`
+ending with a period; keep the diagram's English label verbatim so the
+reader can match text to figure. Use-case figures continue the
+`Hinh2_<n>_<slug>` series (`Hinh2_6_usecase_tong_quan` = overview,
+`Hinh2_7..Hinh2_12` = detail diagrams), labels `fig:usecase-tong-quan`
+and `fig:uc-<slug>`; the architecture figure keeps `fig:architecture`
+(never reuse a label). Visual Paradigm exports stay in
+`visual-paradigm/figures/usecase/*.jpg` and are duplicated into
+`report_datn/Hinhve/` as PNG via `magick <src>.jpg <dst>.png` (verify
+the PNG keeps the source dimensions). Never type `<<include>>` or
+`<<extend>>` into the `.tex`: OT1 renders `<<` as "¡¡" — write
+"bao gồm (quan hệ include)", "mở rộng (quan hệ extend)",
+"kế thừa (quan hệ generalization)". Subsubsection gotcha: `BTL.tex`
+redefines `\thesubsubsection` to `\alph` and the heading label is bare,
+so a `\subsubsection` prints as `a,` with no parent number — prefer
+plain `\subsection` for numbered detail sections. Text tone placement
+in this report follows the traditional style (`hoà`, `xoá`), match it.
+
 ## Unnumbered preface in TOC before Chapter 1
 
 `Chuong/0_Loi_mo_dau.tex` is included via `\chapter*{LỜI MỞ ĐẦU}`
