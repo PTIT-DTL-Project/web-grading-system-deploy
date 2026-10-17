@@ -330,9 +330,9 @@ via RustFS; publishing `GRADE_SUBMISSION` onto `wgs-events` happens here
 
 ### 2.2 Queries
 
-- `GET /api/v1/submissions` — `X-User-Id: <student-uuid>`, paged; optional `?q=` filters the
-  zip file name (assignment title lives in `assignment_db`, so title matching isn't done here).
-  The student submissions list wires this to a `<FilterBar search>` filter.
+- `GET /api/v1/submissions` — `X-User-Id: <student-uuid>`, paged; optional `?search=`
+  filters the zip file name (assignment titles live in `assignment_db`, so they aren't
+  matched here). Param is `?search=` (not `?q=`) to match the repo-wide paged-list convention.
 - `GET /api/v1/submissions/{{id}}` — detail; the caller must own it, otherwise `404`
   indistinguishable from a missing id (no role bypass — a lecturer uses
   `GET /api/v1/assignments/{assignmentId}/submissions` in course-service, §1.6)

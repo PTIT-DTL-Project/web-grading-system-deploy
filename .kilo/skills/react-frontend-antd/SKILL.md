@@ -288,10 +288,14 @@ src/
 - Searchable student lists use the `ListPage` machinery: a
   `FilterConfig<{ search?: string }>[]` with one `text`+`submitOnEnter` entry (so the
   `FilterBar` renders and ENTER submits) + a `fetcher({ page, size, search })` that maps
-  `search` onto the backend query param — `q=` on `GET /submissions`, `search=` on
-  `GET /student/assignments`. `filters={[]}` is the only reason the bar stays hidden, so a
-  missing filter UI is a missing config, not a `ListPage` limitation; `initialFilters={{}}`
-  must match the filter shape (mirrors `StudentAssignmentsPage`).
+   `search` onto the backend query param — `?search=` on `GET /api/v1/submissions`
+   (file-name match only — assignment titles live in another DB) and on
+   `GET /api/v1/student/assignments`. Matches the repo-wide paged-list convention:
+   `ClassController` renamed `q`→`search` (2026-10-09) so a misspelled param is
+   never silently ignored as an unfiltered 200. `filters={[]}` is the only reason
+   the bar stays hidden, so a missing filter UI is a missing config — not a
+   `ListPage` limitation; `initialFilters={{}}` must match the filter shape
+   (mirrors `StudentAssignmentsPage`).
 - Types mirror the backend DTOs exactly (`shared/types/*`); do not invent fields.
 - Routes: `/login` · `/` → role redirect · `/classes`, `/classes/:classId` (wrapped in
   `RequireRole role="LECTURER"`) · `/student/classes` (`STUDENT`) · `*` → 404 inside the
