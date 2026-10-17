@@ -952,3 +952,34 @@ loop through the FE's silent-refresh → `/login` redirect):
   "rate-limit.enabled=true")` because the base default now hides the controller.
 - Config knob goes through `@ConfigurationProperties` if it grows past the one
   `@ConditionalOnProperty`; a lone boolean switch on the controller is fine as-is.
+
+## 22. No DB transaction across a remote/LLM call; cache races use the index (mandatory)
+
+Review: 2026-10-17, Pullfrog (`ai-assistant-service`).
+
+- **Never put `@Transactional` on a method that performs a Feign/HTTP call or an
+  LLM completion.** With Hikari `maximum-pool-size: 10`, one such method holds a
+  connection for the whole multi-second round trip and starves concurrent
+  requests. Read what you need, call the remote, then persist — each repository
+  call already runs in its own short transaction. Same spirit as §16's
+  `@Transactional`-must-not-call-`@Async` rule.
+- **An idempotency/cache guard that is only an app-level pre-check is a race.**
+  Two concurrent requests both miss the check and both insert. Back it with a
+  **partial unique index** (`WHERE deleted_at IS NULL`, matching the entity's
+  `@SQLRestriction`), ship it as a **new migration** (never edit an
+  already-applied `V1`), and handle the loser: catch
+  `DataIntegrityViolationException`, re-read the winner's row, return it
+  (idempotent) instead of surfacing a 500.
+- **A service with no `ApiResponse` envelope / no `GlobalExceptionHandler`**
+  (raw-DTO services) must handle that conflict inline — §11's
+  "`DataIntegrityViolationException` → 409 in every GlobalExceptionHandler"
+  assumes the envelope exists.
+- **Never hardcode a value that already lives in a `@ConfigurationProperties`
+  record** (e.g. writing an entity's `model_name` as a literal while
+  `AiModelProperties.modelName()` holds the configured value). Inject the record
+  and read it — one source of truth (§9).
+- **Mapping an optional list field must not feed a null stream.** A DTO field
+  that can be absent (`actionableHints`, `learningKeywords`) makes
+  `stream().flatMap(s -> s.getX().stream())` throw NPE on the null. Use
+  `Optional.ofNullable(s.getX()).orElse(List.of()).stream()`.
+  Covered by `AiExplanationServiceTest.explainSubmission_doesNotThrow_whenStepHintsAreNull`.

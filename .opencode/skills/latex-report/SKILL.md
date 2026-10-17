@@ -1,6 +1,6 @@
 ---
 name: latex-report
-description: LaTeX thesis report formatting conventions for report_datn/ - no bold in body text, enumerate/itemize for all listings, underscore escaping in text, glossary longtable column widths, figure naming. Use when writing or reviewing any .tex chapter, glossary entries, or report figures.
+description: LaTeX thesis report formatting conventions for report_datn/ - no bold in body text, enumerate/itemize for all listings, underscore escaping in text, glossary longtable column widths, figure naming, table captions below tables, business-level usecase scenarios in chapter 2. Use when writing or reviewing any .tex chapter, glossary entries, or report figures.
 ---
 
 # LaTeX report conventions (`report_datn/`)
@@ -51,6 +51,22 @@ uses a full grid: outer border plus rules between all columns
 (`{|p{2.6cm}|p{2.6cm}|p{9.2cm}|}`) and `\hline` at the end of every
 data row (`...\\ \hline`).
 
+## Table captions sit below the table (mandatory)
+
+Every `table` float writes `\caption{...}` and `\label{...}` AFTER the
+tabular content (after `\end{tabularx}`), so the caption prints under the
+table, aligned with figure captions below their figures. Do NOT add
+`\captionsetup[table]{position=below}` to `BTL.tex` expecting it to
+relocate captions: measured with the bundled `caption` package, the
+option does not move a `\caption` written above the content (it is a
+no-op there; spacing is identical either way). The only deterministic
+way is the manual order — caption after content. Tables already
+following this: Bảng 1.1 (`1_Co_so_ly_thuyet.tex`) and Bảng 2.1-2.9
+(`2_Phan_tich_thiet_ke.tex`). `\listoftables` and `\ref` numbering are
+unaffected (the `report` class numbers tables `chapter.number` by
+default). Caption-to-table gap equals the figure caption gap
+(`\abovecaptionskip`, ~10pt); no preamble change needed.
+
 ## Figures
 
 PNGs live in `report_datn/Hinhve/`, named `Hinh2_<n>_<slug>.png`
@@ -62,28 +78,65 @@ flowcharts; keep node font sizes so text stays legible at text width.
 
 Chapter 2 section 2.1 holds the use-case analysis: 2.1.1 lists the four
 actors (User parent, Admin/Lecturer/Student inheriting from it) as an
-`itemize`; 2.1.2 shows the overview diagram plus the full use-case list;
-each detailed use case then gets its own `\subsection` (2.1.3 onward,
-lecturer use cases then student ones) with its figure and a
-sub-use-case `itemize`. List-item pattern, one sentence naming actor
-and capability then the purpose:
-`Tên usecase (nghĩa tiếng Việt): Usecase này cho phép <tác nhân> ...`
-ending with a period; keep the diagram's English label verbatim so the
-reader can match text to figure. Use-case figures continue the
-`Hinh2_<n>_<slug>` series (`Hinh2_6_usecase_tong_quan` = overview,
-`Hinh2_7..Hinh2_12` = detail diagrams), labels `fig:usecase-tong-quan`
-and `fig:uc-<slug>`; the architecture figure keeps `fig:architecture`
-(never reuse a label). Visual Paradigm exports stay in
-`visual-paradigm/figures/usecase/*.jpg` and are duplicated into
-`report_datn/Hinhve/` as PNG via `magick <src>.jpg <dst>.png` (verify
-the PNG keeps the source dimensions). Never type `<<include>>` or
-`<<extend>>` into the `.tex`: OT1 renders `<<` as "¡¡" — write
-"bao gồm (quan hệ include)", "mở rộng (quan hệ extend)",
-"kế thừa (quan hệ generalization)". Subsubsection gotcha: `BTL.tex`
-redefines `\thesubsubsection` to `\alph` and the heading label is bare,
-so a `\subsubsection` prints as `a,` with no parent number — prefer
-plain `\subsection` for numbered detail sections. Text tone placement
-in this report follows the traditional style (`hoà`, `xoá`), match it.
+`itemize`; 2.1.2 shows the overview diagram plus the full use-case list
+(one sentence per use case: `Tên usecase (nghĩa tiếng Việt): Usecase
+này cho phép <tác nhân> ...`). 2.1.3 `Kịch bản chuẩn các chức năng`
+carries the detail material, grouped by actor in `\subsubsection`s:
+(a) chung (Đăng nhập, Đổi mật khẩu), (b) quản trị viên (Import users
+accounts), (c) giảng viên, (d) sinh viên. Inside a group each function
+opens with `\paragraph{Chức năng <Tên>.}` (bold run-in heading — never
+`\textbf`), then its detail figure and sub-use-case `itemize` where a
+diagram exists, then the scenario table. `Review assignment results`
+gets no table of its own: it is a shared step already covered by the
+lecturer and student scenario tables.
+
+Scenario tables (Bảng 2.x, `\label{tab:uc-<slug>}`): `table` float
+placed `[!ht]`, `\begin{tabularx}{\textwidth}{|p{3.2cm}|X|}` full grid;
+rows `Tên mục & Nội dung mô tả`, `Tên kịch bản`, `Tác nhân`,
+`Tiền điều kiện`, `Kịch bản chính` (`enumerate[leftmargin=*, nosep]`),
+`Hậu điều kiện`, `Kịch bản ngoại lệ` (`itemize`, same options); long
+cells end with `\end{enumerate} \\ \hline`; caption
+`Kịch bản chức năng <Tên>.` + `\label` written after `\end{tabularx}`
+(see the table-caption section above), so it prints below the grid (the
+front-matter `\listoftables` picks them up). Content must be grounded in `docs/design/usecase-flows.md`
+(real preconditions, statuses, error cases) — never invented. Float
+placement measured on this 9-table section: `[ht]` defers every table
+to end-of-chapter float pages (7-9 page drift); `[!ht]` keeps drift at
+0-3 pages with no stretching; `[H]` places each table exactly at its
+reference but `\flushbottom` stretches the preceding page (large
+mid-page gap). Keep `[!ht]`; switch individual tables to `[H]` only on
+request.
+
+Scenario tables and use-case prose stay business-level (chapter 2 is an
+analysis phase, not implementation documentation): never leak
+implementation details — no Keycloak/authorization code/PKCE/token or
+browser storage, no HTTP/container/Docker/presigned URL/object storage,
+no CPU/memory/service-port config, no "DB connection info". Use
+system-level wording instead: `hệ thống kiểm tra thông tin đăng nhập`,
+`môi trường cách ly`, `gửi yêu cầu kiểm thử`, `kiểm tra dữ liệu`,
+`đường dẫn tải lên an toàn`, `giới hạn tài nguyên khi chấm`, `bộ nhớ
+trình duyệt` → `phiên làm việc`. Concrete tech lives in
+`docs/design/usecase-flows.md` (dev doc — keep it technical). Business
+facts stay: temp password + forced change on first login, lockout after
+repeated failures, grading plan/steps, submission statuses, grading
+logs, role-based access; `tệp CSV` is kept as the input artifact the
+admin/lecturer prepares.
+
+Use-case figures continue the `Hinh2_<n>_<slug>` series
+(`Hinh2_6_usecase_tong_quan` = overview, `Hinh2_7..Hinh2_12` = detail
+diagrams), labels `fig:usecase-tong-quan` and `fig:uc-<slug>`; the
+architecture figure keeps `fig:architecture` (never reuse a label).
+Visual Paradigm exports stay in `visual-paradigm/figures/usecase/*.jpg`
+and are duplicated into `report_datn/Hinhve/` as PNG via
+`magick <src>.jpg <dst>.png` (verify the PNG keeps the source
+dimensions). Never type `<<include>>` or `<<extend>>` into the `.tex`:
+OT1 renders `<<` as "¡¡" — write "bao gồm (quan hệ include)",
+"mở rộng (quan hệ extend)", "kế thừa (quan hệ generalization)".
+Subsubsection note: `BTL.tex` redefines `\thesubsubsection` to `\alph`
+(the heading label is bare), so the actor groups print as `a,`/`b,` with
+no parent number — that matches the thesis sample, keep it. Text tone
+placement in this report follows the traditional style (`hoà`, `xoá`),
+match it.
 
 ## Unnumbered preface in TOC before Chapter 1
 

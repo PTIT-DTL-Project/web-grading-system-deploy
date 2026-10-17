@@ -1129,7 +1129,11 @@ X-Gateway-Secret: <gateway secret>
 Order of operations (all in `AiExplanationService.explainSubmission`):
 
 1. Idempotency: if a `FULL_ANALYSIS` row already exists for the submission it is returned
-   as-is with `fromCache=true`; the provider is not called and nothing is written.
+   as-is with `fromCache=true`; the provider is not called and nothing is written. The check
+   is backed by a partial unique index `uq_ai_explain_submission_category`
+   (`V2__2026-10-17__unique_ai_explain_lookup.sql`, `WHERE deleted_at IS NULL`): a second
+   concurrent `POST` that races past the check loses the insert and instead re-reads and
+   returns the winner's row (`fromCache=true`), never a `500`.
 2. Fetch results from `result-service` (`GET /api/v1/results/{submissionId}`, forwarding
    `X-User-Id` + `X-Gateway-Secret`). Empty list → `404`. This Feign call is **not** wrapped,
    so an unreachable `result-service` surfaces as `500`, not a graceful fallback.
@@ -1141,7 +1145,10 @@ Order of operations (all in `AiExplanationService.explainSubmission`):
 5. Build the prompt, call the provider (`POST {AI_BASE_URL}/chat/completions`, bearer
    `AI_API_KEY`). Provider error or non-200 → fallback template; unparsable model output →
    the default summary with empty `stepAnalyses` (still `200`, never raw model text).
-6. Persist one `FULL_ANALYSIS` row and return it with `fromCache=false`.
+6. Persist one `FULL_ANALYSIS` row and return it with `fromCache=false`. `model_name` comes
+   from config (`ai.model.model-name`, env `AI_MODEL_NAME`), not a literal. The method is
+   deliberately **not** `@Transactional` — the Feign reads and the provider call must not
+   hold a Hikari connection for their duration.
 
 Expected response (`200`, raw JSON):
 
