@@ -279,8 +279,15 @@ src/
 - Mount a card **once per owned row**, not once per child row: in
   `features/assignments/AssignmentResultsPage.tsx` the card hangs off the *student* row's
   `expandedRowRender`, above the nested per-plan table. Mounting it inside that nested table
-  repeated one student's explanation for every result row that shared the submission (fixed
-  2026-10-17). Guard it on an existing result row — the card needs a `submissionId`.
+repeated one student's explanation for every result row that shared the submission (fixed
+   2026-10-17). Guard it on an existing result row — the card needs a `submissionId`.
+- Searchable student lists use the `ListPage` machinery: a
+  `FilterConfig<{ search?: string }>[]` with one `text`+`submitOnEnter` entry (so the
+  `FilterBar` renders and ENTER submits) + a `fetcher({ page, size, search })` that maps
+  `search` onto the backend query param — `q=` on `GET /submissions`, `search=` on
+  `GET /student/assignments`. `filters={[]}` is the only reason the bar stays hidden, so a
+  missing filter UI is a missing config, not a `ListPage` limitation; `initialFilters={{}}`
+  must match the filter shape (mirrors `StudentAssignmentsPage`).
 - Types mirror the backend DTOs exactly (`shared/types/*`); do not invent fields.
 - Routes: `/login` · `/` → role redirect · `/classes`, `/classes/:classId` (wrapped in
   `RequireRole role="LECTURER"`) · `/student/classes` (`STUDENT`) · `*` → 404 inside the
