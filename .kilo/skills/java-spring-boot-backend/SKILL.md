@@ -207,6 +207,11 @@ Verify by checking the compiled class has `RuntimeVisibleParameterAnnotations`.
   name follows the FIELD, not the column (`latest`, not `is_latest`).
 - Defensive Feign: wrap client calls that degrade gracefully (e.g. exercise score) in
   try/catch -> log.warn + return null, so a dependency outage never fails the whole endpoint.
+  A call whose result is REQUIRED (cannot degrade) must still catch `FeignException` and map
+  it to `502 BAD_GATEWAY` (`ResponseStatusException`): otherwise a read timeout
+  (`RetryableException`) escapes and surfaces as Boot's generic `500` — no
+  `@RestControllerAdvice` in ai-assistant-service to translate it (see `AiExplanationService`
+  result fetch, fixed 2026-10-17).
 - ENV OVERRIDES CANNOT CARRY UNDERSCORES INSIDE PACKAGE NAMES: relaxed binding turns
   `LOGGING_LEVEL_VN_EDU_PTIT_WEB_GRADING_SYSTEM` into `vn.edu.ptit.web.grading.system`
   (dots), which matches no logger. Alias instead: yaml
@@ -337,6 +342,12 @@ Verify by checking the compiled class has `RuntimeVisibleParameterAnnotations`.
    set ⇒ only that plan. `results.is_latest` is unique per `(student_id, assignment_id, plan_id)`
    and `results.plan_weight` carries `test_plans.weight` so the assignment exercise score
    is the weight-weighted average of per-plan scores (`ResultService.weightedScoreByPlan`).
+- The lecturer grading view (`ResultService.getByAssignment`) must return the rows that the
+  exercise score is *made of* — the best attempt per plan — not the latest attempt. A single
+  `perPlanBests` walk feeds both `maxPerPlanAverage` (the grade) and the displayed `results`,
+  so the two cannot drift to different attempts (fixed 2026-10-17: detail row said 5 while
+  the score said 10). When nothing is scorable, fall back to the latest rows so the detail is
+  never blank; keep the `latest` flag on each row so "what was the newest" stays visible.
 - Internal service-to-service APIs under `/api/v1/internal/**`: plain DTOs, no envelope,
   called via OpenFeign (`@EnableFeignClients` already on every application class).
   Gateway never routes internal paths.
@@ -510,6 +521,54 @@ class XControllerAuthorizationTest {
 
 Java note: a text block needs a line terminator after `"""`, so `"""[{"a":1}]"""` is a
 compile error (`';' expected`). Use a normal escaped string for one-line JSON.
+
+## 12.11. Two audiences on one resource: split the route, authorize before any downstream read (mandatory)
+
+When the same payload is reachable by two roles under different ownership rules, add a
+**second route** — never a second `@PreAuthorize` branch on the existing one. Live case
+(UC-18/UC-19): the AI explanation is readable by the student who owns the submission
+(`/api/v1/ai/submissions/{submissionId}/explain`, `hasRole('STUDENT')` +
+`caller == result.studentId`) and by the lecturer who owns the assignment
+(`/api/v1/ai/assignments/{assignmentId}/submissions/{submissionId}/explain`,
+`hasRole('LECTURER')` + ownership of that assignment). The lecturer route carries the id the
+ownership check runs against. One path answering to both roles is exactly how the removed
+`hasRole("LECTURER")` bypass in result-service came about (§12.9).
+
+1. **`@PreAuthorize` is the role gate, the ownership check is a separate step, and both are
+   required.** The role says *who* may call; ownership says *which rows*. Failure to
+   establish ownership answers `404`, never `403` (§12.9).
+2. **Authorize before reading any downstream data.** The lecturer path confirms assignment
+   ownership before result-service is called at all, so a foreign submission id cannot even
+   be probed. Order: role gate → ownership (in the service that owns the parent) → fetch the
+   child rows → guard the pair.
+3. **Guard the id pair.** With both a parent and a child id in the path, verify
+   `child.parentId == requestedParentId` and answer `404` on mismatch; otherwise a caller can
+   pair their own parent id with someone else's child id.
+4. **Let the ownership check double as the metadata read.** The owner-scoped
+   `GET /api/v1/assignments/{id}` already returns the assignment the prompt needs, so
+   authorizing costs no extra call.
+5. **Identity-free internal routes carry the implicitly-authorized read.**
+   `GET /api/v1/internal/results/submission/{submissionId}` sends no `X-User-Id` and is not
+   enveloped; it exists for a caller that has *already* authorized and needs rows the
+   identity-checked route refuses (a lecturer is not the submission's owner, so the public
+   route answers `403`). It performs no checks of its own — call it only after step 2.
+6. **Verify the owner a cache row carries.** A cached row for the submission whose
+   `studentId` is not the resolved owner answers `404`; a lecturer-triggered generation
+   persists under the **student's** id, which is what warms the cache the student reads next.
+7. **An outage on any downstream call is `502`, not `500`, and the guard is written once per
+   dependency.** "Not owned" and "no rows" are `404`; "cannot verify" fails closed as
+   retryable `502`. Two audiences reading the same dependency must not each hand-roll that
+   mapping: the lecturer path once read result-service without the `FeignException` guard the
+   student path had, so a timeout escaped as a raw `500`. Route every read of a dependency
+   through one helper that owns both the `502` mapping and the empty→`404` check, so the two
+   audiences cannot drift. The §22 rule (no DB transaction spanning a remote call) applies to
+   the whole authorize step.
+8. **Forward `X-User-Roles` when the downstream endpoint is role-gated.** A Feign call to a
+   `@PreAuthorize("hasRole('LECTURER')")` route that sends only `X-User-Id` +
+   `X-Gateway-Secret` gets `403` (no authorities ⇒ fail closed), and a catch-all
+   `FeignException` handler reports that as **502** — a misleading symptom for a missing
+   header. Assert only the role this service already verified on its own inbound request;
+   forward nothing the caller did not have.
 
 ## 13. Verification
 
@@ -996,3 +1055,20 @@ Review: 2026-10-17, Pullfrog (`ai-assistant-service`).
   `stream().flatMap(s -> s.getX().stream())` throw NPE on the null. Use
   `Optional.ofNullable(s.getX()).orElse(List.of()).stream()`.
   Covered by `AiExplanationServiceTest.explainSubmission_doesNotThrow_whenStepHintsAreNull`.
+
+## 23. Local run: no dotenv loader — set the env vars yourself (mandatory)
+
+Services do NOT load `.env` at runtime (no dotenv dependency). An IDE run with
+only `GATEWAY_TRUSTED_SECRET` set 502s every `explainSubmission`:
+`RESULT_SERVICE_URI`/`COURSE_SERVICE_URI` unset makes Feign fall back to the
+in-cluster defaults (`http://grading-result-service:8084`), which do not resolve
+off-cluster → `FeignException` → 502. Tell: ~4-5s before the 502 (DNS timeout),
+not an instant failure.
+
+Set the whole block in the run config, or use the EnvFile plugin pointed at
+`src-services/<service>/.env`: `JDBC_URL`/`DB_*`, `RESULT_SERVICE_URI`,
+`COURSE_SERVICE_URI`, `GATEWAY_TRUSTED_SECRET`, `AI_*`. In-cluster these arrive
+via the chart's `env`/`secretKeyRef`, so the gap only shows up locally.
+
+Verified 2026-10-17: identical code + secret returned real Groq output on a CLI
+run with `.env` sourced, and 502 on an IDE run missing the two URI vars.

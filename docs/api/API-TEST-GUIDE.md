@@ -293,7 +293,8 @@ course-service calls result-service / submission-service.
 → `200` `data` = `[{ studentUserId, studentCode, studentName, exerciseScore,
 results: [{ submissionId, planId, planWeight, score, maxScore, status, summaryLog,
 latest, startedAt, completedAt, steps }] }]` — `exerciseScore` comes from result-service's
-weighted formula, so it matches `GET /api/v1/classes/{id}/transcript`.
+weighted formula, so it matches `GET /api/v1/classes/{id}/transcript`; `results` holds the
+graded attempts (the best attempt per plan), not the latest ones.
 
 **GET `/api/v1/assignments/{{assignmentId}}/submissions`**
 
@@ -376,8 +377,10 @@ This is the single weight-weighted exercise-score formula: both the transcript
 (UC-01 Step 6) and the lecturer's grading view (§1.6) read it.
 
 **GET `/api/v1/internal/results/assignment/{{assignmentId}}?studentUserId=&includeSteps=`**
-(raw) → `[{ studentUserId, exerciseScore, results: [...] }]` — latest rows of one
-assignment grouped per student, `exerciseScore` pre-computed by the same formula.
+(raw) → `[{ studentUserId, exerciseScore, results: [...] }]` — graded rows of one
+assignment grouped per student (the best attempt per plan, i.e. the attempts
+`exerciseScore` is made of; latest rows only when nothing is scorable),
+`exerciseScore` pre-computed by the same formula.
 Only caller: course-service (§1.6), which has already verified ownership.
 
 ### executor-service

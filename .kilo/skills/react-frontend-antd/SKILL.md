@@ -34,9 +34,31 @@ cannot ship.
 | Font | `@fontsource/roboto` (self-hosted, offline — **never** Google Fonts CDN) |
 | Lint | `oxlint` (config `.oxlintrc.json`) |
 
-No state library (Redux/Zustand/TanStack Query), no CSS framework, no ProComponents.
-Per-feature `useX` hooks over `shared/api` are enough — add a library only when a real
+No Redux/Zustand, no CSS framework, no ProComponents. **TanStack Query v5 is installed and
+wired** (`app/providers.tsx`), and is the sanctioned choice for server state: use
+`useQuery`/`useMutation` for anything cached, polled, or idempotent (live precedent:
+`SubmissionResultPage`, `shared/ui/AiExplanationCard.tsx`). Keep per-feature `useX` hooks
+over `shared/api` for the request itself; reach for a different library only when a real
 need appears.
+
+### Cached-with-fallback endpoints
+
+- A "no data yet" answer (e.g. `ai-assistant-service` GET returning `404` for an
+  ungenerated explanation) is **not an error**: normalise it to `null` in the endpoint
+  function (`shared/api/endpoints/aiExplanation.ts`), or `getErrorMessage` maps it to
+  `errors.notFound` and the UI reads as broken.
+- Expensive, side-effecting generation (`POST` → LLM, paid and ~seconds) is
+  **user-triggered only**, never on mount. `useMutation` + `onSuccess: setQueryData` seeds
+  the cache so the next `GET` is a hit; `mutation.isPending` disables the button to block a
+  double-submit. Rationale (one viewer per record → no shared-cache amortisation) is in
+  `docs/design/usecase-flows.md` UC-18 step 3.
+- **Two audiences, one resource → two routes, one query key.** When the same payload is
+  reachable by different roles with different authorization rules (student's own submission
+  vs lecturer's assignment, UC-18/UC-19), select the route with an optional argument on the
+  endpoint function (`assignmentId` → lecturer path) and keep **one** query key
+  (`['ai-explanation', submissionId]`). One submission has one explanation whichever route
+  fetched it, so both audiences should share the cache entry; a role in the key would
+  fragment it. Never serve both roles from one path with two `@PreAuthorize` branches.
 
 ## 3. Talk to the API gateway only
 
@@ -241,14 +263,24 @@ src/
     theme/    tokens.ts
     layout/   AppLayout.tsx
     types/    envelope.ts · pagination.ts · <domain>.ts
-    ui/       ComingSoon.tsx · ErrorState.tsx · FilterBar.tsx · ListPage.tsx · StandardPagination.tsx
-    hooks/    useList.ts
+    ui/       ComingSoon.tsx · ErrorState.tsx · FilterBar.tsx · ListPage.tsx · StandardPagination.tsx · AiExplanationCard.tsx
+    hooks/    useList.ts · useAiExplanation.ts
     format/   formatDateTime.ts
   locales/    vi.json · en.json · i18n.ts
   features/<domain>/   pages + components + hooks (e.g. classes/useClasses.ts)
 ```
 
 - Feature folders never import from each other — only from `shared/`.
+- **A component/hook used by ≥2 features moves to `shared/`** (`shared/ui/`,
+  `shared/hooks/`). `AiExplanationCard` + `useAiExplanation` were born under
+  `features/student/results/` and moved to `shared/` when the lecturer
+  assignment-results page began rendering the same card. Importing across features is the
+  anti-pattern; a shared path is the fix.
+- Mount a card **once per owned row**, not once per child row: in
+  `features/assignments/AssignmentResultsPage.tsx` the card hangs off the *student* row's
+  `expandedRowRender`, above the nested per-plan table. Mounting it inside that nested table
+  repeated one student's explanation for every result row that shared the submission (fixed
+  2026-10-17). Guard it on an existing result row — the card needs a `submissionId`.
 - Types mirror the backend DTOs exactly (`shared/types/*`); do not invent fields.
 - Routes: `/login` · `/` → role redirect · `/classes`, `/classes/:classId` (wrapped in
   `RequireRole role="LECTURER"`) · `/student/classes` (`STUDENT`) · `*` → 404 inside the
@@ -831,6 +863,13 @@ runtime checklist `docs/guide/PASSWORD-GATEWAY-RUNBOOK.md` §10.
   `check-sso` iframe can be blocked (Chrome phaseout, Safari ITP). Catch `onError` of
   `init()` and re-run with `silentCheckSsoRedirect: false` (full-page redirect) — one flash,
   session survives. Do not "handle" a blocked iframe by persisting tokens (§23.2).
+- **Callback loads skip the 3p-cookies probe** (2026-10-04): when the URL already carries
+  an OIDC callback (`state` + `code|error`, hash or query — `response_mode=fragment` puts
+  it in the hash), `runInit` omits `silentCheckSsoRedirectUri`, so keycloak-js skips its
+  3p-cookies probe (~2 tunnel round trips ≈ 0.5 s) before the code exchange; the silent
+  path is never used on a callback load. `vite.config.ts` also injects `preconnect` links
+  to the Keycloak origin (derived from `VITE_KEYCLOAK_AUTHORITY`) so DNS/TLS overlaps
+  bundle parsing.
 - Files: `frontend-src/web-grading-system-fe/public/silent-check-sso.html` must exist
   (keycloak-js reads that path by default).
 
@@ -876,6 +915,12 @@ runtime checklist `docs/guide/PASSWORD-GATEWAY-RUNBOOK.md` §10.
 - Read the session via `getIdentity()` (the identity seam, §5); `AuthGate` has already
   settled `keycloak.init()` before the router mounts, so the synchronous read is reliable.
 - Hook order stays unconditional (Rules of Hooks): all hooks first, conditional return last.
+- **`/login` renders a spinner while the auto-redirect is in flight** (2026-10-04):
+  the card with the login button is the fallback only when
+  `redirectToKeycloakLogin()` rejected (blocked navigation / uninitialized
+  adapter). keycloak-js's `login()` always calls `window.location.assign` and
+  its promise never settles, so the spinner can never hang. A reload of a deep
+  link (`/classes/:id`) shows loading, never the card flash.
 - A persistent 401 (dead/wrong proxy target) is now **capped**: one refresh-and-retry per
   request, then sign-out → `/login` (§23.5) — check `VITE_API_PROXY_TARGET` first when a
   user reports being bounced to `/login` with a live IdP session.

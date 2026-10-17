@@ -541,6 +541,13 @@ secret → `401`.
 **scoped to this assignment** (the transcript applies it across all class
 assignments — figures agree only when the class has one assignment).
 
+`results` carries the **attempts that score is made of** — the best attempt per
+plan, not the latest one. A student who scored 10 and then resubmitted a failing
+zip for 5 therefore reads 10 in their row and sees the 10.00 attempt in the
+detail, never the 5 next to a 10. The latest rows are shown only when nothing is
+scorable (e.g. a single stepless failed `FULL` run), so the detail never goes
+blank. `latest` on each row still reports whether that attempt was the newest.
+
 ### Step 2 — Request the submissions list
 
 ```
@@ -1138,8 +1145,9 @@ Order of operations (all in `AiExplanationService.explainSubmission`):
 2. Fetch results from `result-service` (`GET /api/v1/results/{submissionId}`, forwarding
    `X-User-Id` + `X-Gateway-Secret`). That endpoint is enveloped, so the Feign client binds
    `ApiEnvelope<List<ResultDto>>` and the service reads `.getData()`. Empty list → `404`.
-   This Feign call is **not** wrapped, so an unreachable `result-service` surfaces as `500`,
-   not a graceful fallback.
+   A `FeignException` (e.g. the `result-service` read timeout configured in
+   `application.yaml`) is mapped to `502` — an upstream outage is not a caller error, so the
+   client can retry instead of receiving a raw `500`.
 3. Ownership: `results[0].studentId` must equal the caller's `X-User-Id`, else `403`.
 4. Best-effort assignment metadata from `course-service`
    (`GET /api/v1/student/assignments/{assignmentId}`, also enveloped and unwrapped). Failure
@@ -1182,6 +1190,33 @@ Expected response (`200`, raw JSON):
 }
 ```
 
+### Step 3 — Frontend flow (Student result page)
+
+Mounted on `SubmissionResultPage`
+(`frontend-src/web-grading-system-fe/src/features/student/results/SubmissionResultPage.tsx`),
+reached from `MySubmissionsPage` at `student/submissions/:submissionId/results`. Consumes the
+same two endpoints through the gateway only.
+
+1. **On mount** the page reads the cached explanation with `GET` (step 1) as soon as
+   `isReady` is true (at least one grading row — the precondition step 2 needs). The card
+   shows a skeleton, then either the cached content (`fromCache=true` shows the "Đã lưu"
+   tag) or the generate CTA. A `404` is normalised to `null` in
+   `shared/api/endpoints/aiExplanation.ts` so it renders the CTA instead of
+   `errors.notFound`.
+2. **On click of "Tạo giải thích AI"** the client calls `POST` (step 2) via
+   `useMutation`, with the button in a `loading` state and a hint stating the wait
+   (`ai.generatingHint`). `mutation.isPending` disables the button, so a double-click cannot
+   fire two calls. Generation is **never** triggered on mount: it costs an LLM round-trip and
+   an explanation has exactly one viewer, so there is no shared cache to amortise it.
+3. **On success** `setQueryData` seeds the query cache with the response, so the card renders
+   the new content immediately and a later remount's `GET` is a cache hit — never a second
+   `POST`.
+4. **On failure** the CTA stays visible and the mapped message (`502` upstream down,
+   network, `403`) is shown as a toast; the student can retry. `403`/`502` are real errors,
+   unlike the `404` of step 1.
+
+`telemetryAudit` in the response is a placeholder and is not rendered in v1.
+
 ### Notes / known divergence from the specification
 
 `AI_INTEGRATION_SPECIFICATION.md` is **ahead of the code** in three places. The code is the
@@ -1201,3 +1236,116 @@ contract; the spec needs an update before it is used as a reference:
   non-owner, `405`/`500` for method/infra errors). The same masking had turned an unrelated
   `feign.codec.DecodeException` (the Feign clients binding the `ApiResponse` envelope to the
   raw payload type) into a `401`; the clients now unwrap `ApiEnvelope<T>.data`.
+
+---
+
+## UC-19: Lecturer views / generates an AI explanation for a submission in their own assignment
+
+**Actor:** the lecturer who owns the assignment the submission belongs to.
+**Service:** `ai-assistant-service` (port 8086), gateway-routed at `/api/v1/ai/**`.
+Additionally `result-service` exposes one internal route this use case is the only consumer
+of (`GET /api/v1/internal/results/submission/{submissionId}`).
+**Since:** 2026-10-17. Extends UC-18 to a second audience.
+
+### Why a separate route and not a role on UC-18's path
+
+UC-18's endpoints answer to `hasRole('STUDENT')` and check `caller == result.studentId`. A
+lecturer is never the owner of a student's submission, so reusing that path would require
+either dropping the ownership check for lecturers or teaching one route two authorization
+rules. `result-service` already removed exactly that shape of bypass (`ResultController.java`
+carried a `hasRole("LECTURER")` skip that let any lecturer read any submission). The audience
+split keeps one rule per route:
+
+| Route | Role gate | Ownership check |
+|---|---|---|
+| `/api/v1/ai/submissions/{submissionId}/explain` (UC-18) | `hasRole('STUDENT')` | `caller == result.studentId` |
+| `/api/v1/ai/assignments/{assignmentId}/submissions/{submissionId}/explain` (this UC) | `hasRole('LECTURER')` | lecturer owns `assignmentId` |
+
+The lecturer route carries `assignmentId` in the path because that id — not the submission id
+— is what ownership is checked against.
+
+### Preconditions
+
+- The submission has grading results in `result-service`; otherwise step 3 of the request
+  answers `404`.
+- The gateway stamped `X-User-Id` (lecturer UUID) and `X-User-Roles: ROLE_LECTURER`. A
+  request without a stampable role fails closed at `@PreAuthorize` (`403`).
+- The lecturer owns the assignment: `course-service` `GET /api/v1/assignments/{assignmentId}`
+  is `@PreAuthorize("hasRole('LECTURER')")` and resolves through an owner-scoped lookup, so a
+  `404` from it **is** the negative authorization answer. The call is made with the lecturer's
+  own id — nothing is impersonated.
+- `GET /api/v1/internal/**` is **not** gateway-routed, is `permitAll` inside `result-service`,
+  and is not wrapped in the `ApiResponse` envelope (`FormatRestResponse.isExcluded`). It is
+  reachable only from inside the cluster, which is why the AI service must finish
+  authorizing before it calls it.
+
+### Step 1 — Read the cached explanation
+
+```
+GET /api/v1/ai/assignments/{assignmentId}/submissions/{submissionId}/explain
+X-User-Id: <lecturer uuid>
+X-User-Roles: ROLE_LECTURER
+X-Gateway-Secret: <gateway secret>
+```
+
+Authorization order (all in `AiExplanationService.authorizeLecturer`, which runs before any
+grading row is read):
+
+1. `GET /api/v1/assignments/{assignmentId}` on `course-service`, with the lecturer's own
+   `X-User-Id`. Not owned (`FeignException.NotFound`) → `404`, never `403`: an assignment
+   outside the caller's classes must stay indistinguishable from one that does not exist. A
+   different `FeignException` (timeout/outage) → `502`, since ownership cannot be established
+   and the failure is retryable. The returned `AssignmentResponse` is also the prompt's
+   assignment metadata, so authorization costs no extra call.
+2. `GET /api/v1/internal/results/submission/{submissionId}` on `result-service` — the rows
+   that reveal the submission's assignment and true owner. Empty → `404`.
+3. Guard the id pair: `results[0].assignmentId` must equal the requested `assignmentId`, else
+   `404`. Without it, a lecturer could pair their own assignment id with a submission id from
+   another class.
+4. Cached row lookup by `(submission_id, category='FULL_ANALYSIS')`. A row whose `studentId`
+   differs from the resolved owner → `404` (a row keyed by this submission but owned by
+   someone else is not this submission's row).
+
+| HTTP | Body | When |
+|---|---|---|
+| `200` | `AiExplanationResponse` (`fromCache=true`) | cached row exists for the submission |
+| `404` | (empty) | assignment not owned / no grading rows / id-pair mismatch / nothing cached yet |
+| `403` | `{"status":403,...}` | request carries no `ROLE_LECTURER` |
+| `502` | (empty) | `course-service` unreachable while checking ownership, or `result-service` unreachable while reading the grading rows (both audiences map this fault the same way) |
+
+### Step 2 — Generate the explanation
+
+```
+POST /api/v1/ai/assignments/{assignmentId}/submissions/{submissionId}/explain
+X-User-Id: <lecturer uuid>
+X-User-Roles: ROLE_LECTURER
+X-Gateway-Secret: <gateway secret>
+```
+
+Same authorization order as step 1, then the cached-row check, then the LLM. The write path
+reuses the student path's `generate(...)` (build prompt → call provider → parse → persist), so
+the two audiences cannot drift.
+
+The row is persisted under the **resolved student's** `studentId`, never the lecturer's, and
+the upsert is idempotent against the partial unique index. A lecturer who generates therefore
+warms the cache the student reads next (UC-18 step 1 becomes a hit).
+
+### Step 3 — Frontend flow (lecturer assignment results page)
+
+The same card is reused: `shared/ui/AiExplanationCard.tsx` (moved out of
+`features/student/results/` because two features now render it — feature folders may only
+share through `shared/`). It takes an optional `assignmentId`; set, it calls this UC's route,
+omitted, UC-18's.
+
+Mounted in `AssignmentResultsPage.tsx` inside the inner table's `expandedRowRender`, above
+the step evidence, from `result.submissionId` and `result.assignmentId` of the row being
+expanded. The row's own `assignmentId` is used, so the id the backend checks ownership
+against is the one the row belongs to.
+
+1. **On expand** the card reads the cache with `GET` (step 1). `404` is normalised to `null`
+   by `shared/api/endpoints/aiExplanation.ts`, so a not-yet-generated explanation renders the
+   generate CTA rather than `errors.notFound`.
+2. **On click of "Tạo giải thích AI"** the client calls `POST` (step 2). Generation is never
+   triggered by expanding a row: it costs an LLM round-trip.
+3. **On success** `setQueryData` seeds `['ai-explanation', submissionId]` — the same key the
+   student card uses, so both audiences share one cache entry for one submission.
