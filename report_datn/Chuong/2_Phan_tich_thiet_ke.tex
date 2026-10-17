@@ -3,7 +3,7 @@
 \section{Phân tích hệ thống}
 \subsection{Xác định các tác nhân trong hệ thống}
 
-Hệ thống chấm bài tự động có bốn tác nhân, trong đó User là tác nhân chung còn Quản trị viên, Giảng viên và Sinh viên là các vai trò cụ thể kế thừa từ User:
+Hệ thống chấm bài tự động có bốn tác nhân, trong đó User là tác nhân trừu tượng còn Quản trị viên, Giảng viên và Sinh viên là các vai trò cụ thể kế thừa từ User:
 \begin{itemize}
     \item Người dùng (User): tác nhân chung đại diện cho mọi tài khoản truy cập hệ thống; các tác nhân còn lại đều kế thừa User nên đều thực hiện được hai usecase chung là đăng nhập và đổi mật khẩu.
     \item Quản trị viên (Admin): quản trị tài khoản ở mức hệ thống; là tác nhân duy nhất được phép nhập danh sách tài khoản người dùng từ tệp CSV để cấp tài khoản ban đầu cho giảng viên và sinh viên.
