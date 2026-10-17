@@ -279,8 +279,12 @@ src/
 - Mount a card **once per owned row**, not once per child row: in
   `features/assignments/AssignmentResultsPage.tsx` the card hangs off the *student* row's
   `expandedRowRender`, above the nested per-plan table. Mounting it inside that nested table
-repeated one student's explanation for every result row that shared the submission (fixed
+  repeated one student's explanation for every result row that shared the submission (fixed
    2026-10-17). Guard it on an existing result row — the card needs a `submissionId`.
+   When a student row can hold rows from different attempts (a PLAN run demotes only its own
+   scope, and `getByAssignment` has no row ORDER BY), explain the most-recent grading: sort
+   `record.results` by `completedAt` desc and bind the card to that row — never to `results[0]`,
+   whose identity is not stable across responses.
 - Searchable student lists use the `ListPage` machinery: a
   `FilterConfig<{ search?: string }>[]` with one `text`+`submitOnEnter` entry (so the
   `FilterBar` renders and ENTER submits) + a `fetcher({ page, size, search })` that maps
