@@ -220,6 +220,19 @@ Verify by checking the compiled class has `RuntimeVisibleParameterAnnotations`.
   the parameter self-resolves -> `BeanCurrentlyInCreationException` at startup.
   Construct the delegate inline instead: `new Client.Default(null, null)` (exactly what
   the framework supplies here — no hc5/okhttp/loadbalancer Client customizations).
+- **`/error` must be in `PUBLIC_PATHS`.** Boot renders servlet errors (404 unmapped route,
+  405 wrong method, `ResponseStatusException`, 500) on a *fresh* dispatch to `/error` that
+  the security chain evaluates again with a cleared context. If `/error` is not permitted it
+  answers the entry-point `401` and every real status is masked — a non-owner `403`, a
+  `feign.codec.DecodeException` `500`, and even `405` all surfaced as `401`. Bug found and
+  fixed 2026-10-17 in `ai-assistant-service` (`SecurityConfig.PUBLIC_PATHS` + `"/error"`).
+- **A Feign client calling a sibling controller must bind that service's `ApiResponse<T>`
+  envelope, not the raw payload.** Controllers are wrapped by `FormatRestResponse`
+  (`{status,message,data,error}`); only `/internal/**` and `/webhook` paths are excluded and
+  stay raw. Binding `List<X>`/`X` directly throws `DecodeException: Cannot deserialize value
+  of type ... from Object value (token START_OBJECT)`. Bind an `ApiEnvelope<T>` and read
+  `.data()` — there is no unwrapping decoder. Reference:
+  `ai-assistant-service` `ResultServiceClient`/`CourseServiceClient` (Review: 2026-10-17).
 
 ## 11. Logging
 

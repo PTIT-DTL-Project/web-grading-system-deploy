@@ -26,24 +26,23 @@ Mô tả các usecase của hệ thống:
 \begin{itemize}
     \item Đăng nhập: Usecase này cho phép người dùng (quản trị viên, giảng viên và sinh viên) truy cập vào hệ thống bằng tài khoản đã có để thực hiện được các chức năng theo đúng quyền quy định của mình.
     \item Đổi mật khẩu: Usecase này cho phép người dùng đã đăng nhập thay đổi mật khẩu tài khoản của mình để tiếp tục sử dụng hệ thống một cách an toàn với thông tin đăng nhập mới.
-    \item Import users accounts (nhập danh sách tài khoản): Usecase này cho phép quản trị viên tạo hàng loạt tài khoản cho giảng viên và sinh viên từ tệp CSV để cấp tài khoản ban đầu mà không phải tạo thủ công từng tài khoản. Mỗi tài khoản mới nhận một mật khẩu tạm và bắt buộc đổi mật khẩu ở lần đăng nhập đầu tiên.
-    \item Classes management (quản lý lớp học): Usecase này cho phép giảng viên tạo và lưu trữ lớp học của mình, nhập danh sách sinh viên vào lớp, cấu hình các thành phần điểm và xem bảng điểm của lớp để quản lý toàn bộ hoạt động của một lớp học trong một học kỳ.
-    \item Assignment management (quản lý bài tập): Usecase này cho phép giảng viên tạo, sửa, công bố và xoá bài tập thực hành trong lớp của mình, kèm theo các bước chấm tự động để hệ thống chấm bài nộp của sinh viên theo đúng yêu cầu đề ra.
-    \item Review class assignment results (xem kết quả chấm của cả lớp): Usecase này cho phép giảng viên xem kết quả chấm bài tập của toàn bộ sinh viên trong lớp, bao gồm điểm tổng hợp của từng sinh viên, điểm từng bài nộp và chi tiết từng bước chấm, để theo dõi và đánh giá tình hình học tập của lớp.
-    \item Review assignment results (xem chi tiết kết quả chấm một bài tập): Usecase này là bước chung khi xem chi tiết kết quả chấm của một bài tập: giảng viên đi tới usecase này từ Review class assignment results, còn sinh viên đi tới từ Review own assignment results; phạm vi kết quả nhìn thấy phụ thuộc vào tác nhân gọi nó.
-    \item Submit assignments (nộp bài): Usecase này cho phép sinh viên nộp bài thực hành của mình dưới dạng tệp nén để hệ thống tải lên và chấm điểm tự động, đồng thời theo dõi trạng thái chấm và xem lại kết quả của các lần nộp.
-    \item View personal scores and results (xem điểm tổng kết cá nhân): Usecase này cho phép sinh viên xem điểm thành phần, điểm tổng kết, điểm chữ và điểm hệ 4 của mình trong mỗi lớp đã ghi danh để tự đánh giá kết quả học tập của bản thân.
-    \item Review own assignment results (xem kết quả chấm bài tập của bản thân): Usecase này cho phép sinh viên xem điểm và chi tiết từng bước chấm của các bài tập mình đã nộp, giúp hiểu rõ vì sao bài làm đạt hay chưa đạt yêu cầu của đề bài.
+    \item Nhập danh sách tài khoản: Usecase này cho phép quản trị viên tạo hàng loạt tài khoản cho giảng viên và sinh viên từ tệp CSV để cấp tài khoản ban đầu mà không phải tạo thủ công từng tài khoản. Mỗi tài khoản mới nhận một mật khẩu tạm và bắt buộc đổi mật khẩu ở lần đăng nhập đầu tiên.
+    \item Quản lý lớp học: Usecase này cho phép giảng viên tạo và lưu trữ lớp học của mình, nhập danh sách sinh viên vào lớp, cấu hình các thành phần điểm và xem bảng điểm của lớp để quản lý toàn bộ hoạt động của một lớp học trong một học kỳ.
+    \item Quản lý bài tập: Usecase này cho phép giảng viên tạo, sửa, công bố và xoá bài tập thực hành trong lớp của mình, kèm theo các bước chấm tự động để hệ thống chấm bài nộp của sinh viên theo đúng yêu cầu đề ra.
+    \item Xem kết quả chấm của cả lớp: Usecase này cho phép giảng viên xem kết quả chấm bài tập của toàn bộ sinh viên trong lớp, bao gồm điểm tổng hợp của từng sinh viên, điểm từng bài nộp và chi tiết từng bước chấm, để theo dõi và đánh giá tình hình học tập của lớp.
+    \item Xem chi tiết kết quả chấm một bài tập: Usecase này là bước chung khi xem chi tiết kết quả chấm của một bài tập: giảng viên đi tới usecase này từ Xem kết quả chấm của cả lớp, còn sinh viên đi tới từ Xem kết quả chấm bài tập của bản thân; phạm vi kết quả nhìn thấy phụ thuộc vào tác nhân gọi nó.
+    \item Nộp bài tập: Usecase này cho phép sinh viên nộp bài thực hành của mình dưới dạng tệp nén để hệ thống tải lên và chấm điểm tự động, đồng thời theo dõi trạng thái chấm và xem lại kết quả của các lần nộp.
+    \item Xem điểm và kết quả cá nhân: Usecase này cho phép sinh viên xem điểm thành phần, điểm tổng kết, điểm chữ và điểm hệ 4 của mình trong mỗi lớp đã ghi danh để tự đánh giá kết quả học tập của bản thân.
+    \item Xem kết quả chấm bài tập của bản thân: Usecase này cho phép sinh viên xem điểm và chi tiết từng bước chấm của các bài tập mình đã nộp, giúp hiểu rõ vì sao bài làm đạt hay chưa đạt yêu cầu của đề bài.
 \end{itemize}
 
-\subsection{Kịch bản chuẩn các chức năng}
+\subsection{Kịch bản các chức năng}
 
-Sau khi xác định các tác nhân và biểu đồ ca chức năng tổng quan, mục này đặc tả kịch bản chuẩn của từng chức năng trong hệ thống. Các chức năng được nhóm theo tác nhân sử dụng: nhóm chức năng chung cho mọi người dùng, nhóm chức năng của quản trị viên, nhóm chức năng của giảng viên và nhóm chức năng của sinh viên. Mỗi chức năng gồm biểu đồ ca chức năng chi tiết (nếu có), danh sách các ca chức năng con và bảng kịch bản chuẩn; bảng kịch bản mô tả tác nhân, điều kiện tiên quyết, luồng sự kiện chính, hậu điều kiện và các ngoại lệ có thể xảy ra khi thực hiện chức năng. Usecase Review assignment results là bước chung khi xem chi tiết một bài nộp, nên được mô tả ngay trong kịch bản Review class assignment results của giảng viên và Review own assignment results của sinh viên thay vì lập bảng riêng.
+Sau khi xác định các tác nhân và biểu đồ ca chức năng tổng quan, mục này đặc tả kịch bản của từng chức năng trong hệ thống. Các chức năng được nhóm theo tác nhân sử dụng: nhóm chức năng chung cho mọi người dùng, nhóm chức năng của quản trị viên, nhóm chức năng của giảng viên và nhóm chức năng của sinh viên. Mỗi chức năng gồm biểu đồ ca chức năng chi tiết (nếu có) và bảng kịch bản; bảng kịch bản mô tả tác nhân, tiền điều kiện, luồng sự kiện chính, hậu điều kiện và các ngoại lệ có thể xảy ra khi thực hiện chức năng. Usecase Xem chi tiết kết quả chấm một bài tập là bước chung khi xem chi tiết một bài nộp, nên được mô tả ngay trong kịch bản Xem kết quả chấm của cả lớp (giảng viên) và Xem kết quả chấm bài tập của bản thân (sinh viên) thay vì lập bảng riêng.
 
 \subsubsection{Kịch bản các chức năng chung}
 
-\paragraph{Chức năng Đăng nhập.}
-Bảng \ref{tab:uc-dang-nhap} mô tả kịch bản chuẩn của usecase Đăng nhập.
+Bảng \ref{tab:uc-dang-nhap} mô tả kịch bản của usecase Đăng nhập.
 
 \begin{table}[!ht]
 \centering
@@ -73,8 +72,7 @@ Kịch bản ngoại lệ &
 \label{tab:uc-dang-nhap}
 \end{table}
 
-\paragraph{Chức năng Đổi mật khẩu.}
-Bảng \ref{tab:uc-doi-mat-khau} mô tả kịch bản chuẩn của usecase Đổi mật khẩu.
+Bảng \ref{tab:uc-doi-mat-khau} mô tả kịch bản của usecase Đổi mật khẩu.
 
 \begin{table}[!ht]
 \centering
@@ -106,15 +104,14 @@ Kịch bản ngoại lệ &
 
 \subsubsection{Kịch bản các chức năng của quản trị viên}
 
-\paragraph{Chức năng Import users accounts.}
-Bảng \ref{tab:uc-import-users} mô tả kịch bản chuẩn của usecase Import users accounts.
+Bảng \ref{tab:uc-import-users} mô tả kịch bản của usecase Nhập danh sách tài khoản.
 
 \begin{table}[!ht]
 \centering
 \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
 \hline
 Tên mục & Nội dung mô tả \\ \hline
-Tên kịch bản & Import users accounts (nhập danh sách tài khoản) \\ \hline
+Tên kịch bản & Nhập danh sách tài khoản \\ \hline
 Tác nhân & Quản trị viên \\ \hline
 Tiền điều kiện & Quản trị viên đã đăng nhập bằng tài khoản có vai trò quản trị. \\ \hline
 Kịch bản chính &
@@ -132,40 +129,30 @@ Kịch bản ngoại lệ &
     \item Tên đăng nhập hoặc email đã tồn tại: dòng đó bị bỏ qua; nhập lại cùng tệp vẫn an toàn.
 \end{itemize} \\ \hline
 \end{tabularx}
-\caption{Kịch bản chức năng Import users accounts.}
+\caption{Kịch bản chức năng Nhập danh sách tài khoản.}
 \label{tab:uc-import-users}
 \end{table}
 
 \subsubsection{Kịch bản các chức năng của giảng viên}
 
-\paragraph{Chức năng Classes management.}
 
-Hình \ref{fig:uc-classes-management} mô tả chi tiết usecase Classes management của giảng viên.
+Hình \ref{fig:uc-classes-management} mô tả chi tiết usecase Quản lý lớp học của giảng viên.
 
 \begin{figure}[ht]
 \centering
 \includegraphics[width=\textwidth]{Hinhve/Hinh2_7_usecase_quan_ly_lop_hoc}
-\caption{Biểu đồ usecase chi tiết Classes management của giảng viên.}
+\caption{Biểu đồ usecase chi tiết Quản lý lớp học của giảng viên.}
 \label{fig:uc-classes-management}
 \end{figure}
 
-Usecase này được phân rã thành các usecase con sau:
-\begin{itemize}
-    \item Lecturer login (đăng nhập của giảng viên): usecase con được bao gồm (quan hệ include) trong Classes management, đảm bảo giảng viên đã đăng nhập đúng vai trò trước khi quản lý lớp học; Lecturer login kế thừa (quan hệ generalization) từ usecase Đăng nhập.
-    \item View class's students list (xem danh sách sinh viên của lớp): mở rộng (quan hệ extend) từ Classes management khi giảng viên cần xem danh sách sinh viên hiện có trong lớp.
-    \item Import students to class (nhập sinh viên vào lớp): mở rộng từ Classes management khi giảng viên thêm danh sách sinh viên vào lớp từ tệp CSV.
-    \item Config course score components (cấu hình thành phần điểm): mở rộng từ Classes management khi giảng viên khai báo các thành phần điểm và trọng số tương ứng của lớp.
-    \item View class transcript (xem bảng điểm của lớp): bao gồm (quan hệ include) Config course score components, cho phép giảng viên xem điểm tổng hợp của toàn bộ sinh viên theo đúng cấu trúc điểm đã cấu hình.
-\end{itemize}
-
-Kịch bản chuẩn của chức năng được trình bày trong Bảng \ref{tab:uc-classes-management}.
+Kịch bản của chức năng được trình bày trong Bảng \ref{tab:uc-classes-management}.
 
 \begin{table}[!ht]
 \centering
 \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
 \hline
 Tên mục & Nội dung mô tả \\ \hline
-Tên kịch bản & Classes management (quản lý lớp học) \\ \hline
+Tên kịch bản & Quản lý lớp học \\ \hline
 Tác nhân & Giảng viên \\ \hline
 Tiền điều kiện & Giảng viên đã đăng nhập bằng tài khoản có vai trò giảng viên. \\ \hline
 Kịch bản chính &
@@ -187,37 +174,28 @@ Kịch bản ngoại lệ &
     \item Một thành phần điểm chưa có điểm: điểm tổng kết, điểm chữ và điểm hệ 4 để trống trên bảng điểm.
 \end{itemize} \\ \hline
 \end{tabularx}
-\caption{Kịch bản chức năng Classes management.}
+\caption{Kịch bản chức năng Quản lý lớp học.}
 \label{tab:uc-classes-management}
 \end{table}
 
-\paragraph{Chức năng Assignment management.}
 
-Hình \ref{fig:uc-assignment-management} mô tả chi tiết usecase Assignment management của giảng viên.
+Hình \ref{fig:uc-assignment-management} mô tả chi tiết usecase Quản lý bài tập của giảng viên.
 
 \begin{figure}[ht]
 \centering
 \includegraphics[width=\textwidth]{Hinhve/Hinh2_8_usecase_quan_ly_bai_tap}
-\caption{Biểu đồ usecase chi tiết Assignment management của giảng viên.}
+\caption{Biểu đồ usecase chi tiết Quản lý bài tập của giảng viên.}
 \label{fig:uc-assignment-management}
 \end{figure}
 
-Usecase này được phân rã thành các usecase con sau:
-\begin{itemize}
-    \item Lecturer login (đăng nhập của giảng viên): usecase con được bao gồm (quan hệ include) trong Assignment management, đảm bảo giảng viên đã đăng nhập đúng vai trò trước khi quản lý bài tập.
-    \item View class (chọn lớp): bao gồm (quan hệ include), cho phép giảng viên chọn lớp cần quản lý bài tập.
-    \item author assignment exercises (soạn nội dung bài tập): mở rộng từ Assignment management khi giảng viên soạn đề bài và các bước chấm tự động cho bài tập.
-    \item View assignment grading results (xem kết quả chấm bài tập): mở rộng từ Assignment management khi giảng viên muốn xem kết quả chấm của bài tập.
-\end{itemize}
-
-Kịch bản chuẩn của chức năng được trình bày trong Bảng \ref{tab:uc-assignment-management}.
+Kịch bản của chức năng được trình bày trong Bảng \ref{tab:uc-assignment-management}.
 
 \begin{table}[!ht]
 \centering
 \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
 \hline
 Tên mục & Nội dung mô tả \\ \hline
-Tên kịch bản & Assignment management (quản lý bài tập) \\ \hline
+Tên kịch bản & Quản lý bài tập \\ \hline
 Tác nhân & Giảng viên \\ \hline
 Tiền điều kiện & Giảng viên đã đăng nhập; lớp được chọn thuộc giảng viên. \\ \hline
 Kịch bản chính &
@@ -238,37 +216,28 @@ Kịch bản ngoại lệ &
     \item Bài tập đã xoá: không còn xuất hiện với cả giảng viên và sinh viên.
 \end{itemize} \\ \hline
 \end{tabularx}
-\caption{Kịch bản chức năng Assignment management.}
+\caption{Kịch bản chức năng Quản lý bài tập.}
 \label{tab:uc-assignment-management}
 \end{table}
 
-\paragraph{Chức năng Review class assignment results.}
 
-Hình \ref{fig:uc-review-class-results} mô tả chi tiết usecase Review class assignment results của giảng viên.
+Hình \ref{fig:uc-review-class-results} mô tả chi tiết usecase Xem kết quả chấm của cả lớp dành cho giảng viên.
 
 \begin{figure}[ht]
 \centering
 \includegraphics[width=\textwidth]{Hinhve/Hinh2_9_usecase_xem_ket_qua_lop}
-\caption{Biểu đồ usecase chi tiết Review class assignment results của giảng viên.}
+\caption{Biểu đồ usecase chi tiết Xem kết quả chấm của cả lớp dành cho giảng viên.}
 \label{fig:uc-review-class-results}
 \end{figure}
 
-Usecase này được phân rã thành các usecase con sau:
-\begin{itemize}
-    \item Lecturer login (đăng nhập của giảng viên): usecase con được bao gồm (quan hệ include), đảm bảo giảng viên đã đăng nhập đúng vai trò trước khi xem kết quả chấm của lớp.
-    \item View classes (chọn lớp): bao gồm (quan hệ include), cho phép giảng viên chọn lớp cần xem kết quả chấm.
-    \item View assignments (chọn bài tập): bao gồm (quan hệ include), cho phép giảng viên chọn bài tập cần xem kết quả chấm.
-    \item Review detail assignment step results (xem chi tiết kết quả từng bước chấm): mở rộng từ Review class assignment results khi giảng viên cần xem chi tiết kết quả từng bước chấm của bài nộp.
-\end{itemize}
-
-Kịch bản chuẩn của chức năng được trình bày trong Bảng \ref{tab:uc-review-class-results}.
+Kịch bản của chức năng được trình bày trong Bảng \ref{tab:uc-review-class-results}.
 
 \begin{table}[!ht]
 \centering
 \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
 \hline
 Tên mục & Nội dung mô tả \\ \hline
-Tên kịch bản & Review class assignment results (xem kết quả chấm của cả lớp) \\ \hline
+Tên kịch bản & Xem kết quả chấm của cả lớp \\ \hline
 Tác nhân & Giảng viên \\ \hline
 Tiền điều kiện & Giảng viên sở hữu lớp; bài tập đã có ít nhất một bài nộp được chấm. \\ \hline
 Kịch bản chính &
@@ -287,39 +256,30 @@ Kịch bản ngoại lệ &
     \item Bài tập chưa có bài nộp nào: danh sách kết quả rỗng.
 \end{itemize} \\ \hline
 \end{tabularx}
-\caption{Kịch bản chức năng Review class assignment results.}
+\caption{Kịch bản chức năng Xem kết quả chấm của cả lớp.}
 \label{tab:uc-review-class-results}
 \end{table}
 
 \subsubsection{Kịch bản các chức năng của sinh viên}
 
-\paragraph{Chức năng Submit assignments.}
 
-Hình \ref{fig:uc-submit-assignment} mô tả chi tiết usecase Submit assignments của sinh viên.
+Hình \ref{fig:uc-submit-assignment} mô tả chi tiết usecase Nộp bài tập của sinh viên.
 
 \begin{figure}[ht]
 \centering
 \includegraphics[width=\textwidth]{Hinhve/Hinh2_10_usecase_nop_bai}
-\caption{Biểu đồ usecase chi tiết Submit assignments của sinh viên.}
+\caption{Biểu đồ usecase chi tiết Nộp bài tập của sinh viên.}
 \label{fig:uc-submit-assignment}
 \end{figure}
 
-Usecase này được phân rã thành các usecase con sau:
-\begin{itemize}
-    \item Student login (đăng nhập của sinh viên): usecase con được bao gồm (quan hệ include) trong Submit assignments, đảm bảo sinh viên đã đăng nhập đúng vai trò trước khi nộp bài; Student login kế thừa (quan hệ generalization) từ usecase Đăng nhập.
-    \item View class (chọn lớp): bao gồm (quan hệ include), cho phép sinh viên chọn lớp có bài tập cần nộp.
-    \item View assignments (chọn bài tập): bao gồm (quan hệ include), cho phép sinh viên chọn bài tập cần nộp.
-    \item View assignment grading results (xem kết quả chấm bài tập): mở rộng từ Submit assignments khi sinh viên muốn xem lại kết quả chấm của bài đã nộp.
-\end{itemize}
-
-Kịch bản chuẩn của chức năng được trình bày trong Bảng \ref{tab:uc-submit-assignments}.
+Kịch bản của chức năng được trình bày trong Bảng \ref{tab:uc-submit-assignments}.
 
 \begin{table}[!ht]
 \centering
 \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
 \hline
 Tên mục & Nội dung mô tả \\ \hline
-Tên kịch bản & Submit assignments (nộp bài) \\ \hline
+Tên kịch bản & Nộp bài tập \\ \hline
 Tác nhân & Sinh viên \\ \hline
 Tiền điều kiện & Sinh viên đã đăng nhập; đã được ghi danh vào lớp; bài tập đã được công bố. \\ \hline
 Kịch bản chính &
@@ -339,35 +299,28 @@ Kịch bản ngoại lệ &
     \item Quá trình chấm lỗi (ứng dụng không khởi động được, hết thời gian chạy hoặc bước chấm sai cấu hình): bài nộp chuyển trạng thái thất bại kèm nhật ký lỗi.
 \end{itemize} \\ \hline
 \end{tabularx}
-\caption{Kịch bản chức năng Submit assignments.}
+\caption{Kịch bản chức năng Nộp bài tập.}
 \label{tab:uc-submit-assignments}
 \end{table}
 
-\paragraph{Chức năng View personal scores and results.}
 
-Hình \ref{fig:uc-view-scores} mô tả chi tiết usecase View personal scores and results của sinh viên.
+Hình \ref{fig:uc-view-scores} mô tả chi tiết usecase Xem điểm và kết quả cá nhân của sinh viên.
 
 \begin{figure}[ht]
 \centering
 \includegraphics[width=\textwidth]{Hinhve/Hinh2_11_usecase_xem_diem_ca_nhan}
-\caption{Biểu đồ usecase chi tiết View personal scores and results của sinh viên.}
+\caption{Biểu đồ usecase chi tiết Xem điểm và kết quả cá nhân của sinh viên.}
 \label{fig:uc-view-scores}
 \end{figure}
 
-Usecase này được phân rã thành các usecase con sau:
-\begin{itemize}
-    \item Student login (đăng nhập của sinh viên): usecase con được bao gồm (quan hệ include), đảm bảo sinh viên đã đăng nhập đúng vai trò trước khi xem điểm cá nhân.
-    \item View classes (chọn lớp): bao gồm (quan hệ include), cho phép sinh viên chọn lớp cần xem điểm.
-\end{itemize}
-
-Kịch bản chuẩn của chức năng được trình bày trong Bảng \ref{tab:uc-view-scores}.
+Kịch bản của chức năng được trình bày trong Bảng \ref{tab:uc-view-scores}.
 
 \begin{table}[!ht]
 \centering
 \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
 \hline
 Tên mục & Nội dung mô tả \\ \hline
-Tên kịch bản & View personal scores and results (xem điểm tổng kết cá nhân) \\ \hline
+Tên kịch bản & Xem điểm và kết quả cá nhân \\ \hline
 Tác nhân & Sinh viên \\ \hline
 Tiền điều kiện & Sinh viên đã đăng nhập và được ghi danh trong lớp. \\ \hline
 Kịch bản chính &
@@ -384,37 +337,28 @@ Kịch bản ngoại lệ &
     \item Một thành phần điểm bị điểm 0: điểm chữ xếp F bất kể điểm tổng kết.
 \end{itemize} \\ \hline
 \end{tabularx}
-\caption{Kịch bản chức năng View personal scores and results.}
+\caption{Kịch bản chức năng Xem điểm và kết quả cá nhân.}
 \label{tab:uc-view-scores}
 \end{table}
 
-\paragraph{Chức năng Review own assignment results.}
 
-Hình \ref{fig:uc-review-own-results} mô tả chi tiết usecase Review own assignment results của sinh viên.
+Hình \ref{fig:uc-review-own-results} mô tả chi tiết usecase Xem kết quả chấm bài tập của bản thân dành cho sinh viên.
 
 \begin{figure}[ht]
 \centering
 \includegraphics[width=\textwidth]{Hinhve/Hinh2_12_usecase_xem_ket_qua_bai_nop}
-\caption{Biểu đồ usecase chi tiết Review own assignment results của sinh viên.}
+\caption{Biểu đồ usecase chi tiết Xem kết quả chấm bài tập của bản thân dành cho sinh viên.}
 \label{fig:uc-review-own-results}
 \end{figure}
 
-Usecase này được phân rã thành các usecase con sau:
-\begin{itemize}
-    \item Student login (đăng nhập của sinh viên): usecase con được bao gồm (quan hệ include), đảm bảo sinh viên đã đăng nhập đúng vai trò trước khi xem kết quả bài nộp.
-    \item View classes (chọn lớp): bao gồm (quan hệ include), cho phép sinh viên chọn lớp cần xem.
-    \item View assignments (chọn bài tập đã nộp): bao gồm (quan hệ include), cho phép sinh viên chọn bài tập đã nộp cần xem kết quả.
-    \item View detail assignment steps result (xem chi tiết kết quả từng bước chấm): mở rộng từ Review own assignment results khi sinh viên cần xem chi tiết kết quả từng bước chấm của bài nộp.
-\end{itemize}
-
-Kịch bản chuẩn của chức năng được trình bày trong Bảng \ref{tab:uc-review-own-results}.
+Kịch bản của chức năng được trình bày trong Bảng \ref{tab:uc-review-own-results}.
 
 \begin{table}[!ht]
 \centering
 \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
 \hline
 Tên mục & Nội dung mô tả \\ \hline
-Tên kịch bản & Review own assignment results (xem kết quả chấm bài tập của bản thân) \\ \hline
+Tên kịch bản & Xem kết quả chấm bài tập của bản thân \\ \hline
 Tác nhân & Sinh viên \\ \hline
 Tiền điều kiện & Sinh viên đã đăng nhập; bài nộp thuộc sinh viên và đã được chấm. \\ \hline
 Kịch bản chính &
@@ -430,7 +374,7 @@ Kịch bản ngoại lệ &
     \item Bài nộp chưa chấm xong: hệ thống hiển thị trạng thái đang chấm; sinh viên xem lại sau.
 \end{itemize} \\ \hline
 \end{tabularx}
-\caption{Kịch bản chức năng Review own assignment results.}
+\caption{Kịch bản chức năng Xem kết quả chấm bài tập của bản thân.}
 \label{tab:uc-review-own-results}
 \end{table}
 

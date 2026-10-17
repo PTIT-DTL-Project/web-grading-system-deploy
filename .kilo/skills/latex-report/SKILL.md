@@ -1,6 +1,6 @@
 ---
 name: latex-report
-description: LaTeX thesis report formatting conventions for report_datn/ - no bold in body text, enumerate/itemize for all listings, underscore escaping in text, glossary longtable column widths, figure naming, table captions below tables, business-level usecase scenarios in chapter 2. Use when writing or reviewing any .tex chapter, glossary entries, or report figures.
+description: LaTeX thesis report formatting conventions for report_datn/ - no bold in body text, enumerate/itemize for all listings, underscore escaping in text, glossary longtable column widths, figure naming, table captions below tables, Vietnamese use-case names and business-level scenarios in chapter 2. Use when writing or reviewing any .tex chapter, glossary entries, or report figures.
 ---
 
 # LaTeX report conventions (`report_datn/`)
@@ -79,16 +79,30 @@ flowcharts; keep node font sizes so text stays legible at text width.
 Chapter 2 section 2.1 holds the use-case analysis: 2.1.1 lists the four
 actors (User parent, Admin/Lecturer/Student inheriting from it) as an
 `itemize`; 2.1.2 shows the overview diagram plus the full use-case list
-(one sentence per use case: `Tên usecase (nghĩa tiếng Việt): Usecase
-này cho phép <tác nhân> ...`). 2.1.3 `Kịch bản chuẩn các chức năng`
-carries the detail material, grouped by actor in `\subsubsection`s:
-(a) chung (Đăng nhập, Đổi mật khẩu), (b) quản trị viên (Import users
-accounts), (c) giảng viên, (d) sinh viên. Inside a group each function
-opens with `\paragraph{Chức năng <Tên>.}` (bold run-in heading — never
-`\textbf`), then its detail figure and sub-use-case `itemize` where a
-diagram exists, then the scenario table. `Review assignment results`
-gets no table of its own: it is a shared step already covered by the
-lecturer and student scenario tables.
+(one sentence per use case, Vietnamese name only: `Tên usecase: Usecase
+này cho phép <tác nhân> ...`). 2.1.3 `Kịch bản các chức năng` carries
+the detail material, grouped by actor in `\subsubsection`s: (a) chung
+(Đăng nhập, Đổi mật khẩu), (b) quản trị viên (Nhập danh sách tài
+khoản), (c) giảng viên (Quản lý lớp học, Quản lý bài tập, Xem kết quả
+chấm của cả lớp), (d) sinh viên (Nộp bài tập, Xem điểm và kết quả cá
+nhân, Xem kết quả chấm bài tập của bản thân). Inside a group each
+function starts directly with its lead sentence (`Bảng … mô tả kịch
+bản …` / `Hình … mô tả chi tiết …`), then its detail figure where a
+diagram exists, then the scenario table. Never mark a function with a
+`\paragraph{Chức năng <Tên>.}` run-in heading (removed on request).
+Never list sub-usecases as text bullets: the decomposition lives only
+in the detail diagram. `Xem chi tiết kết quả chấm một bài tập` gets no
+table of its own: it is a shared step already covered by the lecturer
+and student scenario tables.
+
+Use-case names are Vietnamese in every text element — prose,
+`\paragraph`, `Tên kịch bản` row, figure and table captions; the
+exported diagram images keep the English names drawn inside them. When
+a name itself contains `của` (`Xem kết quả chấm của cả lớp`), qualify
+the actor with `dành cho <tác nhân>` in the lead sentence and caption —
+a second `của` reads badly. Say `kịch bản`, never `kịch bản chuẩn`:
+every table carries an exception-flow row, so it is not the happy path
+only.
 
 Scenario tables (Bảng 2.x, `\label{tab:uc-<slug>}`): `table` float
 placed `[!ht]`, `\begin{tabularx}{\textwidth}{|p{3.2cm}|X|}` full grid;
@@ -129,9 +143,10 @@ architecture figure keeps `fig:architecture` (never reuse a label).
 Visual Paradigm exports stay in `visual-paradigm/figures/usecase/*.jpg`
 and are duplicated into `report_datn/Hinhve/` as PNG via
 `magick <src>.jpg <dst>.png` (verify the PNG keeps the source
-dimensions). Never type `<<include>>` or `<<extend>>` into the `.tex`:
-OT1 renders `<<` as "¡¡" — write "bao gồm (quan hệ include)",
-"mở rộng (quan hệ extend)", "kế thừa (quan hệ generalization)".
+dimensions). Never type `<<include>>`/`<<extend>>` in the `.tex`: OT1
+renders `<<` as "¡¡" (in text write `bao gồm (quan hệ include)`).
+Chapter 2 keeps include/extend/generalization out of prose — the
+relations live inside the exported diagram images.
 Subsubsection note: `BTL.tex` redefines `\thesubsubsection` to `\alph`
 (the heading label is bare), so the actor groups print as `a,`/`b,` with
 no parent number — that matches the thesis sample, keep it. Text tone

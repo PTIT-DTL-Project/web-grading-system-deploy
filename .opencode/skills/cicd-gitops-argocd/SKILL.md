@@ -127,3 +127,22 @@ Render a chart locally before pushing (charts in `config-services/` ship **no** 
 ```bash
 helm template <name> config-services/<name> -f config-services/<name>/values-stg.yaml
 ```
+
+## 5. setup-namespace.sh secret rules
+
+`deploy/setup-namespace.sh` runs on every `setup*.sh` (setup.sh step 2), so each
+secret write MUST be idempotent: a changed Secret does NOT restart pods (all
+services read `gateway-trust` via `secretKeyRef`), so a rotated value leaves the
+running pods stale and forces `clean.sh` + a full redeploy to realign.
+
+- Config secrets (db-secret, rustfs-secret, ai-credentials, app-config, …):
+  `--from-literal=VALUE="${VAR:-default}"` — stable across re-runs; the same
+  blank `.env` var always falls back to the same default.
+- `gateway-trust`: NEVER auto-rotate on re-run. Read the value already in the
+  cluster and generate (`openssl rand -hex 32`) only when it is absent.
+  Precedence: explicit non-empty `.env` value (deliberate rotation) → existing
+  cluster value → fresh random. The `kubectl get … -o jsonpath=… | base64 -d`
+  probe is `|| true`-guarded (the secret is absent on a fresh cluster; `set -e`
+  + `pipefail` would otherwise abort the script).
+- Fail-loud secrets (`keycloak-admin-client`): values come from Keycloak, not
+  from us, so a missing pair exits 1 instead of pushing blank credentials.

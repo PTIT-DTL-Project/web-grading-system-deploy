@@ -1091,7 +1091,8 @@ account holder), so no out-of-band secret exchange is needed.
   answers `404`.
 - `X-User-Id` must equal `result.studentId` — the Keycloak user UUID, the same value
   exposed as `studentUserId` in the lecturer results payload. The code throws `403` on a
-  mismatch, but live requests answer `401` (see Notes / known divergence).
+  mismatch, and that `403` now reaches the client (`/error` was added to
+  `SecurityConfig.PUBLIC_PATHS`, 2026-10-17 — before that every error was masked as `401`).
 - Gateway trust is on: without `X-Gateway-Secret` (or with a wrong one) every request is
   `401` before the controller runs; a non-UUID `X-User-Id` is also `401` (the identity
   filter fails closed). Local direct calls therefore need both headers.
@@ -1115,7 +1116,7 @@ Cache-only lookup by `(submission_id, category='FULL_ANALYSIS')`. Never calls th
 |---|---|---|
 | `200` | `AiExplanationResponse` | cached row exists and belongs to the caller |
 | `404` | (empty) | nothing cached yet — call step 2 to generate |
-| `403` intended, `401` observed | `{"statusCode":401,...}` (observed) | cached row exists but belongs to a different student — see Notes |
+| `403` | `{"timestamp":...,"status":403,"error":"Forbidden",...}` | cached row exists but belongs to a different student |
 | `401` | `{"statusCode":401,...}` | missing/invalid `X-Gateway-Secret` or non-UUID `X-User-Id` |
 
 ### Step 2 — Generate the explanation
@@ -1135,13 +1136,14 @@ Order of operations (all in `AiExplanationService.explainSubmission`):
    concurrent `POST` that races past the check loses the insert and instead re-reads and
    returns the winner's row (`fromCache=true`), never a `500`.
 2. Fetch results from `result-service` (`GET /api/v1/results/{submissionId}`, forwarding
-   `X-User-Id` + `X-Gateway-Secret`). Empty list → `404`. This Feign call is **not** wrapped,
-   so an unreachable `result-service` surfaces as `500`, not a graceful fallback.
-3. Ownership: `results[0].studentId` must equal the caller's `X-User-Id`, else `403` is
-   thrown — but the live response is `401` (see Notes / known divergence).
+   `X-User-Id` + `X-Gateway-Secret`). That endpoint is enveloped, so the Feign client binds
+   `ApiEnvelope<List<ResultDto>>` and the service reads `.getData()`. Empty list → `404`.
+   This Feign call is **not** wrapped, so an unreachable `result-service` surfaces as `500`,
+   not a graceful fallback.
+3. Ownership: `results[0].studentId` must equal the caller's `X-User-Id`, else `403`.
 4. Best-effort assignment metadata from `course-service`
-   (`GET /api/v1/student/assignments/{assignmentId}`). Failure here is **tolerated** — the
-   prompt is built without it rather than failing the request.
+   (`GET /api/v1/student/assignments/{assignmentId}`, also enveloped and unwrapped). Failure
+   here is **tolerated** — the prompt is built without it rather than failing the request.
 5. Build the prompt, call the provider (`POST {AI_BASE_URL}/chat/completions`, bearer
    `AI_API_KEY`). Provider error or non-200 → fallback template; unparsable model output →
    the default summary with empty `stepAnalyses` (still `200`, never raw model text).
@@ -1192,12 +1194,10 @@ contract; the spec needs an update before it is used as a reference:
   the student endpoint `GET /api/v1/student/assignments/{assignmentId}` with `X-User-Id`.
 - Spec's `result-service` sequence block says "Port 8083"; the real port is `8084`
   (8083 is executor-service).
-- Ownership mismatch answers **`401`**, not the `403` the code throws. Live 2026-10-15,
-  three probes with non-owner UUIDs (valid UUIDs, valid `X-Gateway-Secret`) all returned the
-  security entry-point body `{"statusCode":401,"message":"Unauthorized: Missing or invalid
-  identity header","data":null}`, while the owner UUID returned `200`. Cause not confirmed;
-  the leading candidate is Boot's error dispatch to `/error`, which is absent from
-  `SecurityConfig.PUBLIC_PATHS`, so the security chain answers before the `403` renders.
-  Follow-up: add `/error` to `PUBLIC_PATHS` (or map the exception) and re-probe. Consequence
-  today: the FE reads `401` on someone else's submission as an expired session, so it would
-  refresh or log out instead of reporting "not your submission".
+- **Resolved 2026-10-17:** the earlier ownership-probe anomaly (`401` instead of `403`)
+  came from Boot's error dispatch to `/error`, which was absent from
+  `SecurityConfig.PUBLIC_PATHS`, so the security chain re-secured the error render and
+  answered `401`. `/error` is now permitted; probes return the real status (`403` for a
+  non-owner, `405`/`500` for method/infra errors). The same masking had turned an unrelated
+  `feign.codec.DecodeException` (the Feign clients binding the `ApiResponse` envelope to the
+  raw payload type) into a `401`; the clients now unwrap `ApiEnvelope<T>.data`.

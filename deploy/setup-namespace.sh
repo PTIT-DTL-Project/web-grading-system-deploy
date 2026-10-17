@@ -39,11 +39,23 @@ kubectl create secret generic app-config \
   --dry-run=client -o yaml | kubectl apply -f -
 
 # Gateway ↔ services trust secret (stamped as X-Gateway-Secret by api-gateway, checked by
-# course/result/submission). A blank value is fail-closed in the services (401 on every
-# authenticated request), so fall back to the existing value, then to a fresh random one,
-# rather than silently pushing an empty secret on every re-run.
-if [ -z "${GATEWAY_TRUSTED_SECRET}" ]; then
+# course/result/submission). Every service reads it via secretKeyRef, and updating a Secret
+# does NOT restart the pods — so minting a new value here would leave the running pods on the
+# old one and only realign after clean.sh + a full redeploy. Reuse the value already in the
+# cluster; generate a fresh one only when it does not exist yet. An explicit non-empty .env
+# value still wins, so the secret can be rotated on purpose.
+# A blank value is fail-closed in the services (401 on every authenticated request), which is
+# why the cluster value is preferred over the empty placeholder in .env.
+EXISTING_GATEWAY_SECRET="$(kubectl get secret gateway-trust --namespace "${NAMESPACE}" \
+  -o jsonpath='{.data.GATEWAY_TRUSTED_SECRET}' 2>/dev/null | base64 -d 2>/dev/null || true)"
+if [ -n "${GATEWAY_TRUSTED_SECRET:-}" ]; then
+  : # explicit .env value — deliberate rotation
+elif [ -n "${EXISTING_GATEWAY_SECRET}" ]; then
+  GATEWAY_TRUSTED_SECRET="${EXISTING_GATEWAY_SECRET}"
+  echo "  gateway-trust: reusing existing cluster secret"
+else
   GATEWAY_TRUSTED_SECRET="$(openssl rand -hex 32)"
+  echo "  gateway-trust: no cluster secret — generated a new one"
 fi
 kubectl create secret generic gateway-trust \
   --namespace "${NAMESPACE}" \
