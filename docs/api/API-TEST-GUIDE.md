@@ -385,8 +385,10 @@ poll from UC-04 Step 4.
 → `200` `data` = `[{ id, submissionId, assignmentId, studentId, planId, planWeight,
 score, maxScore, status, summaryLog, latest, startedAt, completedAt, steps: [{ stepOrder,
 stepName, stepType, passed, weight, score, actualValue, expectedValue, errorMessage,
-durationMs }] }]`. `[]` while the submission is queued or grading — poll. Rows of another
-student → `403`; there is no role bypass, so a lecturer uses §1.6.
+durationMs }] }]`. `[]` while the submission is queued or grading — poll.
+- Student reading another student's result → `403`;
+- Lecturer reading any submission (deep-link from §1.6) → `200` via exact
+  `ROLE_LECTURER` authority check (Review: 2026-10-21); see §1.6 + FULL_FLOW_TESTING_GUIDE §5.5.
 
 **POST `/api/v1/internal/results/weighted`** (raw, Feign-targeted by course-service)
 
