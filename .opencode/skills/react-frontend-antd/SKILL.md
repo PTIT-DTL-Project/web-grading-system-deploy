@@ -399,7 +399,29 @@ interface ClassesFilters extends ListFilters {
 
 Use `useList` for any endpoint that returns `Page<T>` with filters. Keep a per-page
 hook only when the data shape is not paged (e.g. `useTranscript` which does client-side
-pagination on an array).
+pagination on an array) — or when the `ListPage` shell does not fit (e.g. row-expanding
+columns: `ListPage` renders its own `<Table>` with no `expandable` prop, so compose
+`useList` + `FilterBar` + `standardPagination` + `ErrorState` directly, as
+`AssignmentResultsPage` does for its per-student `expandedRowRender`).
+
+### 11.5a Dynamic select options (dropdown whose choices come from a fetch)
+
+A `type: 'select'` filter whose options are data-driven (e.g. a student-code dropdown on
+the lecturer grading view) cannot be a static `FilterConfig.options` array. Two rules:
+
+- `FilterBar` only accepts a **static** `options` array. Do not try to make options
+  dynamic through `FilterBar` — it has no data-fetch step and would render stale/empty
+  for a filter that depends on a server result set.
+- Fetch the **canonical option set** in a sibling `useQuery`/`useList` over the **unfiltered**
+  endpoint (`useAssignmentStudents(assignmentId, mode)`), keyed separately
+  (`['assignment-students', id, mode]`). Pass the resulting `{label,value}[]` into the
+  `FilterConfig` props. Because the option query is unfiltered, it never narrows itself
+  after a user picks a value — the dropdown always stays navigable back to any student.
+  The visible table's `fetcher` then applies `?studentCode=` server-side.
+
+This is the only sanctioned dynamic-options pattern; don't thread options out of the
+paginated table query.
+
 
 ### 11.6 Migrating an existing page
 
