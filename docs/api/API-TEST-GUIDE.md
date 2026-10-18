@@ -60,13 +60,16 @@ Instead of running the services locally you can use the dev ingresses as the bas
 
 **Role (since 2026-09-30):** endpoints that write grading data — classes & students, score
 components, scores, transcripts, assignments, plans & steps, docker images — plus the
-lecturer grading view `GET /api/v1/assignments/{assignmentId}/results` and
-`GET /api/v1/assignments/{assignmentId}/submissions` additionally require
-`X-User-Roles: LECTURER` (`403` without it; through the gateway it comes from the token's
-allowlisted `realm_access.roles`). Ownership, not role, rules `GET /api/v1/submissions/{id}`
-(`404`) and `GET /api/v1/results/{submissionId}` (`403`) — neither service reads roles, so a
-lecturer gets the same answer as any other caller on those two routes and uses the §1.6
-endpoints instead.
+lecturer grading views `GET /api/v1/assignments/{assignmentId}/results`,
+`GET /api/v1/assignments/{assignmentId}/submissions`, and the single-submission deep-link
+`GET /api/v1/results/{submissionId}` additionally require `X-User-Roles: LECTURER`
+(`403` without it; through the gateway it comes from the token's allowlisted
+`realm_access.roles`, exact-matched against `ROLE_LECTURER` via SecurityContext — NOT
+a substring match, so a future `LECTURER_ASSISTANT` role will not inherit access).
+Ownership still rules `GET /api/v1/submissions/{id}` (`404`) for all callers.
+The deep-link read on `/api/v1/results/{id}` was re-enabled in a focused fix
+(Review: 2026-10-21): any lecturer may read any submission's results here for
+grading; batch reads remain owner-scoped on the class-service endpoints (§1.6).
 
 ---
 

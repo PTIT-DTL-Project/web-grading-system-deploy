@@ -423,8 +423,18 @@ e.g. result-service's weighted `exerciseScore` over plan results), paging goes i
   for cases where the raw row list *is* sliceable at the DB layer (`findBy...OrderBy...`),
   but the course-service wrapper still owns the response envelope.
 
-Rule: if the `/internal/` endpoint is raw (no envelope), do **not** change its return type
-to `Page<T>` just for paging — page in the envelope-producing service instead.
+   Rule: if the `/internal/` endpoint is raw (no envelope), do **not** change its return type
+   to `Page<T>` just for paging — page in the envelope-producing service instead.
+
+### 11.5c Deep-link card reuse (lecturer submission detail view)
+
+When a lecturer single-submission deep-link (`?submission=<id>`) needs the same detail
+rendering as the student view, extract a parameterised card component (`SubmissionDetailCard`)
+that accepts `planName` (resolver fn) and `title` (node) props so it does **not** re-fetch
+via student-scoped endpoints (`getAssignmentPlans` / `AssignmentTitle` hit enrollment-gated
+routes that 404 for lecturers). The parent supplies already-resolved values (from
+`useTestPlans` / `getAssignment` via the lecturer endpoint) via props; the card only falls
+back to student endpoints when props are absent (standalone student usage).
 
 ### 11.5a Dynamic select options (dropdown whose choices come from a fetch)
 
