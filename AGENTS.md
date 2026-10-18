@@ -3,6 +3,20 @@
 Web grading system: Java microservices under `src-services/`, k3s deploy config under `deploy/`,
 Helm charts repo checked out at `config-services/`.
 
+## Git Rules (strict)
+
+- **No direct pushes to `main` on any repository.** Always branch (`fix/...` or
+  `feat/...`) → PR → review → merge. The only exception is commits from this
+  repo's CI that deploy after PR approval; those still originate from a
+  branch-level trigger, never an interactive `git push origin main`.
+- Before running `git push`, verify the target is not `main` unless the repo is
+  explicitly exempted in its README (`web-grading-system-fe` is NOT exempt;
+  its branch protection is enforced via GitHub settings).
+- Use `gh pr create --fill` or `git push -u origin <branch>` then open the PR
+  manually. Let CI surface review threads.
+- This rule supersedes any convenience override. A "one-line change" is still a
+  PR.
+
 ## Convention maintenance (mandatory)
 
 When the user gives requirements, standards, or corrections, and the work succeeds:
