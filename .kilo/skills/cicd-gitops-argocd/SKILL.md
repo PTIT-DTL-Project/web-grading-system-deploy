@@ -146,3 +146,28 @@ running pods stale and forces `clean.sh` + a full redeploy to realign.
   + `pipefail` would otherwise abort the script).
 - Fail-loud secrets (`keycloak-admin-client`): values come from Keycloak, not
   from us, so a missing pair exits 1 instead of pushing blank credentials.
+
+## 6. Probes target health groups, never `/actuator/health`
+
+Every chart ships the same generated probe block. Point readiness at
+`/actuator/health/readiness`, liveness at `/actuator/health/liveness`, and give
+each JVM pod a `startupProbe` on the liveness path.
+
+WHY: the root `/actuator/health` endpoint also runs the `db` indicator. These
+services use a Neon serverless Postgres that suspends when idle, so the first
+health check after suspension blocks ~14s waking the compute. k8s
+`timeoutSeconds` defaults to 1s, so the probe times out, fails
+`failureThreshold` (default 3) times in a row, and kubelet restarts the pod:
+graceful SIGTERM, NOT OOMKill. Observed 2026-10-17 on ai-assistant-service:
+liveness fired at +60s (JVM needs ~80s), +90s and +120s (db indicator hung),
+kill at +130s. ai-assistant flapped first only because it is the idle service;
+the others hold a hot DB connection. Pod memory is NOT the cause: don't raise
+`resources.limits.memory` for this symptom.
+
+The `livenessState`/`readinessState` groups are enabled automatically in k8s
+(`GET /actuator/health` returns `{"groups":["liveness","readiness"]}`) and
+answer in ms without touching the DB, so no `application.yaml` change is
+needed (adding `management.endpoint.health.probes.enabled: true` only makes it
+explicit). The `startupProbe` (periodSeconds 10, `failureThreshold: 30` ≈ 5 min)
+gives the cold JVM its own budget, so the old guessed `initialDelaySeconds:
+30/60` are unnecessary.

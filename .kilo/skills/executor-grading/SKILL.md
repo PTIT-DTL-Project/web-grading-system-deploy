@@ -285,3 +285,39 @@ Rules learned while doing the split:
   `application.yaml` keys the root logger as `vn.edu.ptit.web_grading_system` (level only —
   safe). Import statements *inside* `config/` still need rewriting when they point at moved
   classes.
+
+## 12. Mock submissions for manual end-to-end grading
+
+`mock/` holds tiny student apps (`<name>/` source + `<name>.zip` to upload) used to
+force a known score. Reuse one as the base and change only the controller — the whole
+infra (Dockerfile, compose, application.yaml) is already proven to boot and grade.
+
+Contract a mock must satisfy:
+
+- ZIP entries sit at the **root** (no wrapping folder) and `docker-compose.yml` is one of
+  them; `STUDENT_DOCKER_COMPOSE` reads it from there. Exclude `target/`, `.mvn/`, `mvnw`
+  — the Dockerfile builds with `mvn` from the builder image, so they are dead weight.
+- The graded service = first service in YAML order with `ports` whose name is not
+  db/database/postgres/mysql/mongo/redis/kafka/zipkin. Its published port is **replaced**
+  by `{allocated}:{containerPort}` where `containerPort = assignments.docker_compose_port`
+  (else 8080), so the app must listen on that port AND serve `GET /` with status < 500:
+  that is the Testcontainers boot wait, and it runs before any step.
+- A wrong-but-valid HTTP response is the way to make a step FAIL. A 4xx/5xx never raises —
+  it just fails the status assertion — whereas a crash/app-down is an infra failure: score
+  0 but no step rows, so the AI explanation has nothing to analyse.
+- `contains` is a raw substring test on the response body. To fail it the value must
+  genuinely be absent; wrapping it in an envelope or renaming the field still passes.
+- Score is `10 × passedWeight/ranWeight`; `SKIPPED` leaves both sides. A failed `required`
+  step stops only the REST OF ITS OWN PLAN, so sibling plans still run and still score.
+
+Existing profiles: `book-app` 10/10 · `book-app-fail-full` 0/10 (POST answers 200 not 201,
+GET always 404) · `book-app-fail-half` 5/10 (POST 201 correct, GET 200 but `title` absent
+from the body → the `contains` assertion fails while the status assertion passes).
+
+Verify before zipping (cheap, no cluster): `docker compose up -d --build` in the mock dir,
+assert the step matrix with curl, then `down -v`. The compose publishes fixed 8080/5432, so
+free those ports first. To grade for real: `POST /api/v1/submissions/presigned-url` (the
+gateway injects `X-User-Id` from the JWT — a client-sent one is stripped, so a real student
+token is required) then PUT the zip to the presigned RustFS URL; the ObjectCreated webhook
+is the only grading trigger. The FE already ships that upload UI
+(`SubmitAssignmentModal.tsx`).
