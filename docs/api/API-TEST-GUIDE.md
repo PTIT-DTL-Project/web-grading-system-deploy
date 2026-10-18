@@ -285,36 +285,41 @@ Both routes need `X-User-Roles: LECTURER`, and the assignment must belong to a c
 `X-User-Id` owns — otherwise `404`, same as a missing id. The owner check runs before
 course-service calls result-service / submission-service.
 
-**GET `/api/v1/assignments/{{assignmentId}}/results?studentCode=&includeSteps=`**
+**GET `/api/v1/assignments/{{assignmentId}}/results?studentCode=&includeSteps=&page=&size=`**
 
 `studentCode` omitted ⇒ whole class (incl. non-submitters, synthesised as `exerciseScore=0`
 with an empty `results` list — temporary 0, not a graded zero); given ⇒ that roster code only
 (unknown code → `[]`). `includeSteps=true` adds each plan's `steps[]`.
+`page`/`size` (both optional): server-side paging applied **in course-service** over the
+synthesised list; omitted ⇒ full class in one `PageImpl` (backward compatible).
 
-→ `200` `data` = `[{ studentUserId, studentCode, studentName, exerciseScore,
+→ `200` `data` = `{ meta, result: [{ studentUserId, studentCode, studentName, exerciseScore,
 results: [{ submissionId, planId, planWeight, score, maxScore, status, summaryLog,
-latest, startedAt, completedAt, steps }] }]` — `exerciseScore` comes from result-service's
+latest, startedAt, completedAt, steps }] }] }` — `exerciseScore` comes from result-service's
 weighted formula, so it matches `GET /api/v1/classes/{id}/transcript`; `results` holds the
 graded attempts (the best attempt per plan), not the latest ones.
 
-**GET `/api/v1/assignments/{{assignmentId}}/submissions?studentCode=`**
+**GET `/api/v1/assignments/{{assignmentId}}/submissions?studentCode=&page=&size=`**
 
 `studentCode` omitted ⇒ every submission of the class (course-service enriches each row
 with `studentCode`/`studentName` from the roster); given ⇒ only that student's submissions
-(unknown code → `[]`).
+(unknown code → `[]`). `page`/`size` forwarded to submission-service for true server-side
+paging; omitted ⇒ full set in one `PageImpl` (backward compatible).
 
-→ `200` `data` = `[{ id, assignmentId, studentId, studentCode, studentName, zipFileName,
-status, latest, createdAt }]` (replaces the removed public route `GET /api/v1/submissions/assignment/{assignmentId}`).
+→ `200` `data` = `{ meta, result: [{ id, assignmentId, studentId, studentCode, studentName,
+zipFileName, status, latest, createdAt }] }` (replaces the removed public route
+`GET /api/v1/submissions/assignment/{assignmentId}`).
 
 Negative: `STUDENT` or no role → `403` · another lecturer's assignment → `404` ·
 no `X-Gateway-Secret` → `401`.
 
-> The FE renders both lists through the shared `ListPage` shell. The `/results` and
-> `/submissions` endpoints return the filtered `List` (not a Spring `Page`); the page
-> component wraps it into `{meta, result}` and pages in-memory, since result-service
-> scores per-class in memory and the class size is bounded. The displayed rows are the
-> graded attempts (best per plan), so a `10`-then-`5` resubmission reads `10` next to its
-> own row — the B22DCCN002 mismatch is fixed server-side.
+> Both endpoints now return a real Spring `Page<T>` envelope (`{meta, result}`) from
+> course-service. `/results` paginates the synthesised whole-class list in course-service
+> (result-service still scores per-class in memory); `/submissions` forwards `page`/`size`
+> to submission-service for true server-side paging. The FE `useList` + `ListPage` shell
+> consume the `{meta, result}` shape directly — no client-side `pageOf()` wrapper needed
+> since v1.1. The displayed rows are the graded attempts (best per plan), so a `10`-then-`5`
+> resubmission reads `10` next to its own row — the B22DCCN002 mismatch is fixed server-side.
 
 
 ---

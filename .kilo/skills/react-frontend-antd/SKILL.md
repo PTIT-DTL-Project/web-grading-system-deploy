@@ -404,6 +404,28 @@ columns: `ListPage` renders its own `<Table>` with no `expandable` prop, so comp
 `useList` + `FilterBar` + `standardPagination` + `ErrorState` directly, as
 `AssignmentResultsPage` does for its per-student `expandedRowRender`).
 
+### 11.5b In-memory vs server-side paging placement (backward-compatible)
+
+When a backend service's scoring/synthesis logic is inherently whole-class (it computes
+per-student aggregates from a cross-table join that cannot be sliced at the DB layer —
+e.g. result-service's weighted `exerciseScore` over plan results), paging goes in the
+**composition layer** (course-service) rather than the data service:
+
+- The `/internal/` endpoints (result-service, submission-service) are **excluded from the
+  `ApiResponse` envelope** (`FormatRestResponse.isExcluded` matches `/internal/`). If they
+  returned Spring `Page<T>`, Jackson would emit Spring's native `{content, pageable,
+  totalPages…}` JSON, which the FE `Page<T>` type (`{meta, result}`) cannot consume.
+- The **course-service controller** (not `/internal/`) runs the envelope → it returns
+  `Page<T>` and `FormatRestResponse.wrap()` converts it to `{meta, result}` via
+  `ResultPaginationDTO.from(page)`. This is where server-side paging is applied on top of
+  the synthesized/whole-class list.
+- submission-service (also `/internal/`) was given a `Pageable`-overload `listByAssignment`
+  for cases where the raw row list *is* sliceable at the DB layer (`findBy...OrderBy...`),
+  but the course-service wrapper still owns the response envelope.
+
+Rule: if the `/internal/` endpoint is raw (no envelope), do **not** change its return type
+to `Page<T>` just for paging — page in the envelope-producing service instead.
+
 ### 11.5a Dynamic select options (dropdown whose choices come from a fetch)
 
 A `type: 'select'` filter whose options are data-driven (e.g. a student-code dropdown on
