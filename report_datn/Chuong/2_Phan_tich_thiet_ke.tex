@@ -212,7 +212,7 @@ Hình \ref{fig:uc-assignment-management} mô tả chi tiết usecase Quản lý 
 \label{fig:uc-assignment-management}
 \end{figure}
 
-Kịch bản của chức năng được trình bày trong Bảng \ref{tab:uc-assignment-management}.
+Kịch bản của chức năng được trình bày trong Bảng \ref{tab:uc-assignment-management} và Bảng \ref{tab:uc-assignment-management-2}.
 
 \begin{table}[!ht]
 \centering
@@ -225,12 +225,33 @@ Tiền điều kiện & Giảng viên đã đăng nhập; lớp được chọn 
 Hậu điều kiện & Bài tập cùng các bước chấm được lưu; bài tập đã công bố xuất hiện trong danh sách bài tập của sinh viên đã ghi danh. \\ \hline
 Kịch bản chính &
 \begin{enumerate}[leftmargin=*, nosep]
-    \item Giảng viên chọn lớp cần quản lý; hệ thống hiển thị danh sách bài tập của lớp kèm bộ lọc theo trạng thái công bố và tìm kiếm theo tiêu đề.
-    \item Giảng viên tạo bài tập với tiêu đề và cấu hình chấm (chiến lược chấm, thời gian chờ và giới hạn tài nguyên khi chấm).
+    \item Giảng viên mở danh sách bài tập của lớp cần quản lý.
+    \item Hệ thống hiển thị danh sách bài tập kèm bộ lọc theo trạng thái công bố và ô tìm kiếm theo tiêu đề.
+    \item Giảng viên nhấn nút tạo bài tập mới.
+    \item Hệ thống hiển thị biểu mẫu gồm tiêu đề và cấu hình chấm (chiến lược chấm, thời gian chờ và giới hạn tài nguyên khi chấm).
+    \item Giảng viên nhập tiêu đề và cấu hình chấm cho bài tập.
+    \item Hệ thống lưu bài tập ở trạng thái chưa công bố.
     \item Giảng viên soạn các bước chấm tự động cho bài tập: gửi yêu cầu kiểm thử tới ứng dụng của sinh viên, kiểm tra dữ liệu và trích xuất biến để dùng cho các bước sau; mỗi bộ bước như vậy là một kế hoạch chấm.
+\end{enumerate} \\ \hline
+\end{tabularx}
+\caption{Kịch bản chức năng Quản lý bài tập.}
+\label{tab:uc-assignment-management}
+\end{table}
+
+\begin{table}[!ht]
+\centering
+\begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+\hline
+Tên mục & Nội dung mô tả \\ \hline
+Kịch bản chính (tiếp) &
+\begin{enumerate}[leftmargin=*, nosep, start=8]
+    \item Hệ thống kiểm tra tính hợp lệ của các bước chấm.
     \item Giảng viên chọn môi trường chạy cần thiết cho bài tập.
-    \item Giảng viên công bố bài tập để sinh viên nhìn thấy và nộp được bài.
+    \item Hệ thống lưu kế hoạch chấm và môi trường chạy vào bài tập.
+    \item Giảng viên công bố bài tập.
+    \item Hệ thống chuyển bài tập sang trạng thái đã công bố và hiển thị bài tập cho sinh viên đã ghi danh.
     \item Giảng viên xem kết quả chấm, sửa thông tin hoặc xoá bài tập khi không còn sử dụng.
+    \item Hệ thống áp dụng thay đổi tương ứng lên bài tập.
 \end{enumerate} \\ \hline
 Kịch bản ngoại lệ &
 \begin{itemize}[leftmargin=*, nosep]
@@ -240,8 +261,8 @@ Kịch bản ngoại lệ &
     \item Bài tập đã xoá: không còn xuất hiện với cả giảng viên và sinh viên.
 \end{itemize} \\ \hline
 \end{tabularx}
-\caption{Kịch bản chức năng Quản lý bài tập.}
-\label{tab:uc-assignment-management}
+\caption{Kịch bản chức năng Quản lý bài tập (tiếp).}
+\label{tab:uc-assignment-management-2}
 \end{table}
 
 
@@ -269,9 +290,12 @@ Kịch bản chính &
 \begin{enumerate}[leftmargin=*, nosep]
     \item Giảng viên chọn lớp và bài tập cần xem kết quả.
     \item Hệ thống hiển thị điểm tổng hợp của từng sinh viên trong lớp cùng điểm từng bài nộp theo từng kế hoạch chấm.
-    \item Giảng viên lọc theo mã sinh viên khi cần xem kết quả của một sinh viên cụ thể.
-    \item Giảng viên mở chi tiết một bài nộp để xem kết quả từng bước chấm, gồm yêu cầu đã gửi, kết quả nhận về và nhận xét của từng bước.
-    \item Giảng viên xem danh sách toàn bộ bài nộp của bài tập.
+    \item Giảng viên lọc theo mã sinh viên.
+    \item Hệ thống thu hẹp danh sách kết quả theo mã sinh viên đã chọn.
+    \item Giảng viên mở chi tiết một bài nộp.
+    \item Hệ thống hiển thị kết quả từng bước chấm gồm yêu cầu đã gửi, kết quả nhận về và nhận xét của từng bước.
+    \item Giảng viên chọn xem danh sách toàn bộ bài nộp của bài tập.
+    \item Hệ thống hiển thị danh sách bài nộp kèm trạng thái chấm của từng bài.
 \end{enumerate} \\ \hline
 Kịch bản ngoại lệ &
 \begin{itemize}[leftmargin=*, nosep]
@@ -309,12 +333,14 @@ Tiền điều kiện & Sinh viên đã đăng nhập; đã được ghi danh v�
 Hậu điều kiện & Bài nộp được lưu cùng kết quả chấm cho kế hoạch đã nộp; nếu chấm thất bại, bài nộp giữ trạng thái thất bại kèm nhật ký để sinh viên xem lại và nộp lại. \\ \hline
 Kịch bản chính &
 \begin{enumerate}[leftmargin=*, nosep]
-    \item Sinh viên chọn lớp và bài tập cần nộp; hệ thống hiển thị đề bài dưới dạng các bước yêu cầu, đã ẩn phần cấu hình chấm nội bộ của giảng viên.
-    \item Sinh viên chọn kế hoạch chấm cần nộp, hoặc nộp cho toàn bộ bài tập, và chuẩn bị tệp nén bài làm.
-    \item Hệ thống cấp đường dẫn tải lên an toàn cho bài nộp.
-    \item Sinh viên tải tệp nén bài làm lên hệ thống; việc tải lên hoàn tất sẽ tự động kích hoạt chấm bài, sinh viên không cần xác nhận thêm.
-    \item Hệ thống chạy chấm trong môi trường cách ly theo các bước đã soạn: khởi động ứng dụng của sinh viên, gửi yêu cầu kiểm thử và kiểm tra dữ liệu, sau đó tổng hợp điểm.
-    \item Sinh viên theo dõi trạng thái chấm và xem điểm, chi tiết từng bước chấm khi hoàn tất.
+    \item Sinh viên chọn lớp và bài tập cần nộp.
+    \item Hệ thống hiển thị đề bài dưới dạng các bước yêu cầu, ẩn phần cấu hình chấm nội bộ của giảng viên.
+    \item Sinh viên chọn kế hoạch chấm cần nộp hoặc nộp cho toàn bộ bài tập.
+    \item Hệ thống hiển thị yêu cầu nộp tệp nén bài làm.
+    \item Sinh viên tải tệp nén bài làm lên hệ thống.
+    \item Hệ thống tiếp nhận tệp, tự động chấm bài trong môi trường cách ly theo các bước đã soạn và tổng hợp điểm.
+    \item Sinh viên theo dõi trạng thái chấm.
+    \item Hệ thống hiển thị điểm và chi tiết từng bước chấm khi quá trình chấm hoàn tất.
 \end{enumerate} \\ \hline
 Kịch bản ngoại lệ &
 \begin{itemize}[leftmargin=*, nosep]
@@ -350,9 +376,10 @@ Tiền điều kiện & Sinh viên đã đăng nhập và được ghi danh tron
 Hậu điều kiện & Không thay đổi dữ liệu. \\ \hline
 Kịch bản chính &
 \begin{enumerate}[leftmargin=*, nosep]
-    \item Sinh viên chọn lớp đã ghi danh; hệ thống hiển thị điểm từng thành phần kèm trọng số.
-    \item Hệ thống tính điểm tổng kết, điểm chữ và điểm hệ 4 khi sinh viên đã có đủ điểm các thành phần.
-    \item Sinh viên xem danh sách sinh viên cùng lớp, chỉ gồm mã sinh viên và họ tên.
+    \item Sinh viên chọn lớp đã ghi danh.
+    \item Hệ thống hiển thị điểm từng thành phần kèm trọng số và, khi đã đủ điểm các thành phần, điểm tổng kết, điểm chữ và điểm hệ 4.
+    \item Sinh viên chọn xem danh sách sinh viên cùng lớp.
+    \item Hệ thống hiển thị danh sách sinh viên cùng lớp, chỉ gồm mã sinh viên và họ tên.
 \end{enumerate} \\ \hline
 Kịch bản ngoại lệ &
 \begin{itemize}[leftmargin=*, nosep]
@@ -388,9 +415,12 @@ Tiền điều kiện & Sinh viên đã đăng nhập; sinh viên đã nộp bà
 Hậu điều kiện & Sinh viên xem được kết quả chấm bài thành công \\ \hline
 Kịch bản chính &
 \begin{enumerate}[leftmargin=*, nosep]
-    \item Sinh viên chọn lớp, chọn bài tập rồi chọn bài nộp của mình.
+    \item Sinh viên chọn lớp và bài tập.
+    \item Hệ thống hiển thị danh sách bài nộp của sinh viên trong bài tập.
+    \item Sinh viên chọn bài nộp của mình.
     \item Hệ thống hiển thị điểm, trạng thái chấm, nhật ký chấm và kết quả từng bước.
-    \item Sinh viên mở chi tiết từng bước chấm để xem yêu cầu đã gửi, kết quả nhận về và nhận xét của bước đó; các thông tin nội bộ nhạy cảm của quá trình chấm đã được ẩn.
+    \item Sinh viên mở chi tiết một bước chấm.
+    \item Hệ thống hiển thị yêu cầu đã gửi, kết quả nhận về và nhận xét của bước đó, với thông tin nội bộ nhạy cảm được ẩn.
 \end{enumerate} \\ \hline
 Kịch bản ngoại lệ &
 \begin{itemize}[leftmargin=*, nosep]
