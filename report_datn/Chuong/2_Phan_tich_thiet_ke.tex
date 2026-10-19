@@ -158,9 +158,18 @@ Tiền điều kiện & Giảng viên đã đăng nhập bằng tài khoản có
 Hậu điều kiện & Lớp học, danh sách sinh viên, cấu trúc điểm và điểm số được lưu trong hệ thống; lớp đã lưu trữ chỉ còn xem và không thể mở lại. \\ \hline
 Kịch bản chính &
 \begin{enumerate}[leftmargin=*, nosep]
-    \item Giảng viên mở mục quản lý lớp học; hệ thống hiển thị danh sách lớp của giảng viên kèm trạng thái, có tìm kiếm theo tên lớp, học kỳ và bộ lọc theo trạng thái.
-    \item Giảng viên tạo lớp mới bằng tên lớp và học kỳ; hệ thống tạo lớp ở trạng thái đang hoạt động.
-    \item Giảng viên nhập danh sách sinh viên của lớp từ tệp CSV; hệ thống báo số sinh viên được thêm và số dòng bị bỏ qua.
+    \item Tại giao diện trang chủ dành cho giảng viên, giảng viên nhấn vào nút Vào lớp của tôi
+    \item Hệ thống hiển thị giao diện quản lý lớp học gồm danh sách lớp của giảng viên kèm trạng thái, có tìm kiếm theo tên lớp, học kỳ và bộ lọc theo trạng thái.
+    \item Giảng viên nhấn vào nút tạo lớp mới
+    \item Hệ thống hiển thị giao diện tạo lớp mới với các trường thông tin như tên lớp và học kỳ
+    \item Giảng viên nhập thông tin lớp và nhấn nút tạo
+    \item Hệ thống tạo lớp ở trạng thái đang hoạt động.
+    \item Giảng viên nhấn nút Vào lớp
+    \item Hệ thống hiển thị giao diện quản lý lớp của giảng viên gồm các phần danh sách lớp, nhập danh sách sinh viên, thành phần điểm và bảng điểm của lớp.
+    \item Giảng viên nhấn vào phần nhập danh sách sinh viên lớp
+    \item Hệ thống hiển thị giao diện nhập danh sách sinh viên lớp gồm bảng kết quả nhập và nút nhập danh sách sinh viên
+    \item Giảng viên nhấn nút nhập danh sách sinh viên và chọn file CSV tương ứng để nhập danh sách sinh viên của lớp từ tệp CSV
+    \item Hệ thống báo số sinh viên được thêm và số dòng bị bỏ qua.
     \item Giảng viên cấu hình các thành phần điểm của lớp (chuyên cần, bài tập, thi cuối kỳ) cùng trọng số tương ứng; hệ thống kiểm tra các ràng buộc về trọng số trước khi lưu.
     \item Giảng viên nhập điểm thủ công cho từng sinh viên; thành phần điểm bài tập được lấy tự động từ kết quả chấm bài nộp, sau đó hệ thống tính điểm tổng kết, điểm chữ và điểm hệ 4.
     \item Giảng viên xem bảng điểm của cả lớp hoặc lưu trữ lớp khi kết thúc học kỳ.
@@ -360,8 +369,8 @@ Kịch bản của chức năng được trình bày trong Bảng \ref{tab:uc-re
 Tên mục & Nội dung mô tả \\ \hline
 Tên kịch bản & Xem kết quả chấm bài tập của bản thân \\ \hline
 Tác nhân & Sinh viên \\ \hline
-Tiền điều kiện & Sinh viên đã đăng nhập; bài nộp thuộc sinh viên và đã được chấm. \\ \hline
-Hậu điều kiện & Không thay đổi dữ liệu. \\ \hline
+Tiền điều kiện & Sinh viên đã đăng nhập; sinh viên đã nộp bài và bài tập đã được chấm \\ \hline
+Hậu điều kiện & Sinh viên xem được kết quả chấm bài thành công \\ \hline
 Kịch bản chính &
 \begin{enumerate}[leftmargin=*, nosep]
     \item Sinh viên chọn lớp, chọn bài tập rồi chọn bài nộp của mình.
