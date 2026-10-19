@@ -600,6 +600,13 @@ Fetcher wiring:
    (same-origin) and carries `x-user-id`.
 5. Any endpoint added/changed on the backend → update
    `docs/design/usecase-flows.md` in the same task.
+6. Any backend endpoint/feature *removed* → grep the FE for its consumers and
+   delete them. Dangling API functions in `shared/api/endpoints/*.ts` do not
+   break `tsc`/`build`, so they linger silently (e.g. `assignDockerImages`
+   survived the `/docker-images` removal). Do not confuse the Docker *image
+   library* with the Docker *Compose grading strategy* (`dockerComposeTemplate` /
+   `dockerComposePort`, `*_DOCKER_COMPOSE`) — removing the former must not touch
+   the latter.
 
 Useful verification tricks:
 

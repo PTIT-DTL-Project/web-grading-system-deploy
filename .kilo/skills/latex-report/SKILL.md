@@ -107,14 +107,36 @@ only.
 Scenario tables (Bảng 2.x, `\label{tab:uc-<slug>}`): `table` float
 placed `[!ht]`, `\begin{tabularx}{\textwidth}{|p{3.2cm}|X|}` full grid;
 rows `Tên mục & Nội dung mô tả`, `Tên kịch bản`, `Tác nhân`,
-`Tiền điều kiện`, `Kịch bản chính` (`enumerate[leftmargin=*, nosep]`),
-`Hậu điều kiện`, `Kịch bản ngoại lệ` (`itemize`, same options); long
-cells end with `\end{enumerate} \\ \hline`; caption
+`Tiền điều kiện`, `Hậu điều kiện`, `Kịch bản chính`
+(`enumerate[leftmargin=*, nosep]`), `Kịch bản ngoại lệ` (`itemize`,
+same options); long cells end with `\end{enumerate} \\ \hline`; caption
 `Kịch bản chức năng <Tên>.` + `\label` written after `\end{tabularx}`
 (see the table-caption section above), so it prints below the grid (the
-front-matter `\listoftables` picks them up). Content must be grounded in `docs/design/usecase-flows.md`
+front-matter `\listoftables` picks them up).
+
+Main-flow steps: exactly one actor action per `\item` — either the
+`Tác nhân` row's actor or `Hệ thống`, never both in one item
+(`Giảng viên ...; hệ thống ...` must be split). Two consecutive items
+must not share the same subject; alternate actor → system → actor.
+Exception-flow bullets are exception statements, not numbered steps, so
+several may sit in one list.
+
+Overflow gotcha: at 13pt with `\onehalfspacing` (BTL.tex) the usable
+page height is ≈22.5 cm, so a scenario table over ~30 cm cannot fit one
+page and runs into the page number (`Quản lý lớp học` measured ≈41 cm).
+Split it into two `table` floats at a business boundary (e.g. create
+class | operate class) instead of switching to `longtable`/`xltabular`,
+which breaks the `[!ht]` + caption-after-content convention. The second
+float repeats the header row, labels its row `Kịch bản chính (tiếp)`
+with `start=<n>` on the `enumerate`, keeps the exception row, gets its
+own number and `\label{tab:uc-<slug>-2}`, and its caption ends with
+`(tiếp)`. Do NOT use `\ContinuedFloat`: the `caption` package appends an
+English "(continued)" to the Vietnamese caption. Update the lead-in
+sentence to cite both labels.
+
+Content must be grounded in `docs/design/usecase-flows.md`
 (real preconditions, statuses, error cases) — never invented. Float
-placement measured on this 9-table section: `[ht]` defers every table
+placement measured on the scenario-table section: `[ht]` defers every table
 to end-of-chapter float pages (7-9 page drift); `[!ht]` keeps drift at
 0-3 pages with no stretching; `[H]` places each table exactly at its
 reference but `\flushbottom` stretches the preceding page (large

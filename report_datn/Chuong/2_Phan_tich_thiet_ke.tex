@@ -145,7 +145,7 @@ Hình \ref{fig:uc-classes-management} mô tả chi tiết usecase Quản lý l�
 \label{fig:uc-classes-management}
 \end{figure}
 
-Kịch bản của chức năng được trình bày trong Bảng \ref{tab:uc-classes-management}.
+Kịch bản của chức năng được trình bày trong Bảng \ref{tab:uc-classes-management} và Bảng \ref{tab:uc-classes-management-2}.
 
 \begin{table}[!ht]
 \centering
@@ -158,20 +158,35 @@ Tiền điều kiện & Giảng viên đã đăng nhập bằng tài khoản có
 Hậu điều kiện & Lớp học, danh sách sinh viên, cấu trúc điểm và điểm số được lưu trong hệ thống; lớp đã lưu trữ chỉ còn xem và không thể mở lại. \\ \hline
 Kịch bản chính &
 \begin{enumerate}[leftmargin=*, nosep]
-    \item Tại giao diện trang chủ dành cho giảng viên, giảng viên nhấn vào nút Vào lớp của tôi
+    \item Tại giao diện trang chủ dành cho giảng viên, giảng viên nhấn vào nút Vào lớp của tôi.
     \item Hệ thống hiển thị giao diện quản lý lớp học gồm danh sách lớp của giảng viên kèm trạng thái, có tìm kiếm theo tên lớp, học kỳ và bộ lọc theo trạng thái.
-    \item Giảng viên nhấn vào nút tạo lớp mới
-    \item Hệ thống hiển thị giao diện tạo lớp mới với các trường thông tin như tên lớp và học kỳ
-    \item Giảng viên nhập thông tin lớp và nhấn nút tạo
+    \item Giảng viên nhấn vào nút tạo lớp mới.
+    \item Hệ thống hiển thị giao diện tạo lớp mới với các trường thông tin như tên lớp và học kỳ.
+    \item Giảng viên nhập thông tin lớp và nhấn nút tạo.
     \item Hệ thống tạo lớp ở trạng thái đang hoạt động.
-    \item Giảng viên nhấn nút Vào lớp
+    \item Giảng viên nhấn nút Vào lớp.
     \item Hệ thống hiển thị giao diện quản lý lớp của giảng viên gồm các phần danh sách lớp, nhập danh sách sinh viên, thành phần điểm và bảng điểm của lớp.
-    \item Giảng viên nhấn vào phần nhập danh sách sinh viên lớp
-    \item Hệ thống hiển thị giao diện nhập danh sách sinh viên lớp gồm bảng kết quả nhập và nút nhập danh sách sinh viên
-    \item Giảng viên nhấn nút nhập danh sách sinh viên và chọn file CSV tương ứng để nhập danh sách sinh viên của lớp từ tệp CSV
+\end{enumerate} \\ \hline
+\end{tabularx}
+\caption{Kịch bản chức năng Quản lý lớp học.}
+\label{tab:uc-classes-management}
+\end{table}
+
+\begin{table}[!ht]
+\centering
+\begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+\hline
+Tên mục & Nội dung mô tả \\ \hline
+Kịch bản chính (tiếp) &
+\begin{enumerate}[leftmargin=*, nosep, start=9]
+    \item Giảng viên nhấn vào phần nhập danh sách sinh viên lớp.
+    \item Hệ thống hiển thị giao diện nhập danh sách sinh viên lớp gồm bảng kết quả nhập và nút nhập danh sách sinh viên.
+    \item Giảng viên nhấn nút nhập danh sách sinh viên và chọn tệp CSV tương ứng.
     \item Hệ thống báo số sinh viên được thêm và số dòng bị bỏ qua.
-    \item Giảng viên cấu hình các thành phần điểm của lớp (chuyên cần, bài tập, thi cuối kỳ) cùng trọng số tương ứng; hệ thống kiểm tra các ràng buộc về trọng số trước khi lưu.
-    \item Giảng viên nhập điểm thủ công cho từng sinh viên; thành phần điểm bài tập được lấy tự động từ kết quả chấm bài nộp, sau đó hệ thống tính điểm tổng kết, điểm chữ và điểm hệ 4.
+    \item Giảng viên cấu hình các thành phần điểm của lớp (chuyên cần, bài tập, thi cuối kỳ) cùng trọng số tương ứng.
+    \item Hệ thống kiểm tra các ràng buộc về trọng số và lưu cấu trúc điểm.
+    \item Giảng viên nhập điểm thủ công cho từng sinh viên.
+    \item Hệ thống lấy điểm thành phần bài tập từ kết quả chấm bài nộp và tính điểm tổng kết, điểm chữ, điểm hệ 4.
     \item Giảng viên xem bảng điểm của cả lớp hoặc lưu trữ lớp khi kết thúc học kỳ.
 \end{enumerate} \\ \hline
 Kịch bản ngoại lệ &
@@ -183,8 +198,8 @@ Kịch bản ngoại lệ &
     \item Một thành phần điểm chưa có điểm: điểm tổng kết, điểm chữ và điểm hệ 4 để trống trên bảng điểm.
 \end{itemize} \\ \hline
 \end{tabularx}
-\caption{Kịch bản chức năng Quản lý lớp học.}
-\label{tab:uc-classes-management}
+\caption{Kịch bản chức năng Quản lý lớp học (tiếp).}
+\label{tab:uc-classes-management-2}
 \end{table}
 
 
