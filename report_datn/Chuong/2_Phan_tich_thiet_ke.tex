@@ -51,15 +51,16 @@ Tên mục & Nội dung mô tả \\ \hline
 Tên kịch bản & Đăng nhập \\ \hline
 Tác nhân & Người dùng (quản trị viên, giảng viên và sinh viên) \\ \hline
 Tiền điều kiện & Người dùng đã được cấp tài khoản trên hệ thống (do quản trị viên tạo hoặc nhập từ tệp CSV). \\ \hline
+Hậu điều kiện & Người dùng có phiên làm việc hợp lệ; các chức năng tiếp theo được phân quyền theo vai trò. \\ \hline
 Kịch bản chính &
 \begin{enumerate}[leftmargin=*, nosep]
-    \item Người dùng truy cập hệ thống và chọn đăng nhập; hệ thống hiển thị trang đăng nhập.
-    \item Người dùng nhập tên đăng nhập và mật khẩu; hệ thống kiểm tra thông tin đăng nhập.
+    \item Người dùng truy cập hệ thống và chọn chức năng đăng nhập
+    \item Hệ thống hiển thị trang đăng nhập.
+    \item Người dùng nhập tên đăng nhập và mật khẩu và nhấn đăng nhập
     \item Nếu tài khoản còn yêu cầu đổi mật khẩu bắt buộc (tài khoản cấp mới bằng mật khẩu tạm), hệ thống yêu cầu người dùng đổi mật khẩu trước khi tiếp tục.
-    \item Hệ thống xác nhận đăng nhập thành công và thiết lập phiên làm việc cho người dùng.
-    \item Ứng dụng mở giao diện tương ứng với vai trò của người dùng (quản trị viên, giảng viên hoặc sinh viên).
+    \item Người dùng nhập mật khẩu mới và xác nhận mật khẩu mới và nhấn vào nút xác nhận
+    \item Hệ thống xác nhận đăng nhập thành công và thiết lập phiên làm việc cho người dùng, mở giao diện tương ứng với vai trò của người dùng (quản trị viên, giảng viên hoặc sinh viên).
 \end{enumerate} \\ \hline
-Hậu điều kiện & Người dùng có phiên làm việc hợp lệ; các chức năng tiếp theo được phân quyền theo vai trò. \\ \hline
 Kịch bản ngoại lệ &
 \begin{itemize}[leftmargin=*, nosep]
     \item Tên đăng nhập hoặc mật khẩu không đúng: trang đăng nhập báo lỗi và cho phép nhập lại.
@@ -81,6 +82,7 @@ Tên mục & Nội dung mô tả \\ \hline
 Tên kịch bản & Đổi mật khẩu \\ \hline
 Tác nhân & Người dùng đã đăng nhập (quản trị viên, giảng viên và sinh viên) \\ \hline
 Tiền điều kiện & Người dùng đang có phiên làm việc hợp lệ. \\ \hline
+Hậu điều kiện & Mật khẩu mới được áp dụng cho lần đăng nhập sau; phiên làm việc hiện tại không bị kết thúc nên người dùng tiếp tục làm việc bình thường. \\ \hline
 Kịch bản chính &
 \begin{enumerate}[leftmargin=*, nosep]
     \item Người dùng mở menu tài khoản và chọn chức năng Đổi mật khẩu.
@@ -89,7 +91,6 @@ Kịch bản chính &
     \item Hệ thống xác minh mật khẩu hiện tại, sau đó đặt mật khẩu mới cho tài khoản.
     \item Hệ thống thông báo đổi mật khẩu thành công và đóng hộp thoại.
 \end{enumerate} \\ \hline
-Hậu điều kiện & Mật khẩu mới được áp dụng cho lần đăng nhập sau; phiên làm việc hiện tại không bị kết thúc nên người dùng tiếp tục làm việc bình thường. \\ \hline
 Kịch bản ngoại lệ &
 \begin{itemize}[leftmargin=*, nosep]
     \item Mật khẩu hiện tại không đúng: hệ thống báo lỗi và yêu cầu nhập lại.
@@ -112,15 +113,15 @@ Bảng \ref{tab:uc-import-users} mô tả kịch bản của usecase Nhập danh
 Tên mục & Nội dung mô tả \\ \hline
 Tên kịch bản & Nhập danh sách tài khoản \\ \hline
 Tác nhân & Quản trị viên \\ \hline
-Tiền điều kiện & Quản trị viên đã đăng nhập bằng tài khoản có vai trò quản trị. \\ \hline
+Tiền điều kiện & Quản trị viên đã đăng nhập bằng tài khoản có vai trò quản trị cũng như có một file CSV theo mẫu với các thông tin người dùng đã có từ trước \\ \hline
+Hậu điều kiện & Các tài khoản mới sẵn sàng đăng nhập bằng mật khẩu tạm; người dùng bắt buộc đổi mật khẩu ở lần đăng nhập đầu tiên. \\ \hline
 Kịch bản chính &
 \begin{enumerate}[leftmargin=*, nosep]
-    \item Quản trị viên mở chức năng nhập danh sách tài khoản và chọn tệp CSV gồm các cột: tên đăng nhập, họ tên, email và vai trò (giảng viên hoặc sinh viên; bỏ trống mặc định là sinh viên).
-    \item Hệ thống kiểm tra giới hạn kích thước tệp và số dòng, sau đó xử lý tuần tự từng dòng.
-    \item Với mỗi dòng hợp lệ, hệ thống kiểm tra trùng tên đăng nhập và trùng email, tạo tài khoản mới với mật khẩu tạm kèm yêu cầu đổi mật khẩu ở lần đăng nhập đầu tiên, rồi gán vai trò tương ứng.
-    \item Hệ thống trả về báo cáo gồm số tài khoản đã tạo theo từng vai trò, số dòng bị bỏ qua và danh sách dòng lỗi kèm lý do.
+    \item Tại giao diện trang chủ dành cho quản trị viên, quản trị viên chọn chức năng nhập tài khoản
+    \item Hệ thống hiển thị giao diện nhập danh sách tài khoản gồm nút nhập tài khoản
+    \item Quản trị viên nhấn nút nhập tài khoản và chọn tệp CSV gồm các cột: tên đăng nhập, họ tên, email và vai trò (giảng viên hoặc sinh viên) và nhấn nút gửi
+    \item Hệ thống trả về kết quả nhập tài khoản gồm số tài khoản đã tạo theo từng vai trò, số dòng bị bỏ qua và danh sách dòng lỗi kèm lý do.
 \end{enumerate} \\ \hline
-Hậu điều kiện & Các tài khoản mới sẵn sàng đăng nhập bằng mật khẩu tạm; người dùng bắt buộc đổi mật khẩu ở lần đăng nhập đầu tiên. \\ \hline
 Kịch bản ngoại lệ &
 \begin{itemize}[leftmargin=*, nosep]
     \item Tệp vượt quá giới hạn kích thước hoặc số dòng: hệ thống từ chối cả tệp và báo lỗi.
@@ -154,6 +155,7 @@ Tên mục & Nội dung mô tả \\ \hline
 Tên kịch bản & Quản lý lớp học \\ \hline
 Tác nhân & Giảng viên \\ \hline
 Tiền điều kiện & Giảng viên đã đăng nhập bằng tài khoản có vai trò giảng viên. \\ \hline
+Hậu điều kiện & Lớp học, danh sách sinh viên, cấu trúc điểm và điểm số được lưu trong hệ thống; lớp đã lưu trữ chỉ còn xem và không thể mở lại. \\ \hline
 Kịch bản chính &
 \begin{enumerate}[leftmargin=*, nosep]
     \item Giảng viên mở mục quản lý lớp học; hệ thống hiển thị danh sách lớp của giảng viên kèm trạng thái, có tìm kiếm theo tên lớp, học kỳ và bộ lọc theo trạng thái.
@@ -163,7 +165,6 @@ Kịch bản chính &
     \item Giảng viên nhập điểm thủ công cho từng sinh viên; thành phần điểm bài tập được lấy tự động từ kết quả chấm bài nộp, sau đó hệ thống tính điểm tổng kết, điểm chữ và điểm hệ 4.
     \item Giảng viên xem bảng điểm của cả lớp hoặc lưu trữ lớp khi kết thúc học kỳ.
 \end{enumerate} \\ \hline
-Hậu điều kiện & Lớp học, danh sách sinh viên, cấu trúc điểm và điểm số được lưu trong hệ thống; lớp đã lưu trữ chỉ còn xem và không thể mở lại. \\ \hline
 Kịch bản ngoại lệ &
 \begin{itemize}[leftmargin=*, nosep]
     \item Tên lớp trùng trong cùng học kỳ: hệ thống báo lỗi và không tạo lớp.
@@ -197,6 +198,7 @@ Tên mục & Nội dung mô tả \\ \hline
 Tên kịch bản & Quản lý bài tập \\ \hline
 Tác nhân & Giảng viên \\ \hline
 Tiền điều kiện & Giảng viên đã đăng nhập; lớp được chọn thuộc giảng viên. \\ \hline
+Hậu điều kiện & Bài tập cùng các bước chấm được lưu; bài tập đã công bố xuất hiện trong danh sách bài tập của sinh viên đã ghi danh. \\ \hline
 Kịch bản chính &
 \begin{enumerate}[leftmargin=*, nosep]
     \item Giảng viên chọn lớp cần quản lý; hệ thống hiển thị danh sách bài tập của lớp kèm bộ lọc theo trạng thái công bố và tìm kiếm theo tiêu đề.
@@ -206,7 +208,6 @@ Kịch bản chính &
     \item Giảng viên công bố bài tập để sinh viên nhìn thấy và nộp được bài.
     \item Giảng viên xem kết quả chấm, sửa thông tin hoặc xoá bài tập khi không còn sử dụng.
 \end{enumerate} \\ \hline
-Hậu điều kiện & Bài tập cùng các bước chấm được lưu; bài tập đã công bố xuất hiện trong danh sách bài tập của sinh viên đã ghi danh. \\ \hline
 Kịch bản ngoại lệ &
 \begin{itemize}[leftmargin=*, nosep]
     \item Tiêu đề bài tập trùng trong cùng lớp: hệ thống báo lỗi và không tạo bài tập.
@@ -239,6 +240,7 @@ Tên mục & Nội dung mô tả \\ \hline
 Tên kịch bản & Xem kết quả chấm của cả lớp \\ \hline
 Tác nhân & Giảng viên \\ \hline
 Tiền điều kiện & Giảng viên sở hữu lớp; bài tập đã có ít nhất một bài nộp được chấm. \\ \hline
+Hậu điều kiện & Không thay đổi dữ liệu; kết quả chỉ dùng để theo dõi và đánh giá tình hình học tập của lớp. \\ \hline
 Kịch bản chính &
 \begin{enumerate}[leftmargin=*, nosep]
     \item Giảng viên chọn lớp và bài tập cần xem kết quả.
@@ -247,7 +249,6 @@ Kịch bản chính &
     \item Giảng viên mở chi tiết một bài nộp để xem kết quả từng bước chấm, gồm yêu cầu đã gửi, kết quả nhận về và nhận xét của từng bước.
     \item Giảng viên xem danh sách toàn bộ bài nộp của bài tập.
 \end{enumerate} \\ \hline
-Hậu điều kiện & Không thay đổi dữ liệu; kết quả chỉ dùng để theo dõi và đánh giá tình hình học tập của lớp. \\ \hline
 Kịch bản ngoại lệ &
 \begin{itemize}[leftmargin=*, nosep]
     \item Bài tập không thuộc giảng viên: hệ thống báo không tìm thấy.
@@ -281,6 +282,7 @@ Tên mục & Nội dung mô tả \\ \hline
 Tên kịch bản & Nộp bài tập \\ \hline
 Tác nhân & Sinh viên \\ \hline
 Tiền điều kiện & Sinh viên đã đăng nhập; đã được ghi danh vào lớp; bài tập đã được công bố. \\ \hline
+Hậu điều kiện & Bài nộp được lưu cùng kết quả chấm cho kế hoạch đã nộp; nếu chấm thất bại, bài nộp giữ trạng thái thất bại kèm nhật ký để sinh viên xem lại và nộp lại. \\ \hline
 Kịch bản chính &
 \begin{enumerate}[leftmargin=*, nosep]
     \item Sinh viên chọn lớp và bài tập cần nộp; hệ thống hiển thị đề bài dưới dạng các bước yêu cầu, đã ẩn phần cấu hình chấm nội bộ của giảng viên.
@@ -290,7 +292,6 @@ Kịch bản chính &
     \item Hệ thống chạy chấm trong môi trường cách ly theo các bước đã soạn: khởi động ứng dụng của sinh viên, gửi yêu cầu kiểm thử và kiểm tra dữ liệu, sau đó tổng hợp điểm.
     \item Sinh viên theo dõi trạng thái chấm và xem điểm, chi tiết từng bước chấm khi hoàn tất.
 \end{enumerate} \\ \hline
-Hậu điều kiện & Bài nộp được lưu cùng kết quả chấm cho kế hoạch đã nộp; nếu chấm thất bại, bài nộp giữ trạng thái thất bại kèm nhật ký để sinh viên xem lại và nộp lại. \\ \hline
 Kịch bản ngoại lệ &
 \begin{itemize}[leftmargin=*, nosep]
     \item Sinh viên chưa ghi danh hoặc bài tập chưa công bố: hệ thống báo không tìm thấy.
@@ -322,13 +323,13 @@ Tên mục & Nội dung mô tả \\ \hline
 Tên kịch bản & Xem điểm và kết quả cá nhân \\ \hline
 Tác nhân & Sinh viên \\ \hline
 Tiền điều kiện & Sinh viên đã đăng nhập và được ghi danh trong lớp. \\ \hline
+Hậu điều kiện & Không thay đổi dữ liệu. \\ \hline
 Kịch bản chính &
 \begin{enumerate}[leftmargin=*, nosep]
     \item Sinh viên chọn lớp đã ghi danh; hệ thống hiển thị điểm từng thành phần kèm trọng số.
     \item Hệ thống tính điểm tổng kết, điểm chữ và điểm hệ 4 khi sinh viên đã có đủ điểm các thành phần.
     \item Sinh viên xem danh sách sinh viên cùng lớp, chỉ gồm mã sinh viên và họ tên.
 \end{enumerate} \\ \hline
-Hậu điều kiện & Không thay đổi dữ liệu. \\ \hline
 Kịch bản ngoại lệ &
 \begin{itemize}[leftmargin=*, nosep]
     \item Sinh viên không ghi danh trong lớp: hệ thống báo không tìm thấy lớp.
@@ -360,13 +361,13 @@ Tên mục & Nội dung mô tả \\ \hline
 Tên kịch bản & Xem kết quả chấm bài tập của bản thân \\ \hline
 Tác nhân & Sinh viên \\ \hline
 Tiền điều kiện & Sinh viên đã đăng nhập; bài nộp thuộc sinh viên và đã được chấm. \\ \hline
+Hậu điều kiện & Không thay đổi dữ liệu. \\ \hline
 Kịch bản chính &
 \begin{enumerate}[leftmargin=*, nosep]
     \item Sinh viên chọn lớp, chọn bài tập rồi chọn bài nộp của mình.
     \item Hệ thống hiển thị điểm, trạng thái chấm, nhật ký chấm và kết quả từng bước.
     \item Sinh viên mở chi tiết từng bước chấm để xem yêu cầu đã gửi, kết quả nhận về và nhận xét của bước đó; các thông tin nội bộ nhạy cảm của quá trình chấm đã được ẩn.
 \end{enumerate} \\ \hline
-Hậu điều kiện & Không thay đổi dữ liệu. \\ \hline
 Kịch bản ngoại lệ &
 \begin{itemize}[leftmargin=*, nosep]
     \item Bài nộp không thuộc sinh viên: hệ thống báo không tìm thấy.
