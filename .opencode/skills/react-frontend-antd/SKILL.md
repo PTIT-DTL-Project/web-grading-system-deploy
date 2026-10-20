@@ -243,6 +243,9 @@ with a **0-based `page`** (antd `Table.pagination.current` is 1-based → `meta.
 - No hardcoded Vietnamese or English in TSX. antd's own strings follow the same switch
   via `ConfigProvider locale`.
 - Keep the two files byte-for-byte key-identical and in the same key order.
+- Terminology: the backend `TestPlan` is a question of an assignment. Display it as
+  **Câu** in `vi.json` and **Question** in `en.json`; never "kế hoạch chấm" or
+  "plan". `TestStep` stays "Bước" / "Step".
 
 ## 9. TypeScript constraints from the template
 

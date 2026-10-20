@@ -235,7 +235,7 @@ Kịch bản chính &
     \item Hệ thống hiển thị biểu mẫu gồm tiêu đề và cấu hình chấm (chiến lược chấm, thời gian chờ và giới hạn tài nguyên khi chấm).
     \item Giảng viên nhập tiêu đề và cấu hình chấm cho bài tập.
     \item Hệ thống lưu bài tập ở trạng thái chưa công bố.
-    \item Giảng viên soạn các bước chấm tự động cho bài tập: gửi yêu cầu kiểm thử tới ứng dụng của sinh viên, kiểm tra dữ liệu và trích xuất biến để dùng cho các bước sau; mỗi bộ bước như vậy là một kế hoạch chấm.
+    \item Giảng viên soạn các bước chấm tự động cho bài tập: gửi yêu cầu kiểm thử tới ứng dụng của sinh viên, kiểm tra dữ liệu và trích xuất biến để dùng cho các bước sau; mỗi bộ bước như vậy tương ứng với một câu của bài tập.
     \item Hệ thống thông báo tạo bài tập thành công
 \end{enumerate} \\ \hline
 \end{tabularx}
@@ -252,7 +252,7 @@ Kịch bản chính (tiếp) &
 \begin{enumerate}[leftmargin=*, nosep, start=8]
     \item Hệ thống kiểm tra tính hợp lệ của các bước chấm.
     \item Giảng viên chọn môi trường chạy cần thiết cho bài tập.
-    \item Hệ thống lưu kế hoạch chấm và môi trường chạy vào bài tập.
+    \item Hệ thống lưu các câu và môi trường chạy vào bài tập.
     \item Giảng viên công bố bài tập.
     \item Hệ thống chuyển bài tập sang trạng thái đã công bố và hiển thị bài tập cho sinh viên đã ghi danh.
     \item Giảng viên xem kết quả chấm, sửa thông tin hoặc xoá bài tập khi không còn sử dụng.
@@ -294,7 +294,7 @@ Hậu điều kiện & Không thay đổi dữ liệu; kết quả chỉ dùng �
 Kịch bản chính &
 \begin{enumerate}[leftmargin=*, nosep]
     \item Giảng viên chọn lớp và bài tập cần xem kết quả.
-    \item Hệ thống hiển thị điểm tổng hợp của từng sinh viên trong lớp cùng điểm từng bài nộp theo từng kế hoạch chấm.
+    \item Hệ thống hiển thị điểm tổng hợp của từng sinh viên trong lớp cùng điểm từng bài nộp theo từng câu.
     \item Giảng viên lọc theo mã sinh viên.
     \item Hệ thống thu hẹp danh sách kết quả theo mã sinh viên đã chọn.
     \item Giảng viên mở chi tiết một bài nộp.
@@ -335,12 +335,12 @@ Tên mục & Nội dung mô tả \\ \hline
 Tên kịch bản & Nộp bài tập \\ \hline
 Tác nhân & Sinh viên \\ \hline
 Tiền điều kiện & Sinh viên đã đăng nhập; đã được ghi danh vào lớp; bài tập đã được công bố. \\ \hline
-Hậu điều kiện & Bài nộp được lưu cùng kết quả chấm cho kế hoạch đã nộp; nếu chấm thất bại, bài nộp giữ trạng thái thất bại kèm nhật ký để sinh viên xem lại và nộp lại. \\ \hline
+Hậu điều kiện & Bài nộp được lưu cùng kết quả chấm cho câu đã nộp; nếu chấm thất bại, bài nộp giữ trạng thái thất bại kèm nhật ký để sinh viên xem lại và nộp lại. \\ \hline
 Kịch bản chính &
 \begin{enumerate}[leftmargin=*, nosep]
     \item Sinh viên chọn lớp và bài tập cần nộp.
     \item Hệ thống hiển thị đề bài dưới dạng các bước yêu cầu, ẩn phần cấu hình chấm nội bộ của giảng viên.
-    \item Sinh viên chọn kế hoạch chấm cần nộp hoặc nộp cho toàn bộ bài tập.
+    \item Sinh viên chọn câu cần nộp hoặc nộp cho toàn bộ bài tập.
     \item Hệ thống hiển thị yêu cầu nộp tệp nén bài làm.
     \item Sinh viên tải tệp nén bài làm lên hệ thống.
     \item Hệ thống tiếp nhận tệp, tự động chấm bài trong môi trường cách ly theo các bước đã soạn và tổng hợp điểm.
@@ -443,11 +443,11 @@ Kịch bản ngoại lệ &
 
 \subsubsection{Xác định các lớp của hệ thống}
 
-Áp dụng kỹ thuật trích danh từ trên các use case và kịch bản đã mô tả ở các mục trước, các danh từ thu được gồm: tài khoản, người dùng, vai trò, quản trị viên, giảng viên, sinh viên, lớp học, học kỳ, danh sách sinh viên, mã sinh viên, họ tên, email, bài tập, kế hoạch chấm, bước chấm, cấu hình chấm, môi trường chạy, thành phần điểm, trọng số, điểm thành phần, điểm tổng kết, điểm chữ, điểm hệ 4, bảng điểm, bài nộp, tệp nén, trạng thái chấm, kết quả chấm, kết quả từng bước, nhật ký chấm, giải thích của trợ lý AI, gợi ý và từ khoá học tập.
+Áp dụng kỹ thuật trích danh từ trên các use case và kịch bản đã mô tả ở các mục trước, các danh từ thu được gồm: tài khoản, người dùng, vai trò, quản trị viên, giảng viên, sinh viên, lớp học, học kỳ, danh sách sinh viên, mã sinh viên, họ tên, email, bài tập, câu, bước chấm, cấu hình chấm, môi trường chạy, thành phần điểm, trọng số, điểm thành phần, điểm tổng kết, điểm chữ, điểm hệ 4, bảng điểm, bài nộp, tệp nén, trạng thái chấm, kết quả chấm, kết quả từng bước, nhật ký chấm, giải thích của trợ lý AI, gợi ý và từ khoá học tập.
 
 Loại bỏ các danh từ nằm ngoài phạm vi mục đích của hệ thống, các danh từ trùng lặp và các danh từ chỉ là thuộc tính của lớp khác (trọng số, trạng thái, mã sinh viên, họ tên, email, thời gian chờ, giới hạn tài nguyên), ta thu được các lớp thực thể sau:
 
-Người dùng (User), Vai trò (Role), Lớp học (CourseClass), Sinh viên thuộc lớp (ClassStudent), Bài tập (Assignment), Kế hoạch chấm (TestPlan), Bước chấm (TestStep), Thành phần điểm (ScoreComponent), Điểm thành phần (StudentScore), Bài nộp (Submission), Công việc chấm (GradingJob), Phiên chấm (GradingSaga), Bước của phiên chấm (GradingSagaStep), Kết quả bước chấm (GradingStepResult), Nhật ký chấm (GradingLog), Kết quả chấm (Result), Kết quả từng bước (StepResult), Điểm nhập tay (ManualScore), Giải thích của trợ lý AI (AiExplanation).
+Người dùng (User), Vai trò (Role), Lớp học (CourseClass), Sinh viên thuộc lớp (ClassStudent), Bài tập (Assignment), Câu (TestPlan), Bước chấm (TestStep), Thành phần điểm (ScoreComponent), Điểm thành phần (StudentScore), Bài nộp (Submission), Công việc chấm (GradingJob), Phiên chấm (GradingSaga), Bước của phiên chấm (GradingSagaStep), Kết quả bước chấm (GradingStepResult), Nhật ký chấm (GradingLog), Kết quả chấm (Result), Kết quả từng bước (StepResult), Điểm nhập tay (ManualScore), Giải thích của trợ lý AI (AiExplanation).
 
 Hai lớp Người dùng (User) và Vai trò (Role) biểu diễn tác nhân và quyền truy cập của hệ thống.
 
@@ -462,23 +462,23 @@ Các quan hệ giữa các lớp trong hệ thống được xác định như s
     \item Một sinh viên có thể được ghi danh vào nhiều lớp và một lớp có nhiều sinh viên, do đó quan hệ giữa User và CourseClass là n -- n; quan hệ này được biểu diễn bằng lớp kết hợp ClassStudent.
     \item Một lớp học có nhiều sinh viên, vì vậy quan hệ giữa CourseClass và ClassStudent là 1 -- n.
     \item Một lớp học có nhiều bài tập, nên quan hệ giữa CourseClass và Assignment là 1 -- n.
-    \item Một bài tập có nhiều kế hoạch chấm, do đó quan hệ giữa Assignment và TestPlan là 1 -- n.
-    \item Một kế hoạch chấm có nhiều bước chấm, vì vậy quan hệ giữa TestPlan và TestStep là 1 -- n.
+    \item Một bài tập có nhiều câu, do đó quan hệ giữa Assignment và TestPlan là 1 -- n.
+    \item Một câu có nhiều bước chấm, vì vậy quan hệ giữa TestPlan và TestStep là 1 -- n.
     \item Một lớp học có nhiều thành phần điểm, nên quan hệ giữa CourseClass và ScoreComponent là 1 -- n.
     \item Một thành phần điểm áp dụng cho nhiều sinh viên và một sinh viên có điểm ở nhiều thành phần, do đó quan hệ giữa ClassStudent và ScoreComponent là n -- n; quan hệ này được biểu diễn bằng lớp kết hợp StudentScore.
     \item Một bài tập nhận nhiều bài nộp, vì vậy quan hệ giữa Assignment và Submission là 1 -- n.
-    \item Một kế hoạch chấm có thể được nộp riêng hoặc sinh viên nộp cho toàn bộ bài tập, nên quan hệ giữa TestPlan và Submission là 0..1 -- n; bài nộp để trống kế hoạch nghĩa là nộp cho toàn bộ bài tập.
+    \item Một câu có thể được nộp riêng hoặc sinh viên nộp cho toàn bộ bài tập, nên quan hệ giữa TestPlan và Submission là 0..1 -- n; bài nộp không chọn câu nào nghĩa là nộp cho toàn bộ bài tập.
     \item Một sinh viên có thể nộp nhiều bài tập, do đó quan hệ giữa User và Submission là 1 -- n.
     \item Mỗi bài nộp chỉ sinh ra đúng một công việc chấm, vì vậy quan hệ giữa Submission và GradingJob là 1 -- 1.
     \item Một công việc chấm có nhiều phiên chấm do mỗi lần chấm lại tạo một phiên mới, nên quan hệ giữa GradingJob và GradingSaga là 1 -- n.
     \item Một phiên chấm có nhiều bước, do đó quan hệ giữa GradingSaga và GradingSagaStep là 1 -- n.
     \item Một công việc chấm có nhiều kết quả bước chấm, vì vậy quan hệ giữa GradingJob và GradingStepResult là 1 -- n.
     \item Một công việc chấm có nhiều nhật ký, nên quan hệ giữa GradingJob và GradingLog là 1 -- n.
-    \item Một bài nộp có thể sinh ra nhiều kết quả chấm, mỗi kế hoạch một kết quả hoặc một kết quả cho toàn bộ bài tập, do đó quan hệ giữa Submission và Result là 1 -- n.
+    \item Một bài nộp có thể sinh ra nhiều kết quả chấm, mỗi câu một kết quả hoặc một kết quả cho toàn bộ bài tập, do đó quan hệ giữa Submission và Result là 1 -- n.
     \item Một kết quả chấm có nhiều kết quả bước, vì vậy quan hệ giữa Result và StepResult là 1 -- n.
-    \item Một kế hoạch chấm có nhiều kết quả chấm, nên quan hệ giữa TestPlan và Result là 0..1 -- n.
+    \item Một câu có nhiều kết quả chấm, nên quan hệ giữa TestPlan và Result là 0..1 -- n.
     \item Một bài tập có nhiều kết quả chấm, do đó quan hệ giữa Assignment và Result là 1 -- n.
-    \item Kế hoạch chấm và bước chấm được sao chép sang kết quả bước tại thời điểm chấm, vì vậy các quan hệ giữa TestPlan với GradingSagaStep, GradingStepResult, StepResult và giữa TestStep với GradingSagaStep, GradingStepResult, StepResult đều là 1 -- n.
+    \item Câu và bước chấm được sao chép sang kết quả bước tại thời điểm chấm, vì vậy các quan hệ giữa TestPlan với GradingSagaStep, GradingStepResult, StepResult và giữa TestStep với GradingSagaStep, GradingStepResult, StepResult đều là 1 -- n.
     \item Một bài nộp có nhiều giải thích của trợ lý AI nhưng mỗi danh mục chỉ có tối đa một giải thích đang hiệu lực, nên quan hệ giữa Submission và AiExplanation là 1 -- n.
     \item Một sinh viên trong lớp có nhiều điểm nhập tay và một bài tập có thể có nhiều điểm nhập tay, do đó quan hệ giữa ClassStudent và Assignment là n -- n; quan hệ này được biểu diễn bằng lớp kết hợp ManualScore.
     \item Một giảng viên nhập nhiều điểm thủ công, vì vậy quan hệ giữa User và ManualScore là 1 -- n.
@@ -522,7 +522,7 @@ STT & Miền chức năng & Mô tả \\ \hline
 2 & Quản lý lớp học và điểm & Quản lý lớp học, nhập danh sách sinh viên, cấu hình thành phần điểm, nhập điểm thủ công và tính điểm tổng kết. \\ \hline
 3 & Nộp bài & Nhận tệp bài nộp của sinh viên, lưu trữ tệp và chuyển yêu cầu chấm. \\ \hline
 4 & Thực thi chấm & Tải bài nộp, thực thi các bước chấm tự động và tổng hợp kết quả. \\ \hline
-5 & Kết quả chấm & Lưu kết quả chấm theo kế hoạch, kết quả từng bước và điểm nhập tay; cung cấp dữ liệu cho bảng điểm. \\ \hline
+5 & Kết quả chấm & Lưu kết quả chấm theo câu, kết quả từng bước và điểm nhập tay; cung cấp dữ liệu cho bảng điểm. \\ \hline
 6 & Trợ lý AI & Sinh giải thích và gợi ý học tập cho bài nộp dựa trên kết quả chấm. \\ \hline
 \end{tabularx}
 \caption{Phân rã hệ thống thành các miền chức năng.}
@@ -547,7 +547,7 @@ Miền Xác thực và phân quyền gồm hai lớp Người dùng (User) và V
 
 \subsubsection{Biểu đồ lớp pha phân tích course-service}
 
-Các lớp thuộc course-service gồm Lớp học (CourseClass), Sinh viên thuộc lớp (ClassStudent), Bài tập (Assignment), Kế hoạch chấm (TestPlan), Bước chấm (TestStep), Thành phần điểm (ScoreComponent) và Điểm thành phần (StudentScore).
+Các lớp thuộc course-service gồm Lớp học (CourseClass), Sinh viên thuộc lớp (ClassStudent), Bài tập (Assignment), Câu (TestPlan), Bước chấm (TestStep), Thành phần điểm (ScoreComponent) và Điểm thành phần (StudentScore).
 
 % TODO: export report_datn/Hinhve/Hinh2_15_class_course.png rồi bỏ comment.
 % \begin{figure}[H]
