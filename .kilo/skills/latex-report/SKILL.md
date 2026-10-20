@@ -213,8 +213,13 @@ belong to Chapter 2 (analysis/design). Generic pattern terms
 (sinh viên/bài nộp) may stay in rationale sentences. Figures showing
 project actors move with their paragraphs to Chapter 2.
 
-## Single hyphen only, never em-dash (mandatory)
+## One hyphen in prose; `--` only where syntax requires (mandatory)
 
-Body text uses the single hyphen `-` for parenthetical breaks — never
-the LaTeX em-dash `---`. (The en-dash `--` stays reserved for numeric
-ranges such as page numbers in `.bib` entries.)
+Normal text, table cells, captions, and list items use exactly one
+hyphen `-` for parenthetical breaks, ranges, and multiplicities
+(`1 - n`, `n - n`, `0..1 - n`). Never write `--` or `---` as
+punctuation in prose.
+
+Keep `--` only where a tool or language requires it: BibTeX page
+ranges in `.bib`, CLI flags (`--include`, `--fill`), YAML front
+matter, code blocks, and command examples.

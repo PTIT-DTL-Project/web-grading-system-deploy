@@ -456,37 +456,37 @@ Hai lớp Người dùng (User) và Vai trò (Role) biểu diễn tác nhân và
 Các quan hệ giữa các lớp trong hệ thống được xác định như sau:
 
 \begin{itemize}[leftmargin=*, nosep]
-    \item Một người dùng có thể giữ nhiều vai trò và một vai trò có thể gán cho nhiều người dùng, do đó quan hệ giữa User và Role là n -- n.
-    \item Một giảng viên sở hữu nhiều lớp học và mỗi lớp học thuộc đúng một giảng viên, vì vậy quan hệ giữa User và CourseClass là 1 -- n.
-    \item Một giảng viên tạo nhiều bài tập trong lớp của mình, nên quan hệ giữa User và Assignment là 1 -- n.
-    \item Một sinh viên có thể được ghi danh vào nhiều lớp và một lớp có nhiều sinh viên, do đó quan hệ giữa User và CourseClass là n -- n; quan hệ này được biểu diễn bằng lớp kết hợp ClassStudent.
-    \item Một lớp học có nhiều sinh viên, vì vậy quan hệ giữa CourseClass và ClassStudent là 1 -- n.
-    \item Một lớp học có nhiều bài tập, nên quan hệ giữa CourseClass và Assignment là 1 -- n.
-    \item Một bài tập có nhiều câu, do đó quan hệ giữa Assignment và TestPlan là 1 -- n.
-    \item Một câu có nhiều bước chấm, vì vậy quan hệ giữa TestPlan và TestStep là 1 -- n.
-    \item Một lớp học có nhiều thành phần điểm, nên quan hệ giữa CourseClass và ScoreComponent là 1 -- n.
-    \item Một thành phần điểm áp dụng cho nhiều sinh viên và một sinh viên có điểm ở nhiều thành phần, do đó quan hệ giữa ClassStudent và ScoreComponent là n -- n; quan hệ này được biểu diễn bằng lớp kết hợp StudentScore.
-    \item Một bài tập nhận nhiều bài nộp, vì vậy quan hệ giữa Assignment và Submission là 1 -- n.
-    \item Một câu có thể được nộp riêng hoặc sinh viên nộp cho toàn bộ bài tập, nên quan hệ giữa TestPlan và Submission là 0..1 -- n; bài nộp không chọn câu nào nghĩa là nộp cho toàn bộ bài tập.
-    \item Một sinh viên có thể nộp nhiều bài tập, do đó quan hệ giữa User và Submission là 1 -- n.
-    \item Mỗi bài nộp chỉ sinh ra đúng một công việc chấm, vì vậy quan hệ giữa Submission và GradingJob là 1 -- 1.
-    \item Một công việc chấm có nhiều phiên chấm do mỗi lần chấm lại tạo một phiên mới, nên quan hệ giữa GradingJob và GradingSaga là 1 -- n.
-    \item Một phiên chấm có nhiều bước, do đó quan hệ giữa GradingSaga và GradingSagaStep là 1 -- n.
-    \item Một công việc chấm có nhiều kết quả bước chấm, vì vậy quan hệ giữa GradingJob và GradingStepResult là 1 -- n.
-    \item Một công việc chấm có nhiều nhật ký, nên quan hệ giữa GradingJob và GradingLog là 1 -- n.
-    \item Một bài nộp có thể sinh ra nhiều kết quả chấm, mỗi câu một kết quả hoặc một kết quả cho toàn bộ bài tập, do đó quan hệ giữa Submission và Result là 1 -- n.
-    \item Một kết quả chấm có nhiều kết quả bước, vì vậy quan hệ giữa Result và StepResult là 1 -- n.
-    \item Một câu có nhiều kết quả chấm, nên quan hệ giữa TestPlan và Result là 0..1 -- n.
-    \item Một bài tập có nhiều kết quả chấm, do đó quan hệ giữa Assignment và Result là 1 -- n.
-    \item Câu và bước chấm được sao chép sang kết quả bước tại thời điểm chấm, vì vậy các quan hệ giữa TestPlan với GradingSagaStep, GradingStepResult, StepResult và giữa TestStep với GradingSagaStep, GradingStepResult, StepResult đều là 1 -- n.
-    \item Một bài nộp có nhiều giải thích của trợ lý AI nhưng mỗi danh mục chỉ có tối đa một giải thích đang hiệu lực, nên quan hệ giữa Submission và AiExplanation là 1 -- n.
-    \item Một sinh viên trong lớp có nhiều điểm nhập tay và một bài tập có thể có nhiều điểm nhập tay, do đó quan hệ giữa ClassStudent và Assignment là n -- n; quan hệ này được biểu diễn bằng lớp kết hợp ManualScore.
-    \item Một giảng viên nhập nhiều điểm thủ công, vì vậy quan hệ giữa User và ManualScore là 1 -- n.
-    \item Một lớp học có nhiều điểm nhập tay, nên quan hệ giữa CourseClass và ManualScore là 1 -- n.
-    \item Một sinh viên có nhiều kết quả chấm và nhiều giải thích AI, do đó các quan hệ giữa User với Result và giữa User với AiExplanation đều là 1 -- n.
+    \item Một người dùng có thể giữ nhiều vai trò và một vai trò có thể gán cho nhiều người dùng, do đó quan hệ giữa User và Role là n - n.
+    \item Một giảng viên sở hữu nhiều lớp học và mỗi lớp học thuộc đúng một giảng viên, vì vậy quan hệ giữa User và CourseClass là 1 - n.
+    \item Một giảng viên tạo nhiều bài tập trong lớp của mình, nên quan hệ giữa User và Assignment là 1 - n.
+    \item Một sinh viên có thể được ghi danh vào nhiều lớp và một lớp có nhiều sinh viên, do đó quan hệ giữa User và CourseClass là n - n; quan hệ này được biểu diễn bằng lớp kết hợp ClassStudent.
+    \item Một lớp học có nhiều sinh viên, vì vậy quan hệ giữa CourseClass và ClassStudent là 1 - n.
+    \item Một lớp học có nhiều bài tập, nên quan hệ giữa CourseClass và Assignment là 1 - n.
+    \item Một bài tập có nhiều câu, do đó quan hệ giữa Assignment và TestPlan là 1 - n.
+    \item Một câu có nhiều bước chấm, vì vậy quan hệ giữa TestPlan và TestStep là 1 - n.
+    \item Một lớp học có nhiều thành phần điểm, nên quan hệ giữa CourseClass và ScoreComponent là 1 - n.
+    \item Một thành phần điểm áp dụng cho nhiều sinh viên và một sinh viên có điểm ở nhiều thành phần, do đó quan hệ giữa ClassStudent và ScoreComponent là n - n; quan hệ này được biểu diễn bằng lớp kết hợp StudentScore.
+    \item Một bài tập nhận nhiều bài nộp, vì vậy quan hệ giữa Assignment và Submission là 1 - n.
+    \item Một câu có thể được nộp riêng hoặc sinh viên nộp cho toàn bộ bài tập, nên quan hệ giữa TestPlan và Submission là 0..1 - n; bài nộp không chọn câu nào nghĩa là nộp cho toàn bộ bài tập.
+    \item Một sinh viên có thể nộp nhiều bài tập, do đó quan hệ giữa User và Submission là 1 - n.
+    \item Mỗi bài nộp chỉ sinh ra đúng một công việc chấm, vì vậy quan hệ giữa Submission và GradingJob là 1 - 1.
+    \item Một công việc chấm có nhiều phiên chấm do mỗi lần chấm lại tạo một phiên mới, nên quan hệ giữa GradingJob và GradingSaga là 1 - n.
+    \item Một phiên chấm có nhiều bước, do đó quan hệ giữa GradingSaga và GradingSagaStep là 1 - n.
+    \item Một công việc chấm có nhiều kết quả bước chấm, vì vậy quan hệ giữa GradingJob và GradingStepResult là 1 - n.
+    \item Một công việc chấm có nhiều nhật ký, nên quan hệ giữa GradingJob và GradingLog là 1 - n.
+    \item Một bài nộp có thể sinh ra nhiều kết quả chấm, mỗi câu một kết quả hoặc một kết quả cho toàn bộ bài tập, do đó quan hệ giữa Submission và Result là 1 - n.
+    \item Một kết quả chấm có nhiều kết quả bước, vì vậy quan hệ giữa Result và StepResult là 1 - n.
+    \item Một câu có nhiều kết quả chấm, nên quan hệ giữa TestPlan và Result là 0..1 - n.
+    \item Một bài tập có nhiều kết quả chấm, do đó quan hệ giữa Assignment và Result là 1 - n.
+    \item Câu và bước chấm được sao chép sang kết quả bước tại thời điểm chấm, vì vậy các quan hệ giữa TestPlan với GradingSagaStep, GradingStepResult, StepResult và giữa TestStep với GradingSagaStep, GradingStepResult, StepResult đều là 1 - n.
+    \item Một bài nộp có nhiều giải thích của trợ lý AI nhưng mỗi danh mục chỉ có tối đa một giải thích đang hiệu lực, nên quan hệ giữa Submission và AiExplanation là 1 - n.
+    \item Một sinh viên trong lớp có nhiều điểm nhập tay và một bài tập có thể có nhiều điểm nhập tay, do đó quan hệ giữa ClassStudent và Assignment là n - n; quan hệ này được biểu diễn bằng lớp kết hợp ManualScore.
+    \item Một giảng viên nhập nhiều điểm thủ công, vì vậy quan hệ giữa User và ManualScore là 1 - n.
+    \item Một lớp học có nhiều điểm nhập tay, nên quan hệ giữa CourseClass và ManualScore là 1 - n.
+    \item Một sinh viên có nhiều kết quả chấm và nhiều giải thích AI, do đó các quan hệ giữa User với Result và giữa User với AiExplanation đều là 1 - n.
 \end{itemize}
 
-Bốn lớp kết hợp được giữ lại để biểu diễn quan hệ n -- n kèm thuộc tính riêng: ClassStudent (giữa CourseClass và User, mang mã sinh viên, họ tên, email và định danh người dùng), StudentScore (giữa ClassStudent và ScoreComponent, mang điểm của sinh viên ở thành phần điểm tương ứng), Submission (giữa User và Assignment, mang đường dẫn tệp nộp, trạng thái chấm và cờ bài nộp mới nhất) và ManualScore (giữa ClassStudent và Assignment, mang điểm, nhận xét và giảng viên nhập điểm).
+Bốn lớp kết hợp được giữ lại để biểu diễn quan hệ n - n kèm thuộc tính riêng: ClassStudent (giữa CourseClass và User, mang mã sinh viên, họ tên, email và định danh người dùng), StudentScore (giữa ClassStudent và ScoreComponent, mang điểm của sinh viên ở thành phần điểm tương ứng), Submission (giữa User và Assignment, mang đường dẫn tệp nộp, trạng thái chấm và cờ bài nộp mới nhất) và ManualScore (giữa ClassStudent và Assignment, mang điểm, nhận xét và giảng viên nhập điểm).
 
 \subsubsection{Biểu đồ lớp thực thể pha phân tích}
 
