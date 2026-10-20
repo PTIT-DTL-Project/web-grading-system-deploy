@@ -43,7 +43,7 @@ Mô tả các usecase của hệ thống:
 
 Bảng \ref{tab:uc-dang-nhap} mô tả kịch bản của usecase Đăng nhập.
 
-\begin{table}[!ht]
+\begin{table}[H]
 \centering
 \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
 \hline
@@ -74,7 +74,7 @@ Kịch bản ngoại lệ &
 
 Bảng \ref{tab:uc-doi-mat-khau} mô tả kịch bản của usecase Đổi mật khẩu.
 
-\begin{table}[!ht]
+\begin{table}[H]
 \centering
 \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
 \hline
@@ -106,7 +106,7 @@ Kịch bản ngoại lệ &
 
 Bảng \ref{tab:uc-import-users} mô tả kịch bản của usecase Nhập danh sách tài khoản.
 
-\begin{table}[!ht]
+\begin{table}[H]
 \centering
 \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
 \hline
@@ -147,7 +147,7 @@ Hình \ref{fig:uc-classes-management} mô tả chi tiết usecase Quản lý l�
 
 Kịch bản của chức năng được trình bày trong Bảng \ref{tab:uc-classes-management} và Bảng \ref{tab:uc-classes-management-2}.
 
-\begin{table}[!ht]
+\begin{table}[H]
 \centering
 \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
 \hline
@@ -172,7 +172,7 @@ Kịch bản chính &
 \label{tab:uc-classes-management}
 \end{table}
 
-\begin{table}[!ht]
+\begin{table}[H]
 \centering
 \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
 \hline
@@ -218,7 +218,7 @@ Hình \ref{fig:uc-assignment-management} mô tả chi tiết usecase Quản lý 
 
 Kịch bản của chức năng được trình bày trong Bảng \ref{tab:uc-assignment-management} và Bảng \ref{tab:uc-assignment-management-2}.
 
-\begin{table}[!ht]
+\begin{table}[H]
 \centering
 \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
 \hline
@@ -236,13 +236,14 @@ Kịch bản chính &
     \item Giảng viên nhập tiêu đề và cấu hình chấm cho bài tập.
     \item Hệ thống lưu bài tập ở trạng thái chưa công bố.
     \item Giảng viên soạn các bước chấm tự động cho bài tập: gửi yêu cầu kiểm thử tới ứng dụng của sinh viên, kiểm tra dữ liệu và trích xuất biến để dùng cho các bước sau; mỗi bộ bước như vậy là một kế hoạch chấm.
+    \item Hệ thống thông báo tạo bài tập thành công
 \end{enumerate} \\ \hline
 \end{tabularx}
 \caption{Kịch bản chức năng Quản lý bài tập.}
 \label{tab:uc-assignment-management}
 \end{table}
 
-\begin{table}[!ht]
+\begin{table}[H]
 \centering
 \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
 \hline
@@ -281,7 +282,7 @@ Hình \ref{fig:uc-review-class-results} mô tả chi tiết usecase Xem kết qu
 
 Kịch bản của chức năng được trình bày trong Bảng \ref{tab:uc-review-class-results}.
 
-\begin{table}[!ht]
+\begin{table}[H]
 \centering
 \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
 \hline
@@ -326,7 +327,7 @@ Hình \ref{fig:uc-submit-assignment} mô tả chi tiết usecase Nộp bài tậ
 
 Kịch bản của chức năng được trình bày trong Bảng \ref{tab:uc-submit-assignments}.
 
-\begin{table}[!ht]
+\begin{table}[H]
 \centering
 \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
 \hline
@@ -369,7 +370,7 @@ Hình \ref{fig:uc-view-scores} mô tả chi tiết usecase Xem điểm và kết
 
 Kịch bản của chức năng được trình bày trong Bảng \ref{tab:uc-view-scores}.
 
-\begin{table}[!ht]
+\begin{table}[H]
 \centering
 \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
 \hline
@@ -408,7 +409,7 @@ Hình \ref{fig:uc-review-own-results} mô tả chi tiết usecase Xem kết qu�
 
 Kịch bản của chức năng được trình bày trong Bảng \ref{tab:uc-review-own-results}.
 
-\begin{table}[!ht]
+\begin{table}[H]
 \centering
 \begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
 \hline
@@ -442,6 +443,166 @@ Kịch bản ngoại lệ &
 
 \subsubsection{Xác định các lớp của hệ thống}
 
-\subsubsection{Xác định các quan hệ giữa các lớp của hệ thống}
+Áp dụng kỹ thuật trích danh từ trên các use case và kịch bản đã mô tả ở các mục trước, các danh từ thu được gồm: tài khoản, người dùng, vai trò, quản trị viên, giảng viên, sinh viên, lớp học, học kỳ, danh sách sinh viên, mã sinh viên, họ tên, email, bài tập, kế hoạch chấm, bước chấm, cấu hình chấm, môi trường chạy, thành phần điểm, trọng số, điểm thành phần, điểm tổng kết, điểm chữ, điểm hệ 4, bảng điểm, bài nộp, tệp nén, trạng thái chấm, kết quả chấm, kết quả từng bước, nhật ký chấm, giải thích của trợ lý AI, gợi ý và từ khoá học tập.
+
+Loại bỏ các danh từ nằm ngoài phạm vi mục đích của hệ thống, các danh từ trùng lặp và các danh từ chỉ là thuộc tính của lớp khác (trọng số, trạng thái, mã sinh viên, họ tên, email, thời gian chờ, giới hạn tài nguyên), ta thu được các lớp thực thể sau:
+
+Người dùng (User), Vai trò (Role), Lớp học (CourseClass), Sinh viên thuộc lớp (ClassStudent), Bài tập (Assignment), Kế hoạch chấm (TestPlan), Bước chấm (TestStep), Thành phần điểm (ScoreComponent), Điểm thành phần (StudentScore), Bài nộp (Submission), Công việc chấm (GradingJob), Phiên chấm (GradingSaga), Bước của phiên chấm (GradingSagaStep), Kết quả bước chấm (GradingStepResult), Nhật ký chấm (GradingLog), Kết quả chấm (Result), Kết quả từng bước (StepResult), Điểm nhập tay (ManualScore), Giải thích của trợ lý AI (AiExplanation).
+
+Hai lớp Người dùng (User) và Vai trò (Role) biểu diễn tác nhân và quyền truy cập của hệ thống.
+
+\subsubsection{Xác định quan hệ giữa các lớp}
+
+Các quan hệ giữa các lớp trong hệ thống được xác định như sau:
+
+\begin{itemize}[leftmargin=*, nosep]
+    \item Một người dùng có thể giữ nhiều vai trò và một vai trò có thể gán cho nhiều người dùng, do đó quan hệ giữa User và Role là n -- n.
+    \item Một giảng viên sở hữu nhiều lớp học và mỗi lớp học thuộc đúng một giảng viên, vì vậy quan hệ giữa User và CourseClass là 1 -- n.
+    \item Một giảng viên tạo nhiều bài tập trong lớp của mình, nên quan hệ giữa User và Assignment là 1 -- n.
+    \item Một sinh viên có thể được ghi danh vào nhiều lớp và một lớp có nhiều sinh viên, do đó quan hệ giữa User và CourseClass là n -- n; quan hệ này được biểu diễn bằng lớp kết hợp ClassStudent.
+    \item Một lớp học có nhiều sinh viên, vì vậy quan hệ giữa CourseClass và ClassStudent là 1 -- n.
+    \item Một lớp học có nhiều bài tập, nên quan hệ giữa CourseClass và Assignment là 1 -- n.
+    \item Một bài tập có nhiều kế hoạch chấm, do đó quan hệ giữa Assignment và TestPlan là 1 -- n.
+    \item Một kế hoạch chấm có nhiều bước chấm, vì vậy quan hệ giữa TestPlan và TestStep là 1 -- n.
+    \item Một lớp học có nhiều thành phần điểm, nên quan hệ giữa CourseClass và ScoreComponent là 1 -- n.
+    \item Một thành phần điểm áp dụng cho nhiều sinh viên và một sinh viên có điểm ở nhiều thành phần, do đó quan hệ giữa ClassStudent và ScoreComponent là n -- n; quan hệ này được biểu diễn bằng lớp kết hợp StudentScore.
+    \item Một bài tập nhận nhiều bài nộp, vì vậy quan hệ giữa Assignment và Submission là 1 -- n.
+    \item Một kế hoạch chấm có thể được nộp riêng hoặc sinh viên nộp cho toàn bộ bài tập, nên quan hệ giữa TestPlan và Submission là 0..1 -- n; bài nộp để trống kế hoạch nghĩa là nộp cho toàn bộ bài tập.
+    \item Một sinh viên có thể nộp nhiều bài tập, do đó quan hệ giữa User và Submission là 1 -- n.
+    \item Mỗi bài nộp chỉ sinh ra đúng một công việc chấm, vì vậy quan hệ giữa Submission và GradingJob là 1 -- 1.
+    \item Một công việc chấm có nhiều phiên chấm do mỗi lần chấm lại tạo một phiên mới, nên quan hệ giữa GradingJob và GradingSaga là 1 -- n.
+    \item Một phiên chấm có nhiều bước, do đó quan hệ giữa GradingSaga và GradingSagaStep là 1 -- n.
+    \item Một công việc chấm có nhiều kết quả bước chấm, vì vậy quan hệ giữa GradingJob và GradingStepResult là 1 -- n.
+    \item Một công việc chấm có nhiều nhật ký, nên quan hệ giữa GradingJob và GradingLog là 1 -- n.
+    \item Một bài nộp có thể sinh ra nhiều kết quả chấm, mỗi kế hoạch một kết quả hoặc một kết quả cho toàn bộ bài tập, do đó quan hệ giữa Submission và Result là 1 -- n.
+    \item Một kết quả chấm có nhiều kết quả bước, vì vậy quan hệ giữa Result và StepResult là 1 -- n.
+    \item Một kế hoạch chấm có nhiều kết quả chấm, nên quan hệ giữa TestPlan và Result là 0..1 -- n.
+    \item Một bài tập có nhiều kết quả chấm, do đó quan hệ giữa Assignment và Result là 1 -- n.
+    \item Kế hoạch chấm và bước chấm được sao chép sang kết quả bước tại thời điểm chấm, vì vậy các quan hệ giữa TestPlan với GradingSagaStep, GradingStepResult, StepResult và giữa TestStep với GradingSagaStep, GradingStepResult, StepResult đều là 1 -- n.
+    \item Một bài nộp có nhiều giải thích của trợ lý AI nhưng mỗi danh mục chỉ có tối đa một giải thích đang hiệu lực, nên quan hệ giữa Submission và AiExplanation là 1 -- n.
+    \item Một sinh viên trong lớp có nhiều điểm nhập tay và một bài tập có thể có nhiều điểm nhập tay, do đó quan hệ giữa ClassStudent và Assignment là n -- n; quan hệ này được biểu diễn bằng lớp kết hợp ManualScore.
+    \item Một giảng viên nhập nhiều điểm thủ công, vì vậy quan hệ giữa User và ManualScore là 1 -- n.
+    \item Một lớp học có nhiều điểm nhập tay, nên quan hệ giữa CourseClass và ManualScore là 1 -- n.
+    \item Một sinh viên có nhiều kết quả chấm và nhiều giải thích AI, do đó các quan hệ giữa User với Result và giữa User với AiExplanation đều là 1 -- n.
+\end{itemize}
+
+Bốn lớp kết hợp được giữ lại để biểu diễn quan hệ n -- n kèm thuộc tính riêng: ClassStudent (giữa CourseClass và User, mang mã sinh viên, họ tên, email và định danh người dùng), StudentScore (giữa ClassStudent và ScoreComponent, mang điểm của sinh viên ở thành phần điểm tương ứng), Submission (giữa User và Assignment, mang đường dẫn tệp nộp, trạng thái chấm và cờ bài nộp mới nhất) và ManualScore (giữa ClassStudent và Assignment, mang điểm, nhận xét và giảng viên nhập điểm).
+
+\subsubsection{Biểu đồ lớp thực thể pha phân tích}
+
+% TODO: vẽ biểu đồ lớp trong Visual Paradigm, export thành
+% report_datn/Hinhve/Hinh2_13_bieu_do_lop.png, sau đó bỏ comment khối dưới.
+% \begin{figure}[H]
+% \centering
+% \includegraphics[width=\textwidth]{Hinhve/Hinh2_13_bieu_do_lop}
+% \caption{Biểu đồ lớp thực thể pha phân tích.}
+% \label{fig:class-diagram}
+% \end{figure}
+
+\subsection{Phân rã hệ thống theo miền chức năng}
+
+Dựa trên kết quả phân tích nghiệp vụ ở các mục trước, hệ thống được chia thành các miền chức năng nhằm xác định ranh giới nghiệp vụ và phạm vi xử lý của từng nhóm chức năng. Việc phân rã này giúp làm rõ cấu trúc logic của hệ thống, đồng thời tạo tiền đề để chuyển đổi các miền chức năng thành các dịch vụ độc lập trong kiến trúc microservice ở giai đoạn thiết kế.
+
+Quá trình phân rã được thực hiện dựa trên các tiêu chí:
+\begin{itemize}[leftmargin=*, nosep]
+    \item Tính độc lập nghiệp vụ.
+    \item Khả năng triển khai và mở rộng riêng biệt.
+    \item Mức độ liên kết giữa các chức năng và mức độ phụ thuộc dữ liệu.
+    \item Ranh giới tự nhiên của các thực thể trong mô hình domain.
+\end{itemize}
+
+Hệ thống được phân rã thành các miền chức năng sau:
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|p{0.8cm}|p{3.6cm}|X|}
+\hline
+STT & Miền chức năng & Mô tả \\ \hline
+1 & Xác thực và phân quyền & Quản lý tài khoản, đăng nhập, đổi mật khẩu, cấp và kiểm tra vai trò. \\ \hline
+2 & Quản lý lớp học và điểm & Quản lý lớp học, nhập danh sách sinh viên, cấu hình thành phần điểm, nhập điểm thủ công và tính điểm tổng kết. \\ \hline
+3 & Nộp bài & Nhận tệp bài nộp của sinh viên, lưu trữ tệp và chuyển yêu cầu chấm. \\ \hline
+4 & Thực thi chấm & Tải bài nộp, thực thi các bước chấm tự động và tổng hợp kết quả. \\ \hline
+5 & Kết quả chấm & Lưu kết quả chấm theo kế hoạch, kết quả từng bước và điểm nhập tay; cung cấp dữ liệu cho bảng điểm. \\ \hline
+6 & Trợ lý AI & Sinh giải thích và gợi ý học tập cho bài nộp dựa trên kết quả chấm. \\ \hline
+\end{tabularx}
+\caption{Phân rã hệ thống thành các miền chức năng.}
+\label{tab:functional-domains}
+\end{table}
+
+\subsection{Biểu đồ lớp chi tiết từng dịch vụ}
+
+Sau khi phân rã, mỗi miền chức năng được thiết kế thành một dịch vụ độc lập với cơ sở dữ liệu riêng. Các mục dưới đây trình bày biểu đồ lớp chi tiết của từng dịch vụ.
+
+\subsubsection{Biểu đồ lớp pha phân tích miền Xác thực và phân quyền}
+
+Miền Xác thực và phân quyền gồm hai lớp Người dùng (User) và Vai trò (Role) biểu diễn tác nhân và quyền truy cập.
+
+% TODO: export report_datn/Hinhve/Hinh2_14_class_auth.png rồi bỏ comment.
+% \begin{figure}[H]
+% \centering
+% \includegraphics[width=\textwidth]{Hinhve/Hinh2_14_class_auth}
+% \caption{Biểu đồ lớp pha phân tích miền Xác thực và phân quyền.}
+% \label{fig:class-auth}
+% \end{figure}
+
+\subsubsection{Biểu đồ lớp pha phân tích course-service}
+
+Các lớp thuộc course-service gồm Lớp học (CourseClass), Sinh viên thuộc lớp (ClassStudent), Bài tập (Assignment), Kế hoạch chấm (TestPlan), Bước chấm (TestStep), Thành phần điểm (ScoreComponent) và Điểm thành phần (StudentScore).
+
+% TODO: export report_datn/Hinhve/Hinh2_15_class_course.png rồi bỏ comment.
+% \begin{figure}[H]
+% \centering
+% \includegraphics[width=\textwidth]{Hinhve/Hinh2_15_class_course}
+% \caption{Biểu đồ lớp pha phân tích course-service.}
+% \label{fig:class-course}
+% \end{figure}
+
+\subsubsection{Biểu đồ lớp pha phân tích submission-service}
+
+Các lớp thuộc submission-service gồm Bài nộp (Submission) và thông tin tệp nộp, trạng thái chấm của bài nộp.
+
+% TODO: export report_datn/Hinhve/Hinh2_16_class_submission.png rồi bỏ comment.
+% \begin{figure}[H]
+% \centering
+% \includegraphics[width=\textwidth]{Hinhve/Hinh2_16_class_submission}
+% \caption{Biểu đồ lớp pha phân tích submission-service.}
+% \label{fig:class-submission}
+% \end{figure}
+
+\subsubsection{Biểu đồ lớp pha phân tích executor-service}
+
+Các lớp thuộc executor-service gồm Công việc chấm (GradingJob), Phiên chấm (GradingSaga), Bước của phiên chấm (GradingSagaStep), Kết quả bước chấm (GradingStepResult) và Nhật ký chấm (GradingLog).
+
+% TODO: export report_datn/Hinhve/Hinh2_17_class_executor.png rồi bỏ comment.
+% \begin{figure}[H]
+% \centering
+% \includegraphics[width=\textwidth]{Hinhve/Hinh2_17_class_executor}
+% \caption{Biểu đồ lớp pha phân tích executor-service.}
+% \label{fig:class-executor}
+% \end{figure}
+
+\subsubsection{Biểu đồ lớp pha phân tích result-service}
+
+Các lớp thuộc result-service gồm Kết quả chấm (Result), Kết quả từng bước (StepResult) và Điểm nhập tay (ManualScore).
+
+% TODO: export report_datn/Hinhve/Hinh2_18_class_result.png rồi bỏ comment.
+% \begin{figure}[H]
+% \centering
+% \includegraphics[width=\textwidth]{Hinhve/Hinh2_18_class_result}
+% \caption{Biểu đồ lớp pha phân tích result-service.}
+% \label{fig:class-result}
+% \end{figure}
+
+\subsubsection{Biểu đồ lớp pha phân tích ai-assistant-service}
+
+Các lớp thuộc ai-assistant-service gồm Giải thích của trợ lý AI (AiExplanation) cùng thông tin bài nộp và danh mục được giải thích.
+
+% TODO: export report_datn/Hinhve/Hinh2_19_class_ai.png rồi bỏ comment.
+% \begin{figure}[H]
+% \centering
+% \includegraphics[width=\textwidth]{Hinhve/Hinh2_19_class_ai}
+% \caption{Biểu đồ lớp pha phân tích ai-assistant-service.}
+% \label{fig:class-ai}
+% \end{figure}
 
 \end{document}
