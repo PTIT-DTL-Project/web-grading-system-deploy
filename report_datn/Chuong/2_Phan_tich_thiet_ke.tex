@@ -501,7 +501,7 @@ Bốn lớp kết hợp được giữ lại để biểu diễn quan hệ n - n
 
 \subsection{Phân rã hệ thống theo miền chức năng}
 
-Dựa trên kết quả phân tích nghiệp vụ ở các mục trước, hệ thống được chia thành các miền chức năng nhằm xác định ranh giới nghiệp vụ và phạm vi xử lý của từng nhóm chức năng. Việc phân rã này giúp làm rõ cấu trúc logic của hệ thống, đồng thời tạo tiền đề để chuyển đổi các miền chức năng thành các dịch vụ độc lập trong kiến trúc microservice ở giai đoạn thiết kế.
+Dựa trên kết quả phân tích nghiệp vụ ở các mục trước, hệ thống được chia thành các miền chức năng nhằm xác định ranh giới nghiệp vụ và phạm vi xử lý của từng nhóm chức năng. Việc phân rã này giúp làm rõ cấu trúc logic của hệ thống, đồng thời tạo tiền đề để chuyển đổi các miền chức năng thành các dịch vụ độc lập trong kiến trúc vi dịch vụ ở giai đoạn thiết kế.
 
 Quá trình phân rã được thực hiện dựa trên các tiêu chí:
 \begin{itemize}[leftmargin=*, nosep]
@@ -545,63 +545,63 @@ Miền Xác thực và phân quyền gồm hai lớp Người dùng (User) và V
 % \label{fig:class-auth}
 % \end{figure}
 
-\subsubsection{Biểu đồ lớp pha phân tích course-service}
+\subsubsection{Biểu đồ lớp pha phân tích dịch vụ quản lý lớp học và điểm}
 
-Các lớp thuộc course-service gồm Lớp học (CourseClass), Sinh viên thuộc lớp (ClassStudent), Bài tập (Assignment), Câu (TestPlan), Bước chấm (TestStep), Thành phần điểm (ScoreComponent) và Điểm thành phần (StudentScore).
+Các lớp thuộc dịch vụ quản lý lớp học và điểm gồm Lớp học (CourseClass), Sinh viên thuộc lớp (ClassStudent), Bài tập (Assignment), Câu (TestPlan), Bước chấm (TestStep), Thành phần điểm (ScoreComponent) và Điểm thành phần (StudentScore).
 
 % TODO: export report_datn/Hinhve/Hinh2_15_class_course.png rồi bỏ comment.
 % \begin{figure}[H]
 % \centering
 % \includegraphics[width=\textwidth]{Hinhve/Hinh2_15_class_course}
-% \caption{Biểu đồ lớp pha phân tích course-service.}
+% \caption{Biểu đồ lớp pha phân tích dịch vụ quản lý lớp học và điểm.}
 % \label{fig:class-course}
 % \end{figure}
 
-\subsubsection{Biểu đồ lớp pha phân tích submission-service}
+\subsubsection{Biểu đồ lớp pha phân tích dịch vụ nộp bài}
 
-Các lớp thuộc submission-service gồm Bài nộp (Submission) và thông tin tệp nộp, trạng thái chấm của bài nộp.
+Các lớp thuộc dịch vụ nộp bài gồm Bài nộp (Submission) và thông tin tệp nộp, trạng thái chấm của bài nộp.
 
 % TODO: export report_datn/Hinhve/Hinh2_16_class_submission.png rồi bỏ comment.
 % \begin{figure}[H]
 % \centering
 % \includegraphics[width=\textwidth]{Hinhve/Hinh2_16_class_submission}
-% \caption{Biểu đồ lớp pha phân tích submission-service.}
+% \caption{Biểu đồ lớp pha phân tích dịch vụ nộp bài.}
 % \label{fig:class-submission}
 % \end{figure}
 
-\subsubsection{Biểu đồ lớp pha phân tích executor-service}
+\subsubsection{Biểu đồ lớp pha phân tích dịch vụ thực thi chấm}
 
-Các lớp thuộc executor-service gồm Công việc chấm (GradingJob), Phiên chấm (GradingSaga), Bước của phiên chấm (GradingSagaStep), Kết quả bước chấm (GradingStepResult) và Nhật ký chấm (GradingLog).
+Các lớp thuộc dịch vụ thực thi chấm gồm Công việc chấm (GradingJob), Phiên chấm (GradingSaga), Bước của phiên chấm (GradingSagaStep), Kết quả bước chấm (GradingStepResult) và Nhật ký chấm (GradingLog).
 
 % TODO: export report_datn/Hinhve/Hinh2_17_class_executor.png rồi bỏ comment.
 % \begin{figure}[H]
 % \centering
 % \includegraphics[width=\textwidth]{Hinhve/Hinh2_17_class_executor}
-% \caption{Biểu đồ lớp pha phân tích executor-service.}
+% \caption{Biểu đồ lớp pha phân tích dịch vụ thực thi chấm.}
 % \label{fig:class-executor}
 % \end{figure}
 
-\subsubsection{Biểu đồ lớp pha phân tích result-service}
+\subsubsection{Biểu đồ lớp pha phân tích dịch vụ kết quả chấm}
 
-Các lớp thuộc result-service gồm Kết quả chấm (Result), Kết quả từng bước (StepResult) và Điểm nhập tay (ManualScore).
+Các lớp thuộc dịch vụ kết quả chấm gồm Kết quả chấm (Result), Kết quả từng bước (StepResult) và Điểm nhập tay (ManualScore).
 
 % TODO: export report_datn/Hinhve/Hinh2_18_class_result.png rồi bỏ comment.
 % \begin{figure}[H]
 % \centering
 % \includegraphics[width=\textwidth]{Hinhve/Hinh2_18_class_result}
-% \caption{Biểu đồ lớp pha phân tích result-service.}
+% \caption{Biểu đồ lớp pha phân tích dịch vụ kết quả chấm.}
 % \label{fig:class-result}
 % \end{figure}
 
-\subsubsection{Biểu đồ lớp pha phân tích ai-assistant-service}
+\subsubsection{Biểu đồ lớp pha phân tích dịch vụ trợ lý AI}
 
-Các lớp thuộc ai-assistant-service gồm Giải thích của trợ lý AI (AiExplanation) cùng thông tin bài nộp và danh mục được giải thích.
+Các lớp thuộc dịch vụ trợ lý AI gồm Giải thích của trợ lý AI (AiExplanation) cùng thông tin bài nộp và danh mục được giải thích.
 
 % TODO: export report_datn/Hinhve/Hinh2_19_class_ai.png rồi bỏ comment.
 % \begin{figure}[H]
 % \centering
 % \includegraphics[width=\textwidth]{Hinhve/Hinh2_19_class_ai}
-% \caption{Biểu đồ lớp pha phân tích ai-assistant-service.}
+% \caption{Biểu đồ lớp pha phân tích dịch vụ trợ lý AI.}
 % \label{fig:class-ai}
 % \end{figure}
 

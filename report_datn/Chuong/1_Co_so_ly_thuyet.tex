@@ -114,7 +114,7 @@ Hệ thống trao đổi tin nhắn (message queue) là một phương thức gi
 
 Apache Kafka là một hệ thống trao đổi tin nhắn phân tán, được thiết kế để xử lý luồng dữ liệu lớn với throughput cao, độ trễ thấp và khả năng tái sử dụng dữ liệu. Kafka tổ chức tin nhắn theo các topic (chủ đề), mỗi topic được chia thành nhiều partition (phân vùng) để có thể mở rộng song song. Các nhóm consumer (người tiêu thụ) đọc tin nhắn từ topic, cho phép nhiều tác vụ xử lý cùng lúc~\cite{kreps2011kafka,kafkadocs}.
 
-Trong kiến trúc vi dịch vụ, Kafka thường được dùng làm hàng đợi sự kiện nối các service xử lý bất đồng bộ: service tạo sự kiện (producer) publish tin vào topic sau khi hoàn tất một tác vụ, service xử lý (consumer) nhận tin và thực thi. Cách làm này đảm bảo:
+Trong kiến trúc vi dịch vụ, Kafka thường được dùng làm hàng đợi sự kiện nối các dịch vụ xử lý bất đồng bộ: dịch vụ tạo sự kiện (producer) publish tin vào topic sau khi hoàn tất một tác vụ, dịch vụ xử lý (consumer) nhận tin và thực thi. Cách làm này đảm bảo:
 \begin{itemize}
     \item Producer và consumer là hai quá trình độc lập; bên gửi không phải chờ bên nhận xử lý xong.
     \item Nếu consumer bị quá tải hoặc tạm dừng, các tin nhắn vẫn được lưu bền trong Kafka và sẽ được xử lý khi consumer phục hồi.
@@ -131,7 +131,7 @@ Lưu trữ đối tượng (object storage) là phương thức lưu trữ dữ 
 
 Việc sử dụng một máy chủ lưu trữ đối tượng chuyên dụng (object storage server) thay vì lưu bài nộp trực tiếp vào filesystem của server ứng dụng xuất phát từ ba lý do.
 \begin{enumerate}
-    \item Bài nộp của sinh viên là các file zip có kích thước biến động lớn; việc xử lý upload qua server ứng dụng sẽ chiếm dụng tài nguyên (CPU, bộ nhớ, băng thông) của các service nghiệp vụ — tách riêng object storage giúp giảm tải cho backend và cho phép scale lưu trữ độc lập.
+    \item Bài nộp của sinh viên là các file zip có kích thước biến động lớn; việc xử lý upload qua server ứng dụng sẽ chiếm dụng tài nguyên (CPU, bộ nhớ, băng thông) của các dịch vụ nghiệp vụ — tách riêng object storage giúp giảm tải cho backend và cho phép scale lưu trữ độc lập.
     \item Presigned URL cho phép sinh viên tải lên trực tiếp vào object storage mà không cần request đi qua backend, từ đó tăng tốc độ upload và giảm nguy cơ nghẽn ở server ứng dụng.
     \item Object storage cung cấp cơ chế sao lưu, nhân bản và truy cập qua giao thức chuẩn (S3) mà filesystem truyền thống không có, giúp hệ thống đáng tin cậy hơn và dễ phục hồi dữ liệu.
 \end{enumerate}
@@ -164,14 +164,14 @@ Một cơ chế quan trọng được áp dụng là presigned URL: server tạo
 
 Docker là nền tảng container hóa ứng dụng, cho phép đóng gói ứng dụng và tất cả các phụ thuộc (runtime, thư viện, cấu hình) vào một docker image (hình ảnh). Image khi được chạy sẽ tạo thành một docker container - một tiến trình chạy trong môi trường cô lập về file hệ thống, mạng và quá trình~\cite{dockerdocs}. Sự cô lập này rất quan trọng với đề tài, vì nó cho phép thực thi mã nguồn của sinh viên mà không ảnh hưởng đến môi trường hệ thống.
 
-Docker Compose là công cụ định nghĩa và chạy các ứng dụng đa container thông qua một file cấu hình, cho phép khởi động đồng thời các container liên quan (ví dụ: container bài làm của sinh viên cùng các service phụ trợ).
+Docker Compose là công cụ định nghĩa và chạy các ứng dụng đa container thông qua một file cấu hình, cho phép khởi động đồng thời các container liên quan (ví dụ: container bài làm của sinh viên cùng các dịch vụ phụ trợ).
 
 \subsection{Kubernetes (k3s)}
 \label{section:1.7.2}
 
 Kubernetes (thường gọi tắt là K8s) là hệ thống điều phối container (container orchestration), tự động hóa việc triển khai, mở rộng và quản lý các container trên một cụm máy chủ~\cite{kubernetesdocs}. k3s là phiên bản Kubernetes nhẹ, được tối ưu cho môi trường edge và các cụm nhỏ~\cite{k3sdocs} - phù hợp với hạ tầng hiện tại của hệ thống.
 
-Trong kiến trúc vi dịch vụ, mỗi service được đóng gói thành một Docker image và được Kubernetes điều phối, giúp tự động khởi động lại (restart) khi có sự cố, cân bằng tải và mở rộng số lượng bản sao theo nhu cầu.
+Trong kiến trúc vi dịch vụ, mỗi dịch vụ được đóng gói thành một Docker image và được Kubernetes điều phối, giúp tự động khởi động lại (restart) khi có sự cố, cân bằng tải và mở rộng số lượng bản sao theo nhu cầu.
 
 \subsection{Helm và ArgoCD}
 \label{section:1.7.3}
@@ -220,7 +220,7 @@ Bên cạnh đó, OAuth 2.0 định nghĩa hai loại token:
 
 OpenID Connect (OIDC) là một lớp xác thực dựa trên OAuth2, cho phép client xác minh danh tính người dùng dựa trên xác thực được thực hiện bởi IdP~\cite{oidccore2014}. Quá trình xác thực kết quả là việc phát hành JWT - một dạng token mã hóa, chứa các thông tin về người dùng (danh tính, vai trò...) và được ký số bởi IdP~\cite{rfc7519,oidccore2014}. JWT cho phép các dịch vụ xác minh danh tính mà không cần gọi lại IdP cho mỗi request.
 
-Trong kiến trúc vi dịch vụ, IdP (ví dụ Keycloak~\cite{keycloakdocs}) xác thực người dùng và phát hành JWT. Gateway, với vai trò là OAuth2 Resource Server, xác thực chữ ký của JWT trước khi chuyển request tới các vi dịch vụ. Gateway trích xuất thông tin người dùng (danh tính, vai trò) từ JWT và chuyển tiếp dưới dạng header cho các service phía sau. Cách thiết kế này đảm bảo mọi request từ client đều mang JWT hợp lệ, và các service nội bộ không cần trực tiếp xử lý đăng nhập.
+Trong kiến trúc vi dịch vụ, IdP (ví dụ Keycloak~\cite{keycloakdocs}) xác thực người dùng và phát hành JWT. Cổng API (Gateway), với vai trò là OAuth2 Resource Server, xác thực chữ ký của JWT trước khi chuyển request tới các vi dịch vụ. Gateway trích xuất thông tin người dùng (danh tính, vai trò) từ JWT và chuyển tiếp dưới dạng header cho các dịch vụ phía sau. Cách thiết kế này đảm bảo mọi request từ client đều mang JWT hợp lệ, và các service nội bộ không cần trực tiếp xử lý đăng nhập.
 
 Hình \ref{fig:auth-flow} vẽ lại luồng xác thực JWT qua API Gateway.
 

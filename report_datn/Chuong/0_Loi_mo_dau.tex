@@ -13,7 +13,7 @@ Yêu cầu đặc thù của môn học khiến bài toán phức tạp hơn: b�
 \section{Giải pháp}
 \label{section:0.2}
 
-Đồ án xây dựng hệ thống chấm bài tự động môn Lập trình Web theo kiến trúc vi dịch vụ, gồm cổng API Gateway, các service quản lý lớp học và bài tập, service quản lý nộp bài, service thực thi chấm bài và service quản lý kết quả. Sinh viên đóng gói bài làm thành file zip và tải lên hệ thống lưu trữ đối tượng; sự kiện nộp bài được đưa qua hàng đợi tin nhắn để service chấm bài xử lý bất đồng bộ mà không bắt sinh viên chờ đợi. Mỗi bài làm được dựng và chạy trong container Docker cách ly, sau đó hệ thống thực hiện các kịch bản kiểm tra đã được giảng viên cấu hình — từ các phương thức HTTP cơ bản đến kiểm tra cấu trúc bảng, ràng buộc dữ liệu và cách xử lý ngoại lệ. Xác thực và phân quyền tập trung qua Keycloak với vai trò giảng viên và sinh viên; toàn bộ công nghệ sử dụng là mã nguồn mở.
+Đồ án xây dựng hệ thống chấm bài tự động môn Lập trình Web theo kiến trúc vi dịch vụ, gồm cổng API (API Gateway), các dịch vụ quản lý lớp học và bài tập, dịch vụ nộp bài, dịch vụ thực thi chấm bài và dịch vụ quản lý kết quả. Sinh viên đóng gói bài làm thành file zip và tải lên hệ thống lưu trữ đối tượng; sự kiện nộp bài được đưa qua hàng đợi tin nhắn để dịch vụ chấm bài xử lý bất đồng bộ mà không bắt sinh viên chờ đợi. Mỗi bài làm được dựng và chạy trong container Docker cách ly, sau đó hệ thống thực hiện các kịch bản kiểm tra đã được giảng viên cấu hình — từ các phương thức HTTP cơ bản đến kiểm tra cấu trúc bảng, ràng buộc dữ liệu và cách xử lý ngoại lệ. Xác thực và phân quyền tập trung qua Keycloak với vai trò giảng viên và sinh viên; toàn bộ công nghệ sử dụng là mã nguồn mở.
 
 \section{Cấu trúc báo cáo}
 \label{section:0.3}
