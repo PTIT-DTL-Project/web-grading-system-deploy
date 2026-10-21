@@ -447,59 +447,103 @@ Kịch bản ngoại lệ &
 
 Loại bỏ các danh từ nằm ngoài phạm vi mục đích của hệ thống, các danh từ trùng lặp và các danh từ chỉ là thuộc tính của lớp khác (trọng số, trạng thái, mã sinh viên, họ tên, email, thời gian chờ, giới hạn tài nguyên), ta thu được các lớp thực thể sau:
 
-Người dùng (User), Vai trò (Role), Lớp học (CourseClass), Sinh viên thuộc lớp (ClassStudent), Bài tập (Assignment), Câu (TestPlan), Bước chấm (TestStep), Thành phần điểm (ScoreComponent), Điểm thành phần (StudentScore), Bài nộp (Submission), Công việc chấm (GradingJob), Phiên chấm (GradingSaga), Bước của phiên chấm (GradingSagaStep), Nhật ký chấm (GradingLog), Kết quả chấm (Result), Kết quả từng bước (StepResult), Điểm nhập tay (ManualScore), Giải thích của trợ lý AI (AiExplanation).
+Người dùng (User), Vai trò (Role), Liên kết người dùng - vai trò (UserRole), Lớp học (CourseClass), Sinh viên thuộc lớp (ClassStudent), Bài tập (Assignment), Câu (TestPlan), Bước chấm (TestStep), Thành phần điểm (ScoreComponent), Điểm thành phần (StudentScore), Bài nộp (Submission), Công việc chấm (GradingJob), Phiên chấm (GradingSaga), Bước của phiên chấm (GradingSagaStep), Nhật ký chấm (GradingLog), Kết quả chấm (Result), Kết quả từng bước (StepResult), Giải thích của trợ lý AI (AiExplanation).
 
-Hai lớp Người dùng (User) và Vai trò (Role) biểu diễn tác nhân và quyền truy cập của hệ thống.
+Hai lớp Người dùng (User) và Vai trò (Role) biểu diễn tác nhân và quyền truy cập của hệ thống; lớp UserRole biểu diễn liên kết nhiều-nhiều giữa hai lớp này.
 
 Trong mô hình toàn hệ thống, kết quả thực thi từng bước và kết quả chấm từng bước được mô hình hóa chung thành lớp StepResult; bản ghi thực thi riêng của dịch vụ thực thi được trình bày ở mục 2.1.6.
 
-\subsubsection{Xác định quan hệ giữa các lớp}
+\subsubsection{Xét quan hệ số lượng giữa các lớp}
 
-Các quan hệ giữa các lớp trong hệ thống được xác định như sau:
+Xác định quan hệ số lượng giữa các lớp dựa trên số lượng đối tượng có thể tham gia quan hệ ở mỗi phía. Với quan hệ 1 - n, một đối tượng ở phía 1 có thể liên kết với nhiều đối tượng ở phía n, nhưng mỗi đối tượng ở phía n chỉ liên kết với đúng một đối tượng ở phía 1. Các quan hệ 1 - n trong hệ thống được xác định như sau:
 
 \begin{itemize}[leftmargin=*, nosep]
-    \item Một người dùng có thể giữ nhiều vai trò và một vai trò có thể gán cho nhiều người dùng, do đó quan hệ giữa User và Role là n - n.
-    \item Một giảng viên sở hữu nhiều lớp học và mỗi lớp học thuộc đúng một giảng viên, vì vậy quan hệ giữa User và CourseClass là 1 - n.
-    \item Một giảng viên tạo nhiều bài tập trong lớp của mình, nên quan hệ giữa User và Assignment là 1 - n.
-    \item Một sinh viên có thể được ghi danh vào nhiều lớp và một lớp có nhiều sinh viên, do đó quan hệ giữa User và CourseClass là n - n; quan hệ này được biểu diễn bằng lớp kết hợp ClassStudent.
-    \item Một lớp học có nhiều sinh viên, vì vậy quan hệ giữa CourseClass và ClassStudent là 1 - n.
-    \item Một lớp học có nhiều bài tập, nên quan hệ giữa CourseClass và Assignment là 1 - n.
-    \item Một bài tập có nhiều câu, do đó quan hệ giữa Assignment và TestPlan là 1 - n.
-    \item Một câu có nhiều bước chấm, vì vậy quan hệ giữa TestPlan và TestStep là 1 - n.
-    \item Một lớp học có nhiều thành phần điểm, nên quan hệ giữa CourseClass và ScoreComponent là 1 - n.
-    \item Một thành phần điểm áp dụng cho nhiều sinh viên và một sinh viên có điểm ở nhiều thành phần, do đó quan hệ giữa ClassStudent và ScoreComponent là n - n; quan hệ này được biểu diễn bằng lớp kết hợp StudentScore.
-    \item Một bài tập nhận nhiều bài nộp, vì vậy quan hệ giữa Assignment và Submission là 1 - n.
-    \item Một câu có thể được nộp riêng hoặc sinh viên nộp cho toàn bộ bài tập, nên quan hệ giữa TestPlan và Submission là 0..1 - n; bài nộp không chọn câu nào nghĩa là nộp cho toàn bộ bài tập.
-    \item Một sinh viên có thể nộp nhiều bài tập, do đó quan hệ giữa User và Submission là 1 - n.
-    \item Mỗi bài nộp chỉ sinh ra đúng một công việc chấm, vì vậy quan hệ giữa Submission và GradingJob là 1 - 1.
-    \item Một công việc chấm có nhiều phiên chấm do mỗi lần chấm lại tạo một phiên mới, nên quan hệ giữa GradingJob và GradingSaga là 1 - n.
-    \item Một phiên chấm có nhiều bước, do đó quan hệ giữa GradingSaga và GradingSagaStep là 1 - n.
-    \item Một công việc chấm sinh ra nhiều kết quả bước chấm, vì vậy quan hệ giữa GradingJob và StepResult là 1 - n.
-    \item Một công việc chấm có nhiều nhật ký, nên quan hệ giữa GradingJob và GradingLog là 1 - n.
-    \item Một bài nộp có thể sinh ra nhiều kết quả chấm, mỗi câu một kết quả hoặc một kết quả cho toàn bộ bài tập, do đó quan hệ giữa Submission và Result là 1 - n.
-    \item Một kết quả chấm có nhiều kết quả bước, vì vậy quan hệ giữa Result và StepResult là 1 - n.
-    \item Một câu có nhiều kết quả chấm, nên quan hệ giữa TestPlan và Result là 0..1 - n.
-    \item Một bài tập có nhiều kết quả chấm, do đó quan hệ giữa Assignment và Result là 1 - n.
-    \item Câu và bước chấm được sao chép sang kết quả bước tại thời điểm chấm, vì vậy các quan hệ giữa TestPlan với GradingSagaStep, StepResult và giữa TestStep với GradingSagaStep, StepResult đều là 1 - n.
-    \item Một bài nộp có nhiều giải thích của trợ lý AI nhưng mỗi danh mục chỉ có tối đa một giải thích đang hiệu lực, nên quan hệ giữa Submission và AiExplanation là 1 - n.
-    \item Một sinh viên trong lớp có nhiều điểm nhập tay và một bài tập có thể có nhiều điểm nhập tay, do đó quan hệ giữa ClassStudent và Assignment là n - n; quan hệ này được biểu diễn bằng lớp kết hợp ManualScore.
-    \item Một giảng viên nhập nhiều điểm thủ công, vì vậy quan hệ giữa User và ManualScore là 1 - n.
-    \item Một lớp học có nhiều điểm nhập tay, nên quan hệ giữa CourseClass và ManualScore là 1 - n.
-    \item Một sinh viên có nhiều kết quả chấm và nhiều giải thích AI, do đó các quan hệ giữa User với Result và giữa User với AiExplanation đều là 1 - n.
+    \item Một giảng viên có thể sở hữu nhiều lớp học, nhưng mỗi lớp học chỉ thuộc về đúng một giảng viên. Vì vậy quan hệ giữa User và CourseClass là 1 - n.
+    \item Một lớp học có nhiều sinh viên, nhưng mỗi bản ghi sinh viên trong lớp chỉ thuộc về đúng một lớp. Vì vậy quan hệ giữa CourseClass và ClassStudent là 1 - n.
+    \item Một lớp học có nhiều bài tập, nhưng mỗi bài tập chỉ thuộc về đúng một lớp. Vì vậy quan hệ giữa CourseClass và Assignment là 1 - n.
+    \item Một lớp học có nhiều thành phần điểm, nhưng mỗi thành phần điểm chỉ thuộc về đúng một lớp. Vì vậy quan hệ giữa CourseClass và ScoreComponent là 1 - n.
+    \item Một bài tập có nhiều câu, nhưng mỗi câu chỉ thuộc về đúng một bài tập. Vì vậy quan hệ giữa Assignment và TestPlan là 1 - n.
+    \item Một câu có nhiều bước chấm, nhưng mỗi bước chấm chỉ thuộc về đúng một câu. Vì vậy quan hệ giữa TestPlan và TestStep là 1 - n.
+    \item Một bài tập có thể nhận nhiều bài nộp từ nhiều sinh viên và nhiều lần nộp, nhưng mỗi bài nộp chỉ thuộc về đúng một bài tập. Vì vậy quan hệ giữa Assignment và Submission là 1 - n.
+    \item Một sinh viên trong lớp có thể nộp nhiều bài tập và có thể nộp lại cùng một bài tập nhiều lần, nhưng mỗi bài nộp chỉ thuộc về đúng một sinh viên trong lớp. Vì vậy quan hệ giữa ClassStudent và Submission là 1 - n.
+    \item Mỗi bài nộp chỉ sinh ra đúng một công việc chấm, và mỗi công việc chấm chỉ gắn với đúng một bài nộp. Vì vậy quan hệ giữa Submission và GradingJob là 1 - 1.
+    \item Một công việc chấm có thể có nhiều phiên chấm do mỗi lần chấm lại tạo một phiên mới, nhưng mỗi phiên chấm chỉ thuộc về đúng một công việc chấm. Vì vậy quan hệ giữa GradingJob và GradingSaga là 1 - n.
+    \item Một phiên chấm có nhiều bước, nhưng mỗi bước chỉ thuộc về đúng một phiên chấm. Vì vậy quan hệ giữa GradingSaga và GradingSagaStep là 1 - n.
+    \item Một công việc chấm có nhiều nhật ký, nhưng mỗi nhật ký chỉ thuộc về đúng một công việc chấm. Vì vậy quan hệ giữa GradingJob và GradingLog là 1 - n.
+    \item Một bài nộp có thể sinh ra nhiều kết quả chấm, bao gồm kết quả theo từng câu và kết quả toàn bài, nhưng mỗi kết quả chỉ thuộc về đúng một bài nộp. Vì vậy quan hệ giữa Submission và Result là 1 - n.
+    \item Một kết quả chấm có nhiều kết quả bước, nhưng mỗi kết quả bước chỉ thuộc về đúng một kết quả chấm. Vì vậy quan hệ giữa Result và StepResult là 1 - n.
+    \item Một bài nộp có thể có nhiều giải thích của trợ lý AI theo các danh mục khác nhau, nhưng trong mỗi danh mục chỉ có tối đa một giải thích đang hiệu lực. Vì vậy quan hệ tổng quát giữa Submission và AiExplanation là 1 - n, còn theo từng danh mục là 1 - 0..1.
 \end{itemize}
 
-Bốn lớp kết hợp được giữ lại để biểu diễn quan hệ n - n kèm thuộc tính riêng: ClassStudent (giữa CourseClass và User, mang mã sinh viên, họ tên, email và định danh người dùng), StudentScore (giữa ClassStudent và ScoreComponent, mang điểm của sinh viên ở thành phần điểm tương ứng), Submission (giữa User và Assignment, mang đường dẫn tệp nộp, trạng thái chấm và cờ bài nộp mới nhất) và ManualScore (giữa ClassStudent và Assignment, mang điểm, nhận xét và giảng viên nhập điểm).
+Bên cạnh các quan hệ 1 - n, hệ thống còn có các quan hệ n - n cần được tách thành các quan hệ 1 - n thông qua lớp trung gian. Các quan hệ n - n được xác định như sau:
+
+\begin{itemize}[leftmargin=*, nosep]
+    \item Một người dùng có thể giữ nhiều vai trò và một vai trò có thể được gán cho nhiều người dùng, do đó quan hệ giữa User và Role là n - n.
+    \item Một sinh viên trong lớp có điểm ở nhiều thành phần điểm và một thành phần điểm áp dụng cho nhiều sinh viên, do đó quan hệ giữa ClassStudent và ScoreComponent là n - n.
+    \item Một bài tập được giao cho nhiều sinh viên và một sinh viên nhận nhiều bài tập, do đó quan hệ giữa Assignment và ClassStudent là n - n. Quan hệ này được biểu diễn thông qua lớp Submission.
+\end{itemize}
+
+Việc tách các quan hệ n - n được thực hiện bằng cách xác định một lớp trung gian sao cho mỗi phía của quan hệ ban đầu có quan hệ 1 - n với lớp trung gian. Sau đó, cần kiểm tra xem lớp trung gian có thỏa mãn điều kiện của lớp kết hợp hay không.
+
+\begin{itemize}[leftmargin=*, nosep]
+    \item Với quan hệ giữa User và Role, ta thêm lớp UserRole. Một người dùng có nhiều bản ghi UserRole và một vai trò cũng có nhiều bản ghi UserRole, nhưng mỗi cặp User-Role chỉ có duy nhất một bản ghi UserRole. Do đó UserRole là lớp kết hợp, và mỗi bản ghi chỉ cần giữ userId và roleId.
+    \item Với quan hệ giữa ClassStudent và ScoreComponent, ta thêm lớp StudentScore. Một sinh viên có nhiều bản ghi StudentScore và một thành phần điểm cũng có nhiều bản ghi StudentScore, nhưng mỗi cặp ClassStudent-ScoreComponent chỉ có duy nhất một bản ghi StudentScore. Do đó StudentScore là lớp kết hợp, và mỗi bản ghi giữ điểm của sinh viên ở thành phần điểm tương ứng.
+    \item Với quan hệ giữa Assignment và ClassStudent, ta xét lớp Submission làm lớp trung gian. Một bài tập có nhiều bài nộp và một sinh viên cũng có nhiều bài nộp, nhưng mỗi bài nộp chỉ thuộc về đúng một bài tập và đúng một sinh viên. Để kiểm tra Submission có phải lớp kết hợp hay không, ta xét câu hỏi: một cặp Assignment-ClassStudent có duy nhất một Submission không? Câu trả lời là không, vì sinh viên có thể nộp lại cùng một bài tập nhiều lần. Mỗi lần nộp tạo ra một bản ghi Submission mới, và chỉ một bản ghi được đánh dấu latest để biểu diễn bài nộp hiện tại. Vì không duy nhất trên mỗi cặp Assignment-ClassStudent, Submission không phải là lớp kết hợp. Submission là lớp thường đóng vai trò lớp trung gian, có định danh riêng và có các thuộc tính như tên tệp, đường dẫn tệp, trạng thái chấm và cờ latest.
+\end{itemize}
+
+Như vậy, chỉ UserRole và StudentScore là hai lớp kết hợp trong mô hình. Submission không phải lớp kết hợp vì một cặp Assignment-ClassStudent có thể có nhiều lần nộp.
+
+\subsubsection{Bổ sung quan hệ đối tượng giữa các lớp}
+
+Sau khi xác định quan hệ số lượng, Bước 5 bổ sung quan hệ đối tượng giữa các lớp. Với mỗi quan hệ 1 - n, ta xét xem đối tượng ở phía n có phải là thành phần của đối tượng ở phía 1 hay không. Nếu có, quan hệ được biểu diễn bằng composition; nếu đối tượng ở phía n tồn tại độc lập, quan hệ được biểu diễn bằng aggregation hoặc association.
+
+Các quan hệ thành phần trong hệ thống gồm:
+
+\begin{itemize}[leftmargin=*, nosep]
+    \item CourseClass và Assignment là quan hệ thành phần vì bài tập chỉ tồn tại trong phạm vi một lớp học và không còn ý nghĩa nếu lớp học bị xóa.
+    \item CourseClass và ScoreComponent là quan hệ thành phần vì thành phần điểm chỉ có ý nghĩa trong một lớp học cụ thể.
+    \item Assignment và TestPlan là quan hệ thành phần vì câu chỉ tồn tại trong một bài tập.
+    \item TestPlan và TestStep là quan hệ thành phần vì bước chấm chỉ tồn tại trong một câu.
+    \item Assignment và Submission là quan hệ thành phần vì bài nộp chỉ tồn tại trong phạm vi một bài tập.
+    \item Submission và Result là quan hệ thành phần vì kết quả chấm chỉ tồn tại khi có bài nộp tương ứng.
+    \item Submission và AiExplanation là quan hệ thành phần vì giải thích của trợ lý AI gắn với một bài nộp cụ thể.
+    \item GradingJob và GradingSaga là quan hệ thành phần vì phiên chấm thuộc một công việc chấm.
+    \item GradingSaga và GradingSagaStep là quan hệ thành phần vì bước chấm thuộc một phiên chấm.
+    \item GradingJob và GradingLog là quan hệ thành phần vì nhật ký chấm thuộc một công việc chấm.
+    \item Result và StepResult là quan hệ thành phần vì kết quả bước thuộc một kết quả chấm.
+\end{itemize}
+
+Quan hệ aggregation trong hệ thống gồm:
+
+\begin{itemize}[leftmargin=*, nosep]
+    \item CourseClass và ClassStudent là quan hệ aggregation vì sinh viên thuộc một lớp học nhưng không phải là thành phần bị xóa theo lớp. Thông tin sinh viên vẫn có ý nghĩa độc lập với lớp học.
+\end{itemize}
+
+Các quan hệ liên kết trong hệ thống gồm:
+
+\begin{itemize}[leftmargin=*, nosep]
+    \item User và CourseClass là quan hệ liên kết vì giảng viên sở hữu lớp học nhưng không phải là thành phần của lớp.
+    \item ClassStudent và Submission là quan hệ liên kết vì bài nộp gắn với sinh viên nhưng không phải là thành phần của sinh viên.
+    \item Submission và GradingJob là quan hệ liên kết 1 - 1 vì công việc chấm là bản ghi xử lý riêng, không phải thành phần của bài nộp.
+\end{itemize}
+
+Hai lớp kết hợp trong mô hình gồm:
+
+\begin{itemize}[leftmargin=*, nosep]
+    \item UserRole là lớp kết hợp giữa User và Role, dùng để biểu diễn quan hệ n - n kèm khóa userId và roleId.
+    \item StudentScore là lớp kết hợp giữa ClassStudent và ScoreComponent, dùng để biểu diễn quan hệ n - n kèm điểm của sinh viên.
+\end{itemize}
+
+Như vậy, mô hình chỉ còn hai lớp kết hợp là UserRole và StudentScore. ClassStudent là lớp thường vì có định danh riêng và các thuộc tính studentCode, studentName, email. Submission cũng là lớp thường vì có định danh riêng, có nhiều bản ghi trên một cặp Assignment-ClassStudent và có thuộc tính tệp nộp, trạng thái chấm, cờ latest.
 
 \subsubsection{Biểu đồ lớp thực thể pha phân tích}
 
-% TODO: vẽ biểu đồ lớp trong Visual Paradigm, export thành
-% report_datn/Hinhve/Hinh2_13_bieu_do_lop.png, sau đó bỏ comment khối dưới.
-% \begin{figure}[H]
-% \centering
-% \includegraphics[width=\textwidth]{Hinhve/Hinh2_13_bieu_do_lop}
-% \caption{Biểu đồ lớp thực thể pha phân tích.}
-% \label{fig:class-diagram}
-% \end{figure}
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_13_bieu_do_lop}
+\caption{Biểu đồ lớp thực thể pha phân tích.}
+\label{fig:class-diagram}
+\end{figure}
 
 \subsection{Phân rã hệ thống theo miền chức năng}
 
@@ -524,7 +568,7 @@ STT & Miền chức năng & Mô tả \\ \hline
 2 & Quản lý lớp học và điểm & Quản lý lớp học, nhập danh sách sinh viên, cấu hình thành phần điểm, nhập điểm thủ công và tính điểm tổng kết. \\ \hline
 3 & Nộp bài & Nhận tệp bài nộp của sinh viên, lưu trữ tệp và chuyển yêu cầu chấm. \\ \hline
 4 & Thực thi chấm & Tải bài nộp, thực thi các bước chấm tự động và tổng hợp kết quả. \\ \hline
-5 & Kết quả chấm & Lưu kết quả chấm theo câu, kết quả từng bước và điểm nhập tay; cung cấp dữ liệu cho bảng điểm. \\ \hline
+5 & Kết quả chấm & Lưu kết quả chấm theo câu và kết quả từng bước; cung cấp dữ liệu cho bảng điểm. \\ \hline
 6 & Trợ lý AI & Sinh giải thích và gợi ý học tập cho bài nộp dựa trên kết quả chấm. \\ \hline
 \end{tabularx}
 \caption{Phân rã hệ thống thành các miền chức năng.}
@@ -539,7 +583,7 @@ Sau khi phân rã, mỗi miền chức năng được thiết kế thành một 
 
 \subsubsection{Biểu đồ lớp pha phân tích miền Xác thực và phân quyền}
 
-Miền Xác thực và phân quyền gồm hai lớp Người dùng (User) và Vai trò (Role) biểu diễn tác nhân và quyền truy cập.
+Miền Xác thực và phân quyền gồm Người dùng (User), Vai trò (Role) và lớp kết hợp Liên kết người dùng - vai trò (UserRole). Lớp UserRole biểu diễn quan hệ nhiều-nhiều giữa người dùng và vai trò, trong đó mỗi bản ghi giữ userId và roleId.
 
 % TODO: export report_datn/Hinhve/Hinh2_14_class_auth.png rồi bỏ comment.
 % \begin{figure}[H]
@@ -587,7 +631,7 @@ Các lớp thuộc dịch vụ thực thi chấm gồm Công việc chấm (Grad
 
 \subsubsection{Biểu đồ lớp pha phân tích dịch vụ kết quả chấm}
 
-Các lớp thuộc dịch vụ kết quả chấm gồm Kết quả chấm (Result), Kết quả từng bước (StepResult) và Điểm nhập tay (ManualScore).
+Các lớp thuộc dịch vụ kết quả chấm gồm Kết quả chấm (Result) và Kết quả từng bước (StepResult).
 
 % TODO: export report_datn/Hinhve/Hinh2_18_class_result.png rồi bỏ comment.
 % \begin{figure}[H]

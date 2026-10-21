@@ -213,7 +213,7 @@ belong to Chapter 2 (analysis/design). Generic pattern terms
 (sinh viên/bài nộp) may stay in rationale sentences. Figures showing
 project actors move with their paragraphs to Chapter 2.
 
-## Whole-system analysis model merges service duplicates
+## Whole-system analysis model matches the exported diagram
 
 Chapter 2's whole-system class diagram (2.1.4) uses one class per
 concept. Records that represent the same concept at different stages
@@ -221,6 +221,44 @@ concept. Records that represent the same concept at different stages
 result-service) merge into one class there. Per-service diagrams
 (2.1.6) may show the separate records and must state the projection
 mapping back to the merged class.
+
+Present 2.1.4 as `Bước 4: Xét quan hệ số lượng giữa các lớp` then
+`Bước 5: Bổ sung quan hệ đối tượng giữa các lớp`. Write each relation
+as a full sentence with the multiplicity rationale, not a bare
+`A 1 - n B` list. Bước 4 lists 1 - n relations, then n - n relations,
+then resolves each n - n through an intermediate class. Bước 5 groups
+the result into composition, aggregation, association, and association
+classes.
+
+The current whole-system model has 18 classes and exactly two
+association classes: `UserRole` and `StudentScore`. `ClassStudent` is a
+normal class with its own identity and `studentCode`, `studentName`,
+`email`. `Submission` is also a normal class, not an association class:
+one Assignment-ClassStudent pair can have many submissions (`latest`
+marks the current one), so the pair is not unique. Draw `Submission` as
+the normal intermediate class between `Assignment` and `ClassStudent`,
+with `Assignment - Submission` as composition. Do not model
+`ManualScore`; manual scores are represented through `StudentScore` and
+`ScoreComponent`.
+
+Only write relations present in the exported whole-system diagram. Do
+not add derived or copied links there: `User - Assignment`,
+`ClassStudent - User`, `User - Submission`, `TestPlan - Submission`,
+`GradingJob - StepResult`, `TestPlan - Result`, `Assignment - Result`,
+`User - Result`, `User - AiExplanation`, or the copied
+`TestPlan`/`TestStep` to `GradingSagaStep`/`StepResult` links. Keep
+`User - Submission` only in the 2.1.6 service-boundary note, because
+submission-service knows only `studentId`.
+
+The whole-system export lives at
+`visual-paradigm/figures/class-diagram/ptich/class-diagram-ptich.jpg`
+and is duplicated to
+`report_datn/Hinhve/Hinh2_13_bieu_do_lop.png`. The Visual Paradigm
+Community watermark sits at the bottom right; for the 834x821 export,
+cover it with a white rectangle instead of cropping, because cropping
+the bottom cuts the `StepResult` class box:
+`magick <src>.jpg -fill white -draw "rectangle 580,785 834,821" <dst>.png`.
+Verify the PNG keeps 834x821.
 
 ## One hyphen in prose; `--` only where syntax requires (mandatory)
 
