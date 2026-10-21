@@ -260,6 +260,32 @@ the bottom cuts the `StepResult` class box:
 `magick <src>.jpg -fill white -draw "rectangle 580,785 834,821" <dst>.png`.
 Verify the PNG keeps 834x821.
 
+## Per-service class diagrams (2.1.6)
+
+Six service diagrams live in
+`visual-paradigm/figures/class-diagram/ptich/` and are duplicated to
+`report_datn/Hinhve/` with `magick <src>.jpg <dst>.png`:
+
+- `ptich-auth-service.jpg` -> `Hinh2_14_class_auth.png`,
+  `fig:class-auth`
+- `ptich-course-service.jpg` -> `Hinh2_15_class_course.png`,
+  `fig:class-course`
+- `ptich-submission-service.jpg` -> `Hinh2_16_class_submission.png`,
+  `fig:class-submission`
+- `ptich-executor-service.jpg` -> `Hinh2_17_class_executor.png`,
+  `fig:class-executor`
+- `ptich-result-service.jpg` -> `Hinh2_18_class_result.png`,
+  `fig:class-result`
+- `ptich-ai-assistance-service.jpg` -> `Hinh2_19_class_ai.png`,
+  `fig:class-ai`
+
+Do not upscale these exports. They are small (86x72 to 394x261), so use
+reduced widths to avoid blur at A4: auth 0.75, course 0.55, submission
+0.35, executor 0.75, result 0.70, AI 0.30 of `\textwidth`. Keep the
+Visual Paradigm Community watermark: it is acceptable evidence that
+the diagrams were drawn by the author. Do not crop or cover it here,
+because it overlaps class attributes in several exports.
+
 ## One hyphen in prose; `--` only where syntax requires (mandatory)
 
 Normal text, table cells, captions, and list items use exactly one

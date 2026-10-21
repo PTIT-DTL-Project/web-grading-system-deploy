@@ -453,7 +453,7 @@ Hai lớp Người dùng (User) và Vai trò (Role) biểu diễn tác nhân và
 
 Trong mô hình toàn hệ thống, kết quả thực thi từng bước và kết quả chấm từng bước được mô hình hóa chung thành lớp StepResult; bản ghi thực thi riêng của dịch vụ thực thi được trình bày ở mục 2.1.6.
 
-\subsubsection{Xét quan hệ số lượng giữa các lớp}
+\subsubsection{Bước 4: Xét quan hệ số lượng giữa các lớp}
 
 Xác định quan hệ số lượng giữa các lớp dựa trên số lượng đối tượng có thể tham gia quan hệ ở mỗi phía. Với quan hệ 1 - n, một đối tượng ở phía 1 có thể liên kết với nhiều đối tượng ở phía n, nhưng mỗi đối tượng ở phía n chỉ liên kết với đúng một đối tượng ở phía 1. Các quan hệ 1 - n trong hệ thống được xác định như sau:
 
@@ -493,7 +493,7 @@ Việc tách các quan hệ n - n được thực hiện bằng cách xác đị
 
 Như vậy, chỉ UserRole và StudentScore là hai lớp kết hợp trong mô hình. Submission không phải lớp kết hợp vì một cặp Assignment-ClassStudent có thể có nhiều lần nộp.
 
-\subsubsection{Bổ sung quan hệ đối tượng giữa các lớp}
+\subsubsection{Bước 5: Bổ sung quan hệ đối tượng giữa các lớp}
 
 Sau khi xác định quan hệ số lượng, Bước 5 bổ sung quan hệ đối tượng giữa các lớp. Với mỗi quan hệ 1 - n, ta xét xem đối tượng ở phía n có phải là thành phần của đối tượng ở phía 1 hay không. Nếu có, quan hệ được biểu diễn bằng composition; nếu đối tượng ở phía n tồn tại độc lập, quan hệ được biểu diễn bằng aggregation hoặc association.
 
@@ -585,72 +585,66 @@ Sau khi phân rã, mỗi miền chức năng được thiết kế thành một 
 
 Miền Xác thực và phân quyền gồm Người dùng (User), Vai trò (Role) và lớp kết hợp Liên kết người dùng - vai trò (UserRole). Lớp UserRole biểu diễn quan hệ nhiều-nhiều giữa người dùng và vai trò, trong đó mỗi bản ghi giữ userId và roleId.
 
-% TODO: export report_datn/Hinhve/Hinh2_14_class_auth.png rồi bỏ comment.
-% \begin{figure}[H]
-% \centering
-% \includegraphics[width=\textwidth]{Hinhve/Hinh2_14_class_auth}
-% \caption{Biểu đồ lớp pha phân tích miền Xác thực và phân quyền.}
-% \label{fig:class-auth}
-% \end{figure}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{Hinhve/Hinh2_14_class_auth}
+\caption{Biểu đồ lớp pha phân tích miền Xác thực và phân quyền.}
+\label{fig:class-auth}
+\end{figure}
 
 \subsubsection{Biểu đồ lớp pha phân tích dịch vụ quản lý lớp học và điểm}
 
 Các lớp thuộc dịch vụ quản lý lớp học và điểm gồm Lớp học (CourseClass), Sinh viên thuộc lớp (ClassStudent), Bài tập (Assignment), Câu (TestPlan), Bước chấm (TestStep), Thành phần điểm (ScoreComponent) và Điểm thành phần (StudentScore).
 
-% TODO: export report_datn/Hinhve/Hinh2_15_class_course.png rồi bỏ comment.
-% \begin{figure}[H]
-% \centering
-% \includegraphics[width=\textwidth]{Hinhve/Hinh2_15_class_course}
-% \caption{Biểu đồ lớp pha phân tích dịch vụ quản lý lớp học và điểm.}
-% \label{fig:class-course}
-% \end{figure}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.55\textwidth]{Hinhve/Hinh2_15_class_course}
+\caption{Biểu đồ lớp pha phân tích dịch vụ quản lý lớp học và điểm.}
+\label{fig:class-course}
+\end{figure}
 
 \subsubsection{Biểu đồ lớp pha phân tích dịch vụ nộp bài}
 
 Các lớp thuộc dịch vụ nộp bài gồm Bài nộp (Submission) và thông tin tệp nộp, trạng thái chấm của bài nộp.
 
-% TODO: export report_datn/Hinhve/Hinh2_16_class_submission.png rồi bỏ comment.
-% \begin{figure}[H]
-% \centering
-% \includegraphics[width=\textwidth]{Hinhve/Hinh2_16_class_submission}
-% \caption{Biểu đồ lớp pha phân tích dịch vụ nộp bài.}
-% \label{fig:class-submission}
-% \end{figure}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.35\textwidth]{Hinhve/Hinh2_16_class_submission}
+\caption{Biểu đồ lớp pha phân tích dịch vụ nộp bài.}
+\label{fig:class-submission}
+\end{figure}
 
 \subsubsection{Biểu đồ lớp pha phân tích dịch vụ thực thi chấm}
 
 Các lớp thuộc dịch vụ thực thi chấm gồm Công việc chấm (GradingJob), Phiên chấm (GradingSaga), Bước của phiên chấm (GradingSagaStep), Kết quả bước chấm (GradingStepResult) và Nhật ký chấm (GradingLog).
 
-% TODO: export report_datn/Hinhve/Hinh2_17_class_executor.png rồi bỏ comment.
-% \begin{figure}[H]
-% \centering
-% \includegraphics[width=\textwidth]{Hinhve/Hinh2_17_class_executor}
-% \caption{Biểu đồ lớp pha phân tích dịch vụ thực thi chấm.}
-% \label{fig:class-executor}
-% \end{figure}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{Hinhve/Hinh2_17_class_executor}
+\caption{Biểu đồ lớp pha phân tích dịch vụ thực thi chấm.}
+\label{fig:class-executor}
+\end{figure}
 
 \subsubsection{Biểu đồ lớp pha phân tích dịch vụ kết quả chấm}
 
 Các lớp thuộc dịch vụ kết quả chấm gồm Kết quả chấm (Result) và Kết quả từng bước (StepResult).
 
-% TODO: export report_datn/Hinhve/Hinh2_18_class_result.png rồi bỏ comment.
-% \begin{figure}[H]
-% \centering
-% \includegraphics[width=\textwidth]{Hinhve/Hinh2_18_class_result}
-% \caption{Biểu đồ lớp pha phân tích dịch vụ kết quả chấm.}
-% \label{fig:class-result}
-% \end{figure}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.70\textwidth]{Hinhve/Hinh2_18_class_result}
+\caption{Biểu đồ lớp pha phân tích dịch vụ kết quả chấm.}
+\label{fig:class-result}
+\end{figure}
 
 \subsubsection{Biểu đồ lớp pha phân tích dịch vụ trợ lý AI}
 
 Các lớp thuộc dịch vụ trợ lý AI gồm Giải thích của trợ lý AI (AiExplanation) cùng thông tin bài nộp và danh mục được giải thích.
 
-% TODO: export report_datn/Hinhve/Hinh2_19_class_ai.png rồi bỏ comment.
-% \begin{figure}[H]
-% \centering
-% \includegraphics[width=\textwidth]{Hinhve/Hinh2_19_class_ai}
-% \caption{Biểu đồ lớp pha phân tích dịch vụ trợ lý AI.}
-% \label{fig:class-ai}
-% \end{figure}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.30\textwidth]{Hinhve/Hinh2_19_class_ai}
+\caption{Biểu đồ lớp pha phân tích dịch vụ trợ lý AI.}
+\label{fig:class-ai}
+\end{figure}
 
 \end{document}
