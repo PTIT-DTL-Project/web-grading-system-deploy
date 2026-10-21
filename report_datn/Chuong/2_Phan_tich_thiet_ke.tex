@@ -447,9 +447,11 @@ Kịch bản ngoại lệ &
 
 Loại bỏ các danh từ nằm ngoài phạm vi mục đích của hệ thống, các danh từ trùng lặp và các danh từ chỉ là thuộc tính của lớp khác (trọng số, trạng thái, mã sinh viên, họ tên, email, thời gian chờ, giới hạn tài nguyên), ta thu được các lớp thực thể sau:
 
-Người dùng (User), Vai trò (Role), Lớp học (CourseClass), Sinh viên thuộc lớp (ClassStudent), Bài tập (Assignment), Câu (TestPlan), Bước chấm (TestStep), Thành phần điểm (ScoreComponent), Điểm thành phần (StudentScore), Bài nộp (Submission), Công việc chấm (GradingJob), Phiên chấm (GradingSaga), Bước của phiên chấm (GradingSagaStep), Kết quả bước chấm (GradingStepResult), Nhật ký chấm (GradingLog), Kết quả chấm (Result), Kết quả từng bước (StepResult), Điểm nhập tay (ManualScore), Giải thích của trợ lý AI (AiExplanation).
+Người dùng (User), Vai trò (Role), Lớp học (CourseClass), Sinh viên thuộc lớp (ClassStudent), Bài tập (Assignment), Câu (TestPlan), Bước chấm (TestStep), Thành phần điểm (ScoreComponent), Điểm thành phần (StudentScore), Bài nộp (Submission), Công việc chấm (GradingJob), Phiên chấm (GradingSaga), Bước của phiên chấm (GradingSagaStep), Nhật ký chấm (GradingLog), Kết quả chấm (Result), Kết quả từng bước (StepResult), Điểm nhập tay (ManualScore), Giải thích của trợ lý AI (AiExplanation).
 
 Hai lớp Người dùng (User) và Vai trò (Role) biểu diễn tác nhân và quyền truy cập của hệ thống.
+
+Trong mô hình toàn hệ thống, kết quả thực thi từng bước và kết quả chấm từng bước được mô hình hóa chung thành lớp StepResult; bản ghi thực thi riêng của dịch vụ thực thi được trình bày ở mục 2.1.6.
 
 \subsubsection{Xác định quan hệ giữa các lớp}
 
@@ -472,13 +474,13 @@ Các quan hệ giữa các lớp trong hệ thống được xác định như s
     \item Mỗi bài nộp chỉ sinh ra đúng một công việc chấm, vì vậy quan hệ giữa Submission và GradingJob là 1 - 1.
     \item Một công việc chấm có nhiều phiên chấm do mỗi lần chấm lại tạo một phiên mới, nên quan hệ giữa GradingJob và GradingSaga là 1 - n.
     \item Một phiên chấm có nhiều bước, do đó quan hệ giữa GradingSaga và GradingSagaStep là 1 - n.
-    \item Một công việc chấm có nhiều kết quả bước chấm, vì vậy quan hệ giữa GradingJob và GradingStepResult là 1 - n.
+    \item Một công việc chấm sinh ra nhiều kết quả bước chấm, vì vậy quan hệ giữa GradingJob và StepResult là 1 - n.
     \item Một công việc chấm có nhiều nhật ký, nên quan hệ giữa GradingJob và GradingLog là 1 - n.
     \item Một bài nộp có thể sinh ra nhiều kết quả chấm, mỗi câu một kết quả hoặc một kết quả cho toàn bộ bài tập, do đó quan hệ giữa Submission và Result là 1 - n.
     \item Một kết quả chấm có nhiều kết quả bước, vì vậy quan hệ giữa Result và StepResult là 1 - n.
     \item Một câu có nhiều kết quả chấm, nên quan hệ giữa TestPlan và Result là 0..1 - n.
     \item Một bài tập có nhiều kết quả chấm, do đó quan hệ giữa Assignment và Result là 1 - n.
-    \item Câu và bước chấm được sao chép sang kết quả bước tại thời điểm chấm, vì vậy các quan hệ giữa TestPlan với GradingSagaStep, GradingStepResult, StepResult và giữa TestStep với GradingSagaStep, GradingStepResult, StepResult đều là 1 - n.
+    \item Câu và bước chấm được sao chép sang kết quả bước tại thời điểm chấm, vì vậy các quan hệ giữa TestPlan với GradingSagaStep, StepResult và giữa TestStep với GradingSagaStep, StepResult đều là 1 - n.
     \item Một bài nộp có nhiều giải thích của trợ lý AI nhưng mỗi danh mục chỉ có tối đa một giải thích đang hiệu lực, nên quan hệ giữa Submission và AiExplanation là 1 - n.
     \item Một sinh viên trong lớp có nhiều điểm nhập tay và một bài tập có thể có nhiều điểm nhập tay, do đó quan hệ giữa ClassStudent và Assignment là n - n; quan hệ này được biểu diễn bằng lớp kết hợp ManualScore.
     \item Một giảng viên nhập nhiều điểm thủ công, vì vậy quan hệ giữa User và ManualScore là 1 - n.
@@ -532,6 +534,8 @@ STT & Miền chức năng & Mô tả \\ \hline
 \subsection{Biểu đồ lớp chi tiết từng dịch vụ}
 
 Sau khi phân rã, mỗi miền chức năng được thiết kế thành một dịch vụ độc lập với cơ sở dữ liệu riêng. Các mục dưới đây trình bày biểu đồ lớp chi tiết của từng dịch vụ.
+
+Ở mức dịch vụ, kết quả bước chấm được lưu ở hai dạng: GradingStepResult là bản ghi thực thi của dịch vụ thực thi chấm, còn StepResult là bản đã chấm do dịch vụ kết quả chấm lưu; cả hai tương ứng với lớp StepResult trong mô hình toàn hệ thống ở mục 2.1.4.
 
 \subsubsection{Biểu đồ lớp pha phân tích miền Xác thực và phân quyền}
 

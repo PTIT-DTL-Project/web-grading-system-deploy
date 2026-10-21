@@ -213,6 +213,15 @@ belong to Chapter 2 (analysis/design). Generic pattern terms
 (sinh viên/bài nộp) may stay in rationale sentences. Figures showing
 project actors move with their paragraphs to Chapter 2.
 
+## Whole-system analysis model merges service duplicates
+
+Chapter 2's whole-system class diagram (2.1.4) uses one class per
+concept. Records that represent the same concept at different stages
+(`GradingStepResult` in executor-service and `StepResult` in
+result-service) merge into one class there. Per-service diagrams
+(2.1.6) may show the separate records and must state the projection
+mapping back to the merged class.
+
 ## One hyphen in prose; `--` only where syntax requires (mandatory)
 
 Normal text, table cells, captions, and list items use exactly one
