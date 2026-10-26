@@ -238,6 +238,13 @@ Verify by checking the compiled class has `RuntimeVisibleParameterAnnotations`.
   of type ... from Object value (token START_OBJECT)`. Bind an `ApiEnvelope<T>` and read
   `.data()` — there is no unwrapping decoder. Reference:
   `ai-assistant-service` `ResultServiceClient`/`CourseServiceClient` (Review: 2026-10-17).
+- **JPQL `lower(:param)` on a null String parameter needs an explicit cast on PostgreSQL.**
+  Hibernate cannot infer the JDBC type of a null `String` parameter, so PostgreSQL binds it
+  as `bytea` and `lower(bytea)` does not exist → `500 InvalidDataAccessResourceUsageException`.
+  Always write `lower(cast(:param as string))` (matches the existing `:search` pattern in
+  `AssignmentRepository.findMine`). Applies to every `lower(:optionalString)` in `@Query`
+  JPQL where the param may be null. Found and fixed 2026-10-26 in `course-service`
+  `AssignmentRepository.java` (`findMine`, `findPublishedForStudent`, `findPublishedPractice`).
 
 ## 11. Logging
 

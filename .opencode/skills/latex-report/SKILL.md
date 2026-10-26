@@ -158,6 +158,33 @@ repeated failures, grading plan/steps, submission statuses, grading
 logs, role-based access; `tệp CSV` is kept as the input artifact the
 admin/lecturer prepares.
 
+## Phần thiết kế trong Chương 2 (bổ sung)
+
+Cuối Chương 2 có `\section{Thiết kế hệ thống}` ngang hàng với
+`\section{Phân tích hệ thống}`, gồm:
+
+- `\subsection{Thiết kế cơ sở dữ liệu theo dịch vụ}`: `itemize`, mỗi
+  dịch vụ một bullet theo mẫu: `Dịch vụ <Tên>: bao gồm các bảng
+  \texttt{<tên_bang>}, … để quản lý …`. Tên bảng lấy từ entity JPA /
+  migration SQL thực tế (ví dụ `classes`, `class_students`,
+  `score_components`, `student_scores`, `submissions`, `manual_scores`,
+  `grading_jobs`, `grading_logs`, `grading_sagas`, `grading_saga_steps`,
+  `grading_step_results`, `results`, `step_results`,
+  `ai_conversation`, `ai_message`, `ai_explanations`, …). Dịch vụ xác
+  thực và phân quyền viết chung (quản lý tài khoản, đăng nhập, đổi
+  mật khẩu, cấp và kiểm tra vai trò) nếu không có bảng SQL riêng trong
+  kho source.
+- `\subsection{Sơ đồ tuần tự các chức năng}`: mỗi chức năng là một
+  `\subsubsection{<Tên>}`, có 1–2 câu mô tả luồng rồi chèn hình:
+  `\begin{figure}[ht] … \includegraphics[width=\textwidth]{Hinhve/Hinh2_XX_seq_<slug>}
+  … \caption{Sơ đồ tuần tự chức năng <Tên>.} … \label{fig:seq-<slug>}
+  … \end{figure}`. Số thứ tự hình tăng tự động (`Hình 2.20`, `2.21`, …);
+  caption nằm dưới hình, label không trùng. Tên file ảnh dùng slug
+  tiếng Việt không dấu (`seq_dang_nhap`, `seq_quan_ly_lop`,
+  `seq_quan_ly_lop_chitiet`, `seq_quan_ly_bai_tap`,
+  `seq_xem_ket_qua_lop`, `seq_nop_bai`,
+  `seq_xem_ket_qua_cua_than`, `seq_xem_diem_ca_nhan`).
+
 Use-case figures continue the `Hinh2_<n>_<slug>` series
 (`Hinh2_6_usecase_tong_quan` = overview, `Hinh2_7..Hinh2_12` = detail
 diagrams), labels `fig:usecase-tong-quan` and `fig:uc-<slug>`; the
