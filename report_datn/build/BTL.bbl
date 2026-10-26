@@ -1,0 +1,862 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 3.3 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated as
+% required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+\datalist[entry]{none/global//global/global/global}
+  \entry{newman2021building}{book}{}{}
+    \name{author}{1}{}{%
+      {{hash=NS}{%
+         family={Newman},
+         familyi={N\bibinitperiod},
+         given={Sam},
+         giveni={S\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {O'Reilly Media}%
+    }
+    \strng{namehash}{NS1}
+    \strng{fullhash}{NS1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{edition}{2}
+    \field{title}{Building Microservices}
+    \list{location}{1}{%
+      {Sebastopol, CA, USA}%
+    }
+    \field{year}{2021}
+  \endentry
+
+  \entry{oracle2023java21}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=O}{%
+         family={{Oracle}},
+         familyi={O\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{O1}
+    \strng{fullhash}{O1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Oracle {JDK} 21 Documentation}
+    \verb{url}
+    \verb https://docs.oracle.com/en/java/javase/21/
+    \endverb
+    \field{year}{2023}
+  \endentry
+
+  \entry{springbootdocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=V}{%
+         family={{VMware}},
+         familyi={V\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{V1}
+    \strng{fullhash}{V1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Spring Boot Reference Documentation}
+    \verb{url}
+    \verb https://docs.spring.io/spring-boot/
+    \endverb
+    \field{year}{2024}
+  \endentry
+
+  \entry{openfeigndocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=V}{%
+         family={{VMware}},
+         familyi={V\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{V1}
+    \strng{fullhash}{V1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Spring Cloud OpenFeign Reference Documentation}
+    \verb{url}
+    \verb https://docs.spring.io/spring-cloud-openfeign/docs/current/reference/
+    \verb html/
+    \endverb
+    \field{year}{2024}
+  \endentry
+
+  \entry{springsecuritydocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=V}{%
+         family={{VMware}},
+         familyi={V\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{V1}
+    \strng{fullhash}{V1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Spring Security Reference Documentation}
+    \verb{url}
+    \verb https://docs.spring.io/spring-security/reference/
+    \endverb
+    \field{year}{2024}
+  \endentry
+
+  \entry{fielding2000rest}{thesis}{}{}
+    \name{author}{1}{}{%
+      {{hash=FRT}{%
+         family={Fielding},
+         familyi={F\bibinitperiod},
+         given={Roy\bibnamedelima Thomas},
+         giveni={R\bibinitperiod\bibinitdelim T\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{FRT1}
+    \strng{fullhash}{FRT1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Architectural Styles and the Design of Network-based Software Architectures}
+    \verb{url}
+    \verb https://www.ics.uci.edu/~fielding/pubs/dissertation/top.htm
+    \endverb
+    \list{institution}{1}{%
+      {University of California, Irvine}%
+    }
+    \field{type}{phdthesis}
+    \field{year}{2000}
+  \endentry
+
+  \entry{postgresqldocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=P}{%
+         family={{PostgreSQL Global Development Group}},
+         familyi={P\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{P1}
+    \strng{fullhash}{P1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{PostgreSQL Documentation}
+    \verb{url}
+    \verb https://www.postgresql.org/docs/
+    \endverb
+    \field{year}{2024}
+  \endentry
+
+  \entry{hibernatedocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=R}{%
+         family={{Red Hat}},
+         familyi={R\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{R2}
+    \strng{fullhash}{R2}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Hibernate {ORM} Documentation}
+    \verb{url}
+    \verb https://hibernate.org/orm/documentation/
+    \endverb
+    \field{year}{2024}
+  \endentry
+
+  \entry{flywaydocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=R}{%
+         family={{Redgate}},
+         familyi={R\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{R3}
+    \strng{fullhash}{R3}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Redgate Flyway Documentation}
+    \verb{url}
+    \verb https://documentation.red-gate.com/flyway/
+    \endverb
+    \field{year}{2024}
+  \endentry
+
+  \entry{kreps2011kafka}{inproceedings}{}{}
+    \name{author}{3}{}{%
+      {{hash=KJ}{%
+         family={Kreps},
+         familyi={K\bibinitperiod},
+         given={Jay},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=NN}{%
+         family={Narkhede},
+         familyi={N\bibinitperiod},
+         given={Neha},
+         giveni={N\bibinitperiod},
+      }}%
+      {{hash=RJ}{%
+         family={Rao},
+         familyi={R\bibinitperiod},
+         given={Jun},
+         giveni={J\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{KJ+1}
+    \strng{fullhash}{KJNNRJ1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{booktitle}{Proceedings of the NetDB Workshop}
+    \field{title}{Kafka: A Distributed Messaging System for Log Processing}
+    \list{location}{1}{%
+      {Athens, Greece}%
+    }
+    \field{year}{2011}
+  \endentry
+
+  \entry{kafkadocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=A}{%
+         family={{Apache Software Foundation}},
+         familyi={A\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{A3}
+    \strng{fullhash}{A3}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Apache Kafka Documentation}
+    \verb{url}
+    \verb https://kafka.apache.org/documentation/
+    \endverb
+    \field{year}{2024}
+  \endentry
+
+  \entry{awss3docs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=A}{%
+         family={{Amazon Web Services}},
+         familyi={A\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{A1}
+    \strng{fullhash}{A1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Amazon {S3} Documentation}
+    \verb{url}
+    \verb https://docs.aws.amazon.com/s3/
+    \endverb
+    \field{year}{2024}
+  \endentry
+
+  \entry{rustfsdocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=R}{%
+         family={{RustFS}},
+         familyi={R\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{R5}
+    \strng{fullhash}{R5}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{RustFS Documentation}
+    \verb{url}
+    \verb https://docs.rustfs.com/
+    \endverb
+    \field{year}{2025}
+  \endentry
+
+  \entry{rustfsgithub}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=R}{%
+         family={{RustFS}},
+         familyi={R\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{R5}
+    \strng{fullhash}{R5}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{RustFS Source Code Repository}
+    \verb{url}
+    \verb https://github.com/rustfs/rustfs
+    \endverb
+    \field{year}{2025}
+  \endentry
+
+  \entry{dockerdocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=D}{%
+         family={{Docker}},
+         familyi={D\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{D1}
+    \strng{fullhash}{D1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Docker Documentation}
+    \verb{url}
+    \verb https://docs.docker.com/
+    \endverb
+    \field{year}{2024}
+  \endentry
+
+  \entry{kubernetesdocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=C}{%
+         family={{Cloud Native Computing Foundation}},
+         familyi={C\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{C1}
+    \strng{fullhash}{C1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Kubernetes Documentation}
+    \verb{url}
+    \verb https://kubernetes.io/docs/home/
+    \endverb
+    \field{year}{2024}
+  \endentry
+
+  \entry{k3sdocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=R}{%
+         family={{Rancher}},
+         familyi={R\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{R1}
+    \strng{fullhash}{R1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{K3s Documentation}
+    \verb{url}
+    \verb https://docs.k3s.io/
+    \endverb
+    \field{year}{2024}
+  \endentry
+
+  \entry{helmdocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=C}{%
+         family={{Cloud Native Computing Foundation}},
+         familyi={C\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{C1}
+    \strng{fullhash}{C1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Helm Documentation}
+    \verb{url}
+    \verb https://helm.sh/docs/
+    \endverb
+    \field{year}{2024}
+  \endentry
+
+  \entry{argocddocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=C}{%
+         family={{Cloud Native Computing Foundation}},
+         familyi={C\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{C1}
+    \strng{fullhash}{C1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Argo {CD} Documentation}
+    \verb{url}
+    \verb https://argo-cd.readthedocs.io/
+    \endverb
+    \field{year}{2024}
+  \endentry
+
+  \entry{keycloakdocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=C}{%
+         family={{Cloud Native Computing Foundation}},
+         familyi={C\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{C1}
+    \strng{fullhash}{C1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Keycloak Documentation}
+    \verb{url}
+    \verb https://www.keycloak.org/documentation
+    \endverb
+    \field{year}{2024}
+  \endentry
+
+  \entry{rfc6749}{report}{}{}
+    \name{author}{1}{}{%
+      {{hash=HD}{%
+         family={Hardt},
+         familyi={H\bibinitperiod},
+         given={Dick},
+         giveni={D\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{HD1}
+    \strng{fullhash}{HD1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{number}{6749}
+    \field{title}{The {OAuth} 2.0 Authorization Framework}
+    \verb{url}
+    \verb https://www.rfc-editor.org/info/rfc6749
+    \endverb
+    \list{institution}{1}{%
+      {Internet Engineering Task Force (IETF)}%
+    }
+    \field{type}{RFC}
+    \field{month}{10}
+    \field{year}{2012}
+  \endentry
+
+  \entry{oidccore2014}{report}{}{}
+    \name{author}{5}{}{%
+      {{hash=SN}{%
+         family={Sakimura},
+         familyi={S\bibinitperiod},
+         given={Nat},
+         giveni={N\bibinitperiod},
+      }}%
+      {{hash=BJ}{%
+         family={Bradley},
+         familyi={B\bibinitperiod},
+         given={John},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=JM}{%
+         family={Jones},
+         familyi={J\bibinitperiod},
+         given={Michael},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=dMB}{%
+         prefix={de},
+         prefixi={d\bibinitperiod},
+         family={Medeiros},
+         familyi={M\bibinitperiod},
+         given={Breno},
+         giveni={B\bibinitperiod},
+      }}%
+      {{hash=MC}{%
+         family={Mortimore},
+         familyi={M\bibinitperiod},
+         given={Chuck},
+         giveni={C\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{SN+1}
+    \strng{fullhash}{SNBJJMMBdMC1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{{OpenID} Connect Core 1.0}
+    \verb{url}
+    \verb https://openid.net/specs/openid-connect-core-1_0.html
+    \endverb
+    \list{institution}{1}{%
+      {OpenID Foundation}%
+    }
+    \field{type}{techreport}
+    \field{month}{02}
+    \field{year}{2014}
+  \endentry
+
+  \entry{rfc7519}{report}{}{}
+    \name{author}{3}{}{%
+      {{hash=JM}{%
+         family={Jones},
+         familyi={J\bibinitperiod},
+         given={Michael},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=BJ}{%
+         family={Bradley},
+         familyi={B\bibinitperiod},
+         given={John},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=SN}{%
+         family={Sakimura},
+         familyi={S\bibinitperiod},
+         given={Nat},
+         giveni={N\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{JM+1}
+    \strng{fullhash}{JMBJSN1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{number}{7519}
+    \field{title}{{JSON} Web Token ({JWT})}
+    \verb{url}
+    \verb https://www.rfc-editor.org/info/rfc7519
+    \endverb
+    \list{institution}{1}{%
+      {Internet Engineering Task Force (IETF)}%
+    }
+    \field{type}{RFC}
+    \field{month}{05}
+    \field{year}{2015}
+  \endentry
+
+  \entry{rfc7636}{report}{}{}
+    \name{author}{3}{}{%
+      {{hash=SN}{%
+         family={Sakimura},
+         familyi={S\bibinitperiod},
+         given={Nat},
+         giveni={N\bibinitperiod},
+      }}%
+      {{hash=BJ}{%
+         family={Bradley},
+         familyi={B\bibinitperiod},
+         given={John},
+         giveni={J\bibinitperiod},
+      }}%
+      {{hash=AN}{%
+         family={Agarwal},
+         familyi={A\bibinitperiod},
+         given={Naveen},
+         giveni={N\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{SN+1}
+    \strng{fullhash}{SNBJAN1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{number}{7636}
+    \field{title}{Proof Key for Code Exchange by {OAuth} Public Clients}
+    \verb{url}
+    \verb https://www.rfc-editor.org/info/rfc7636
+    \endverb
+    \list{institution}{1}{%
+      {Internet Engineering Task Force (IETF)}%
+    }
+    \field{type}{RFC}
+    \field{month}{09}
+    \field{year}{2015}
+  \endentry
+
+  \entry{rfc8252}{report}{}{}
+    \name{author}{2}{}{%
+      {{hash=DW}{%
+         family={Denniss},
+         familyi={D\bibinitperiod},
+         given={William},
+         giveni={W\bibinitperiod},
+      }}%
+      {{hash=BJ}{%
+         family={Bradley},
+         familyi={B\bibinitperiod},
+         given={John},
+         giveni={J\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{DWBJ1}
+    \strng{fullhash}{DWBJ1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{number}{8252}
+    \field{title}{{OAuth} 2.0 for Native Apps}
+    \verb{url}
+    \verb https://www.rfc-editor.org/info/rfc8252
+    \endverb
+    \list{institution}{1}{%
+      {Internet Engineering Task Force (IETF)}%
+    }
+    \field{type}{RFC}
+    \field{month}{10}
+    \field{year}{2017}
+  \endentry
+
+  \entry{majors2022observability}{book}{}{}
+    \name{author}{3}{}{%
+      {{hash=MC}{%
+         family={Majors},
+         familyi={M\bibinitperiod},
+         given={Charity},
+         giveni={C\bibinitperiod},
+      }}%
+      {{hash=FJL}{%
+         family={Fong-Jones},
+         familyi={F\bibinithyphendelim J\bibinitperiod},
+         given={Liz},
+         giveni={L\bibinitperiod},
+      }}%
+      {{hash=MG}{%
+         family={Miranda},
+         familyi={M\bibinitperiod},
+         given={George},
+         giveni={G\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {O'Reilly Media}%
+    }
+    \strng{namehash}{MC+1}
+    \strng{fullhash}{MCFJLMG1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Observability Engineering}
+    \list{location}{1}{%
+      {Sebastopol, CA, USA}%
+    }
+    \field{year}{2022}
+  \endentry
+
+  \entry{prometheusdocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=C}{%
+         family={{Cloud Native Computing Foundation}},
+         familyi={C\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{C1}
+    \strng{fullhash}{C1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Prometheus Documentation}
+    \verb{url}
+    \verb https://prometheus.io/docs/
+    \endverb
+    \field{year}{2024}
+  \endentry
+
+  \entry{grafanadocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=G}{%
+         family={{Grafana Labs}},
+         familyi={G\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{G1}
+    \strng{fullhash}{G1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Grafana Documentation}
+    \verb{url}
+    \verb https://grafana.com/docs/grafana/
+    \endverb
+    \field{year}{2024}
+  \endentry
+
+  \entry{lokidocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=G}{%
+         family={{Grafana Labs}},
+         familyi={G\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{G1}
+    \strng{fullhash}{G1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Grafana Loki Documentation}
+    \verb{url}
+    \verb https://grafana.com/docs/loki/
+    \endverb
+    \field{year}{2024}
+  \endentry
+
+  \entry{tempodocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=G}{%
+         family={{Grafana Labs}},
+         familyi={G\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{G1}
+    \strng{fullhash}{G1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Grafana Tempo Documentation}
+    \verb{url}
+    \verb https://grafana.com/docs/tempo/
+    \endverb
+    \field{year}{2024}
+  \endentry
+
+  \entry{pyroscopedocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=G}{%
+         family={{Grafana Labs}},
+         familyi={G\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{G1}
+    \strng{fullhash}{G1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Grafana Pyroscope Documentation}
+    \verb{url}
+    \verb https://grafana.com/docs/pyroscope/
+    \endverb
+    \field{year}{2024}
+  \endentry
+
+  \entry{k6docs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=G}{%
+         family={{Grafana Labs}},
+         familyi={G\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{G1}
+    \strng{fullhash}{G1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Grafana k6 Documentation}
+    \verb{url}
+    \verb https://grafana.com/docs/k6/
+    \endverb
+    \field{year}{2024}
+  \endentry
+
+  \entry{reactdocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=M}{%
+         family={{Meta}},
+         familyi={M\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{M1}
+    \strng{fullhash}{M1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{React Documentation}
+    \verb{url}
+    \verb https://react.dev/
+    \endverb
+    \field{year}{2024}
+  \endentry
+
+  \entry{typescriptdocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=M}{%
+         family={{Microsoft}},
+         familyi={M\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{M2}
+    \strng{fullhash}{M2}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{TypeScript Documentation}
+    \verb{url}
+    \verb https://www.typescriptlang.org/docs/
+    \endverb
+    \field{year}{2024}
+  \endentry
+
+  \entry{vitedocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=E}{%
+         family={{Evan You}},
+         familyi={E\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{E1}
+    \strng{fullhash}{E1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Vite Guide}
+    \verb{url}
+    \verb https://vite.dev/guide/
+    \endverb
+    \field{year}{2024}
+  \endentry
+
+  \entry{antdesigndocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=A}{%
+         family={{Ant Group}},
+         familyi={A\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{A2}
+    \strng{fullhash}{A2}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Ant Design Documentation}
+    \verb{url}
+    \verb https://ant.design/docs/react/introduce
+    \endverb
+    \field{year}{2024}
+  \endentry
+
+  \entry{reactrouterdocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=R}{%
+         family={{Remix Software}},
+         familyi={R\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{R4}
+    \strng{fullhash}{R4}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{React Router Documentation}
+    \verb{url}
+    \verb https://reactrouter.com/
+    \endverb
+    \field{year}{2024}
+  \endentry
+
+  \entry{tanstackquerydocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=T}{%
+         family={{TanStack}},
+         familyi={T\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{T1}
+    \strng{fullhash}{T1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{TanStack Query Documentation}
+    \verb{url}
+    \verb https://tanstack.com/query/latest
+    \endverb
+    \field{year}{2024}
+  \endentry
+
+  \entry{i18nextdocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=i}{%
+         family={{i18next}},
+         familyi={i\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{i1}
+    \strng{fullhash}{i1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{i18next Documentation}
+    \verb{url}
+    \verb https://www.i18next.com/
+    \endverb
+    \field{year}{2024}
+  \endentry
+\enddatalist
+\endinput

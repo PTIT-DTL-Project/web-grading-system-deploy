@@ -1,0 +1,90 @@
+\ttl@change@i {\@ne }{chapter}{0.0cm}{\bfseries \vspace {0.3cm}}{{\bfseries {\scshape } CHƯƠNG \thecontentslabel .\ }}{}{\titlerule *[0.3pc]{.}\contentspage }\relax 
+\ttl@change@v {chapter}{}{}{}\relax 
+\ttl@change@i {\@ne }{section}{0.0cm}{\vspace {0.3cm}}{\thecontentslabel \ }{}{\titlerule *[0.3pc]{.}\contentspage }\relax 
+\ttl@change@v {section}{}{}{}\relax 
+\ttl@change@i {\@ne }{subsection}{1.0cm}{\vspace {0.3cm}}{\thecontentslabel \ }{}{\titlerule *[0.3pc]{.}\contentspage }\relax 
+\ttl@change@v {subsection}{}{}{}\relax 
+\thispagestyle {empty}
+\contentsline {section}{\hbox to\@tempdima {\hfil } DANH MỤC THUẬT NGỮ VÀ TỪ VIẾT TẮT}{vi}{section*.4}%
+\contentsline {section}{\numberline {0.1}Danh mục thuật ngữ và từ viết tắt}{vi}{section.0.1}%
+\contentsline {chapter}{LỜI MỞ ĐẦU}{1}{section*.6}%
+\contentsline {section}{\numberline {2}Vấn đề}{1}{section.0.2}%
+\contentsline {section}{\numberline {3}Giải pháp}{1}{section.0.3}%
+\contentsline {section}{\numberline {4}Cấu trúc báo cáo}{1}{section.0.4}%
+\contentsline {chapter}{\numberline {1}CƠ SỞ LÝ THUYẾT VÀ CÔNG NGHỆ SỬ DỤNG}{2}{chapter.1}%
+\contentsline {section}{\numberline {1.1}Mở đầu}{2}{section.1.1}%
+\contentsline {section}{\numberline {1.2}Kiến trúc vi dịch vụ}{2}{section.1.2}%
+\contentsline {subsection}{\numberline {1.2.1}Khái niệm kiến trúc vi dịch vụ}{2}{subsection.1.2.1}%
+\contentsline {subsection}{\numberline {1.2.2}So sánh với kiến trúc đơn khối}{2}{subsection.1.2.2}%
+\contentsline {section}{\numberline {1.3}Ngôn ngữ lập trình và nền tảng ứng dụng}{3}{section.1.3}%
+\contentsline {subsection}{\numberline {1.3.1}Ngôn ngữ Java}{3}{subsection.1.3.1}%
+\contentsline {subsection}{\numberline {1.3.2}Framework Spring Boot}{4}{subsection.1.3.2}%
+\contentsline {subsection}{\numberline {1.3.3}Spring Cloud OpenFeign}{4}{subsection.1.3.3}%
+\contentsline {subsection}{\numberline {1.3.4}Xác thực với Spring Security và OAuth2}{4}{subsection.1.3.4}%
+\contentsline {subsection}{\numberline {1.3.5}RESTful API}{4}{subsection.1.3.5}%
+\contentsline {section}{\numberline {1.4}Cơ sở dữ liệu và công nghệ ORM}{4}{section.1.4}%
+\contentsline {subsection}{\numberline {1.4.1}Hệ quản trị cơ sở dữ liệu quan hệ}{4}{subsection.1.4.1}%
+\contentsline {subsection}{\numberline {1.4.2}ORM và JPA}{5}{subsection.1.4.2}%
+\contentsline {subsection}{\numberline {1.4.3}Quản lý di chuyển schema}{5}{subsection.1.4.3}%
+\contentsline {section}{\numberline {1.5}Giao tiếp bất đồng bộ qua hệ thống trao đổi tin nhắn}{5}{section.1.5}%
+\contentsline {subsection}{\numberline {1.5.1}Khái niệm hệ thống trao đổi tin nhắn}{5}{subsection.1.5.1}%
+\contentsline {subsection}{\numberline {1.5.2}Apache Kafka}{5}{subsection.1.5.2}%
+\contentsline {section}{\numberline {1.6}Lưu trữ đối tượng}{6}{section.1.6}%
+\contentsline {subsection}{\numberline {1.6.1}Khái niệm lưu trữ đối tượng}{6}{subsection.1.6.1}%
+\contentsline {subsection}{\numberline {1.6.2}RustFS và presigned URL}{6}{subsection.1.6.2}%
+\contentsline {section}{\numberline {1.7}Đóng gói và điều phối ứng dụng}{7}{section.1.7}%
+\contentsline {subsection}{\numberline {1.7.1}Container và Docker}{7}{subsection.1.7.1}%
+\contentsline {subsection}{\numberline {1.7.2}Kubernetes (k3s)}{7}{subsection.1.7.2}%
+\contentsline {subsection}{\numberline {1.7.3}Helm và ArgoCD}{7}{subsection.1.7.3}%
+\contentsline {section}{\numberline {1.8}Quản lý danh tính và truy cập}{8}{section.1.8}%
+\contentsline {subsection}{\numberline {1.8.1}Khái niệm IAM}{8}{subsection.1.8.1}%
+\contentsline {subsection}{\numberline {1.8.2}OAuth 2.0 — Khái niệm chung về ủy quyền}{8}{subsection.1.8.2}%
+\contentsline {subsection}{\numberline {1.8.3}OpenID Connect và JWT}{9}{subsection.1.8.3}%
+\contentsline {subsection}{\numberline {1.8.4}Xác thực trên trình duyệt — Authorization Code Flow và PKCE}{9}{subsection.1.8.4}%
+\contentsline {section}{\numberline {1.9}Quan trắc hệ thống}{11}{section.1.9}%
+\contentsline {subsection}{\numberline {1.9.1}Ba trụ cột của quan trắc}{11}{subsection.1.9.1}%
+\contentsline {subsection}{\numberline {1.9.2}Các thành phần quan trắc cụ thể}{11}{subsection.1.9.2}%
+\contentsline {section}{\numberline {1.10}Giao diện người dùng phía trước}{11}{section.1.10}%
+\contentsline {subsection}{\numberline {1.10.1}React và TypeScript}{11}{subsection.1.10.1}%
+\contentsline {subsection}{\numberline {1.10.2}Các thư viện hỗ trợ}{12}{subsection.1.10.2}%
+\contentsline {section}{\numberline {1.11}Kết luận chương}{12}{section.1.11}%
+\contentsline {chapter}{\numberline {2}PHÂN TÍCH VÀ THIẾT KẾ HỆ THỐNG}{14}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Phân tích hệ thống}{14}{section.2.1}%
+\contentsline {subsection}{\numberline {2.1.1}Xác định các tác nhân trong hệ thống}{14}{subsection.2.1.1}%
+\contentsline {subsection}{\numberline {2.1.2}Biểu đồ ca chức năng (usecase) tổng quan của hệ thống}{14}{subsection.2.1.2}%
+\contentsline {subsection}{\numberline {2.1.3}Kịch bản các chức năng}{16}{subsection.2.1.3}%
+\contentsline {subsubsection}{\numberline {a}Kịch bản các chức năng chung}{16}{subsubsection.2.1.3.1}%
+\contentsline {subsubsection}{\numberline {b}Kịch bản các chức năng của quản trị viên}{17}{subsubsection.2.1.3.2}%
+\contentsline {subsubsection}{\numberline {c}Kịch bản các chức năng của giảng viên}{18}{subsubsection.2.1.3.3}%
+\contentsline {subsubsection}{\numberline {d}Kịch bản các chức năng của sinh viên}{23}{subsubsection.2.1.3.4}%
+\contentsline {subsection}{\numberline {2.1.4}Biểu đồ lớp toàn hệ thống}{27}{subsection.2.1.4}%
+\contentsline {subsubsection}{\numberline {a}Xác định các lớp của hệ thống}{27}{subsubsection.2.1.4.1}%
+\contentsline {subsubsection}{\numberline {b}Bước 4: Xét quan hệ số lượng giữa các lớp}{27}{subsubsection.2.1.4.2}%
+\contentsline {subsubsection}{\numberline {c}Bước 5: Bổ sung quan hệ đối tượng giữa các lớp}{29}{subsubsection.2.1.4.3}%
+\contentsline {subsubsection}{\numberline {d}Biểu đồ lớp thực thể pha phân tích}{31}{subsubsection.2.1.4.4}%
+\contentsline {subsection}{\numberline {2.1.5}Phân rã hệ thống theo miền chức năng}{32}{subsection.2.1.5}%
+\contentsline {subsection}{\numberline {2.1.6}Biểu đồ lớp chi tiết từng dịch vụ}{32}{subsection.2.1.6}%
+\contentsline {subsubsection}{\numberline {a}Biểu đồ lớp pha phân tích miền Xác thực và phân quyền}{33}{subsubsection.2.1.6.1}%
+\contentsline {subsubsection}{\numberline {b}Biểu đồ lớp pha phân tích dịch vụ quản lý lớp học và điểm}{33}{subsubsection.2.1.6.2}%
+\contentsline {subsubsection}{\numberline {c}Biểu đồ lớp pha phân tích dịch vụ nộp bài}{34}{subsubsection.2.1.6.3}%
+\contentsline {subsubsection}{\numberline {d}Biểu đồ lớp pha phân tích dịch vụ thực thi chấm}{34}{subsubsection.2.1.6.4}%
+\contentsline {subsubsection}{\numberline {e}Biểu đồ lớp pha phân tích dịch vụ kết quả chấm}{35}{subsubsection.2.1.6.5}%
+\contentsline {subsubsection}{\numberline {f}Biểu đồ lớp pha phân tích dịch vụ trợ lý AI}{36}{subsubsection.2.1.6.6}%
+\contentsline {section}{\numberline {2.2}Thiết kế hệ thống}{36}{section.2.2}%
+\contentsline {subsection}{\numberline {2.2.1}Thiết kế cơ sở dữ liệu theo dịch vụ}{36}{subsection.2.2.1}%
+\contentsline {subsection}{\numberline {2.2.2}Sơ đồ tuần tự các chức năng}{37}{subsection.2.2.2}%
+\contentsline {subsubsection}{\numberline {a}Đăng nhập}{37}{subsubsection.2.2.2.1}%
+\contentsline {subsubsection}{\numberline {b}Quản lý lớp học}{37}{subsubsection.2.2.2.2}%
+\contentsline {subsubsection}{\numberline {c}Quản lý bài tập}{38}{subsubsection.2.2.2.3}%
+\contentsline {subsubsection}{\numberline {d}Xem kết quả chấm của cả lớp}{38}{subsubsection.2.2.2.4}%
+\contentsline {subsubsection}{\numberline {e}Nộp bài tập}{38}{subsubsection.2.2.2.5}%
+\contentsline {subsubsection}{\numberline {f}Xem kết quả chấm bài tập của bản thân}{38}{subsubsection.2.2.2.6}%
+\contentsline {subsubsection}{\numberline {g}Xem điểm và kết quả cá nhân}{39}{subsubsection.2.2.2.7}%
+\contentsline {chapter}{\numberline {3}TRIỂN KHAI VÀ ĐÁNH GIÁ HỆ THỐNG}{44}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Triển khai hệ thống}{44}{section.3.1}%
+\contentsline {section}{\numberline {3.2}Đánh giá hệ thống}{44}{section.3.2}%
+\contentsline {section}{\numberline {3.3}Hướng phát triển}{44}{section.3.3}%
+\contentsline {chapter}{TÀI LIỆU THAM KHẢO}{47}{section*.47}%
+\ttl@change@i {\@ne }{chapter}{0.0cm}{\bfseries \vspace {0.3cm}}{{\bfseries {\scshape } \thecontentslabel .\ }}{}{\titlerule *[0.3pc]{.}\contentspage }\relax 
+\ttl@change@v {chapter}{}{}{}\relax 
+\contentsfinish 
