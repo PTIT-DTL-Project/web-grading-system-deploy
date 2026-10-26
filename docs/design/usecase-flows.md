@@ -226,25 +226,30 @@ Every error returns the standard envelope `{status, message, data:null, error}`:
 
 ```
 POST /api/v1/assignments
-{ "title": "Lab 01", "classId": "<classId>", "gradingStrategy": "STUDENT_DOCKER_COMPOSE",
-  "dockerComposePort": 8080, "startupTimeoutMs": 60000,
-  "executionTimeoutMs": 300000, "maxMemoryMb": 256, "maxCpu": 0.5 }
+{ "title": "Lab 01", "classId": "<classId>", "purpose": "GRADED", "topic": "Chủ đề",
+  "gradingStrategy": "STUDENT_DOCKER_COMPOSE", "dockerComposePort": 8080,
+  "startupTimeoutMs": 60000, "executionTimeoutMs": 300000, "maxMemoryMb": 256,
+  "maxCpu": 0.5 }
 ```
 
-Expected: `201` with full assignment in `data` (`published:false`).
-Errors: duplicate title in same class → 400 descriptive · unknown/unowned class → 404 ·
-LECTURER strategy without `dockerComposeTemplate` → 400 · field violations → 400 detail.
+- `purpose` = `GRADED` (điểm thành phần, gắn lớp) hoặc `PRACTICE` (luyện tập, `classId` null, độc lập lớp).
+- `topic` bắt buộc với mọi bài; dùng để lọc/tìm theo chủ đề.
+- `title` phải duy nhất trong toàn bộ bài của giảng viên (không phân biệt purpose/lớp).
+- Expected: `201` with full assignment in `data` (`published:false`).
+Errors: duplicate title for the lecturer → 400 descriptive · unknown/unowned class (GRADED) → 404 ·
+PRACTICE with `classId` → 400 · LECTURER strategy without `dockerComposeTemplate` → 400 ·
+field violations → 400 detail.
 
 ### Step 2 — List / filter my assignments
 
 ```
-GET /api/v1/assignments?classId=&published=&search=&page=0&size=20
+GET /api/v1/assignments?classId=&purpose=&topic=&published=&search=&page=0&size=20
 ```
 
-Expected: `200` paged envelope; filters combinable; `search` is plain text
-(case-insensitive title contains), not the structured `field:value` grammar
-used by `/api/v1/classes`. Sorted `createdAt desc`; page beyond last → empty
-result, correct `meta.total`.
+Expected: `200` paged envelope; filters combinable; `search` matches title **or**
+topic (case-insensitive contains); `topic` is exact topic match. Not the structured
+`field:value` grammar used by `/api/v1/classes`. Sorted `createdAt desc`; page
+beyond last → empty result, correct `meta.total`.
 
 ### Step 3 — Detail
 
@@ -267,6 +272,71 @@ excludes self. Partial semantics: null fields keep stored values.
 ### Step 6 — Soft delete
 
 `DELETE /api/v1/assignments/{id}` → `200`; GET → 404 afterwards; row preserved in DB.
+
+---
+
+## UC-02b: Lecturer manages practice exercises by topic (không tính điểm)
+
+**Actor:** lecturer (`X-User-Id`). **Service:** course-service. **Preconditions:** none.
+Practice exercises (`purpose = PRACTICE`) are independent of any class (`class_id = NULL`);
+once published they are visible to **every** student. They are auto-graded through the
+normal executor/result pipeline so learners see which questions passed/failed, but their
+scores never feed the class `EXERCISE` component (`ScoreService` filters `purpose = GRADED`).
+
+### Step 1 — Create practice exercise
+
+```
+POST /api/v1/assignments
+{ "title": "Luyện tập SQL cơ bản", "purpose": "PRACTICE", "topic": "Truy vấn cơ bản",
+  "gradingStrategy": "STUDENT_DOCKER_COMPOSE", "dockerComposePort": 8080,
+  "startupTimeoutMs": 60000, "executionTimeoutMs": 300000, "maxMemoryMb": 256,
+  "maxCpu": 0.5 }
+```
+
+- `classId` phải bị bỏ qua/null (400 nếu gửi kèm).
+- `topic` bắt buộc; `title` phải duy nhất với mọi bài của giảng viên.
+- Expected: `201` with `published:false`, `purpose:"PRACTICE"`.
+
+### Step 2 — List / filter practice exercises
+
+```
+GET /api/v1/assignments?purpose=PRACTICE&topic=&search=&page=0&size=20
+```
+
+Expected: `200` paged envelope of practice exercises owned by the lecturer; filters
+`topic` (exact) and `search` (title or topic) combinable.
+
+### Step 3 — Publish / detail / plans / submissions / results
+
+Same endpoints as UC-02 Steps 3–6, but practice exercises work without a class:
+`GET /api/v1/assignments/{id}`, `/plans`, `/{id}/results`, `/{id}/submissions` all
+return data for a class-independent assignment. Lecturer sees submissions/results keyed
+by `studentUserId` (code/name enriched from any class the student belongs to).
+
+---
+
+## UC-02c: Student does practice exercises
+
+**Actor:** student. **Service:** course-service. **Preconditions:** none (no enrollment needed).
+
+### Step 1 — List practice exercises
+
+```
+GET /api/v1/student/assignments?purpose=PRACTICE&topic=&search=&page=0&size=20
+```
+
+Expected: `200` paged envelope of all published practice exercises (`class_id NULL`),
+visible to every student regardless of enrollment. Filters `topic` and `search` combinable.
+
+### Step 2 — Detail & submit
+
+`GET /api/v1/student/assignments/{id}` → 200 if published (404 otherwise); plans via
+`GET /api/v1/student/assignments/{id}/plans`; submit via submission flow (same as UC-04).
+
+### Step 3 — View results
+
+`GET /api/v1/student/submissions/{submissionId}/results` → the graded result with per-step
+pass/fail. The score is feedback only and is not added to any class score component.
 
 ---
 
