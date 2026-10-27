@@ -1,16 +1,20 @@
-\ttl@change@i {\@ne }{chapter}{0.0cm}{\bfseries \vspace {0.3cm}}{{\bfseries {\scshape } CHƯƠNG \thecontentslabel .\ }}{}{\titlerule *[0.3pc]{.}\contentspage }\relax 
+\setcounter {tocdepth}{0}
+\ttl@change@i {\@ne }{chapter}{0.0cm}{\bfseries \vspace {0.3cm}}{\bfseries CHƯỜNG \thecontentslabel : }{}{\titlerule *[0.3pc]{.}\contentspage }\relax 
 \ttl@change@v {chapter}{}{}{}\relax 
 \ttl@change@i {\@ne }{section}{0.0cm}{\vspace {0.3cm}}{\thecontentslabel \ }{}{\titlerule *[0.3pc]{.}\contentspage }\relax 
 \ttl@change@v {section}{}{}{}\relax 
 \ttl@change@i {\@ne }{subsection}{1.0cm}{\vspace {0.3cm}}{\thecontentslabel \ }{}{\titlerule *[0.3pc]{.}\contentspage }\relax 
 \ttl@change@v {subsection}{}{}{}\relax 
 \thispagestyle {empty}
-\contentsline {section}{\hbox to\@tempdima {\hfil } DANH MỤC THUẬT NGỮ VÀ TỪ VIẾT TẮT}{vi}{section*.4}%
-\contentsline {section}{\numberline {0.1}Danh mục thuật ngữ và từ viết tắt}{vi}{section.0.1}%
-\contentsline {chapter}{LỜI MỞ ĐẦU}{1}{section*.6}%
-\contentsline {section}{\numberline {2}Vấn đề}{1}{section.0.2}%
-\contentsline {section}{\numberline {3}Giải pháp}{1}{section.0.3}%
-\contentsline {section}{\numberline {4}Cấu trúc báo cáo}{1}{section.0.4}%
+\contentsline {chapter}{DANH MỤC HÌNH VẼ}{v}{section*.3}%
+\contentsline {chapter}{DANH MỤC BẢNG BIỂU}{vi}{section*.5}%
+\contentsline {section}{\hbox to\@tempdima {\hfil } DANH MỤC THUẬT NGỮ VÀ TỪ VIẾT TẮT}{vii}{section*.6}%
+\setcounter {tocdepth}{0}
+\contentsline {chapter}{LỜI MỞ ĐẦU}{1}{section*.8}%
+\contentsline {section}{\numberline {1}Vấn đề}{1}{section.0.1}%
+\contentsline {section}{\numberline {2}Giải pháp}{1}{section.0.2}%
+\contentsline {section}{\numberline {3}Cấu trúc báo cáo}{1}{section.0.3}%
+\setcounter {tocdepth}{3}
 \contentsline {chapter}{\numberline {1}CƠ SỞ LÝ THUYẾT VÀ CÔNG NGHỆ SỬ DỤNG}{2}{chapter.1}%
 \contentsline {section}{\numberline {1.1}Mở đầu}{2}{section.1.1}%
 \contentsline {section}{\numberline {1.2}Kiến trúc vi dịch vụ}{2}{section.1.2}%
@@ -84,7 +88,7 @@
 \contentsline {section}{\numberline {3.1}Triển khai hệ thống}{44}{section.3.1}%
 \contentsline {section}{\numberline {3.2}Đánh giá hệ thống}{44}{section.3.2}%
 \contentsline {section}{\numberline {3.3}Hướng phát triển}{44}{section.3.3}%
-\contentsline {chapter}{TÀI LIỆU THAM KHẢO}{47}{section*.47}%
+\contentsline {chapter}{TÀI LIỆU THAM KHẢO}{47}{section*.49}%
 \ttl@change@i {\@ne }{chapter}{0.0cm}{\bfseries \vspace {0.3cm}}{{\bfseries {\scshape } \thecontentslabel .\ }}{}{\titlerule *[0.3pc]{.}\contentspage }\relax 
 \ttl@change@v {chapter}{}{}{}\relax 
 \contentsfinish 

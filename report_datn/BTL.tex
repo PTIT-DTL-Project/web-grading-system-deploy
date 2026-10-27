@@ -203,9 +203,16 @@
 %\newpage
 %\subfile{chapters/0_1_subject.tex}
 
+\addtocontents{toc}{\protect\setcounter{tocdepth}{0}}
 \newpage
 \pagenumbering{gobble}
 \subfile{Chuong/0_2_Loi_cam_on.tex}
+
+\newpage
+\subfile{Chuong/0_3_Nhan_xet_huong_dan.tex}
+
+\newpage
+\subfile{Chuong/0_4_Nhan_xet_phan_bien.tex}
 
 % ===================================================
 % \pagestyle{empty} % Header và footer rỗng
@@ -216,8 +223,7 @@
 \titlecontents{chapter}
     [0.0cm]             % left margin
     {\bfseries\vspace{0.3cm}}                  % above code
-    {{\bfseries{\scshape}
-    CHƯƠNG \thecontentslabel.\ }}
+    {\bfseries CHƯỜNG \thecontentslabel: }
     % numbered format
     {}         % unnumbered format
     {\titlerule*[0.3pc]{.}\contentspage}         % filler-page-format, e.g dots
@@ -243,22 +249,20 @@
 \thispagestyle{empty}
 \cleardoublepage
 
-% \pagenumbering{roman}
 %Tạo danh mục hình vẽ.
-% \renewcommand{\listfigurename}{DANH MỤC HÌNH VẼ}
-% {\let\oldnumberline\numberline
-% \renewcommand{\numberline}{Hình~\oldnumberline}
-% \listoffigures}
-% % \phantomsection\addcontentsline{toc}{section}{\numberline {} DANH MỤC HÌNH VẼ}
-% \newpage
+\renewcommand{\listfigurename}{DANH MỤC HÌNH VẼ}
+{\let\oldnumberline\numberline
+\renewcommand{\numberline}{Hình~\oldnumberline}
+\listoffigures}
+\phantomsection\addcontentsline{toc}{chapter}{DANH MỤC HÌNH VẼ}
+\newpage
 
-
- %Tạo danh mục bảng biểu.
+%Tạo danh mục bảng biểu.
 \renewcommand{\listtablename}{DANH MỤC BẢNG BIỂU}
 {\let\oldnumberline\numberline
 \renewcommand{\numberline}{Bảng~\oldnumberline}
 \listoftables}
-% \phantomsection\addcontentsline{toc}{section}{\numberline {} DANH MỤC BẢNG BIỂU}
+\phantomsection\addcontentsline{toc}{chapter}{DANH MỤC BẢNG BIỂU}
 \newpage
 \glsaddall
  \renewcommand*{\glossaryname}{Danh sách thuật ngữ}
@@ -282,6 +286,7 @@
  \phantomsection\addcontentsline{toc}{section}{\numberline {} DANH MỤC THUẬT NGỮ VÀ TỪ VIẾT TẮT}
 
 % \newpage
+\addtocontents{toc}{\protect\setcounter{tocdepth}{0}}
 \subfile{Chuong/0_5_Danh_muc_viet_tat.tex}
 
 % \newpage
@@ -303,6 +308,8 @@
 \phantomsection\addcontentsline{toc}{chapter}{LỜI MỞ ĐẦU}
 \markboth{LỜI MỞ ĐẦU}{LỜI MỞ ĐẦU}
 \subfile{Chuong/0_Loi_mo_dau} % Lời mở đầu: vấn đề, giải pháp, cấu trúc báo cáo
+
+\addtocontents{toc}{\protect\setcounter{tocdepth}{3}}
 
 \newpage
 %\pagestyle{fancy} % Áp dụng header và footer

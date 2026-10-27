@@ -127,7 +127,8 @@
     \strng{fullhash}{FRT1}
     \field{labelnamesource}{author}
     \field{labeltitlesource}{title}
-    \field{title}{Architectural Styles and the Design of Network-based Software Architectures}
+    \field{title}{Architectural Styles and the Design of Network-based Software
+  Architectures}
     \verb{url}
     \verb https://www.ics.uci.edu/~fielding/pubs/dissertation/top.htm
     \endverb

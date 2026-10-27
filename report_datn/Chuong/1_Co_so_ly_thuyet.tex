@@ -4,7 +4,7 @@
 \section{Mở đầu}
 \label{section:1.1}
 
-Chương này trình bày các cơ sở lý thuyết và công nghệ được sử dụng trong việc xây dựng hệ thống chấm bài tự động môn Lập trình Web. Việc lựa chọn các công nghệ được thực hiện dựa trên những yêu cầu cụ thể của đề tài, bao gồm khả năng cách ly môi trường thực thi mã nguồn của sinh viên, khả năng xử lý bất đồng bộ khi chấm bài hàng loạt, cơ chế xác thực và phân quyền chặt chẽ, cũng như khả năng quan trắc để đánh giá hiệu năng hệ thống. \textit{Tiêu chí lựa chọn gồm:}
+Chương này trình bày các cơ sở lý thuyết và công nghệ được sử dụng trong việc xây dựng hệ thống chấm bài tự động môn Lập trình Web. Việc lựa chọn các công nghệ được thực hiện dựa trên những yêu cầu cụ thể của đề tài, bao gồm khả năng cách ly môi trường thực thi mã nguồn của sinh viên, khả năng xử lý bất đồng bộ khi chấm bài hàng loạt, cơ chế xác thực và phân quyền chặt chẽ, cũng như khả năng quan trắc để đánh giá hiệu năng hệ thống. Tiêu chí lựa chọn gồm:
 \begin{itemize}
     \item Tính mã nguồn mở (giúp giảm chi phí licence và dễ dàng tùy biến theo nghiệp vụ).
     \item Khả năng mở rộng độc lập cho từng thành phần.
@@ -49,10 +49,10 @@ Sai phạm & Lỗi ở một module có thể làm sập toàn hệ thống & L�
 
 So với kiến trúc đơn khối, kiến trúc vi dịch vụ mang lại các lợi ích phù hợp với yêu cầu của đề tài:
 \begin{itemize}
-    \item \textit{Cô lập sai phạm:} khi một dịch vụ gặp sự cố, các dịch vụ khác vẫn hoạt động bình thường.
-    \item \textit{Tách biệt trách nhiệm:} mỗi dịch vụ có một mục tiêu nghiệp vụ duy nhất, giúp việc phát triển và bảo trì đơn giản hơn.
-    \item \textit{Mở rộng có chọn lọc:} những dịch vụ tốn tài nguyên có thể được nhân bản độc lập mà không cần mở rộng toàn bộ ứng dụng.
-    \item \textit{Độc lập về triển khai:} mỗi dịch vụ có thể được build, deploy và cập nhật mà không ảnh hưởng đến các dịch vụ khác.
+    \item Cô lập sai phạm: khi một dịch vụ gặp sự cố, các dịch vụ khác vẫn hoạt động bình thường.
+    \item Tách biệt trách nhiệm: mỗi dịch vụ có một mục tiêu nghiệp vụ duy nhất, giúp việc phát triển và bảo trì đơn giản hơn.
+    \item Mở rộng có chọn lọc: những dịch vụ tốn tài nguyên có thể được nhân bản độc lập mà không cần mở rộng toàn bộ ứng dụng.
+    \item Độc lập về triển khai: mỗi dịch vụ có thể được build, deploy và cập nhật mà không ảnh hưởng đến các dịch vụ khác.
 \end{itemize}
 
 \section{Ngôn ngữ lập trình và nền tảng ứng dụng}
@@ -61,7 +61,7 @@ So với kiến trúc đơn khối, kiến trúc vi dịch vụ mang lại các 
 \subsection{Ngôn ngữ Java}
 \label{section:1.3.1}
 
-Java là ngôn ngữ lập trình hướng đối tượng, mạnh và phổ biến trong phát triển ứng dụng doanh nghiệp, với hiệu năng cao cùng hệ sinh thái phụ trợ phong phú. Phiên bản Java 21 - phiên bản phát hành dài hạn (LTS) - cung cấp nhiều tính năng hiện đại như \textit{records} (định dạng dữ liệu gọn nhẹ), \textit{pattern matching} (khớp mẫu) và \textit{virtual threads} (luồng ảo, hỗ trợ xử lý I/O với chi phí tài nguyên thấp)~\cite{oracle2023java21}. Những tính năng này giúp giảm đáng kể lượng code không cần thiết (boilerplate) và nâng cao hiệu năng cho các tác vụ I/O nặng như giao tiếp mạng và truy vấn cơ sở dữ liệu quan hệ.
+Java là ngôn ngữ lập trình hướng đối tượng, mạnh và phổ biến trong phát triển ứng dụng doanh nghiệp, với hiệu năng cao cùng hệ sinh thái phụ trợ phong phú. Phiên bản Java 21 - phiên bản phát hành dài hạn (LTS) - cung cấp nhiều tính năng hiện đại như records (định dạng dữ liệu gọn nhẹ), pattern matching (khớp mẫu) và virtual threads (luồng ảo, hỗ trợ xử lý I/O với chi phí tài nguyên thấp)~\cite{oracle2023java21}. Những tính năng này giúp giảm đáng kể lượng code không cần thiết (boilerplate) và nâng cao hiệu năng cho các tác vụ I/O nặng như giao tiếp mạng và truy vấn cơ sở dữ liệu quan hệ.
 
 \subsection{Framework Spring Boot}
 \label{section:1.3.2}
@@ -107,7 +107,7 @@ Flyway là công cụ quản lý các thay đổi schema cơ sở dữ liệu (m
 \subsection{Khái niệm hệ thống trao đổi tin nhắn}
 \label{section:1.5.1}
 
-Hệ thống trao đổi tin nhắn (message queue) là một phương thức giao tiếp giữa các thành phần phần mềm thông qua việc gửi và nhận các tin nhắn được lưu trữ tạm thời trong hàng đợi. Mô hình này cho phép các bên gửi và nhận hoạt động \textit{bất đồng bộ} - bên gửi không cần chờ bên nhận xử lý xong. Điều này giúp giảm thời gian chờ, tăng khả năng chịu tải và tách biệt hoàn toàn các thành phần với nhau.
+Hệ thống trao đổi tin nhắn (message queue) là một phương thức giao tiếp giữa các thành phần phần mềm thông qua việc gửi và nhận các tin nhắn được lưu trữ tạm thời trong hàng đợi. Mô hình này cho phép các bên gửi và nhận hoạt động bất đồng bộ - bên gửi không cần chờ bên nhận xử lý xong. Điều này giúp giảm thời gian chờ, tăng khả năng chịu tải và tách biệt hoàn toàn các thành phần với nhau.
 
 \subsection{Apache Kafka}
 \label{section:1.5.2}
@@ -127,7 +127,7 @@ Trong kiến trúc vi dịch vụ, Kafka thường được dùng làm hàng đ�
 \subsection{Khái niệm lưu trữ đối tượng}
 \label{section:1.6.1}
 
-Lưu trữ đối tượng (object storage) là phương thức lưu trữ dữ liệu phi cấu trúc (file, ảnh, video, kết quả chấm...) dưới dạng các \textit{đối tượng} gồm nội dung và metadata (thông tin mô tả), thay vì lưu theo cấu trúc thư mục như filesystem truyền thống. Object storage có khả năng mở rộng gần như vô hạn và phù hợp cho việc lưu trữ khối lượng lớn file nhỏ như bài nộp của sinh viên~\cite{awss3docs}.
+Lưu trữ đối tượng (object storage) là phương thức lưu trữ dữ liệu phi cấu trúc (file, ảnh, video, kết quả chấm...) dưới dạng các đối tượng gồm nội dung và metadata (thông tin mô tả), thay vì lưu theo cấu trúc thư mục như filesystem truyền thống. Object storage có khả năng mở rộng gần như vô hạn và phù hợp cho việc lưu trữ khối lượng lớn file nhỏ như bài nộp của sinh viên~\cite{awss3docs}.
 
 Việc sử dụng một máy chủ lưu trữ đối tượng chuyên dụng (object storage server) thay vì lưu bài nộp trực tiếp vào filesystem của server ứng dụng xuất phát từ ba lý do.
 \begin{enumerate}
@@ -141,7 +141,7 @@ Việc sử dụng một máy chủ lưu trữ đối tượng chuyên dụng (o
 
 RustFS là hệ thống lưu trữ đối tượng mã nguồn mở, tương thích với giao thức S3, được viết bằng ngôn ngữ Rust nhằm tận dụng hiệu năng cao và an toàn bộ nhớ của Rust. Hệ thống lưu trữ các file bài nộp dưới dạng zip.
 
-\textit{Tiêu chí lựa chọn RustFS gồm:}
+Tiêu chí lựa chọn RustFS gồm:
 \begin{enumerate}
     \item Tương thích cao với giao thức S3, cho phép sử dụng các thư viện MinIO/AWS S3 đã có sẵn cho Java mà không cần thay đổi code~\cite{rustfsdocs}.
     \item Hỗ trợ webhook sẵn, giúp object storage tự động thông báo cho backend khi file bài nộp được upload xong — sự kiện này dùng làm tín hiệu để bắt đầu quy trình chấm bài.
@@ -191,7 +191,7 @@ IAM (Identity and Access Management - quản lý danh tính và quyền truy c�
 \subsection{OAuth 2.0 — Khái niệm chung về ủy quyền}
 \label{section:1.8.2}
 
-OAuth 2.0 là một \textit{khung ủy quyền} (authorization framework) mở, cho phép một ứng dụng bên thứ ba truy cập tài nguyên của người dùng trên server mà không cần biết mật khẩu của người dùng đó~\cite{rfc6749}. Khác với xác thực (authentication — trả lời câu hỏi "ai là bạn?"), OAuth 2.0 giải quyết bài toán ủy quyền — "bạn được phép làm gì?". Giao thức này định nghĩa bốn vai trò cơ bản:
+OAuth 2.0 là một khung ủy quyền (authorization framework) mở, cho phép một ứng dụng bên thứ ba truy cập tài nguyên của người dùng trên server mà không cần biết mật khẩu của người dùng đó~\cite{rfc6749}. Khác với xác thực (authentication — trả lời câu hỏi "ai là bạn?"), OAuth 2.0 giải quyết bài toán ủy quyền — "bạn được phép làm gì?". Giao thức này định nghĩa bốn vai trò cơ bản:
 
 \begin{itemize}
     \item Resource Owner: chủ sở hữu tài nguyên, chính là người dùng cuối.
@@ -203,7 +203,7 @@ OAuth 2.0 là một \textit{khung ủy quyền} (authorization framework) mở, 
 OAuth 2.0 định nghĩa một số grant type (phương thức cấp token), mỗi loại phù hợp với một bối cảnh sử dụng:
 \begin{itemize}
     \item Authorization Code Grant — phương thức gồm hai bước: client xin một mã ngắn hạn (authorization code) qua trình duyệt của người dùng, rồi đổi mã đó lấy token tại một endpoint server mà không qua trình duyệt. Đây là grant type an toàn nhất, phù hợp cho các ứng dụng có backend~\cite{rfc6749}.
-    \item Resource Owner Password Credentials Grant (\textit{password grant}) cho phép client nhận trực tiếp username/password của người dùng; vì mật khẩu đi qua client nên chỉ được dùng cho các client được tin cậy tuyệt đối, không phù hợp cho ứng dụng web công cộng~\cite{rfc6749}.
+    \item Resource Owner Password Credentials Grant (password grant) cho phép client nhận trực tiếp username/password của người dùng; vì mật khẩu đi qua client nên chỉ được dùng cho các client được tin cậy tuyệt đối, không phù hợp cho ứng dụng web công cộng~\cite{rfc6749}.
     \item Client Credentials Grant dùng cho giao tiếp máy-máy (machine-to-machine), khi client tự xác thực bằng secret của mình mà không cần người dùng~\cite{rfc6749}.
 \end{itemize}
 
@@ -213,7 +213,7 @@ Bên cạnh đó, OAuth 2.0 định nghĩa hai loại token:
     \item Refresh token — token dài hạn hơn, dùng để lấy một access token mới mà không cần người dùng đăng nhập lại~\cite{rfc6749}.
 \end{itemize}
 
-\textit{Lý do chọn:} Hệ thống lựa chọn Authorization Code Grant vì nó không để token đi qua trình duyệt (chỉ authorization code ngắn hạn), giảm thiểu rủi ro đánh cắp token, đồng thời phù hợp với vai trò của API Gateway làm OAuth2 Resource Server.
+Lý do chọn: Hệ thống lựa chọn Authorization Code Grant vì nó không để token đi qua trình duyệt (chỉ authorization code ngắn hạn), giảm thiểu rủi ro đánh cắp token, đồng thời phù hợp với vai trò của API Gateway làm OAuth2 Resource Server.
 
 \subsection{OpenID Connect và JWT}
 \label{section:1.8.3}
@@ -238,11 +238,11 @@ Luồng ở mục 1.8.3 mô tả mô hình xác thực dùng JWT qua gateway. Ph
 
 Vì ứng dụng frontend là một SPA (Single Page Application) chạy 100\% trên trình duyệt, nó là một client công cộng (public client) — không thể lưu trữ một bí mật (client secret) an toàn trong code JavaScript, vì bất kỳ bí mật nào cũng có thể bị đọc được. Do đó, hệ thống không dùng password grant (yêu cầu client giữ mật khẩu người dùng) mà dùng Authorization Code Grant kết hợp với PKCE (Proof Key for Code Exchange, chuẩn hóa trong RFC 7636 và bắt buộc đối với client công cộng theo RFC 8252)~\cite{rfc7636,rfc8252}.
 
-PKCE là cơ chế bảo vệ authorization code: thay vì dùng client secret, trình duyệt tự sinh một chuỗi ngẫu nhiên entropy cao gọi là code\_verifier, tính giá trị băm (hash) của nó theo phương thức S256 (tức giá trị \texttt{Base64URL-ENCODE(SHA-256(code\_verifier))}) và gửi kèm code\_challenge này vào yêu cầu xin mã xác thực. Sau khi Keycloak trả về authorization code, trình duyệt đổi code thành token bằng cách gửi lại code\_verifier thật; Keycloak tính lại giá trị băm và so khớp với code\_challenge đã lưu. Nếu khớp, token được cấp phát~\cite{rfc7636}.
+PKCE là cơ chế bảo vệ authorization code: thay vì dùng client secret, trình duyệt tự sinh một chuỗi ngẫu nhiên entropy cao gọi là code\_verifier, tính giá trị băm (hash) của nó theo phương thức S256 (tức giá trị Base64URL-ENCODE(SHA-256(code\_verifier))) và gửi kèm code\_challenge này vào yêu cầu xin mã xác thực. Sau khi Keycloak trả về authorization code, trình duyệt đổi code thành token bằng cách gửi lại code\_verifier thật; Keycloak tính lại giá trị băm và so khớp với code\_challenge đã lưu. Nếu khớp, token được cấp phát~\cite{rfc7636}.
 
 Cơ chế này giải quyết bài toán interception attack: nếu một attacker có thể chặn hoặc đánh cắp authorization code (ví dụ qua URL redirect bị giả mạo), chúng vẫn không thể đổi code thành token vì không biết code\_verifier — mã chỉ vô dụng nếu không đi kèm chuỗi bí mật sinh tại chỗ~\cite{rfc7636}. Đồng thời, vì mật khẩu người dùng được nhập trực tiếp trên form do Keycloak quản lý (hosted login page) và không bao giờ đi qua ứng dụng frontend, rủi ro lộ mật khẩu tại client cũng được loại bỏ.
 
-\textit{Lý do chọn:} Authorization Code Flow + PKCE là phương án an toàn nhất có thể áp dụng cho SPA public client; cơ chế đã được chuẩn hóa (RFC) và được hỗ trợ rộng rãi bởi các thư viện như keycloak-js nên không cần tự triển khai; việc giữ token trong bộ nhớ (memory-only) giúp phiên làm việc chỉ tồn tại trong vòng đời tab, hạn chế thiệt hại nếu trình duyệt bị xâm nhập.
+Lý do chọn: Authorization Code Flow + PKCE là phương án an toàn nhất có thể áp dụng cho SPA public client; cơ chế đã được chuẩn hóa (RFC) và được hỗ trợ rộng rãi bởi các thư viện như keycloak-js nên không cần tự triển khai; việc giữ token trong bộ nhớ (memory-only) giúp phiên làm việc chỉ tồn tại trong vòng đời tab, hạn chế thiệt hại nếu trình duyệt bị xâm nhập.
 
 Hình \ref{fig:pkce-flow} minh họa luồng PKCE.
 
