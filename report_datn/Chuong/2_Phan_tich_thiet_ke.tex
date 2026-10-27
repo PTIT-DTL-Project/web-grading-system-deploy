@@ -15,7 +15,7 @@ Hệ thống chấm bài tự động có bốn tác nhân, trong đó User là 
 
 Hình \ref{fig:usecase-tong-quan} mô tả các ca chức năng tổng quan của hệ thống và các tác nhân tương tác với chúng.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{Hinhve/Hinh2_6_usecase_tong_quan}
 \caption{Biểu đồ usecase tổng quan của hệ thống.}
@@ -138,7 +138,7 @@ Kịch bản ngoại lệ &
 
 Hình \ref{fig:uc-classes-management} mô tả chi tiết usecase Quản lý lớp học của giảng viên.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{Hinhve/Hinh2_7_usecase_quan_ly_lop_hoc}
 \caption{Biểu đồ usecase chi tiết Quản lý lớp học của giảng viên.}
@@ -209,7 +209,7 @@ Kịch bản ngoại lệ &
 
 Hình \ref{fig:uc-assignment-management} mô tả chi tiết usecase Quản lý bài tập của giảng viên.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{Hinhve/Hinh2_8_usecase_quan_ly_bai_tap}
 \caption{Biểu đồ usecase chi tiết Quản lý bài tập của giảng viên.}
@@ -273,7 +273,7 @@ Kịch bản ngoại lệ &
 
 Hình \ref{fig:uc-review-class-results} mô tả chi tiết usecase Xem kết quả chấm của cả lớp dành cho giảng viên.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{Hinhve/Hinh2_9_usecase_xem_ket_qua_lop}
 \caption{Biểu đồ usecase chi tiết Xem kết quả chấm của cả lớp dành cho giảng viên.}
@@ -318,7 +318,7 @@ Kịch bản ngoại lệ &
 
 Hình \ref{fig:uc-submit-assignment} mô tả chi tiết usecase Nộp bài tập của sinh viên.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{Hinhve/Hinh2_10_usecase_nop_bai}
 \caption{Biểu đồ usecase chi tiết Nộp bài tập của sinh viên.}
@@ -361,7 +361,7 @@ Kịch bản ngoại lệ &
 
 Hình \ref{fig:uc-view-scores} mô tả chi tiết usecase Xem điểm và kết quả cá nhân của sinh viên.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{Hinhve/Hinh2_11_usecase_xem_diem_ca_nhan}
 \caption{Biểu đồ usecase chi tiết Xem điểm và kết quả cá nhân của sinh viên.}
@@ -400,7 +400,7 @@ Kịch bản ngoại lệ &
 
 Hình \ref{fig:uc-review-own-results} mô tả chi tiết usecase Xem kết quả chấm bài tập của bản thân dành cho sinh viên.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{Hinhve/Hinh2_12_usecase_xem_ket_qua_bai_nop}
 \caption{Biểu đồ usecase chi tiết Xem kết quả chấm bài tập của bản thân dành cho sinh viên.}
@@ -651,6 +651,83 @@ Các lớp thuộc dịch vụ trợ lý AI gồm Giải thích của trợ lý 
 
 \section{Thiết kế hệ thống}
 
+\subsection{Biểu đồ lớp thiết kế chi tiết từng dịch vụ}
+
+Sau khi phân rã hệ thống thành các miền chức năng, mỗi miền được thiết kế thành một dịch vụ độc lập với cơ sở dữ liệu riêng. Dưới đây là biểu đồ lớp thiết kế chi tiết của từng dịch vụ.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_29_class_diagram_system}
+\caption{Biểu đồ lớp thiết kế toàn hệ thống.}
+\label{fig:class-system}
+\end{figure}
+
+\subsubsection{Dịch vụ Xác thực và phân quyền}
+
+Dịch vụ xác thực và phân quyền quản lý tài khoản, đăng nhập, đổi mật khẩu, cấp và kiểm tra vai trò của người dùng trong hệ thống.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_30_class_auth_service}
+\caption{Biểu đồ lớp thiết kế dịch vụ Xác thực và phân quyền.}
+\label{fig:class-auth-service}
+\end{figure}
+
+\subsubsection{Dịch vụ Quản lý lớp học và điểm}
+
+Dịch vụ quản lý lớp học và điểm quản lý lớp học, danh sách sinh viên, cấu hình thành phần điểm và điểm số của từng sinh viên.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_31_class_course_service}
+\caption{Biểu đồ lớp thiết kế dịch vụ Quản lý lớp học và điểm.}
+\label{fig:class-course-service}
+\end{figure}
+
+\subsubsection{Dịch vụ Nộp bài}
+
+Dịch vụ nộp bài quản lý bài nộp của sinh viên và điểm chấm thủ công.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_32_class_submission_service}
+\caption{Biểu đồ lớp thiết kế dịch vụ Nộp bài.}
+\label{fig:class-submission-service}
+\end{figure}
+
+\subsubsection{Dịch vụ Thực thi chấm}
+
+Dịch vụ thực thi chấm quản lý công việc chấm, phiên chấm, bước chấm và nhật ký thực thi.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_33_class_executor_service}
+\caption{Biểu đồ lớp thiết kế dịch vụ Thực thi chấm.}
+\label{fig:class-executor-service}
+\end{figure}
+
+\subsubsection{Dịch vụ Kết quả chấm}
+
+Dịch vụ kết quả chấm lưu kết quả chấm theo từng bài nộp và kết quả từng bước chấm.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_34_class_result_service}
+\caption{Biểu đồ lớp thiết kế dịch vụ Kết quả chấm.}
+\label{fig:class-result-service}
+\end{figure}
+
+\subsubsection{Dịch vụ Trợ lý AI}
+
+Dịch vụ trợ lý AI quản lý hội thoại, giải thích và gợi ý học tập cho bài nộp.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_35_class_ai_service}
+\caption{Biểu đồ lớp thiết kế dịch vụ Trợ lý AI.}
+\label{fig:class-ai-service}
+\end{figure}
+
 \subsection{Thiết kế cơ sở dữ liệu theo dịch vụ}
 
 Sau khi phân rã hệ thống thành các miền chức năng, mỗi miền được thiết kế thành một dịch vụ độc lập với cơ sở dữ liệu riêng. Mỗi dịch vụ quản lý độc lập các bảng thuộc miền nghiệp vụ của mình, không truy cập trực tiếp cơ sở dữ liệu của dịch vụ khác.
@@ -666,7 +743,7 @@ Sau khi phân rã hệ thống thành các miền chức năng, mỗi miền đ�
 
 Biểu đồ \ref{fig:erd} minh họa quan hệ giữa các thực thể chính của hệ thống.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{Hinhve/Hinh2_28_erd}
 \caption{Biểu đồ quan hệ thực thể (ERD) của hệ thống.}
@@ -681,7 +758,7 @@ Dưới đây là sơ đồ tuần tự mô tả luồng xử lý nghiệp vụ 
 
 Hình \ref{fig:seq-dang-nhap} mô tả luồng xử lý khi người dùng đăng nhập vào hệ thống.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{Hinhve/Hinh2_20_seq_dang_nhap}
 \caption{Sơ đồ tuần tự chức năng Đăng nhập.}
@@ -692,7 +769,7 @@ Hình \ref{fig:seq-dang-nhap} mô tả luồng xử lý khi người dùng đăn
 
 Hình \ref{fig:seq-quan-ly-lop} mô tả luồng xử lý khi giảng viên xem danh sách lớp học của mình.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{Hinhve/Hinh2_21_seq_quan_ly_lop}
 \caption{Sơ đồ tuần tự chức năng Xem lớp.}
@@ -701,7 +778,7 @@ Hình \ref{fig:seq-quan-ly-lop} mô tả luồng xử lý khi giảng viên xem 
 
 Hình \ref{fig:seq-quan-ly-lop-chitiet} mô tả luồng xử lý khi giảng viên xem chi tiết một lớp học.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{Hinhve/Hinh2_22_seq_quan_ly_lop_chitiet}
 \caption{Sơ đồ tuần tự chức năng Xem chi tiết lớp.}
@@ -712,7 +789,7 @@ Hình \ref{fig:seq-quan-ly-lop-chitiet} mô tả luồng xử lý khi giảng vi
 
 Hình \ref{fig:seq-quan-ly-bai-tap} mô tả luồng xử lý khi giảng viên quản lý bài tập trong lớp.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{Hinhve/Hinh2_23_seq_quan_ly_bai_tap}
 \caption{Sơ đồ tuần tự chức năng Quản lý bài tập.}
@@ -723,7 +800,7 @@ Hình \ref{fig:seq-quan-ly-bai-tap} mô tả luồng xử lý khi giảng viên 
 
 Hình \ref{fig:seq-xem-ket-qua-lop} mô tả luồng xử lý khi giảng viên xem kết quả chấm bài tập của toàn bộ sinh viên trong lớp.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{Hinhve/Hinh2_24_seq_xem_ket_qua_lop}
 \caption{Sơ đồ tuần tự chức năng Xem kết quả chấm của cả lớp.}
@@ -734,7 +811,7 @@ Hình \ref{fig:seq-xem-ket-qua-lop} mô tả luồng xử lý khi giảng viên 
 
 Hình \ref{fig:seq-nop-bai} mô tả luồng xử lý khi sinh viên nộp bài tập thực hành.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{Hinhve/Hinh2_25_seq_nop_bai}
 \caption{Sơ đồ tuần tự chức năng Nộp bài tập.}
@@ -745,7 +822,7 @@ Hình \ref{fig:seq-nop-bai} mô tả luồng xử lý khi sinh viên nộp bài 
 
 Hình \ref{fig:seq-xem-ket-qua-cua-than} mô tả luồng xử lý khi sinh viên xem kết quả chấm của bài nộp mình đã gửi.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{Hinhve/Hinh2_26_seq_xem_ket_qua_cua_than}
 \caption{Sơ đồ tuần tự chức năng Xem kết quả chấm bài tập của bản thân.}
@@ -756,7 +833,7 @@ Hình \ref{fig:seq-xem-ket-qua-cua-than} mô tả luồng xử lý khi sinh viê
 
 Hình \ref{fig:seq-xem-diem-ca-nhan} mô tả luồng xử lý khi sinh viên xem điểm thành phần, điểm tổng kết và bảng điểm của mình trong lớp.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{Hinhve/Hinh2_27_seq_xem_diem_ca_nhan}
 \caption{Sơ đồ tuần tự chức năng Xem điểm và kết quả cá nhân.}

@@ -746,26 +746,26 @@ Tất cả gọi qua **API Gateway**: `https://web-dev1-api.vucongtuanduong.dpdn
 
 Header chuẩn mọi request: `Authorization: Bearer <access_token>`, `X-User-Id: <lecturer-uuid>`, `X-Gateway-Secret: <secret>`.
 
-### 17.1 Bảng tổng hợp 10 bài tập
+### 17.1 Summary of 10 assignments
 
-| # | Tên bài tập | Loại | Topic | Gắn lớp | Mô tả ngắn |
-|---|-------------|------|-------|---------|------------|
-| 1 | Quản lý sách REST API | GRADED | Lập trình web | Có | CRUD sách: POST/GET/PATCH/DELETE |
-| 2 | Quản lý sinh viên | GRADED | Hệ thống thông tin | Có | CRUD sinh viên, kiểm tra mã unique |
-| 3 | Quản lý đơn hàng | GRADED | Thương mại điện tử | Có | Tạo đơn, cập nhật trạng thái đơn |
-| 4 | Quản lý thư viện | GRADED | Hệ thống thư viện | Có | Mượn/trả sách, kiểm tra hạn mượn |
-| 5 | Hệ thống chấm điểm | GRADED | Giảng dạy | Có | Nhập điểm, tính TB, xếp loại |
-| 6 | Quản lý kho hàng | GRADED | Logistics | Có | Nhập kho, xuất kho, kiểm tra tồn kho |
-| 7 | Luyện tập SQL cơ bản | PRACTICE | Cơ sở dữ liệu | Không | SELECT, WHERE, JOIN đơn giản |
-| 8 | Luyện tập REST API | PRACTICE | Lập trình web | Không | GET danh sách, GET theo ID |
-| 9 | Luyện tập Java OOP | PRACTICE | Hướng đối tượng | Không | Tạo class, kế thừa, đa hình |
-| 10 | Quản lý tài sản | GRADED | Tài sản | Có | Thêm/sửa/xóa tài sản, kiểm tra giảm hao |
+| # | Title | Type | Topic | Class | Short description |
+|---|-------|------|-------|-------|-------------------|
+| 1 | Book Management REST API | GRADED | Web Programming | Yes | Book CRUD: POST/GET/PATCH/DELETE |
+| 2 | Student Management | GRADED | Information Systems | Yes | Student CRUD, unique code check |
+| 3 | Order Management | GRADED | E-commerce | Yes | Create orders, update order status |
+| 4 | Library Management | GRADED | Library System | Yes | Borrow/return books, check due date |
+| 5 | Grading System | GRADED | Teaching | Yes | Enter grades, calculate average, classify |
+| 6 | Warehouse Management | GRADED | Logistics | Yes | Warehouse in/out, check stock |
+| 7 | Basic SQL Practice | PRACTICE | Databases | No | SELECT, WHERE, simple JOIN |
+| 8 | REST API Practice | PRACTICE | Web Programming | No | GET list, GET by ID |
+| 9 | Java OOP Practice | PRACTICE | OOP | No | Create class, inheritance, polymorphism |
+| 10 | Asset Management | GRADED | Assets | Yes | Add/edit/delete assets, check depreciation |
 
-**Quy tắc:**
-- `GRADED` → bắt buộc `classId`, tính vào thành phần EXERCISE
-- `PRACTICE` → **không gửi `classId`** (null), tự hẹn, không tính điểm lớp
-- `topic` bắt buộc cho mọi bài
-- `title` phải duy nhất theo giảng viên
+**Rules:**
+- `GRADED` → requires `classId`, counts toward EXERCISE component
+- `PRACTICE` → **do not send `classId`** (null), self-graded, no class score
+- `topic` required for every assignment
+- `title` must be unique per lecturer
 
 ---
 
@@ -2114,119 +2114,122 @@ GET /api/v1/assignments/{assignmentId}/plans
 
 | Bucket | Hành động | Ghi chú |
 |--------|-----------|---------|
-| T0 | Lấy Keycloak token từ bạn (user/pass lecturer) | Bạn cung cấp |
-| T1 | Tạo 1-2 lớp (lấy classId) | Cần cho bài GRADED |
-| T2 | Import CSV sinh viên vào lớp | Cần file CSV từ bạn |
-| T3 | Tạo 7 bài GRADED (bài 1-6, 10) gắn classId | Tạo assignment → plan → steps → publish |
-| T4 | Tạo 3 bài PRACTICE (bài 7-9) không gắn classId | Tạo assignment → plan → steps → publish |
-| T5 | Verify danh sách và filter | GET /api/v1/assignments với các filter |
+| T0 | Get Keycloak token from lecturer (user/pass) | You provide |
+| T1 | Create 1-2 classes (get classId) | Needed for GRADED assignments |
+| T2 | Import CSV students into class | Need CSV file from you |
+| T3 | Create 7 GRADED assignments (#1-6, 10) with classId | Create assignment → plan → steps → publish |
+| T4 | Create 3 PRACTICE assignments (#7-9) without classId | Create assignment → plan → steps → publish |
+| T5 | Verify list and filters | GET /api/v1/assignments with filters |
 
 ---
 
-### 17.14 Danh sách kiểm tra hoàn tất (Definition of Done)
+### 17.14 Definition of Done
 
-- [x] Tạo lớp thành công, có `classId` — `b3782e35-7593-4497-9fa8-35a449a2d7b2`
-- [x] Import CSV thành công, `imported > 0` — `imported=59, skipped=0`
-- [x] Cấu hình score components thành công (ATTENDANCE/EXERCISE/FINAL_EXAM) — `PUT /score-components` → `200`
-- [x] Tạo 7 bài GRADED, mỗi bài có `assignmentId`, `planId`, các step, đã publish
-- [x] Tạo 3 bài PRACTICE, mỗi bài có `assignmentId`, `planId`, các step, đã publish
-- [x] Mỗi bài GRADED cover ít nhất 1 loại HTTP method (POST/GET/PATCH/DELETE)
-- [x] Mỗi bài cover ít nhất 2 loại assertion
-- [x] Có ít nhất 1 bài dùng extract biến giữa các step
-- [x] Có ít nhất 1 bài dùng DB step (DB_QUERY hoặc DB_SCHEMA_CHECK) — bài 7
-- [x] **Tất cả 7 bài GRADED (#1–6, #10) đã có 2 DB steps (DB_SCHEMA_CHECK + DB_QUERY)** — chạy trên container sinh viên
-- [x] **Bài PRACTICE #8, #9 đã có 1 DB_SCHEMA_CHECK mỗi bài**
-- [x] Verify bằng GET filter thành công, dữ liệu đúng
-- [ ] Negative cases: 404 unowned, 403 non-lecturer, 400 validation — chưa chạy
+- [x] Class created successfully, has `classId` — `b3782e35-7593-4497-9fa8-35a449a2d7b2`
+- [x] CSV import successful, `imported > 0` — `imported=59, skipped=0`
+- [x] Score components configured (ATTENDANCE/EXERCISE/FINAL_EXAM) — `PUT /score-components` → `200`
+- [x] Created 7 GRADED assignments, each with `assignmentId`, `planId`, steps, published
+- [x] Created 3 PRACTICE assignments, each with `assignmentId`, `planId`, steps, published
+- [x] Each GRADED covers at least 1 HTTP method (POST/GET/PATCH/DELETE)
+- [x] Each assignment covers at least 2 assertion types
+- [x] At least 1 assignment uses extract variable between steps
+- [x] At least 1 assignment uses DB step (DB_QUERY or DB_SCHEMA_CHECK) — assignment 7
+- [x] All 7 GRADED (#1–6, #10) have 2 DB steps (DB_SCHEMA_CHECK + DB_QUERY) — run on student container
+- [x] PRACTICE #8, #9 each have 1 DB_SCHEMA_CHECK
+- [x] Verify via GET filter successful, data correct
+- [ ] Negative cases: 404 unowned, 403 non-lecturer, 400 validation — not yet run
 
 ---
 
-### 17.15 Kết quả thực thi (2026-10-27)
+### 17.15 Execution results (2026-10-27)
 
-Môi trường: gateway `https://web-dev1-api.vucongtuanduong.dpdns.org`, realm `ptit-wgs`,
-client `wgs-postman` (password grant), tài khoản `gv002` (role `ROLE_LECTURER`,
+Environment: gateway `https://web-dev1-api.vucongtuanduong.dpdns.org`, realm `ptit-wgs`,
+client `wgs-postman` (password grant), lecturer `gv002` (role `ROLE_LECTURER`,
 `sub = 2be57808-9203-4150-8f29-19aecbe9f725`).
 
-**Lưu ý xác thực:** `web-grading-fe` đã tắt Direct Access Grants → password grant trả
-`unauthorized_client`. Dùng `wgs-postman` (hoặc `admin-cli`). Nếu tài khoản còn required
-action `UPDATE_PASSWORD`, password grant trả `invalid_grant: Account is not fully set up`;
-gọi `POST /api/v1/account/change-password` trước (ở đây trả `204` với mật khẩu giữ nguyên)
-rồi grant lại bình thường.
+**Auth note:** `web-grading-fe` has Direct Access Grants disabled → password grant returns
+`unauthorized_client`. Use `wgs-postman` (or `admin-cli`). If account has pending
+`UPDATE_PASSWORD` required action, password grant returns
+`invalid_grant: Account is not fully set up`; call `POST /api/v1/account/change-password`
+first (here returned `204` keeping the same password), then grant again.
 
-**Lớp:** `b3782e35-7593-4497-9fa8-35a449a2d7b2` — `D22CQKH02-B`, semester `20261`,
+**Class:** `b3782e35-7593-4497-9fa8-35a449a2d7b2` — `D22CQKH02-B`, semester `20261`,
 `status=ACTIVE`.
 
-**Sinh viên:** file `.opencode/plan/generate-data-api/students-import.csv` (59 dòng dữ liệu,
+**Students:** file `.opencode/plan/generate-data-api/students-import.csv` (59 data rows,
 header `studentCode,studentName,email,studentUserId`), import `59`, `skipped=0`.
 Verify: `GET /api/v1/classes/{classId}/students?page=0&size=100` → `total=59`.
 
-**Bài tập đã tạo (tất cả `published=true`):**
+**Assignments created (all `published=true`):**
 
 | # | Title | Purpose | DB | Port | assignmentId | planId | Steps |
 |---|-------|---------|----|------|--------------|--------|-------|
-| 1 | Quản lý sách REST API | GRADED | `books_db` | 8080 | `bab5b767-a86a-4e26-aea0-eb5add50f4a6` | `8135a33d-00e1-4669-a454-3634ffad1c78` | 8/8 (6 HTTP + 2 DB) |
-| 2 | Quản lý sinh viên | GRADED | `students_db` | 8081 | `c4a883cc-f6a7-412a-9a8c-a3e20642543d` | `25f08002-a2fc-44a6-89b0-7d0a1bb2030c` | 8/8 (6 HTTP + 2 DB) |
-| 3 | Quản lý đơn hàng | GRADED | `orders_db` | 8082 | `bd2b9ea6-9454-4f0b-ae25-2394265ea07f` | `36e2af52-7372-4844-839a-5c1e29f70928` | 7/7 (5 HTTP + 2 DB) |
-| 4 | Quản lý thư viện | GRADED | `library_db` | 8083 | `155e2459-c734-4425-b926-0f84d96e7821` | `7ad3bf24-75b7-48d8-b574-4bd9fa92d1a1` | 7/7 (5 HTTP + 2 DB) |
-| 5 | Hệ thống chấm điểm | GRADED | `grades_db` | 8084 | `4d127dd9-ad03-4d88-b2d1-9e39dc4d22f7` | `97b64df7-4118-4b31-8b4f-d0fea38fe06c` | 8/8 (6 HTTP + 2 DB) |
-| 6 | Quản lý kho hàng | GRADED | `inventory_db` | 8085 | `e39e0f42-c8c9-4da7-8a8d-53e357e9848a` | `c3ed9afa-c3fa-4398-a3c2-b61d469787c4` | 7/7 (5 HTTP + 2 DB) |
-| 7 | Luyện tập SQL cơ bản | PRACTICE | `practice_db` | 8080 | `370af4b1-249f-4295-bf70-514e7ca8cef8` | `9dbb663b-37ad-40d9-a17b-f1c46360dbfe` | 3/3 (có sẵn DB steps) |
-| 8 | Luyện tập REST API | PRACTICE | `api_practice_db` | 8081 | `ca57be8d-bde7-4217-be03-ab80465410cf` | `352e6e03-263f-4d5b-b9d1-0db0ea15dde5` | 4/4 (3 HTTP + 1 DB) |
-| 9 | Luyện tập Java OOP | PRACTICE | `oop_practice_db` | 8082 | `4fcbd0b9-132b-41bd-adde-7c35388e694d` | `0a64e4b5-0eee-40e5-a4ee-af1c5c5f1753` | 4/4 (3 HTTP + 1 DB) |
-| 10 | Quản lý tài sản | GRADED | `assets_db` | 8086 | `83580461-ee6e-478a-84f6-ec1bb63e9548` | `b7631721-53bf-410a-ba38-c1fa4c784b34` | 7/7 (5 HTTP + 2 DB) |
+| 1 | Book Management REST API | GRADED | `books_db` | 8080 | `bab5b767-a86a-4e26-aea0-eb5add50f4a6` | `8135a33d-00e1-4669-a454-3634ffad1c78` | 8/8 (6 HTTP + 2 DB) |
+| 2 | Student Management | GRADED | `students_db` | 8081 | `c4a883cc-f6a7-412a-9a8c-a3e20642543d` | `25f08002-a2fc-44a6-89b0-7d0a1bb2030c` | 8/8 (6 HTTP + 2 DB) |
+| 3 | Order Management | GRADED | `orders_db` | 8082 | `bd2b9ea6-9454-4f0b-ae25-2394265ea07f` | `36e2af52-7372-4844-839a-5c1e29f70928` | 7/7 (5 HTTP + 2 DB) |
+| 4 | Library Management | GRADED | `library_db` | 8083 | `155e2459-c734-4425-b926-0f84d96e7821` | `7ad3bf24-75b7-48d8-b574-4bd9fa92d1a1` | 7/7 (5 HTTP + 2 DB) |
+| 5 | Grading System | GRADED | `grades_db` | 8084 | `4d127dd9-ad03-4d88-b2d1-9e39dc4d22f7` | `97b64df7-4118-4b31-8b4f-d0fea38fe06c` | 8/8 (6 HTTP + 2 DB) |
+| 6 | Warehouse Management | GRADED | `inventory_db` | 8085 | `e39e0f42-c8c9-4da7-8a8d-53e357e9848a` | `c3ed9afa-c3fa-4398-a3c2-b61d469787c4` | 7/7 (5 HTTP + 2 DB) |
+| 7 | Basic SQL Practice | PRACTICE | `practice_db` | 8080 | `370af4b1-249f-4295-bf70-514e7ca8cef8` | `9dbb663b-37ad-40d9-a17b-f1c46360dbfe` | 3/3 (có sẵn DB steps) |
+| 8 | REST API Practice | PRACTICE | `api_practice_db` | 8081 | `ca57be8d-bde7-4217-be03-ab80465410cf` | `352e6e03-263f-4d5b-b9d1-0db0ea15dde5` | 4/4 (3 HTTP + 1 DB) |
+| 9 | Java OOP Practice | PRACTICE | `oop_practice_db` | 8082 | `4fcbd0b9-132b-41bd-adde-7c35388e694d` | `0a64e4b5-0eee-40e5-a4ee-af1c5c5f1753` | 4/4 (3 HTTP + 1 DB) |
+| 10 | Asset Management | GRADED | `assets_db` | 8086 | `83580461-ee6e-478a-84f6-ec1bb63e9548` | `b7631721-53bf-410a-ba38-c1fa4c784b34` | 7/7 (5 HTTP + 2 DB) |
 
-Tổng: 10 assignment, 10 plan, 63 step, 10 publish `200`.
+Total: 10 assignments, 10 plans, 63 steps, 10 publishes `200`.
 
-**Kết quả filter (verify):**
+**Filter results (verify):**
 
-| Filter | Kỳ vọng | Thực tế |
-|--------|---------|---------|
+| Filter | Expected | Actual |
+|--------|----------|--------|
 | `GET /api/v1/assignments` | 10 | 10 |
 | `purpose=GRADED` | 7 | 7 |
 | `purpose=PRACTICE` | 3 | 3 |
 | `classId={classId}` | 7 | 7 |
 | `published=true` | 10 | 10 |
 | `topic=Logistics` | 1 | 1 |
-| `GET /assignments/topics?purpose=GRADED` | 7 topic | 7 |
-| `GET /assignments/topics?purpose=PRACTICE` | 3 topic | 3 |
+| `GET /assignments/topics?purpose=GRADED` | 7 topics | 7 |
+| `GET /assignments/topics?purpose=PRACTICE` | 3 topics | 3 |
 
 ---
 
-### 17.16 Các bước DB đã bổ sung (2026-10-27)
+### 17.16 DB steps added (2026-10-27)
 
-Mỗi bài GRADED (#1–6, #10) được thêm 2 bước DB **sau** các bước HTTP, chạy trên container sinh viên tương ứng:
+Each GRADED assignment (#1–6, #10) gets 2 DB steps **after** the HTTP steps, running on
+the corresponding student container:
 
-| Bước | Loại | Mục đích | required |
-|------|------|----------|----------|
-| N+1 | `DB_SCHEMA_CHECK` | Kiểm tra bảng chính và khóa chính tồn tại | true |
-| N+2 | `DB_QUERY` | Kiểm tra dữ liệu đã được tạo qua HTTP nằm trong DB | false |
+| Step | Type | Purpose | required |
+|------|------|---------|----------|
+| N+1 | `DB_SCHEMA_CHECK` | Check main table and primary key exist | true |
+| N+2 | `DB_QUERY` | Check data created via HTTP exists in DB | false |
 
-Cấu hình DB connection (sinh viên phải làm theo):
+DB connection config (students must follow):
 
-| # | Bài | DB | Port | Bảng chính |
-|---|-----|----|------|------------|
-| 1 | Quản lý sách REST API | `books_db` | 8080 | `books` |
-| 2 | Quản lý sinh viên | `students_db` | 8081 | `students` |
-| 3 | Quản lý đơn hàng | `orders_db` | 8082 | `orders` |
-| 4 | Quản lý thư viện | `library_db` | 8083 | `library` |
-| 5 | Hệ thống chấm điểm | `grades_db` | 8084 | `grades` |
-| 6 | Quản lý kho hàng | `inventory_db` | 8085 | `inventory` |
-| 10 | Quản lý tài sản | `assets_db` | 8086 | `assets` |
+| # | Assignment | DB | Port | Main table |
+|---|------------|----|------|------------|
+| 1 | Book Management REST API | `books_db` | 8080 | `books` |
+| 2 | Student Management | `students_db` | 8081 | `students` |
+| 3 | Order Management | `orders_db` | 8082 | `orders` |
+| 4 | Library Management | `library_db` | 8083 | `library` |
+| 5 | Grading System | `grades_db` | 8084 | `grades` |
+| 6 | Warehouse Management | `inventory_db` | 8085 | `inventory` |
+| 10 | Asset Management | `assets_db` | 8086 | `assets` |
 
-Bài PRACTICE #8, #9 mỗi bài thêm 1 bước `DB_SCHEMA_CHECK`:
-- #8 Luyện tập REST API → `api_practice_db`, port 8081
-- #9 Luyện tập Java OOP → `oop_practice_db`, port 8082
+PRACTICE #8, #9 each add 1 `DB_SCHEMA_CHECK` step:
+- #8 REST API Practice → `api_practice_db`, port 8081
+- #9 Java OOP Practice → `oop_practice_db`, port 8082
 
-**Lưu ý:** Tên database và port được lecturer đặt để sinh viên tuân thủ. Container sinh viên phải expose DB trên cổng tương ứng và tạo database đúng tên khi compose up.
-
----
-
-**Chưa chạy:** negative cases (404/403/400) và chấm bài thật (cần Docker image + submission
-của sinh viên). Score components đã cấu hình: ATTENDANCE 0.10 / EXERCISE 0.20 / FINAL_EXAM 0.70.
-
+**Note:** Database names and ports are set by the lecturer for students to follow.
+Student containers must expose DB on the corresponding port and create the database
+with the correct name when compose up.
 
 ---
 
-*Phần này được bổ sung vào lecturer-full-e2e-plan.md. Ngày bổ sung: 2026-10-27.*
+**Not yet run:** negative cases (404/403/400) and real grading (needs Docker image +
+student submission). Score components configured: ATTENDANCE 0.10 / EXERCISE 0.20 / FINAL_EXAM 0.70.
 
-*Tài liệu này được viết dựa trên code thực tế trong repo `web-grading-system-deploy`: `docs/design/grading-config-reference.md`, `docs/design/http-test-plan-config.md`, `docs/design/exercise-management-plan.md`, `docs/design/usecase-flows.md`, `src-services/course-service/.../controller/*.java`, `src-services/course-service/.../dto/request/*.java`. Ngày viết: 2026-10-27.*
+
+---
+
+*This section was added to lecturer-full-e2e-plan.md. Date added: 2026-10-27.*
+
+*This document was written based on actual code in repo `web-grading-system-deploy`: `docs/design/grading-config-reference.md`, `docs/design/http-test-plan-config.md`, `docs/design/exercise-management-plan.md`, `docs/design/usecase-flows.md`, `src-services/course-service/.../controller/*.java`, `src-services/course-service/.../dto/request/*.java`. Date written: 2026-10-27.*
