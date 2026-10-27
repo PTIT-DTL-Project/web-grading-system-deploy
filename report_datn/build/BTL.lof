@@ -1,31 +1,30 @@
 \addvspace {10\p@ }
 \contentsline {figure}{\numberline {1.1}{\ignorespaces Luồng xác thực JWT qua API Gateway.}}{9}{figure.caption.10}%
 \contentsline {figure}{\numberline {1.2}{\ignorespaces Luồng xác thực trên trình duyệt với Authorization Code Flow và PKCE.}}{10}{figure.caption.11}%
-\contentsline {figure}{\numberline {1.3}{\ignorespaces Ba trụ cột quan trắc và các thành phần cụ thể.}}{12}{figure.caption.12}%
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {2.1}{\ignorespaces Biểu đồ usecase tổng quan của hệ thống.}}{15}{figure.caption.13}%
-\contentsline {figure}{\numberline {2.2}{\ignorespaces Biểu đồ usecase chi tiết Quản lý lớp học của giảng viên.}}{19}{figure.caption.17}%
-\contentsline {figure}{\numberline {2.3}{\ignorespaces Biểu đồ usecase chi tiết Quản lý bài tập của giảng viên.}}{21}{figure.caption.20}%
-\contentsline {figure}{\numberline {2.4}{\ignorespaces Biểu đồ usecase chi tiết Xem kết quả chấm của cả lớp dành cho giảng viên.}}{22}{figure.caption.23}%
-\contentsline {figure}{\numberline {2.5}{\ignorespaces Biểu đồ usecase chi tiết Nộp bài tập của sinh viên.}}{24}{figure.caption.25}%
-\contentsline {figure}{\numberline {2.6}{\ignorespaces Biểu đồ usecase chi tiết Xem điểm và kết quả cá nhân của sinh viên.}}{25}{figure.caption.27}%
-\contentsline {figure}{\numberline {2.7}{\ignorespaces Biểu đồ usecase chi tiết Xem kết quả chấm bài tập của bản thân dành cho sinh viên.}}{26}{figure.caption.29}%
-\contentsline {figure}{\numberline {2.8}{\ignorespaces Biểu đồ lớp thực thể pha phân tích.}}{31}{figure.caption.31}%
-\contentsline {figure}{\numberline {2.9}{\ignorespaces Biểu đồ lớp pha phân tích miền Xác thực và phân quyền.}}{33}{figure.caption.33}%
-\contentsline {figure}{\numberline {2.10}{\ignorespaces Biểu đồ lớp pha phân tích dịch vụ quản lý lớp học và điểm.}}{34}{figure.caption.34}%
-\contentsline {figure}{\numberline {2.11}{\ignorespaces Biểu đồ lớp pha phân tích dịch vụ nộp bài.}}{34}{figure.caption.35}%
-\contentsline {figure}{\numberline {2.12}{\ignorespaces Biểu đồ lớp pha phân tích dịch vụ thực thi chấm.}}{35}{figure.caption.36}%
-\contentsline {figure}{\numberline {2.13}{\ignorespaces Biểu đồ lớp pha phân tích dịch vụ kết quả chấm.}}{35}{figure.caption.37}%
-\contentsline {figure}{\numberline {2.14}{\ignorespaces Biểu đồ lớp pha phân tích dịch vụ trợ lý AI.}}{36}{figure.caption.38}%
-\contentsline {figure}{\numberline {2.15}{\ignorespaces Biểu đồ quan hệ thực thể (ERD) của hệ thống.}}{37}{figure.caption.39}%
-\contentsline {figure}{\numberline {2.16}{\ignorespaces Sơ đồ tuần tự chức năng Đăng nhập.}}{38}{figure.caption.40}%
-\contentsline {figure}{\numberline {2.17}{\ignorespaces Sơ đồ tuần tự chức năng Xem lớp.}}{39}{figure.caption.41}%
-\contentsline {figure}{\numberline {2.18}{\ignorespaces Sơ đồ tuần tự chức năng Xem chi tiết lớp.}}{40}{figure.caption.42}%
-\contentsline {figure}{\numberline {2.19}{\ignorespaces Sơ đồ tuần tự chức năng Quản lý bài tập.}}{41}{figure.caption.43}%
-\contentsline {figure}{\numberline {2.20}{\ignorespaces Sơ đồ tuần tự chức năng Xem kết quả chấm của cả lớp.}}{41}{figure.caption.44}%
-\contentsline {figure}{\numberline {2.21}{\ignorespaces Sơ đồ tuần tự chức năng Nộp bài tập.}}{42}{figure.caption.45}%
-\contentsline {figure}{\numberline {2.22}{\ignorespaces Sơ đồ tuần tự chức năng Xem kết quả chấm bài tập của bản thân.}}{42}{figure.caption.46}%
-\contentsline {figure}{\numberline {2.23}{\ignorespaces Sơ đồ tuần tự chức năng Xem điểm và kết quả cá nhân.}}{43}{figure.caption.47}%
+\contentsline {figure}{\numberline {2.1}{\ignorespaces Biểu đồ usecase tổng quan của hệ thống.}}{13}{figure.caption.12}%
+\contentsline {figure}{\numberline {2.2}{\ignorespaces Biểu đồ usecase chi tiết Quản lý lớp học của giảng viên.}}{17}{figure.caption.16}%
+\contentsline {figure}{\numberline {2.3}{\ignorespaces Biểu đồ usecase chi tiết Quản lý bài tập của giảng viên.}}{19}{figure.caption.19}%
+\contentsline {figure}{\numberline {2.4}{\ignorespaces Biểu đồ usecase chi tiết Xem kết quả chấm của cả lớp dành cho giảng viên.}}{20}{figure.caption.22}%
+\contentsline {figure}{\numberline {2.5}{\ignorespaces Biểu đồ usecase chi tiết Nộp bài tập của sinh viên.}}{22}{figure.caption.24}%
+\contentsline {figure}{\numberline {2.6}{\ignorespaces Biểu đồ usecase chi tiết Xem điểm và kết quả cá nhân của sinh viên.}}{23}{figure.caption.26}%
+\contentsline {figure}{\numberline {2.7}{\ignorespaces Biểu đồ usecase chi tiết Xem kết quả chấm bài tập của bản thân dành cho sinh viên.}}{24}{figure.caption.28}%
+\contentsline {figure}{\numberline {2.8}{\ignorespaces Biểu đồ lớp thực thể pha phân tích.}}{29}{figure.caption.30}%
+\contentsline {figure}{\numberline {2.9}{\ignorespaces Biểu đồ lớp pha phân tích miền Xác thực và phân quyền.}}{31}{figure.caption.32}%
+\contentsline {figure}{\numberline {2.10}{\ignorespaces Biểu đồ lớp pha phân tích dịch vụ quản lý lớp học và điểm.}}{32}{figure.caption.33}%
+\contentsline {figure}{\numberline {2.11}{\ignorespaces Biểu đồ lớp pha phân tích dịch vụ nộp bài.}}{32}{figure.caption.34}%
+\contentsline {figure}{\numberline {2.12}{\ignorespaces Biểu đồ lớp pha phân tích dịch vụ thực thi chấm.}}{33}{figure.caption.35}%
+\contentsline {figure}{\numberline {2.13}{\ignorespaces Biểu đồ lớp pha phân tích dịch vụ kết quả chấm.}}{33}{figure.caption.36}%
+\contentsline {figure}{\numberline {2.14}{\ignorespaces Biểu đồ lớp pha phân tích dịch vụ trợ lý AI.}}{34}{figure.caption.37}%
+\contentsline {figure}{\numberline {2.15}{\ignorespaces Biểu đồ quan hệ thực thể (ERD) của hệ thống.}}{35}{figure.caption.38}%
+\contentsline {figure}{\numberline {2.16}{\ignorespaces Sơ đồ tuần tự chức năng Đăng nhập.}}{36}{figure.caption.39}%
+\contentsline {figure}{\numberline {2.17}{\ignorespaces Sơ đồ tuần tự chức năng Xem lớp.}}{37}{figure.caption.40}%
+\contentsline {figure}{\numberline {2.18}{\ignorespaces Sơ đồ tuần tự chức năng Xem chi tiết lớp.}}{38}{figure.caption.41}%
+\contentsline {figure}{\numberline {2.19}{\ignorespaces Sơ đồ tuần tự chức năng Quản lý bài tập.}}{39}{figure.caption.42}%
+\contentsline {figure}{\numberline {2.20}{\ignorespaces Sơ đồ tuần tự chức năng Xem kết quả chấm của cả lớp.}}{39}{figure.caption.43}%
+\contentsline {figure}{\numberline {2.21}{\ignorespaces Sơ đồ tuần tự chức năng Nộp bài tập.}}{40}{figure.caption.44}%
+\contentsline {figure}{\numberline {2.22}{\ignorespaces Sơ đồ tuần tự chức năng Xem kết quả chấm bài tập của bản thân.}}{40}{figure.caption.45}%
+\contentsline {figure}{\numberline {2.23}{\ignorespaces Sơ đồ tuần tự chức năng Xem điểm và kết quả cá nhân.}}{41}{figure.caption.46}%
 \addvspace {10\p@ }
 \contentsfinish 
 \contentsfinish 

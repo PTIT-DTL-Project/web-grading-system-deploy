@@ -4,7 +4,7 @@
 \section{Mở đầu}
 \label{section:1.1}
 
-Chương này trình bày các cơ sở lý thuyết và công nghệ được sử dụng trong việc xây dựng hệ thống chấm bài tự động môn Lập trình Web. Việc lựa chọn các công nghệ được thực hiện dựa trên những yêu cầu cụ thể của đề tài, bao gồm khả năng cách ly môi trường thực thi mã nguồn của sinh viên, khả năng xử lý bất đồng bộ khi chấm bài hàng loạt, cơ chế xác thực và phân quyền chặt chẽ, cũng như khả năng quan trắc để đánh giá hiệu năng hệ thống. Tiêu chí lựa chọn gồm:
+Chương này trình bày các cơ sở lý thuyết và công nghệ được sử dụng trong việc xây dựng hệ thống chấm bài tự động môn Lập trình Web. Việc lựa chọn các công nghệ được thực hiện dựa trên những yêu cầu cụ thể của đề tài, bao gồm khả năng cách ly môi trường thực thi mã nguồn của sinh viên, khả năng xử lý bất đồng bộ khi chấm bài hàng loạt, cơ chế xác thực và phân quyền chặt chẽ. Tiêu chí lựa chọn gồm:
 \begin{itemize}
     \item Tính mã nguồn mở (giúp giảm chi phí licence và dễ dàng tùy biến theo nghiệp vụ).
     \item Khả năng mở rộng độc lập cho từng thành phần.
@@ -253,41 +253,6 @@ Hình \ref{fig:pkce-flow} minh họa luồng PKCE.
 \label{fig:pkce-flow}
 \end{figure}
 
-\section{Quan trắc hệ thống}
-\label{section:1.9}
-
-\subsection{Ba trụ cột của quan trắc}
-\label{section:1.9.1}
-
-Observability (quan trắc) là khả năng hiểu được trạng thái nội bộ của một hệ thống thông qua việc quan sát các đầu ra bên ngoài của nó. Trong phát triển phần mềm hiện đại, observability được xây dựng trên ba trụ cột:~\cite{majors2022observability}
-\begin{itemize}
-    \item Metrics (số liệu): các giá trị định lượng về hiệu năng hệ thống theo thời gian (tỷ lệ request thành công, độ trễ, tài nguyên sử dụng).
-    \item Logs (nhật ký): các bản ghi sự kiện do ứng dụng và hệ thống ghi lại theo thời gian thực.
-    \item Traces (theo dõi): hồ sơ ghi lại đường đi của một request xuyên qua các dịch vụ, giúp xác định nút thắt cổ chai và lỗi.
-\end{itemize}
-
-\subsection{Các thành phần quan trắc cụ thể}
-\label{section:1.9.2}
-
-Hệ thống sử dụng bộ công cụ quan trắc toàn diện:
-\begin{itemize}
-    \item Prometheus thu thập metrics từ endpoint `/actuator/prometheus` của các dịch vụ Spring Boot, cùng các exporter để thu thập số liệu về host và về trạng thái Kubernetes~\cite{prometheusdocs}.
-    \item Grafana là nền tảng trực quan hóa, cung cấp dashboard cho metrics, logs và traces~\cite{grafanadocs}.
-    \item Loki tập hợp logs từ các container (thông qua promtail) và cho phép truy vấn theo nhãn~\cite{lokidocs}.
-    \item Tempo (cùng Alloy - bộ thu thập telemetry OTLP) lưu trữ và cho phép truy vấn traces, giúp theo dõi request xuyên microservices~\cite{tempodocs}.
-    \item Pyroscope cung cấp profiling liên tục, ghi nhận cách các thread của ứng dụng sử dụng CPU theo thời gian thực, giúp phát hiện các đoạn code kém hiệu quả~\cite{pyroscopedocs}.
-    \item k6 là công cụ kiểm tra hiệu năng (load testing), mô phỏng nhiều user truy cập đồng thời~\cite{k6docs} để đánh giá khả năng mở rộng của hệ thống khi có nhiều sinh viên nộp bài cùng lúc - một trong những thách thức chính của đề tài.
-\end{itemize}
-
-Hình \ref{fig:observability} vẽ lại ba trụ cột quan trắc và các thành phần cụ thể.
-
-\begin{figure}[ht]
-\centering
-\includegraphics[width=\textwidth]{Hinhve/Hinh2_4_lua_ng_cham_bai}
-\caption{Ba trụ cột quan trắc và các thành phần cụ thể.}
-\label{fig:observability}
-\end{figure}
-
 \section{Giao diện người dùng phía trước}
 \label{section:1.10}
 
@@ -311,6 +276,6 @@ React là thư viện JavaScript mã nguồn mở do Meta phát triển, dùng �
 \section{Kết luận chương}
 \label{section:1.11}
 
-Chương này đã trình bày các cơ sở lý thuyết và công nghệ được lựa chọn: kiến trúc vi dịch vụ với mẫu DB-per-service; nền tảng Java cùng Spring Boot; lưu trữ quan hệ với ORM; trao đổi tin nhắn bất đồng bộ qua Kafka; lưu trữ đối tượng tương thích S3; đóng gói và điều phối bằng Docker và Kubernetes; quản lý danh tính với OAuth 2.0, OIDC và PKCE; quan trắc ba trụ cột; và giao diện React. Các công nghệ được chọn đều là giải pháp mã nguồn mở, ổn định, có cộng đồng hỗ trợ lớn.
+Chương này đã trình bày các cơ sở lý thuyết và công nghệ được lựa chọn: kiến trúc vi dịch vụ với mẫu DB-per-service; nền tảng Java cùng Spring Boot; lưu trữ quan hệ với ORM; trao đổi tin nhắn bất đồng bộ qua Kafka; lưu trữ đối tượng tương thích S3; đóng gói và điều phối bằng Docker và Kubernetes; quản lý danh tính với OAuth 2.0, OIDC và PKCE; và giao diện React. Các công nghệ được chọn đều là giải pháp mã nguồn mở, ổn định, có cộng đồng hỗ trợ lớn.
 
 \end{document}

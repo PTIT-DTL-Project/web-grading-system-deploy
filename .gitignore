@@ -47,3 +47,4 @@ replay_pid*
 **/ptit-wgs-realm.json
 **/realm-export.json
 /src-services/keycloak/realm-export.json
+.opencode/plan/generate-data-api/students-import.csv
