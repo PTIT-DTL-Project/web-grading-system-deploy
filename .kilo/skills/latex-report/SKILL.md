@@ -184,6 +184,17 @@ Cuối Chương 2 có `\section{Thiết kế hệ thống}` ngang hàng với
   `seq_quan_ly_lop_chitiet`, `seq_quan_ly_bai_tap`,
   `seq_xem_ket_qua_lop`, `seq_nop_bai`,
   `seq_xem_ket_qua_cua_than`, `seq_xem_diem_ca_nhan`).
+- `\subsection{Kiến trúc hệ thống}`: đặt ngay sau sơ đồ tuần tự, là
+  mục cuối Chương 2, tổng hợp kiến trúc logic (Client - Server, 5 dịch
+  vụ nghiệp vụ + API Gateway + Keycloak, DB-per-service, REST/OpenFeign,
+  Kafka topic `wgs-events`, RustFS presigned URL + webhook, LLM qua API
+  tương thích OpenAI, `grading_jobs`/`grading_sagas`). Hình
+  `Hinhve/Hinh2_31_kien_truc_tong_the`, caption
+  `Kiến trúc tổng thể của hệ thống.`, label `fig:architecture`, đặt
+  ngay sau đoạn dẫn nhập đầu tiên (ảnh có thể chưa vẽ: comment dòng
+  `\includegraphics`, giữ figure + caption để `\ref` vẫn phân giải). Không bê các khẳng định của báo cáo mẫu vào:
+  hệ thống này không dùng Gemini/vector store, gRPC, Redis Pub/Sub hay
+  Transactional Outbox.
 
 Use-case figures continue the `Hinh2_<n>_<slug>` series
 (`Hinh2_6_usecase_tong_quan` = overview, `Hinh2_7..Hinh2_12` = detail
@@ -201,6 +212,24 @@ Subsubsection note: `BTL.tex` redefines `\thesubsubsection` to `\alph`
 no parent number — that matches the thesis sample, keep it. Text tone
 placement in this report follows the traditional style (`hoà`, `xoá`),
 match it.
+
+## Chương 3 (triển khai và đánh giá)
+
+Chương 3 hiện tạm bỏ phần giám sát và quan sát hệ thống (Prometheus,
+Grafana, Loki, Tempo, Pyroscope): không dựng mục, hình hay screenshot
+Grafana và không cite các tài liệu observability; chỉ nhắc lại như một
+hướng phát triển. Nội dung giữ lại: k3s + Cloudflare Tunnel/Traefik,
+đóng gói Docker/Helm, GitHub Actions, ArgoCD GitOps, PostgreSQL
+(DB-per-service, dịch vụ quản lý), Kafka Aiven (SASL\_SSL/SCRAM, topic
+`wgs-events`), RustFS, Keycloak; hình `Hinh3_1_kien_truc_trien_khai`
+(`fig:deployment`) và `Hinh3_2_quy_trinh_cicd` (`fig:cicd`).
+
+Mục 3.1.6 giữ Grading Saga: trạng thái job `PENDING/FETCHING/BUILDING/
+RUNNING/DONE/FAILED`, bảng job/saga/bước, chỉ mục duy nhất trên cột mã
+bài nộp, gửi kết quả tối đa 3 lần, reset chỉ khi `FAILED`, reaper 5
+phút/30 phút/tối đa 3 lần và không quét `RUNNING`. Mục 3.2 chỉ nêu tiêu
+chí và kịch bản; không bịa kết quả kiểm thử/hiệu năng, chờ `% TODO` sau
+khi chạy. Prometheus/Grafana/Loki/Tempo/Pyroscope chỉ xuất hiện ở 3.3.
 
 ## Unnumbered preface in TOC before Chapter 1
 

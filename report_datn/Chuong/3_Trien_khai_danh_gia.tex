@@ -1,13 +1,313 @@
 \documentclass[../BTL.tex]{subfiles}
 \begin{document}
 
+Chương này trình bày cách hệ thống được đóng gói, triển khai trên cụm Kubernetes và vận hành với các dịch vụ hạ tầng dùng chung; sau đó trình bày các tiêu chí, kịch bản đánh giá và những hạn chế còn lại. Nội dung được tổ chức thành ba phần chính: triển khai hệ thống (mục \ref{section:3.1}), đánh giá hệ thống (mục \ref{section:3.2}) và hướng phát triển (mục \ref{section:3.3}).
+
 \section{Triển khai hệ thống}
 \label{section:3.1}
+
+Mục này trình bày môi trường triển khai, cách đóng gói dịch vụ, quy trình đưa mã nguồn lên cụm và cơ chế bảo đảm nhất quán khi chấm bài.
+
+\subsection{Môi trường và kiến trúc triển khai}
+\label{section:3.1.1}
+
+Hệ thống được triển khai theo mô hình lai. Giao diện web chạy trên Vercel, các dịch vụ backend chạy trong cụm k3s~\cite{k3sdocs}, còn PostgreSQL và Kafka được thuê dưới dạng dịch vụ quản lý. Cách chia này giữ phần tính toán trong cụm để chủ động cấu hình, đồng thời chuyển việc sao lưu, vá lỗi và mở rộng dung lượng của tầng dữ liệu cho nhà cung cấp.
+
+Luồng truy cập từ Internet đi qua Cloudflare Zero Trust Tunnel~\cite{cloudflaredocs}. Cloudflare kết thúc kết nối TLS, chuyển tiếp yêu cầu vào cụm qua một kết nối do phía trong khởi tạo; nhờ đó không cần mở cổng vào trực tiếp trên firewall của máy chủ. Trong cụm, Traefik nhận yêu cầu và định tuyến theo tên miền tới Service tương ứng, sau đó Service chuyển tiếp tới các Pod. Hình~\ref{fig:deployment} mô tả kiến trúc triển khai tổng thể.
+
+\begin{figure}[H]
+\centering
+% Bỏ comment dòng dưới sau khi có ảnh:
+% \includegraphics[width=\textwidth]{Hinhve/Hinh3_1_kien_truc_trien_khai}
+\caption{Kiến trúc triển khai của hệ thống trên cụm k3s.}
+\label{fig:deployment}
+\end{figure}
+
+Bảng~\ref{tab:deploy-components} liệt kê các thành phần chính, cổng, cơ sở dữ liệu và điểm truy cập. Các tên miền trong bảng dùng chung hậu tố vucongtuanduong.dpdns.org; cột điểm truy cập chỉ ghi phần tên miền đứng trước hậu tố này.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\begin{tabularx}{\textwidth}{|p{3.1cm}|p{1.6cm}|p{3.2cm}|p{1.3cm}|X|}
+\hline
+Thành phần & Cổng & Cơ sở dữ liệu & Bản sao & Điểm truy cập \\ \hline
+Giao diện web & Không & Không & Không & Vercel, web-dev1-fe \\ \hline
+API Gateway & 8080 & Không & 1 & web-dev1-api \\ \hline
+Dịch vụ quản lý lớp học và điểm & 8081 & assignment\_db & 1 & web-dev1-course \\ \hline
+Dịch vụ nộp bài & 8082 & submission\_db & 1 & web-dev1-submission \\ \hline
+Dịch vụ thực thi chấm & 8083 & executor\_db & 2 & web-dev1-grading \\ \hline
+Dịch vụ kết quả chấm & 8084 & result\_db & 1 & web-dev1-result \\ \hline
+Dịch vụ trợ lý AI & 8086 & ai\_db & 1 & web-dev1-ai \\ \hline
+Keycloak & 8080 & Cơ sở dữ liệu quản lý & 1 & web-dev1-keycloak \\ \hline
+RustFS & 9000, 9001 & PVC 10Gi & 1 & web-dev1-rustfs-api \\ \hline
+Kafka UI & 8080 & Không & 1 & web-dev1-kafka-ui \\ \hline
+\end{tabularx}
+\caption{Các thành phần chính của môi trường triển khai.}
+\label{tab:deploy-components}
+\end{table}
+
+Hệ thống dùng hai namespace chính: web-grading chứa ứng dụng và argocd chứa ArgoCD. Các Service đều thuộc kiểu ClusterIP; truy cập từ ngoài đi qua Ingress với ingressClassName là traefik. Mỗi tên miền trỏ tới một Service, còn Service chọn Pod theo nhãn ứng dụng. Cách tổ chức này giữ địa chỉ nội bộ ổn định khi Pod được tạo lại.
+
+Giao diện web được triển khai trên Vercel~\cite{verceldocs}. Tệp vercel.json khai báo rewrite mọi yêu cầu /api/:path* sang API Gateway, nhờ đó trình duyệt chỉ gọi cùng một origin và không phát sinh yêu cầu CORS cho các API nghiệp vụ. Giao diện cũng dùng rewrite toàn bộ đường dẫn còn lại về index.html để React Router xử lý điều hướng phía client. Keycloak được cấu hình tên miền công khai và danh sách redirect URI tương ứng với miền của giao diện.
+
+Phạm vi báo cáo không trình bày hệ thống giám sát tập trung; nội dung này được nêu ở mục \ref{section:3.3} như một hướng phát triển.
+
+\subsection{Đóng gói và cấu hình triển khai}
+\label{section:3.1.2}
+
+Mỗi dịch vụ backend có một Dockerfile riêng theo mẫu build nhiều tầng~\cite{dockerdocs}. Tầng thứ nhất dùng image eclipse-temurin:21-jdk-alpine, sao chép Maven wrapper, tệp pom.xml và mã nguồn rồi chạy mvn clean package để tạo tệp JAR. Tầng thứ hai dùng image eclipse-temurin:21-jre, chỉ chứa JRE và tệp JAR, sau đó chạy bằng lệnh java -jar. Cách đóng gói này giữ image chạy nhỏ hơn image build, không chứa mã nguồn và công cụ build, đồng thời bảo đảm mọi môi trường chạy cùng một phiên bản Java 21.
+
+Toàn bộ cấu hình được truyền qua biến môi trường thay vì ghi vào image. Các giá trị nhạy cảm như thông tin kết nối cơ sở dữ liệu, khóa Kafka và khóa RustFS được lấy từ Secret của Kubernetes; các giá trị không nhạy cảm như tên cơ sở dữ liệu, cổng dịch vụ và mức tài nguyên được khai báo trong tệp values của Helm. Nhờ vậy, cùng một image có thể chạy ở nhiều môi trường mà không cần build lại.
+
+Dịch vụ thực thi chấm là trường hợp đặc biệt vì cần Docker để dựng môi trường chấm của bài nộp. Mỗi Pod của dịch vụ này gồm hai container: container ứng dụng và container docker:27-dind chạy Docker daemon riêng. Container ứng dụng đặt biến DOCKER\_HOST trỏ tới tcp://localhost:2375; container DinD chạy ở chế độ privileged, tắt TLS nội bộ và dùng một volume emptyDir chung tại /var/lib/docker. Mỗi Pod có Docker daemon riêng nên các bài chấm không dùng chung daemon; volume là tạm thời nên dữ liệu Docker không tồn tại sau khi Pod bị thay thế. Dịch vụ này chạy hai bản sao để tăng khả năng xử lý đồng thời, trong khi các dịch vụ còn lại chạy một bản sao.
+
+Cấu hình triển khai được đóng gói bằng Helm~\cite{helmdocs}. Kho cấu hình chứa một chart cho mỗi dịch vụ, gồm Deployment và Service; các Ingress được quản lý riêng trong kho triển khai. Tệp values-stg.yaml khai báo image, tag, profile Spring, tên cơ sở dữ liệu, cổng, tài nguyên và số bản sao. Tài nguyên mặc định của mỗi container là 200m CPU và 256Mi bộ nhớ cho yêu cầu, 500m CPU và 512Mi cho giới hạn; container DinD có yêu cầu và giới hạn riêng. Tên tài nguyên được sinh từ tên release, mà ArgoCD đặt theo tên Application, nên các Service có tiền tố grading- ghép với tên dịch vụ.
+
+Phần lớn chart dùng endpoint /actuator/health cho readiness và liveness, với thời gian chờ khởi động lần lượt 30 giây và 60 giây. Riêng dịch vụ trợ lý AI dùng ba probe riêng biệt trỏ tới các nhóm /actuator/health/readiness và /actuator/health/liveness. Lý do là endpoint /actuator/health gốc chạy cả chỉ báo cơ sở dữ liệu; khi compute của PostgreSQL được đánh thức từ trạng thái tạm dừng, chỉ báo này có thể giữ probe lâu hơn thời gian chờ mặc định và khiến Pod bị khởi động lại. Các nhóm health chỉ kiểm tra trạng thái nội bộ của ứng dụng nên trả lời nhanh và không phụ thuộc cơ sở dữ liệu.
+
+\subsection{Tích hợp liên tục với GitHub Actions}
+\label{section:3.1.3}
+
+Mã nguồn backend nằm trong một kho mono-repo gồm sáu dịch vụ. Quy trình tích hợp liên tục dùng GitHub Actions~\cite{githubactionsdocs} với hai workflow: workflow thứ nhất build và kiểm thử, workflow thứ hai phát hành image và cập nhật cấu hình.
+
+Workflow build chạy khi có push lên các nhánh main, develop hoặc nhánh có tên chứa feat, và khi có pull request vào main hoặc develop. Bước phát hiện thay đổi dùng dorny/paths-filter để xác định dịch vụ nào bị ảnh hưởng, sau đó tạo ma trận build chỉ gồm các dịch vụ đó. Mỗi job trong ma trận dùng JDK 21 Temurin, bật cache Maven, chạy mvn clean package -DskipTests để đóng gói nhanh, rồi chạy kiểm thử bằng Maven. Các lớp kiểm thử có tên kết thúc bằng ApplicationTests bị loại trừ vì chúng cần hạ tầng bên ngoài mới khởi động được; phần kiểm thử còn lại bao gồm các kiểm thử dùng Testcontainers cho PostgreSQL và MySQL. Danh sách dịch vụ thay đổi được lưu thành artifact changed-services.json để workflow phát hành sử dụng lại.
+
+Workflow phát hành chạy sau khi workflow build hoàn tất trên nhánh main và chỉ tiếp tục khi kết quả thành công. Workflow tải artifact chứa danh sách dịch vụ, xác định phiên bản kế tiếp từ các tag có dạng <tên dịch vụ>-vX.Y.Z, tăng số patch và tạo GitHub Release kèm tệp JAR. Sau đó workflow đăng nhập Docker Hub và build, push image với hai tag: tag phiên bản và tag latest. Job cuối cùng clone kho cấu hình, thay tag image trong values-stg.yaml của từng dịch vụ, commit và push thay đổi. Hình~\ref{fig:cicd} mô tả luồng từ mã nguồn đến cụm triển khai.
+
+\begin{figure}[H]
+\centering
+% Bỏ comment dòng dưới sau khi có ảnh:
+% \includegraphics[width=\textwidth]{Hinhve/Hinh3_2_quy_trinh_cicd}
+\caption{Quy trình CI/CD từ mã nguồn đến cụm triển khai.}
+\label{fig:cicd}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{|p{3.5cm}|p{6.4cm}|X|}
+\hline
+Giai đoạn & Công việc chính & Kết quả \\ \hline
+Phát hiện thay đổi & Lọc đường dẫn, tạo ma trận dịch vụ & Danh sách dịch vụ và artifact \\ \hline
+Build và kiểm thử & JDK 21, Maven, đóng gói JAR, chạy kiểm thử & JAR và kết quả kiểm thử \\ \hline
+Phát hành & Tính phiên bản, tạo GitHub Release, build và push image & Image theo phiên bản và latest \\ \hline
+Cập nhật cấu hình & Clone kho cấu hình, thay tag, commit, push & Commit cấu hình mới \\ \hline
+Đồng bộ & ArgoCD phát hiện thay đổi trong kho cấu hình & Pod dùng image mới \\ \hline
+\end{tabularx}
+\caption{Các giai đoạn của quy trình CI/CD.}
+\label{tab:cicd-stages}
+\end{table}
+
+Cách tách build và publish giúp một commit chỉ tạo ra một bộ image tương ứng, đồng thời giữ lịch sử phát hành trong GitHub Release. Việc cập nhật kho cấu hình bằng một commit riêng cũng tạo ra điểm kiểm tra rõ ràng: nếu image mới gây lỗi, có thể quay lại commit cấu hình trước đó mà không cần sửa mã nguồn.
+
+\subsection{Triển khai liên tục với ArgoCD}
+\label{section:3.1.4}
+
+ArgoCD được cài trong namespace argocd từ manifest chính thức~\cite{argocddocs}. Máy chủ ArgoCD chạy sau Traefik và Cloudflare, với TLS được kết thúc ở Cloudflare; Service của ArgoCD giữ kiểu ClusterIP và chỉ Ingress mới mở đường truy cập. Cách cấu hình này tránh phải mở thêm cổng và giữ toàn bộ giao diện quản trị trong cùng một luồng truy cập đã có.
+
+Kho cấu hình chứa một chart Helm cho mỗi dịch vụ và một tệp services.env liệt kê sáu dịch vụ cần triển khai. Script sinh Application đọc danh sách này, thay tên dịch vụ vào một template chung và tạo một Application cho mỗi dịch vụ. Mỗi Application trỏ tới kho cấu hình, theo dõi nhánh main, dùng chart tại thư mục của dịch vụ, nạp tệp values-stg.yaml, triển khai vào namespace web-grading và bật đồng bộ tự động với tùy chọn prune và selfHeal. Tùy chọn CreateNamespace=false buộc namespace phải được tạo trước, tránh việc ArgoCD tự tạo namespace ngoài ý muốn.
+
+Luồng triển khai bắt đầu khi workflow phát hành cập nhật tag image trong kho cấu hình. ArgoCD phát hiện commit mới, render chart với values tương ứng rồi so sánh với trạng thái thực tế trong cụm; nếu có khác biệt, ArgoCD áp dụng thay đổi để đưa cụm về đúng mô tả trong Git. Cơ chế selfHeal tự sửa các thay đổi thủ công trên cụm, còn prune xóa tài nguyên không còn trong chart. Khi cần quay lại phiên bản trước, có thể đảo commit cấu hình hoặc chỉnh tag về phiên bản cũ; ArgoCD sẽ đồng bộ lại theo Git thay vì phải thao tác trực tiếp trên cụm.
+
+Thứ tự khởi tạo môi trường được giữ cố định: tạo namespace và Secret, triển khai RustFS, áp dụng Ingress, cài ArgoCD, sau đó tạo các Application. Các bước này được đóng gói trong các script riêng để có thể chạy lại khi dựng môi trường mới. Cách làm này phù hợp với mô hình GitOps: Git là nguồn mô tả trạng thái mong muốn, còn cụm chỉ là nơi thực thi trạng thái đó.
+
+\subsection{Hạ tầng dùng chung}
+\label{section:3.1.5}
+
+Mỗi dịch vụ có một cơ sở dữ liệu PostgreSQL riêng trên nền tảng quản lý Neon~\cite{neondocs}; tên từng cơ sở dữ liệu được liệt kê trong Bảng~\ref{tab:deploy-components}. Dịch vụ API Gateway không cần cơ sở dữ liệu. Các dịch vụ có cơ sở dữ liệu kết nối qua JDBC, thông tin kết nối được lấy từ Secret db-secret. Mỗi dịch vụ có cơ sở dữ liệu chạy Flyway khi khởi động để áp dụng migration, còn Hibernate được đặt ở chế độ validate để chỉ kiểm tra schema, không tự sửa cấu trúc bảng. Cách này giữ migration trong mã nguồn và tránh hai phiên bản dịch vụ cùng tự thay đổi schema.
+
+Kafka được thuê trên Aiven~\cite{aivendocs}. Gói miễn phí giới hạn số topic nên hệ thống dùng một topic chung là wgs-events cho toàn bộ sự kiện. Mỗi message có envelope gồm action, traceId và payload; producer gửi với khóa là mã bài nộp để các sự kiện của cùng một bài nộp đi vào cùng partition và giữ thứ tự. Dịch vụ nộp bài là nơi phát sự kiện GRADE\_SUBMISSION; dịch vụ thực thi chấm tiêu thụ với consumer group executor-group, đặt số bản ghi tối đa mỗi lần lấy bằng 1, bật auto-commit và dùng chế độ ack theo từng bản ghi. Kết nối dùng SASL\_SSL với cơ chế SCRAM-SHA-256; chứng chỉ CA được đóng gói trong Secret và mount vào container.
+
+RustFS là hệ thống lưu trữ đối tượng tương thích S3~\cite{awss3docs,rustfsdocs}, chạy trong cụm với một PVC dung lượng 10Gi và chế độ truy cập ReadWriteOnce. RustFS mở hai cổng: 9000 cho API S3 và 9001 cho giao diện quản trị. Dịch vụ nộp bài cấp \mbox{presigned} URL để sinh viên tải tệp trực tiếp lên RustFS, sau đó RustFS gọi webhook báo hoàn tất tới dịch vụ nộp bài; dịch vụ này cập nhật trạng thái bài nộp và phát sự kiện chấm. Cách làm này tránh truyền tệp lớn qua gateway và giảm tải cho dịch vụ nộp bài.
+
+Keycloak phiên bản 26.0 chạy trong cụm, dùng PostgreSQL quản lý làm kho dữ liệu và được cấu hình tên miền công khai, chế độ proxy edge và hostname strict. Realm ptit-wgs chứa các client cho giao diện web, dịch vụ người dùng và luồng kiểm tra mật khẩu; client web-grading-fe là public client dùng PKCE với phương thức S256, còn các client máy-máy dùng client credentials. Keycloak cấp JWT để API Gateway kiểm tra chữ ký, thời hạn và vai trò trước khi chuyển tiếp yêu cầu.
+
+Ngoài các thành phần trên, Kafka UI dùng để xem topic, partition và tiến độ consumer trong quá trình vận hành. Dịch vụ trợ lý AI dùng thêm Secret ai-credentials để giữ khóa API, tên mô hình và địa chỉ nhà cung cấp mô hình. Các Secret được tạo từ tệp môi trường cục bộ và không được commit vào kho mã nguồn. Bảng~\ref{tab:deploy-secrets} tóm tắt các Secret chính.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{|p{3.6cm}|p{6.2cm}|X|}
+\hline
+Secret & Nội dung & Mục đích \\ \hline
+db-secret & Máy chủ, cổng, tên đăng nhập và mật khẩu PostgreSQL & Kết nối cơ sở dữ liệu của từng dịch vụ \\ \hline
+kafka-aiven-credentials & Địa chỉ bootstrap, tài khoản, mật khẩu và chứng chỉ CA & Kết nối Kafka qua SASL\_SSL \\ \hline
+rustfs-secret & Endpoint nội bộ, endpoint công khai, access key và secret key & Truy cập RustFS và tạo presigned URL \\ \hline
+gateway-trust & Khóa bí mật dùng chung & Xác thực yêu cầu nội bộ gửi từ gateway \\ \hline
+keycloak-db & Thông tin kết nối cơ sở dữ liệu và tài khoản quản trị Keycloak & Khởi tạo và kết nối Keycloak \\ \hline
+ai-credentials & Khóa API, tên mô hình và địa chỉ nhà cung cấp mô hình & Gọi nhà cung cấp mô hình cho trợ lý AI \\ \hline
+app-config & Mức log của ứng dụng & Điều chỉnh mức ghi log khi vận hành \\ \hline
+\end{tabularx}
+\caption{Các Secret cấu hình cho cụm triển khai.}
+\label{tab:deploy-secrets}
+\end{table}
+
+Khóa gateway-trust được sinh một lần và tái sử dụng giữa các lần triển khai. Việc tạo khóa mới mà không khởi động lại toàn bộ dịch vụ sẽ khiến các Pod đang chạy giữ khóa cũ và từ chối yêu cầu, nên script tạo Secret ưu tiên đọc giá trị đang có trong cụm thay vì sinh lại.
+
+\subsection{Nhất quán dữ liệu trong quy trình chấm bài với Grading Saga}
+\label{section:3.1.6}
+
+Chấm bài không phải là một giao dịch ngắn. Một bài nộp phải trải qua nhiều bước: lấy cấu hình bài tập, tải tệp từ RustFS, dựng môi trường Docker, chạy từng bước kiểm thử, tính điểm và ghi kết quả sang dịch vụ kết quả. Các tài nguyên này nằm ở nhiều hệ thống khác nhau, gồm cơ sở dữ liệu của dịch vụ thực thi, RustFS, Docker daemon và ba dịch vụ khác. Không thể bọc toàn bộ quy trình trong một giao dịch ACID. Khi một bước lỗi, hệ thống cần biết bài nộp đang ở bước nào, đã làm gì, có thể chấm lại hay không và làm sao tránh chấm trùng khi Kafka giao lại sự kiện. Đồ án áp dụng mẫu Saga~\cite{newman2021building} để theo dõi tiến trình chấm, gọi là Grading Saga, nhằm giải quyết các yêu cầu này.
+
+Mỗi bài nộp có một bản ghi trong bảng grading\_jobs. Bảng này lưu mã bài nộp, mã bài tập, mã sinh viên, mã kế hoạch chấm, đường dẫn tệp trong RustFS, trạng thái, số lần chạy lại, thông báo lỗi và các mốc thời gian. Trên cột mã bài nộp có một chỉ mục duy nhất, bảo đảm một bài nộp chỉ có một công việc chấm. Mỗi lần chạy chấm được ghi thành một bản ghi trong bảng saga và nhiều bản ghi bước; mỗi bước lưu tên bước, mã plan, mã bước, trạng thái, lỗi và thời điểm kết thúc. Một job có thể có nhiều lần chạy, nên có thể có nhiều bản ghi saga tương ứng. Kết quả từng bước được lưu trong grading\_step\_results, còn nhật ký dạng văn bản được lưu trong grading\_logs.
+
+Bảng~\ref{tab:grading-job-status} mô tả các trạng thái của một công việc chấm. Trạng thái của job là nguồn thông tin chính về tiến độ; trạng thái của saga và từng bước là dấu vết chi tiết để điều tra khi có lỗi.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{|p{2.8cm}|X|}
+\hline
+Trạng thái & Ý nghĩa \\ \hline
+PENDING & Sự kiện đã được tiếp nhận, công việc đang chờ worker chấm. \\ \hline
+FETCHING & Đang lấy cấu hình bài tập và kế hoạch chấm từ dịch vụ quản lý lớp học và điểm. \\ \hline
+BUILDING & Đang tải tệp bài nộp, chuẩn bị thư mục làm việc và dựng môi trường Docker. \\ \hline
+RUNNING & Môi trường đã chạy, đang thực thi các bước chấm và tính điểm. \\ \hline
+DONE & Chấm xong, kết quả đã được ghi nhận. \\ \hline
+FAILED & Quá trình chấm dừng do lỗi; thông báo lỗi được lưu lại. \\ \hline
+\end{tabularx}
+\caption{Các trạng thái của một công việc chấm bài.}
+\label{tab:grading-job-status}
+\end{table}
+
+Các bước chính của một phiên chấm gồm:
+\begin{itemize}
+    \item FETCH\_CONFIG: gọi dịch vụ quản lý lớp học và điểm để lấy thông tin bài tập, kế hoạch chấm và các bước cần thực thi.
+    \item DOWNLOAD\_ARTIFACT: tải tệp nộp từ RustFS, giải nén và chuẩn bị thư mục làm việc.
+    \item BOOT\_COMPOSE: vá tệp Docker Compose với cổng, tài nguyên và thông tin cơ sở dữ liệu cần thiết, sau đó dựng môi trường bằng Docker daemon trong Pod.
+    \item RUN\_STEPS: chạy các plan và từng bước theo thứ tự. Mỗi bước được ghi thành một bản ghi STEP: kèm tên bước. Nếu một bước bắt buộc thất bại, các bước còn lại của plan được đánh dấu SKIPPED thay vì tiếp tục chạy.
+    \item SCORE\_REPORT: tính điểm từ kết quả các bước, lưu trạng thái DONE, gửi kết quả sang dịch vụ kết quả và cập nhật trạng thái bài nộp.
+\end{itemize}
+
+Mỗi bước có thể ở một trong bốn trạng thái STARTED, DONE, FAILED hoặc SKIPPED. Saga tổng hợp có ba trạng thái STARTED, DONE và FAILED. Khi một bước không bắt buộc thất bại, quá trình chấm vẫn tiếp tục và điểm của bước đó được tính là không đạt; khi bước bắt buộc thất bại, plan hiện tại dừng lại nhưng các plan khác vẫn tiếp tục được xử lý.
+
+Tính nhất quán được bảo vệ ở ba điểm. Thứ nhất, chỉ mục duy nhất trên cột mã bài nộp biến việc chấm trùng thành một lỗi ràng buộc cơ sở dữ liệu thay vì tạo thêm công việc. Khi nhận một sự kiện trùng, dịch vụ thực thi tìm công việc cũ; nếu công việc cũ đang ở trạng thái FAILED, dịch vụ đặt lại công việc và chấm lại, còn nếu không thì bỏ qua sự kiện. Thứ hai, khi hàng đợi xử lý bị đầy, công việc vẫn ở trạng thái PENDING thay vì bị mất; cơ chế quét công việc tồn đọng sẽ nhặt lại sau. Thứ ba, kết quả được gửi sang dịch vụ kết quả tối đa ba lần với thời gian chờ tăng dần; lỗi xác thực từ phía dịch vụ kết quả không được thử lại vì đó là lỗi dữ liệu, không phải lỗi tạm thời.
+
+Cơ chế đặt lại công việc từ chối các công việc đã DONE. Với công việc chưa hoàn tất, hệ thống xóa kết quả từng bước, xóa các bước của saga, đưa saga về STARTED, đưa job về PENDING, xóa thông báo lỗi và tăng số lần chạy lại. Cơ chế quét công việc tồn đọng chạy định kỳ mỗi 5 phút, tìm các công việc ở trạng thái PENDING, FETCHING hoặc BUILDING đã quá 30 phút và chưa vượt quá ba lần chạy lại, rồi đưa chúng trở lại hàng đợi. Các công việc đang RUNNING không bị quét tự động vì một công việc đang chạy thật và một công việc bị treo do Pod chết có thể trông giống nhau nếu chỉ dựa vào thời gian; việc chấm lại một công việc đang chạy sẽ gây chấm trùng. Vì vậy, trường hợp Pod chết giữa lúc RUNNING cần được xử lý thủ công.
+
+Cần phân biệt Grading Saga với một giao dịch phân tán có bù trừ tự động. Ở đây, saga chủ yếu đóng vai trò theo dõi và hỗ trợ phục hồi; các tài nguyên tạm như container, cổng và thư mục làm việc được dọn trong khối finally khi tiến trình còn sống, nhưng không có hành động bù trừ tự động nếu Pod chết đột ngột. Việc ghi saga được thực hiện theo hướng best-effort: nếu ghi saga thất bại, quá trình chấm vẫn tiếp tục và lỗi chỉ được ghi log. Do đó, bảng job mới là nguồn sự thật về trạng thái chấm, còn saga là dấu vết phục vụ điều tra. Nếu việc gửi kết quả thất bại sau ba lần thử, job vẫn có thể ở trạng thái DONE trong khi kết quả chưa có ở dịch vụ kết quả; trường hợp này cần được đối soát và là một hạn chế được nêu ở mục \ref{section:3.2}.
+
+\subsection{Tổng hợp kết quả triển khai}
+\label{section:3.1.7}
+
+Cấu hình triển khai hiện tại gồm sáu dịch vụ backend, Keycloak, RustFS và Kafka UI trong namespace web-grading, cùng sáu Application ArgoCD trong namespace argocd. Ngoài ra còn một Ingress controller Traefik, một tunnel Cloudflare và giao diện web trên Vercel. Các image backend được lấy từ Docker Hub theo tag phiên bản do workflow phát hành tạo ra, còn cấu hình cụm được lấy từ kho cấu hình theo mô hình GitOps.
+
+Về luồng vận hành, một thay đổi mã nguồn đi qua các bước: chạy kiểm thử, tạo image, cập nhật tag trong kho cấu hình, ArgoCD đồng bộ và thay Pod. Mỗi bước đều để lại dấu vết trong GitHub Actions, GitHub Release, lịch sử commit của kho cấu hình và lịch sử đồng bộ của ArgoCD. Nhờ đó, khi một phiên bản gặp lỗi có thể xác định được image nào đang chạy, cấu hình nào đã tạo ra nó và commit nào cần đảo lại.
+
+Mục \ref{section:3.2} trình bày các tiêu chí và kịch bản đánh giá hệ thống dựa trên môi trường triển khai này.
 
 \section{Đánh giá hệ thống}
 \label{section:3.2}
 
+Mục này đánh giá hệ thống ở hai góc: đánh giá định tính kiến trúc triển khai và xây dựng các kịch bản kiểm thử để thu thập dữ liệu định lượng. Các kịch bản xác định dữ liệu cần đo và cách đánh giá; số liệu thực tế được ghi nhận khi chạy trên cụm thử nghiệm.
+
+\subsection{Tiêu chí và phương pháp đánh giá}
+\label{section:3.2.1}
+
+Hệ thống được đánh giá theo năm nhóm tiêu chí:
+\begin{itemize}
+    \item Chức năng: các usecase chính hoạt động đúng theo đặc tả, phân quyền đúng vai trò và xử lý được các trường hợp lỗi đã nêu trong kịch bản.
+    \item Hiệu năng: thời gian phản hồi của các API đọc và ghi, số yêu cầu xử lý được trong một đơn vị thời gian, thời gian chấm một bài và mức sử dụng tài nguyên của Pod.
+    \item Độ tin cậy: khả năng phục hồi khi Pod bị xóa, khi Kafka giao lại sự kiện, khi dịch vụ kết quả tạm thời không phản hồi và khi cấu hình cụm bị thay đổi ngoài Git.
+    \item Bảo mật: kiểm soát truy cập theo vai trò, bảo vệ các API nội bộ bằng khóa gateway, thời hạn của presigned URL và cách lưu trữ Secret.
+    \item Khả năng bảo trì: mức độ tự động của quy trình build, kiểm thử, phát hành, triển khai và khả năng quay lại phiên bản trước.
+\end{itemize}
+
+Phương pháp đánh giá kết hợp kiểm thử chức năng theo kịch bản, kiểm thử hiệu năng bằng k6~\cite{k6docs} và kiểm thử độ tin cậy bằng cách tác động vào cụm. Với kiểm thử chức năng, mỗi kịch bản ghi lại điều kiện đầu vào, các bước thực hiện, kết quả mong đợi và trạng thái cuối cùng của bài nộp hoặc công việc chấm. Với kiểm thử hiệu năng, các chỉ số được thu thập gồm thời gian phản hồi trung bình, p50, p95, p99, số yêu cầu mỗi giây, tỷ lệ lỗi và mức sử dụng CPU, bộ nhớ của Pod. Với kiểm thử độ tin cậy, hệ thống được quan sát sau mỗi tác động để xác định công việc chấm có tiếp tục, có bị chấm trùng hay không và trạng thái cuối cùng có rõ ràng hay không.
+
+\subsection{Kịch bản kiểm thử chức năng}
+\label{section:3.2.2}
+
+Bảng~\ref{tab:functional-tests} liệt kê các nhóm kịch bản chức năng. Các kịch bản sẽ được chạy theo thứ tự từ xác thực, quản lý lớp học, quản lý bài tập, nộp bài, chấm bài đến xem kết quả và trợ lý AI. Với mỗi nhóm, cột kết quả mong đợi mô tả trạng thái mà hệ thống phải đạt được; kết quả thực tế sẽ được đối chiếu và ghi nhận sau khi chạy.
+
+Dữ liệu đầu vào cho mỗi nhóm sẽ được chuẩn bị theo một bộ mẫu chung: tài khoản thuộc các vai trò khác nhau, lớp có sẵn sinh viên, bài tập ở trạng thái nháp và đã công bố, cùng một bài nộp mẫu. Với các kịch bản lỗi, dữ liệu được chọn để kích hoạt đúng điều kiện biên như tệp quá lớn, sai định dạng hoặc sự kiện bị gửi lặp.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{|p{3.3cm}|p{5.9cm}|X|}
+\hline
+Nhóm chức năng & Kịch bản & Kết quả mong đợi \\ \hline
+Xác thực và phân quyền & Đăng nhập đúng, đăng nhập sai, khóa tài khoản sau nhiều lần sai, đổi mật khẩu bắt buộc & Phiên làm việc hợp lệ; sai thông tin bị từ chối; tài khoản bị khóa đúng quy định; mật khẩu mới được áp dụng \\ \hline
+Quản lý lớp học & Tạo lớp, nhập danh sách sinh viên từ CSV, xem danh sách lớp, cấu hình thành phần điểm & Lớp được tạo đúng; sinh viên hợp lệ được thêm; dòng lỗi được báo lại; thành phần điểm lưu đúng \\ \hline
+Quản lý bài tập & Tạo bài tập, cấu hình các bước chấm, công bố, sửa và xóa bài tập & Bài tập và các bước được lưu; sinh viên chỉ thấy bài đã công bố; thao tác sai quyền bị từ chối \\ \hline
+Nộp bài & Tải tệp qua presigned URL, tệp đúng định dạng, tệp quá lớn, tệp sai định dạng, webhook hoàn tất & Tệp được lưu trong RustFS; bài nộp chuyển trạng thái đúng; tệp lỗi bị từ chối với thông báo rõ ràng \\ \hline
+Chấm tự động & Chấm bài hợp lệ, bài thiếu tệp, bài có bước bắt buộc thất bại, bài vượt thời gian, sự kiện chấm bị gửi trùng & Job đi qua đúng các trạng thái; kết quả và lỗi được lưu; không tạo job trùng; job lỗi có thể chấm lại \\ \hline
+Kết quả chấm & Xem kết quả của lớp, xem chi tiết một bài, xem kết quả của bản thân & Điểm và chi tiết từng bước đúng với dữ liệu chấm; sinh viên chỉ thấy kết quả của mình \\ \hline
+Trợ lý AI & Hỏi đáp về bài nộp, yêu cầu giải thích lỗi, mất kết nối tới nhà cung cấp mô hình & Câu trả lời có ngữ cảnh bài nộp; lỗi nhà cung cấp được báo lại và không làm hỏng dữ liệu hội thoại \\ \hline
+Grading Saga & Gửi trùng sự kiện, đặt lại job FAILED, job tồn đọng quá 30 phút, Pod bị xóa khi đang chấm & Không chấm trùng; job được đưa về hàng đợi hoặc yêu cầu xử lý thủ công; trạng thái cuối cùng được ghi nhận \\ \hline
+\end{tabularx}
+\caption{Kịch bản kiểm thử chức năng.}
+\label{tab:functional-tests}
+\end{table}
+
+% TODO: sau khi chạy các kịch bản, bổ sung bảng kết quả thực tế (đạt/không đạt, thời gian, log).
+
+\subsection{Kịch bản kiểm thử hiệu năng và độ tin cậy}
+\label{section:3.2.3}
+
+Kiểm thử hiệu năng sẽ được thực hiện bằng k6 với bốn loại kịch bản. Kịch bản smoke chạy một lượng nhỏ yêu cầu để xác nhận hệ thống hoạt động sau khi triển khai. Kịch bản load tăng dần số người dùng ảo để đo thời gian phản hồi và số yêu cầu mỗi giây ở mức tải dự kiến. Kịch bản stress đẩy tải vượt mức dự kiến để tìm điểm bão hòa và quan sát cách hệ thống suy giảm. Kịch bản spike tăng tải đột ngột trong thời gian ngắn để kiểm tra khả năng chịu đỉnh và tốc độ phục hồi.
+
+Các endpoint được chọn để đo gồm đăng nhập qua Keycloak, lấy danh sách bài tập, nộp bài, theo dõi trạng thái chấm và xem kết quả. Với luồng chấm, phép đo không chỉ là thời gian phản hồi HTTP mà còn là thời gian từ lúc sự kiện GRADE\_SUBMISSION được phát đến khi job đạt trạng thái DONE hoặc FAILED. Kịch bản chấm đồng thời nhiều bài được dùng để kiểm tra giới hạn của hai bản sao dịch vụ thực thi và của Docker daemon trong mỗi Pod.
+
+Kiểm thử độ tin cậy gồm các tác động sau: xóa Pod dịch vụ thực thi khi job đang ở trạng thái BUILDING hoặc RUNNING; gửi trùng sự kiện chấm; chặn tạm thời dịch vụ kết quả để quan sát cơ chế thử lại; thay đổi một tài nguyên trên cụm để kiểm tra selfHeal của ArgoCD; và quay lại image trước đó để kiểm tra khả năng rollback. Sau mỗi tác động, hệ thống được kiểm tra theo ba câu hỏi: job có tiếp tục hoặc được đưa lại hàng đợi hay không, có xuất hiện job trùng hay không, và trạng thái cuối cùng trong cơ sở dữ liệu có khớp với kết quả trong dịch vụ kết quả hay không.
+
+% TODO: chèn bảng kết quả p50/p95/p99, RPS, error rate và tài nguyên sau khi chạy k6.
+
+\subsection{Ưu điểm của kiến trúc triển khai}
+\label{section:3.2.4}
+
+Kiến trúc triển khai có một số ưu điểm rõ ràng. Việc tách mỗi dịch vụ thành một Deployment riêng, một cơ sở dữ liệu riêng và một chart Helm riêng cho phép build, kiểm thử, phát hành và quay lại phiên bản của từng dịch vụ mà không ảnh hưởng đến các dịch vụ khác. Khi dịch vụ kết quả gặp lỗi, luồng nộp bài và chấm bài vẫn có thể tiếp tục ở mức độ nhất định; khi dịch vụ trợ lý AI gặp lỗi, các chức năng quản lý lớp học và chấm bài không bị dừng theo.
+
+Mô hình GitOps tạo ra một chuỗi truy vết đầy đủ từ commit mã nguồn đến image và commit cấu hình. Mọi thay đổi trạng thái mong muốn của cụm đều nằm trong Git, nên có thể xem lại lịch sử, so sánh hai phiên bản và quay lại phiên bản trước bằng một commit. Cơ chế selfHeal và prune giảm các sai lệch do thao tác thủ công, còn việc tách workflow build khỏi workflow phát hành giúp chỉ những commit đã vượt qua kiểm thử mới được tạo image phát hành.
+
+Luồng chấm bài bất đồng bộ giúp thao tác nộp bài không phải chờ kết quả chấm. Việc dùng chỉ mục duy nhất trên cột mã bài nộp, cơ chế đặt lại job và cơ chế quét job tồn đọng tạo thành ba lớp bảo vệ chống chấm trùng và chống kẹt job. Cách ghi saga theo từng bước cũng giúp xác định lỗi nằm ở bước tải tệp, dựng môi trường, chạy bước kiểm thử hay ghi kết quả, thay vì chỉ biết job thất bại.
+
+Việc dùng các dịch vụ quản lý cho PostgreSQL và Kafka giảm công sức vận hành tầng dữ liệu, đồng thời cho phép tập trung vào phần tính toán và nghiệp vụ. Cách đóng gói image nhiều tầng, truyền cấu hình qua biến môi trường và dùng Helm values giúp cùng một image có thể chạy ở nhiều môi trường mà không phải sửa mã nguồn.
+
+\subsection{Hạn chế và rủi ro}
+\label{section:3.2.5}
+
+Bên cạnh các ưu điểm, môi trường triển khai còn một số hạn chế cần được xử lý trước khi vận hành chính thức.
+
+Thứ nhất, một số dịch vụ nội bộ như dịch vụ quản lý lớp học và điểm, dịch vụ nộp bài, dịch vụ kết quả chấm, dịch vụ thực thi chấm và dịch vụ trợ lý AI vẫn có Ingress riêng. Phần lớn các dịch vụ này kiểm tra khóa gateway ở tầng ứng dụng; riêng dịch vụ thực thi chấm chưa có kiểm tra này, nên endpoint đặt lại công việc có thể bị gọi trực tiếp nếu tên miền được biết. Việc mở thêm tên miền công khai làm tăng bề mặt tấn công và đi ngược mục tiêu chỉ có một điểm vào duy nhất. Khi vận hành chính thức, nên xóa các Ingress không cần thiết hoặc giới hạn chúng bằng chính sách mạng và Cloudflare Access; riêng dịch vụ thực thi chấm cần được bảo vệ bằng khóa gateway trước khi giữ lại Ingress.
+
+Thứ hai, Keycloak đang chạy ở chế độ start-dev và giao diện quản trị được mở công khai. Chế độ này thuận tiện cho phát triển nhưng không phù hợp với môi trường thật vì giảm các kiểm tra bảo mật và không tối ưu hiệu năng. Cần chuyển sang chế độ vận hành chính thức, đổi tài khoản quản trị mặc định và giới hạn đường dẫn /admin bằng Cloudflare Access hoặc quy tắc tường lửa ứng dụng web (WAF).
+
+Thứ ba, dịch vụ thực thi chấm dùng Docker-in-Docker với container privileged. Cách làm này cần thiết để dựng môi trường Docker của bài nộp, nhưng nếu một bài nộp khai thác được lỗ hổng trong container thì mức độ ảnh hưởng có thể lan sang node. Hướng khắc phục là dùng Docker daemon không đặc quyền, rootless container hoặc một môi trường cách ly mạnh hơn như Kata Containers hoặc gVisor.
+
+Thứ tư, cơ chế ghi kết quả chưa có bảo đảm giao dịch. Kết quả được gửi tối đa ba lần, nhưng nếu cả ba lần đều thất bại thì job vẫn có thể ở trạng thái DONE trong khi dịch vụ kết quả chưa có bản ghi. Ngoài ra, cơ chế quét job tồn đọng không xử lý trạng thái RUNNING; nếu Pod chết giữa lúc chạy, cần đặt lại job thủ công. Hai trường hợp này cần được đối soát định kỳ hoặc xử lý bằng một outbox/lease trong tương lai.
+
+Thứ năm, hệ thống chỉ dùng một topic Kafka cho toàn bộ sự kiện do giới hạn của gói miễn phí. Cách này đơn giản nhưng không tách được thời gian lưu trữ, quyền truy cập và số partition theo từng miền nghiệp vụ; khi lưu lượng tăng, một topic duy nhất có thể trở thành điểm nghẽn. Việc tiêu thụ với số bản ghi tối đa mỗi lần lấy bằng 1 cũng giới hạn tốc độ xử lý của mỗi consumer.
+
+Thứ sáu, RustFS chạy một bản sao với PVC ReadWriteOnce và cặp khóa mặc định đang đặt trực tiếp trong manifest. Một Pod RustFS gặp sự cố sẽ làm gián đoạn việc tải và đọc tệp bài nộp; dữ liệu cũng chưa có phương án sao lưu tự động. Cần chuyển khóa sang Secret, bật sao lưu và cân nhắc chạy nhiều bản sao hoặc dùng lưu trữ đối tượng bên ngoài.
+
+Thứ bảy, cụm k3s hiện tại chưa có cấu hình sẵn sàng cao và chưa có autoscaling. Số bản sao của dịch vụ thực thi cố định là hai, nên không tự tăng khi hàng đợi dài. Hệ thống giám sát tập trung chưa được trình bày trong phạm vi báo cáo; việc thiếu metrics, log tập trung và cảnh báo trong phạm vi đánh giá này làm chậm quá trình phát hiện sự cố. Đây là nội dung được đặt trong hướng phát triển.
+
+Thứ tám, quy trình CI/CD chưa có bước quét lỗ hổng image, tạo danh mục thành phần phần mềm (SBOM) hoặc ký image; kiểm thử chỉ chạy cho các dịch vụ thay đổi và loại trừ các lớp ApplicationTests. Những khoảng trống này không ảnh hưởng đến chức năng nhưng làm giảm mức độ bảo đảm chất lượng khi số lượng thay đổi tăng.
+
 \section{Hướng phát triển}
 \label{section:3.3}
+
+Từ các hạn chế trên, hướng phát triển của hệ thống được chia thành các nhóm sau.
+
+Về khả năng quan sát, cần bổ sung hệ thống giám sát tập trung gồm Prometheus và Grafana cho số liệu, Loki cho nhật ký, Tempo cho trace và Pyroscope cho profiling. Các thành phần này sẽ giúp theo dõi độ trễ, tỷ lệ lỗi, mức sử dụng tài nguyên và hành vi của từng job chấm; trên cơ sở đó đặt ra chỉ tiêu dịch vụ và cảnh báo khi có bất thường. Đây là phần chưa được trình bày trong phạm vi báo cáo.
+
+Về độ tin cậy và khả năng mở rộng, cần chuyển cụm k3s lên cấu hình nhiều node hoặc dùng dịch vụ Kubernetes quản lý, bổ sung anti-affinity và ngân sách gián đoạn cho các dịch vụ quan trọng, đồng thời dùng Horizontal Pod Autoscaler hoặc KEDA để tăng số bản sao dịch vụ thực thi theo độ dài hàng đợi. Với dịch vụ thực thi, cần thay cơ chế Docker-in-Docker privileged bằng một môi trường cách ly an toàn hơn, hoặc tách việc chạy bài nộp sang một cụm worker riêng.
+
+Về dữ liệu, cần tách topic Kafka theo từng miền nghiệp vụ, tăng số partition và đặt chính sách lưu trữ phù hợp; bổ sung outbox hoặc cơ chế lease để bảo đảm kết quả chấm được ghi ít nhất một lần và để xử lý job RUNNING bị treo. Với PostgreSQL và RustFS, cần có phương án sao lưu, phục hồi và kiểm thử phục hồi định kỳ.
+
+Về bảo mật, cần chuyển Keycloak sang chế độ vận hành chính thức, giới hạn giao diện quản trị, xóa các Ingress không cần thiết, bổ sung NetworkPolicy giữa các namespace và dịch vụ, đưa Secret sang một hệ thống quản lý tập trung như External Secrets hoặc Vault, đồng thời thêm bước quét lỗ hổng, tạo danh mục thành phần phần mềm (SBOM) và ký image vào quy trình CI/CD.
+
+Về kiểm thử, cần hoàn thiện bộ kiểm thử đầu-cuối cho tất cả usecase, chạy các kịch bản hiệu năng và độ tin cậy đã nêu, ghi nhận số liệu thực tế và bổ sung kiểm thử phá hoại để đánh giá khả năng phục hồi. Kết quả của các lần chạy này sẽ là cơ sở để đánh giá định lượng thay cho phần đánh giá định tính hiện tại.
+
+\section{Kết luận chương}
+\label{section:3.4}
+
+Chương này đã trình bày cách hệ thống được đóng gói và triển khai: giao diện trên Vercel, backend trên cụm k3s, PostgreSQL và Kafka dưới dạng dịch vụ quản lý, RustFS và Keycloak trong cụm. Hệ thống dùng Docker để đóng gói, Helm để mô tả tài nguyên, GitHub Actions để build và phát hành, ArgoCD để đồng bộ theo GitOps, và các Secret của Kubernetes để tách cấu hình nhạy cảm khỏi mã nguồn.
+
+Chương cũng đã trình bày cơ chế Grading Saga để theo dõi quy trình chấm nhiều bước, chống chấm trùng bằng chỉ mục duy nhất trên cột mã bài nộp, đặt lại job khi cần và quét job tồn đọng. Các cơ chế này không thay thế một giao dịch phân tán, nhưng bảo đảm mỗi bài nộp có trạng thái cuối cùng rõ ràng và có dấu vết để điều tra khi một bước gặp lỗi.
+
+Phần đánh giá đã xác định các tiêu chí, kịch bản kiểm thử chức năng, hiệu năng và độ tin cậy, đồng thời chỉ ra các hạn chế về bề mặt tấn công, chế độ chạy của Keycloak, mức cách ly của Docker-in-Docker, tính nhất quán khi ghi kết quả, giới hạn của một topic Kafka, cấu hình RustFS và mức độ sẵn sàng của cụm. Các hướng phát triển tương ứng đã được nêu để tiếp tục hoàn thiện hệ thống trước khi đưa vào vận hành chính thức.
 
 \end{document}

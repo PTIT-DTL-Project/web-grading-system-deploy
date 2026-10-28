@@ -90,7 +90,12 @@ Unknown JSON keys are tolerated for forward compatibility. Tolerance does not me
     {"kind": "body_equals", "json": {"title": "Dế Mèn Phiêu Lưu Ký"}}
   ],
   "extract": [
-    {"name": "bookId", "from": "response_body", "expression": "$.id"}
+    {"name": "bookId", "from": "response_body", "expression": "$.id"},
+    {"name": "wholeList", "from": "response_body", "expression": "$", "as": "json", "fallback": "[]"}
+  ],
+  "data": [
+    {"title": "Sách A", "year": 1941},
+    {"title": "Sách B", "year": 1950}
   ]
 }
 ```
@@ -101,9 +106,10 @@ Rules:
 - `path` must be non-empty and start with `/`.
 - `headers` and `query_params`, when present and non-null, must be JSON objects.
 - `expected_status`, when present, must be an integer from `100` to `599`.
-- `assertions`, when an array, supports only `status`, `body_structure`, `body_equals`, `json_path`, `contains`, and `field_equals`.
-- `status` needs `equals`; `json_path` needs `path`; `contains` needs `text`.
-- Every `extract` item needs `name`, `from`, and `expression`.
+- `assertions`, when an array, supports only `status`, `body_structure`, `body_equals`, `json_path`, `contains`, `field_equals`, `array_length`, `contains_item`, `json_path_equals`, `greater_than`, `less_than`, `matches_regex`, and `any_of`.
+- `status` needs `equals`; `json_path` needs `path`; `contains` needs `text`; `array_length`/`contains_item`/`json_path_equals` need `path` and `equals`; `greater_than`/`less_than` need `path` and `value`; `matches_regex` needs `path` and `pattern`; `any_of` needs a non-empty `assertions` array.
+- Every `extract` item needs `name`, `from`, and `expression`. Optional `as` (`scalar`|`json`, default `scalar`) and `fallback` (default `""`) control how the extracted value is stored and what is used when JsonPath does not match.
+- `data`, when present, must be a non-empty array of objects; each object is one loop iteration. Validator rejects more than 10 inline entries; runtime truncates to 20.
 
 Real chained example: `docs/api/scenarios/exercise-steps.sh:80-100`.
 

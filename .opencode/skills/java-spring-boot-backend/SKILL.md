@@ -1079,3 +1079,49 @@ via the chart's `env`/`secretKeyRef`, so the gap only shows up locally.
 
 Verified 2026-10-17: identical code + secret returned real Groq output on a CLI
 run with `.env` sourced, and 502 on an IDE run missing the two URI vars.
+
+## 24. Intentional contract change → rewrite the stale test, never delete the coverage (mandatory)
+
+When a validation is deliberately relaxed (e.g. `gradingStrategy` no longer
+required, defaults to `STUDENT_DOCKER_COMPOSE`), the failing test is the stale
+artifact, not the production bug. Do not weaken or delete it silently, and do
+not revert the product change to make CI green. Rewrite it to encode the new
+contract:
+
+- **Omitted field → default applied.** Stub the downstream client, execute with
+  the field absent, assert success and capture the outbound DTO
+  (`ArgumentCaptor`) to assert the default value actually reached the wire.
+  Example: `CreateAssignmentToolTest.defaultsToStudentDockerComposeWhenStrategyMissing`.
+- **Validation that still exists keeps its guard.** If a sibling rule survives
+  (e.g. `LECTURER_DOCKER_COMPOSE` still needs `dockerComposeTemplate`), keep a
+  test that asserts `INVALID_ARGUMENTS` + `verifyNoInteractions(client)` so the
+  "reject before the outbound call" property stays covered.
+- **Guard the LLM-facing schema too.** A tool whose `inputSchema` dropped a
+  field from `required` needs a test parsing `getToolDefinition().inputSchema()`
+  and asserting the field is absent from `required`; otherwise the model starts
+  asking users for a value the server now defaults.
+- Symptom to recognise: the old test now returns a *different* error code, not
+  the same one. Missing downstream stubs make Mockito return `null`, which
+  surfaces as `CREATE_ASSIGNMENT_ERROR`/`IllegalStateException` instead of
+  `INVALID_ARGUMENTS` — that means execution walked past validation, i.e. the
+  new behavior works.
+
+## 25. Field becomes fixed → backfill legacy rows with a Flyway migration
+
+When a previously selectable value becomes a server-side constant (e.g. every
+assignment is now `STUDENT_DOCKER_COMPOSE`), changing the default is not enough:
+rows written before the change keep the old value and downstream branches on it
+(`DockerComposePatcher` still takes the lecturer-compose path).
+
+- Add `V<n>__<date>__<purpose>.sql` under `src/main/resources/db/migration/`
+  with an idempotent `UPDATE ... WHERE <column> = '<old value>'`.
+- Leave adjacent columns that belong to the old mode untouched (e.g.
+  `docker_compose_template`) — nulling them loses lecturer-authored data for no
+  benefit.
+- Keep the old enum constant and API validation while direct API callers may
+  still send it; only the data is normalised.
+- Verify current data before writing the migration:
+  `GET /api/v1/assignments?size=100` and count `gradingStrategy` values. Dev was
+  already 10/10 normalised, so the migration is a no-op there but protects
+  stg/prod.
+

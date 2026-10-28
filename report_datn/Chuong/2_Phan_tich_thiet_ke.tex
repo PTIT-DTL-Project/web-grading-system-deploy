@@ -840,4 +840,32 @@ Hình \ref{fig:seq-xem-diem-ca-nhan} mô tả luồng xử lý khi sinh viên xe
 \label{fig:seq-xem-diem-ca-nhan}
 \end{figure}
 
+\subsection{Kiến trúc hệ thống}
+
+Hình \ref{fig:architecture} mô tả kiến trúc tổng thể của hệ thống. Hệ thống được tổ chức theo mô hình Client - Server: phía client đảm nhiệm tương tác với người dùng, phía server xử lý nghiệp vụ, quản lý dữ liệu và cung cấp dịch vụ. Cách tổ chức này tách biệt giao diện khỏi xử lý nghiệp vụ, thuận lợi cho phát triển, triển khai và mở rộng từng phần độc lập.
+
+\begin{figure}[H]
+\centering
+% Bỏ comment dòng dưới sau khi có ảnh:
+% \includegraphics[width=\textwidth]{Hinhve/Hinh2_31_kien_truc_tong_the}
+\caption{Kiến trúc tổng thể của hệ thống.}
+\label{fig:architecture}
+\end{figure}
+
+Phía client, giao diện được xây dựng bằng React và TypeScript, dùng Vite và bộ thành phần Ant Design, chạy trên trình duyệt của người dùng. Client gửi các yêu cầu HTTPS đến API Gateway - điểm vào duy nhất của backend. Gateway xác thực JWT do Keycloak cấp, kiểm tra vai trò rồi chuyển tiếp yêu cầu đến dịch vụ đích.
+
+Phía backend, ngoài API Gateway, hệ thống gồm năm dịch vụ nghiệp vụ độc lập là Quản lý lớp học và điểm, Nộp bài, Thực thi chấm, Kết quả chấm và Trợ lý AI; miền Xác thực và phân quyền do Keycloak đảm nhiệm. Mỗi dịch vụ quản lý một cơ sở dữ liệu riêng và không truy cập trực tiếp dữ liệu của dịch vụ khác. Cách phân rã này giới hạn phạm vi ảnh hưởng khi một dịch vụ gặp sự cố, đồng thời cho phép build, triển khai và mở rộng từng dịch vụ mà không ảnh hưởng đến phần còn lại.
+
+Các dịch vụ giao tiếp với nhau qua hai cơ chế. Giao tiếp đồng bộ dùng REST thông qua OpenFeign cho các yêu cầu cần phản hồi ngay, chẳng hạn dịch vụ Thực thi chấm lấy cấu hình bài tập từ dịch vụ Quản lý lớp học và điểm, cập nhật trạng thái bài nộp hoặc ghi kết quả sang dịch vụ Kết quả chấm. Giao tiếp bất đồng bộ dùng Kafka với một topic dùng chung \texttt{wgs-events}: mỗi message mang envelope gồm action, traceId và payload, được khóa theo submissionId để giữ thứ tự xử lý trên từng bài nộp. Khi bài nộp hoàn tất, dịch vụ Nộp bài phát sự kiện \texttt{GRADE\_SUBMISSION}; dịch vụ Thực thi chấm tiêu thụ sự kiện, thực thi các bước chấm rồi ghi kết quả. Nhờ đó, quá trình chấm không chặn thao tác của người dùng và vẫn tiếp tục được khi một dịch vụ tạm thời quá tải.
+
+Tệp bài nộp được lưu trong RustFS - hệ thống lưu trữ đối tượng tương thích S3 - thay vì lưu trong cơ sở dữ liệu. Client tải tệp trực tiếp lên RustFS bằng presigned URL do dịch vụ Nộp bài cấp; sau khi tải xong, RustFS gọi webhook báo hoàn tất để dịch vụ Nộp bài cập nhật trạng thái và phát sự kiện chấm. Cách này giảm tải cho dịch vụ và tránh truyền tệp lớn qua gateway.
+
+Dịch vụ Trợ lý AI gọi mô hình ngôn ngữ lớn qua giao diện tương thích OpenAI; địa chỉ và tên mô hình được cấu hình bằng biến môi trường nên có thể thay nhà cung cấp mà không sửa mã nguồn. Hội thoại, giải thích và gợi ý học tập được lưu trong cơ sở dữ liệu riêng của dịch vụ.
+
+Về xác thực, Keycloak đóng vai trò Authorization Server. Người dùng đăng nhập trên giao diện do Keycloak quản lý theo luồng Authorization Code kèm PKCE; access token dạng JWT được gửi kèm mỗi yêu cầu. API Gateway kiểm tra chữ ký và thời hạn token, trích xuất danh tính và vai trò rồi chuyển tiếp trong các header nội bộ. Các dịch vụ phía sau không được giao diện gọi trực tiếp; ngoài JWT, gateway còn gửi kèm một mã bí mật dùng chung để dịch vụ nội bộ từ chối các yêu cầu không đi qua gateway.
+
+Đối với tính nhất quán, mỗi bài nộp có một bản ghi công việc trong bảng \texttt{grading\_jobs}; tiến trình chấm nhiều bước được ghi nhận trong \texttt{grading\_sagas} và \texttt{grading\_saga\_steps} để có thể theo dõi, chạy lại hoặc đặt lại khi một bước thất bại. Cơ chế này không thay thế giao dịch phân tán, nhưng bảo đảm mỗi bài nộp đều có trạng thái cuối cùng rõ ràng và không bị kẹt khi một bước chấm gặp lỗi.
+
+Toàn bộ dịch vụ backend được đóng gói thành container và triển khai trên cụm Kubernetes (k3s) theo mô hình GitOps; phần này được trình bày ở chương 3.
+
 \end{document}

@@ -2233,3 +2233,232 @@ student submission). Score components configured: ATTENDANCE 0.10 / EXERCISE 0.2
 *This section was added to lecturer-full-e2e-plan.md. Date added: 2026-10-27.*
 
 *This document was written based on actual code in repo `web-grading-system-deploy`: `docs/design/grading-config-reference.md`, `docs/design/http-test-plan-config.md`, `docs/design/exercise-management-plan.md`, `docs/design/usecase-flows.md`, `src-services/course-service/.../controller/*.java`, `src-services/course-service/.../dto/request/*.java`. Date written: 2026-10-27.*
+---
+
+## 18. Phase 18 — Các tính năng bước phức tạp mới (data[] loop, auto_inject_headers, ANY_OF)
+
+Mục đích: Kiểm thử 3 tính năng backend vừa hỗ trợ ở Phase 3 (xem plan `.opencode/plan/http-config-assertion-advanced/plan.md` §5):
+
+- **`data[]` (data-driven loop)**: 1 step chạy N lần, mỗi lần gán biến từ 1 bản ghi trong mảng `data` (tạo 4 sách khác nhau trong 1 step, extract ra `bookId_0`…`bookId_3`).
+- **`auto_inject_headers` cấp Plan**: khai báo trên bước login, executor tự động tiêm `Authorization: Bearer ${accessToken}` vào mọi bước HTTP_REQUEST **sau** bước đó trong cùng plan (giảng viên không gán thủ công `Authorization` mỗi bước).
+- **`ANY_OF` assertion**: toán tử OR — chỉ cần 1 điều kiện con đúng là step PASS (ví dụ định dạng ngày `YYYY-MM-DD` hoặc `DD/MM/YYYY`).
+
+Tất cả gọi qua **API Gateway**: `https://web-dev1-api.vucongtuanduong.dpdns.org/`. Header chuẩn mỗi request: `Authorization: Bearer <access_token>`, `X-User-Id: <lecturer-uuid>`, `X-Gateway-Secret: <secret>`.
+
+### 18.1 Tạo assignment & plan cho tính năng mới
+
+**API:** `POST /api/v1/assignments`
+
+**Headers:** `X-User-Id`, `X-Gateway-Secret`
+
+**Body:**
+```json
+{
+  "title": "Kiểm tra tính năng bước nâng cao (data[], auto_inject_headers, ANY_OF)",
+  "description": "Cover data[] loop, auto_inject_headers sau login, ANY_OF assertion",
+  "classId": "{classId}",
+  "purpose": "GRADED",
+  "topic": "Tính năng bước nâng cao",
+  "gradingStrategy": "STUDENT_DOCKER_COMPOSE",
+  "dockerComposePort": 8080,
+  "startupTimeoutMs": 60000,
+  "executionTimeoutMs": 300000,
+  "maxMemoryMb": 256,
+  "maxCpu": 0.5
+}
+```
+
+**Expected:** `201 Created`, `data.id` = `{assignmentId}` (dùng cho toàn phase này), `published: false`.
+
+**Negative:** trùng title của giảng viên → `400`.
+
+---
+
+**API:** `POST /api/v1/assignments/{assignmentId}/plans`
+
+**Headers:** `X-User-Id`, `X-Gateway-Secret`
+
+**Body:**
+```json
+{
+  "name": "Plan tính năng bước nâng cao",
+  "description": "Login → tạo 4 sách qua data[] → filter/search ANY_OF",
+  "sequenceOrder": 1,
+  "weight": 10
+}
+```
+
+**Expected:** `201 Created`, `data.id` = `{planId}`.
+
+**Negative:** trùng `sequenceOrder` trong cùng assignment → `400`.
+
+---
+
+### 18.2 Step 1 — Đăng nhập lấy accessToken (khai báo auto_inject_headers, KHÔNG gán Authorization thủ công)
+
+**API:** `POST /api/v1/assignments/{assignmentId}/plans/{planId}/steps`
+
+**Headers:** `X-User-Id`, `X-Gateway-Secret`
+
+**Body:**
+```json
+{
+  "stepOrder": 1,
+  "name": "Đăng nhập lấy token",
+  "stepType": "HTTP_REQUEST",
+  "config": {
+    "method": "POST",
+    "path": "/api/v1/auth/login",
+    "body": { "username": "lecturer", "password": "secret" },
+    "expected_status": 200,
+    "auto_inject_headers": {
+      "Authorization": "Bearer ${accessToken}"
+    },
+    "assertions": [
+      { "kind": "status", "equals": 200 },
+      { "kind": "json_path", "path": "$.accessToken", "exists": true }
+    ],
+    "extract": [
+      { "name": "accessToken", "from": "response_body", "expression": "$.accessToken" }
+    ],
+    "required": true,
+    "timeoutMs": 5000
+  },
+  "expectedResult": null,
+  "weight": 1
+}
+```
+
+**Expected:** `201 Created` (step lưu thành công). Biến `accessToken` được lưu vào `VariableContext` per-job.
+
+**Lưu ý triển khai:**
+- Khối `auto_inject_headers` được khai báo trên bước login. Executor **không** tiêm header vào chính bước này (chỉ tiêm cho các bước SAU trong cùng plan).
+- Giá trị template `Bearer ${accessToken}` được substitute lúc chạy các bước sau, khi `accessToken` đã có trong context.
+- Header đã có trên bước sẽ không bị `auto_inject_headers` ghi đè.
+
+---
+
+### 18.3 Step 2 — Tạo 4 sách khác nhau qua data[] (không gán Authorization thủ công, phụ thuộc auto_inject_headers từ bước 1)
+
+**API:** `POST /api/v1/assignments/{assignmentId}/plans/{planId}/steps`
+
+**Headers:** `X-User-Id`, `X-Gateway-Secret`
+
+**Body:**
+```json
+{
+  "stepOrder": 2,
+  "name": "Tạo 4 sách khác nhau (data[])",
+  "stepType": "HTTP_REQUEST",
+  "config": {
+    "method": "POST",
+    "path": "/api/v1/books",
+    "body": { "title": "${title}", "author": "Tô Hoài", "year": "${year}" },
+    "expected_status": 201,
+    "data": [
+      { "title": "Sách A", "year": "1941" },
+      { "title": "Sách B", "year": "1950" },
+      { "title": "Sách C", "year": "1960" },
+      { "title": "Dế Mèn Phiêu Lưu Ký", "year": "1941" }
+    ],
+    "extract": [
+      { "name": "bookId_${index}", "from": "response_body", "expression": "$.id" }
+    ],
+    "required": true,
+    "timeoutMs": 10000
+  },
+  "expectedResult": null,
+  "weight": 1
+}
+```
+
+**Expected:** `201 Created` (step lưu thành công). Lúc chạy grading:
+- Step chạy 4 lần (một lần mỗi bản ghi `data`).
+- Mỗi lần substitute `${title}`, `${year}`, `${index}` (0-based) vào config.
+- Executor tiêm `Authorization: Bearer ${accessToken}` (từ bước 1) vào mỗi lần chạy.
+- Extract `bookId_0`, `bookId_1`, `bookId_2`, `bookId_3` vào context dùng cho bước sau.
+
+**Giới hạn an toàn (Loop Safety Governor):**
+- Validator course-service chặn `data[]` inline > 10 phần tử → `400` lúc lưu step.
+- Runtime executor truncate về 20 phần tử nếu mảng lớn hơn.
+- Placeholder `${...}` phải nằm trong vị trí **chuỗi JSON** (ví dụ `"year": "${year}"`). Token thô không dấu ngoặc trong vị trí số không phải JSON hợp lệ.
+
+**Negative (lưu step → 400):**
+- `data[]` có 11 phần tử → `400 "data must contain at most 10 entries"`.
+- `data[]` rỗng `[]` → `400 "data must be a non-empty array"`.
+- Entry trong `data[]` không phải object → `400 "data entries must be objects"`.
+
+---
+
+### 18.4 Step 3 — Filter/search sách với ANY_OF assertion (không gán Authorization thủ công)
+
+**API:** `POST /api/v1/assignments/{assignmentId}/plans/{planId}/steps`
+
+**Headers:** `X-User-Id`, `X-Gateway-Secret`
+
+**Body:**
+```json
+{
+  "stepOrder": 3,
+  "name": "Lọc sách theo tiêu đề (ANY_OF định dạng ngày)",
+  "stepType": "HTTP_REQUEST",
+  "config": {
+    "method": "GET",
+    "path": "/api/v1/books",
+    "query_params": { "title": "Dế Mèn" },
+    "expected_status": 200,
+    "assertions": [
+      { "kind": "status", "equals": 200 },
+      { "kind": "array_length", "path": "$", "equals": 1 },
+      { "kind": "contains_item", "path": "$[*].title", "equals": "Dế Mèn Phiêu Lưu Ký" },
+      { "kind": "any_of", "assertions": [
+        { "kind": "matches_regex", "path": "$[0].published_date", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+        { "kind": "matches_regex", "path": "$[0].published_date", "pattern": "^\\d{2}/\\d{2}/\\d{4}$" }
+      ]}
+    ]
+  },
+  "expectedResult": null,
+  "weight": 1
+}
+```
+
+**Expected:** `201 Created` (step lưu thành công). Lúc chạy grading:
+- Executor tiêm `Authorization: Bearer ${accessToken}` (từ bước 1).
+- Assertion `ANY_OF` PASS nếu **ít nhất 1** trong 2 định dạng ngày khớp (`YYYY-MM-DD` hoặc `DD/MM/YYYY`).
+- Nếu cả 2 đều sai → `ANY_OF` FAILED → step FAILED.
+
+**Negative (lưu step → 400):**
+- `any_of` thiếu trường `assertions` hoặc `assertions` rỗng → `400 "'assertions' must be a non-empty array"`.
+- `auto_inject_headers` không phải object hoặc giá trị không phải string → `400`.
+
+---
+
+### 18.5 Verify plan & steps đã lưu đúng cấu trúc mới
+
+**API:** `GET /api/v1/assignments/{assignmentId}/plans`
+
+**Expected:** `200`, danh sách plans sắp xếp theo `sequenceOrder`, mỗi plan lồng `steps` theo `stepOrder`.
+
+Kiểm tra cấu trúc đã lưu:
+- Bước 1 (`Đăng nhập lấy token`): config **có** khóa `auto_inject_headers: { "Authorization": "Bearer ${accessToken}" }`, extract `accessToken`.
+- Bước 2 (`Tạo 4 sách`): config **không** chứa header `Authorization` thủ công (phụ thuộc `auto_inject_headers` từ bước 1), có `data[]` 4 phần tử, extract `bookId_${index}`.
+- Bước 3 (`Lọc sách`): config **không** chứa header `Authorization` thủ công, có assertion `any_of`.
+
+**Lưu ý:** Header `Authorization` được executor tiêm vào runtime (không lưu trong config bước 2/3), do đó `GET /plans` của bước 2/3 không thấy `Authorization` — đây là hành vi đúng, chứng minh `auto_inject_headers` hoạt động ở tầng orchestrator chứ không phải lưu cứng config.
+
+---
+
+### 18.6 Danh sách kiểm tra hoàn tất (Definition of Done) cho Phase 18
+
+- [ ] Tạo assignment & plan thành công, có `assignmentId`, `planId`.
+- [ ] Bước login lưu thành công, có `auto_inject_headers`, extract `accessToken`.
+- [ ] Bước `data[]` lưu thành công (≤ 10 entries), chạy 4 lần, extract `bookId_0`…`bookId_3`.
+- [ ] Bước filter/search lưu thành công, có assertion `any_of`.
+- [ ] Negative: `data[]` > 10 → 400; `data[]` rỗng → 400; `any_of` assertions rỗng → 400; `auto_inject_headers` sai dạng → 400.
+- [ ] `GET /plans` xác nhận bước 2/3 không gán `Authorization` thủ công (phụ thuộc `auto_inject_headers`).
+
+---
+
+*Phase 18 added to lecturer-full-e2e-plan.md. Date added: 2026-10-28. Backend Phase 3 (data[] loop, auto_inject_headers, ANY_OF) đã triển khai và verify qua unit test executor-service + course-service.*
+
+*This document was written based on actual code in repo `web-grading-system-deploy`: `docs/design/grading-config-reference.md`, `docs/design/http-test-plan-config.md`, `docs/design/exercise-management-plan.md`, `docs/design/usecase-flows.md`, `src-services/course-service/.../controller/*.java`, `src-services/course-service/.../dto/request/*.java`. Date written: 2026-10-27.*

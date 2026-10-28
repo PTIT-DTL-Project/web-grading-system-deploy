@@ -66,8 +66,8 @@
          familyi={V\bibinitperiod},
       }}%
     }
-    \strng{namehash}{V1}
-    \strng{fullhash}{V1}
+    \strng{namehash}{V2}
+    \strng{fullhash}{V2}
     \field{labelnamesource}{author}
     \field{labeltitlesource}{title}
     \field{title}{Spring Boot Reference Documentation}
@@ -84,8 +84,8 @@
          familyi={V\bibinitperiod},
       }}%
     }
-    \strng{namehash}{V1}
-    \strng{fullhash}{V1}
+    \strng{namehash}{V2}
+    \strng{fullhash}{V2}
     \field{labelnamesource}{author}
     \field{labeltitlesource}{title}
     \field{title}{Spring Cloud OpenFeign Reference Documentation}
@@ -103,8 +103,8 @@
          familyi={V\bibinitperiod},
       }}%
     }
-    \strng{namehash}{V1}
-    \strng{fullhash}{V1}
+    \strng{namehash}{V2}
+    \strng{fullhash}{V2}
     \field{labelnamesource}{author}
     \field{labeltitlesource}{title}
     \field{title}{Spring Security Reference Documentation}
@@ -127,7 +127,8 @@
     \strng{fullhash}{FRT1}
     \field{labelnamesource}{author}
     \field{labeltitlesource}{title}
-    \field{title}{Architectural Styles and the Design of Network-based Software Architectures}
+    \field{title}{Architectural Styles and the Design of Network-based Software
+  Architectures}
     \verb{url}
     \verb https://www.ics.uci.edu/~fielding/pubs/dissertation/top.htm
     \endverb
@@ -232,8 +233,8 @@
          familyi={A\bibinitperiod},
       }}%
     }
-    \strng{namehash}{A3}
-    \strng{fullhash}{A3}
+    \strng{namehash}{A4}
+    \strng{fullhash}{A4}
     \field{labelnamesource}{author}
     \field{labeltitlesource}{title}
     \field{title}{Apache Kafka Documentation}
@@ -250,8 +251,8 @@
          familyi={A\bibinitperiod},
       }}%
     }
-    \strng{namehash}{A1}
-    \strng{fullhash}{A1}
+    \strng{namehash}{A2}
+    \strng{fullhash}{A2}
     \field{labelnamesource}{author}
     \field{labeltitlesource}{title}
     \field{title}{Amazon {S3} Documentation}
@@ -651,8 +652,8 @@
          familyi={A\bibinitperiod},
       }}%
     }
-    \strng{namehash}{A2}
-    \strng{fullhash}{A2}
+    \strng{namehash}{A3}
+    \strng{fullhash}{A3}
     \field{labelnamesource}{author}
     \field{labeltitlesource}{title}
     \field{title}{Ant Design Documentation}
@@ -712,6 +713,114 @@
     \field{title}{i18next Documentation}
     \verb{url}
     \verb https://www.i18next.com/
+    \endverb
+    \field{year}{2024}
+  \endentry
+
+  \entry{cloudflaredocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=C}{%
+         family={{Cloudflare}},
+         familyi={C\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{C2}
+    \strng{fullhash}{C2}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Cloudflare Documentation}
+    \verb{url}
+    \verb https://developers.cloudflare.com/
+    \endverb
+    \field{year}{2026}
+  \endentry
+
+  \entry{verceldocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=V}{%
+         family={{Vercel}},
+         familyi={V\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{V1}
+    \strng{fullhash}{V1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Vercel Documentation}
+    \verb{url}
+    \verb https://vercel.com/docs
+    \endverb
+    \field{year}{2026}
+  \endentry
+
+  \entry{githubactionsdocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=G}{%
+         family={{GitHub}},
+         familyi={G\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{G1}
+    \strng{fullhash}{G1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{GitHub Actions Documentation}
+    \verb{url}
+    \verb https://docs.github.com/en/actions
+    \endverb
+    \field{year}{2026}
+  \endentry
+
+  \entry{neondocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=N}{%
+         family={{Neon}},
+         familyi={N\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{N1}
+    \strng{fullhash}{N1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Neon Documentation}
+    \verb{url}
+    \verb https://neon.com/docs
+    \endverb
+    \field{year}{2026}
+  \endentry
+
+  \entry{aivendocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=A}{%
+         family={{Aiven}},
+         familyi={A\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{A1}
+    \strng{fullhash}{A1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Aiven Documentation}
+    \verb{url}
+    \verb https://aiven.io/docs
+    \endverb
+    \field{year}{2026}
+  \endentry
+
+  \entry{k6docs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=G}{%
+         family={{Grafana Labs}},
+         familyi={G\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{G2}
+    \strng{fullhash}{G2}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Grafana k6 Documentation}
+    \verb{url}
+    \verb https://grafana.com/docs/k6/
     \endverb
     \field{year}{2024}
   \endentry

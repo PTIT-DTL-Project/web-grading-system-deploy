@@ -227,13 +227,14 @@ Every error returns the standard envelope `{status, message, data:null, error}`:
 ```
 POST /api/v1/assignments
 { "title": "Lab 01", "classId": "<classId>", "purpose": "GRADED", "topic": "Chủ đề",
-  "gradingStrategy": "STUDENT_DOCKER_COMPOSE", "dockerComposePort": 8080,
+  "dockerComposePort": 8080,
   "startupTimeoutMs": 60000, "executionTimeoutMs": 300000, "maxMemoryMb": 256,
   "maxCpu": 0.5 }
 ```
 
 - `purpose` = `GRADED` (điểm thành phần, gắn lớp) hoặc `PRACTICE` (luyện tập, `classId` null, độc lập lớp).
 - `topic` bắt buộc với mọi bài; dùng để lọc/tìm theo chủ đề.
+- `gradingStrategy` không cần gửi: server mặc định `STUDENT_DOCKER_COMPOSE` cho mọi bài giảng viên tạo.
 - `title` phải duy nhất trong toàn bộ bài của giảng viên (không phân biệt purpose/lớp).
 - Expected: `201` with full assignment in `data` (`published:false`).
 Errors: duplicate title for the lecturer → 400 descriptive · unknown/unowned class (GRADED) → 404 ·
@@ -288,13 +289,14 @@ scores never feed the class `EXERCISE` component (`ScoreService` filters `purpos
 ```
 POST /api/v1/assignments
 { "title": "Luyện tập SQL cơ bản", "purpose": "PRACTICE", "topic": "Truy vấn cơ bản",
-  "gradingStrategy": "STUDENT_DOCKER_COMPOSE", "dockerComposePort": 8080,
+  "dockerComposePort": 8080,
   "startupTimeoutMs": 60000, "executionTimeoutMs": 300000, "maxMemoryMb": 256,
   "maxCpu": 0.5 }
 ```
 
 - `classId` phải bị bỏ qua/null (400 nếu gửi kèm).
 - `topic` bắt buộc; `title` phải duy nhất với mọi bài của giảng viên.
+- `gradingStrategy` không cần gửi: server mặc định `STUDENT_DOCKER_COMPOSE`.
 - Expected: `201` with `published:false`, `purpose:"PRACTICE"`.
 
 ### Step 2 — List / filter practice exercises
@@ -312,6 +314,13 @@ Same endpoints as UC-02 Steps 3–6, but practice exercises work without a class
 `GET /api/v1/assignments/{id}`, `/plans`, `/{id}/results`, `/{id}/submissions` all
 return data for a class-independent assignment. Lecturer sees submissions/results keyed
 by `studentUserId` (code/name enriched from any class the student belongs to).
+
+FE route: `/practice` (list) → `/practice/{assignmentId}` (detail). The detail screen is
+keyed off the route param, not off the fetch result: it renders `GET /api/v1/assignments/{id}`
+plus `<TestPlanEditor>` (`GET /api/v1/assignments/{id}/plans`) and never falls back to the
+list endpoint while loading or after a failure. A failed detail fetch shows a retryable
+error state; an unknown id shows `404`. `/practice/{id}/results` and `/practice/{id}/submissions`
+stay as sibling routes for published exercises.
 
 ---
 
@@ -367,6 +376,37 @@ POST `…/plans/{planId}/steps` ×N. Example chain (docs/db §8.1):
 3. HTTP_REQUEST GET search
 4. DB_SCHEMA_CHECK tables/columns/PK
 5. DB_QUERY verify row
+
+#### Ví dụ mở rộng: Login + tạo nhiều data + filter/search
+
+Giảng viên có thể cấu hình chuỗi sau trong 1 plan để kiểm thử API có filter và yêu cầu auth:
+
+1. `HTTP_REQUEST POST /api/v1/auth/login` → extract `accessToken` từ `$.accessToken`.
+2. `HTTP_REQUEST POST /api/v1/books` với `data[]` (4 bản ghi khác nhau) → extract `bookId_0..3`.
+3. `HTTP_REQUEST GET /api/v1/books?search=${searchTitle}` với header `Authorization: Bearer ${accessToken}` → assertion `array_length` = 1 và `contains_item` = `${searchTitle}`.
+
+Khối `auto_inject_headers` có thể cấu hình ở cấp plan để tiêm tự động `Authorization` vào mọi bước HTTP_REQUEST sau bước login, tránh gán thủ công từng bước.
+
+Ví dụ config bước tạo 4 sách:
+
+```json
+{
+  "method": "POST",
+  "path": "/api/v1/books",
+  "data": [
+    {"title": "Sách A", "year": 1941},
+    {"title": "Sách B", "year": 1950},
+    {"title": "Sách C", "year": 1960},
+    {"title": "Dế Mèn Phiêu Lưu Ký", "year": 1941}
+  ],
+  "body": {"title": "${title}", "author": "Tô Hoài", "year": ${year}},
+  "extract": [
+    { "name": "bookId_${index}", "from": "response_body", "expression": "$.id" }
+  ]
+}
+```
+
+> **Triển khai (Phase 3 backend):** `auto_inject_headers` được khai báo trên 1 step (thường là bước login) và có hiệu lực trong phạm vi plan: executor tiêm nó vào mọi bước `HTTP_REQUEST` **sau** step đó, giá trị được substitute `${...}` từ biến context lúc chạy (sau khi `accessToken` đã được extract); header đã có trên step sẽ không bị ghi đè. `data[]` chạy N lần (mỗi lần có biến riêng `${index}` và các trường bản ghi), extract `bookId_${index}` lưu vào context dùng cho bước sau. **Giới hạn an toàn:** validator course-service chặn `data[]` inline > 10 phần tử (400 lúc lưu step); runtime executor truncate về 20 phần tử nếu danh sách lớn hơn. Placeholder `${...}` phải nằm trong vị trí chuỗi JSON (ví dụ `"year": "${year}"`) — token thô không dấu ngoặc trong vị trí số không phải là JSON hợp lệ.
 
 Errors: duplicate step_order → 400 naming it · invalid config structure → 400 naming
 the key · unknown `connection.db_type` (DB_* steps) → 400 listing allowed engines

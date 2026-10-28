@@ -400,22 +400,104 @@
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {g}Xem điểm và kết quả cá nhân}{48}{subsubsection.2.2.3.7}\protected@file@percent }
 \@writefile{lof}{\contentsline {figure}{\numberline {2.30}{\ignorespaces Sơ đồ tuần tự chức năng Xem điểm và kết quả cá nhân.}}{49}{figure.caption.53}\protected@file@percent }
 \newlabel{fig:seq-xem-diem-ca-nhan}{{2.30}{49}{Sơ đồ tuần tự chức năng Xem điểm và kết quả cá nhân}{figure.caption.53}{}}
-\@writefile{toc}{\contentsline {chapter}{\numberline {3}TRIỂN KHAI VÀ ĐÁNH GIÁ HỆ THỐNG}{50}{chapter.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2.4}Kiến trúc hệ thống}{49}{subsection.2.2.4}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2.31}{\ignorespaces Kiến trúc tổng thể của hệ thống.}}{49}{figure.caption.54}\protected@file@percent }
+\newlabel{fig:architecture}{{2.31}{49}{Kiến trúc tổng thể của hệ thống}{figure.caption.54}{}}
+\citation{k3sdocs}
+\abx@aux@cite{0}{k3sdocs}
+\abx@aux@segm{0}{0}{k3sdocs}
+\citation{cloudflaredocs}
+\abx@aux@cite{0}{cloudflaredocs}
+\abx@aux@segm{0}{0}{cloudflaredocs}
+\@writefile{toc}{\contentsline {chapter}{\numberline {3}TRIỂN KHAI VÀ ĐÁNH GIÁ HỆ THỐNG}{51}{chapter.3}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
 \@writefile{loa}{\addvspace {10\p@ }}
-\newlabel{chapter:DeployEval}{{3}{50}{TRIỂN KHAI VÀ ĐÁNH GIÁ HỆ THỐNG}{chapter.3}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {3.1}Triển khai hệ thống}{50}{section.3.1}\protected@file@percent }
-\newlabel{section:3.1}{{3.1}{50}{Triển khai hệ thống}{section.3.1}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {3.2}Đánh giá hệ thống}{50}{section.3.2}\protected@file@percent }
-\newlabel{section:3.2}{{3.2}{50}{Đánh giá hệ thống}{section.3.2}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {3.3}Hướng phát triển}{50}{section.3.3}\protected@file@percent }
-\newlabel{section:3.3}{{3.3}{50}{Hướng phát triển}{section.3.3}{}}
-\@writefile{toc}{\contentsline {chapter}{TÀI LIỆU THAM KHẢO}{53}{section*.55}\protected@file@percent }
+\newlabel{chapter:DeployEval}{{3}{51}{TRIỂN KHAI VÀ ĐÁNH GIÁ HỆ THỐNG}{chapter.3}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.1}Triển khai hệ thống}{51}{section.3.1}\protected@file@percent }
+\newlabel{section:3.1}{{3.1}{51}{Triển khai hệ thống}{section.3.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1.1}Môi trường và kiến trúc triển khai}{51}{subsection.3.1.1}\protected@file@percent }
+\newlabel{section:3.1.1}{{3.1.1}{51}{Môi trường và kiến trúc triển khai}{subsection.3.1.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.1}{\ignorespaces Kiến trúc triển khai của hệ thống trên cụm k3s.}}{51}{figure.caption.55}\protected@file@percent }
+\newlabel{fig:deployment}{{3.1}{51}{Kiến trúc triển khai của hệ thống trên cụm k3s}{figure.caption.55}{}}
+\citation{verceldocs}
+\abx@aux@cite{0}{verceldocs}
+\abx@aux@segm{0}{0}{verceldocs}
+\citation{dockerdocs}
+\abx@aux@cite{0}{dockerdocs}
+\abx@aux@segm{0}{0}{dockerdocs}
+\@writefile{lot}{\contentsline {table}{\numberline {3.1}{\ignorespaces Các thành phần chính của môi trường triển khai.}}{52}{table.caption.56}\protected@file@percent }
+\newlabel{tab:deploy-components}{{3.1}{52}{Các thành phần chính của môi trường triển khai}{table.caption.56}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1.2}Đóng gói và cấu hình triển khai}{52}{subsection.3.1.2}\protected@file@percent }
+\newlabel{section:3.1.2}{{3.1.2}{52}{Đóng gói và cấu hình triển khai}{subsection.3.1.2}{}}
+\citation{helmdocs}
+\abx@aux@cite{0}{helmdocs}
+\abx@aux@segm{0}{0}{helmdocs}
+\citation{githubactionsdocs}
+\abx@aux@cite{0}{githubactionsdocs}
+\abx@aux@segm{0}{0}{githubactionsdocs}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1.3}Tích hợp liên tục với GitHub Actions}{53}{subsection.3.1.3}\protected@file@percent }
+\newlabel{section:3.1.3}{{3.1.3}{53}{Tích hợp liên tục với GitHub Actions}{subsection.3.1.3}{}}
+\citation{argocddocs}
+\abx@aux@cite{0}{argocddocs}
+\abx@aux@segm{0}{0}{argocddocs}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.2}{\ignorespaces Quy trình CI/CD từ mã nguồn đến cụm triển khai.}}{54}{figure.caption.57}\protected@file@percent }
+\newlabel{fig:cicd}{{3.2}{54}{Quy trình CI/CD từ mã nguồn đến cụm triển khai}{figure.caption.57}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3.2}{\ignorespaces Các giai đoạn của quy trình CI/CD.}}{54}{table.caption.58}\protected@file@percent }
+\newlabel{tab:cicd-stages}{{3.2}{54}{Các giai đoạn của quy trình CI/CD}{table.caption.58}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1.4}Triển khai liên tục với ArgoCD}{54}{subsection.3.1.4}\protected@file@percent }
+\newlabel{section:3.1.4}{{3.1.4}{54}{Triển khai liên tục với ArgoCD}{subsection.3.1.4}{}}
+\citation{neondocs}
+\abx@aux@cite{0}{neondocs}
+\abx@aux@segm{0}{0}{neondocs}
+\citation{aivendocs}
+\abx@aux@cite{0}{aivendocs}
+\abx@aux@segm{0}{0}{aivendocs}
+\citation{awss3docs}
+\abx@aux@cite{0}{awss3docs}
+\abx@aux@segm{0}{0}{awss3docs}
+\citation{rustfsdocs}
+\abx@aux@cite{0}{rustfsdocs}
+\abx@aux@segm{0}{0}{rustfsdocs}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1.5}Hạ tầng dùng chung}{55}{subsection.3.1.5}\protected@file@percent }
+\newlabel{section:3.1.5}{{3.1.5}{55}{Hạ tầng dùng chung}{subsection.3.1.5}{}}
+\citation{newman2021building}
+\abx@aux@cite{0}{newman2021building}
+\abx@aux@segm{0}{0}{newman2021building}
+\@writefile{lot}{\contentsline {table}{\numberline {3.3}{\ignorespaces Các Secret cấu hình cho cụm triển khai.}}{56}{table.caption.59}\protected@file@percent }
+\newlabel{tab:deploy-secrets}{{3.3}{56}{Các Secret cấu hình cho cụm triển khai}{table.caption.59}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1.6}Nhất quán dữ liệu trong quy trình chấm bài với Grading Saga}{57}{subsection.3.1.6}\protected@file@percent }
+\newlabel{section:3.1.6}{{3.1.6}{57}{Nhất quán dữ liệu trong quy trình chấm bài với Grading Saga}{subsection.3.1.6}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3.4}{\ignorespaces Các trạng thái của một công việc chấm bài.}}{57}{table.caption.60}\protected@file@percent }
+\newlabel{tab:grading-job-status}{{3.4}{57}{Các trạng thái của một công việc chấm bài}{table.caption.60}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1.7}Tổng hợp kết quả triển khai}{59}{subsection.3.1.7}\protected@file@percent }
+\newlabel{section:3.1.7}{{3.1.7}{59}{Tổng hợp kết quả triển khai}{subsection.3.1.7}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.2}Đánh giá hệ thống}{59}{section.3.2}\protected@file@percent }
+\newlabel{section:3.2}{{3.2}{59}{Đánh giá hệ thống}{section.3.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.1}Tiêu chí và phương pháp đánh giá}{59}{subsection.3.2.1}\protected@file@percent }
+\newlabel{section:3.2.1}{{3.2.1}{59}{Tiêu chí và phương pháp đánh giá}{subsection.3.2.1}{}}
+\citation{k6docs}
+\abx@aux@cite{0}{k6docs}
+\abx@aux@segm{0}{0}{k6docs}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.2}Kịch bản kiểm thử chức năng}{60}{subsection.3.2.2}\protected@file@percent }
+\newlabel{section:3.2.2}{{3.2.2}{60}{Kịch bản kiểm thử chức năng}{subsection.3.2.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3.5}{\ignorespaces Kịch bản kiểm thử chức năng.}}{61}{table.caption.61}\protected@file@percent }
+\newlabel{tab:functional-tests}{{3.5}{61}{Kịch bản kiểm thử chức năng}{table.caption.61}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.3}Kịch bản kiểm thử hiệu năng và độ tin cậy}{61}{subsection.3.2.3}\protected@file@percent }
+\newlabel{section:3.2.3}{{3.2.3}{61}{Kịch bản kiểm thử hiệu năng và độ tin cậy}{subsection.3.2.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.4}Ưu điểm của kiến trúc triển khai}{62}{subsection.3.2.4}\protected@file@percent }
+\newlabel{section:3.2.4}{{3.2.4}{62}{Ưu điểm của kiến trúc triển khai}{subsection.3.2.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.5}Hạn chế và rủi ro}{63}{subsection.3.2.5}\protected@file@percent }
+\newlabel{section:3.2.5}{{3.2.5}{63}{Hạn chế và rủi ro}{subsection.3.2.5}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.3}Hướng phát triển}{64}{section.3.3}\protected@file@percent }
+\newlabel{section:3.3}{{3.3}{64}{Hướng phát triển}{section.3.3}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.4}Kết luận chương}{65}{section.3.4}\protected@file@percent }
+\newlabel{section:3.4}{{3.4}{65}{Kết luận chương}{section.3.4}{}}
+\@writefile{toc}{\contentsline {chapter}{TÀI LIỆU THAM KHẢO}{68}{section*.63}\protected@file@percent }
 \@writefile{toc}{\ttl@change@i {\@ne }{chapter}{0.0cm}{\bfseries \vspace {0.3cm}}{{\bfseries {\scshape } \thecontentslabel .\ }}{}{\titlerule *[0.3pc]{.}\contentspage }\relax }
 \@writefile{toc}{\ttl@change@v {chapter}{}{}{}\relax }
 \ttl@finishall
-\abx@aux@read@bbl@mdfivesum{51107AFF542BB0FBE7152151138DF794}
+\abx@aux@read@bbl@mdfivesum{C63D1B40223CD1F3879EDCCB3730C8E2}
 \abx@aux@defaultrefcontext{0}{newman2021building}{none/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{oracle2023java21}{none/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{springbootdocs}{none/global//global/global/global}
@@ -448,6 +530,12 @@
 \abx@aux@defaultrefcontext{0}{reactrouterdocs}{none/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{tanstackquerydocs}{none/global//global/global/global}
 \abx@aux@defaultrefcontext{0}{i18nextdocs}{none/global//global/global/global}
+\abx@aux@defaultrefcontext{0}{cloudflaredocs}{none/global//global/global/global}
+\abx@aux@defaultrefcontext{0}{verceldocs}{none/global//global/global/global}
+\abx@aux@defaultrefcontext{0}{githubactionsdocs}{none/global//global/global/global}
+\abx@aux@defaultrefcontext{0}{neondocs}{none/global//global/global/global}
+\abx@aux@defaultrefcontext{0}{aivendocs}{none/global//global/global/global}
+\abx@aux@defaultrefcontext{0}{k6docs}{none/global//global/global/global}
 \abx@aux@defaultlabelprefix{0}{newman2021building}{}
 \abx@aux@defaultlabelprefix{0}{oracle2023java21}{}
 \abx@aux@defaultlabelprefix{0}{springbootdocs}{}
@@ -480,4 +568,10 @@
 \abx@aux@defaultlabelprefix{0}{reactrouterdocs}{}
 \abx@aux@defaultlabelprefix{0}{tanstackquerydocs}{}
 \abx@aux@defaultlabelprefix{0}{i18nextdocs}{}
-\gdef \@abspage@last{69}
+\abx@aux@defaultlabelprefix{0}{cloudflaredocs}{}
+\abx@aux@defaultlabelprefix{0}{verceldocs}{}
+\abx@aux@defaultlabelprefix{0}{githubactionsdocs}{}
+\abx@aux@defaultlabelprefix{0}{neondocs}{}
+\abx@aux@defaultlabelprefix{0}{aivendocs}{}
+\abx@aux@defaultlabelprefix{0}{k6docs}{}
+\gdef \@abspage@last{84}

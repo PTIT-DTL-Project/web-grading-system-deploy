@@ -22,6 +22,7 @@
 11. [Deployment Config](#11-deployment-config)
 12. [Docker Compose Template](#12-docker-compose-template)
 13. [Bảng Tổng Hợp](#13-bảng-tổng-hợp)
+14. [Frontend Configuration UI](#14-frontend-configuration-ui)
 
 ---
 
@@ -86,6 +87,7 @@ Step là một HTTP request đơn lẻ trong plan. Xem [grading-full-flow.md §4
 | `expected_status` | int | ❌ | — | HTTP status mong đợi (khuyến khích dùng) |
 | `extract` | List\<Extract\> | ❌ | `[]` | Trích xuất biến từ response |
 | `assertions` | List\<Assertion\> | ❌ | `[]` | Điều kiện kiểm tra response |
+| `data` | List\<Object\> | ❌ | `[]` | Danh sách dữ liệu lặp (data-driven), mỗi bản ghi chạy 1 lần step |
 | `required` | boolean | ❌ | `false` | FAIL step → plan dừng? |
 | `timeoutMs` | long | ❌ | Từ config toàn cục | Timeout HTTP request (ms) |
 
@@ -131,7 +133,35 @@ Step là một HTTP request đơn lẻ trong plan. Xem [grading-full-flow.md §4
 }
 ```
 
-### 3.5 DB Steps (`DB_QUERY` / `DB_SCHEMA_CHECK` / `DB_MIGRATION`) — block `connection`
+### 3.5 Vòng Lặp Dữ Liệu (Data-Driven Loop)
+
+Step có thể chạy nhiều lần với dữ liệu khác nhau qua khối `data[]`. Mỗi bản ghi trong `data[]` sẽ sinh ra 1 lần thực thi step, với các trường trong bản ghi được substitute vào `${...}` trong path/body/query_params/headers. Biến `${index}` (chỉ số bắt đầu từ 0) cũng có sẵn.
+
+Ví dụ: tạo 4 sách khác nhau trong 1 step, extract ra `bookId_0`, `bookId_1`, ... để bước sau dùng:
+
+```json
+{
+  "method": "POST",
+  "path": "/api/v1/books",
+  "data": [
+    {"title": "Sách A", "year": 1941},
+    {"title": "Sách B", "year": 1950},
+    {"title": "Sách C", "year": 1960},
+    {"title": "Dế Mèn Phiêu Lưu Ký", "year": 1941}
+  ],
+  "body": {"title": "${title}", "author": "Tô Hoài", "year": ${year}},
+  "expected_status": 201,
+  "extract": [
+    { "name": "bookId_${index}", "from": "response_body", "expression": "$.id" }
+  ]
+}
+```
+
+**Giới hạn an toàn (Loop Safety Governor):**
+- Validator từ chối `data[]` inline vượt quá 10 phần tử (400 lúc lưu step).
+- Runtime cắt bớt (truncate) nếu mảng biến danh sách truyền vào vượt quá 20 phần tử, tránh crash executor khi sinh viên trả mảng lớn.
+
+### 3.6 DB Steps (`DB_QUERY` / `DB_SCHEMA_CHECK` / `DB_MIGRATION`) — block `connection`
 
 Ba step type DB dùng chung block `connection` để kết nối vào DB trong docker-compose của sinh viên.
 Chi tiết: [design-db-v1.0.md §2.3](design-db-v1.0.md).
@@ -165,6 +195,78 @@ Lưu ý multi-DBMS:
 - DB executors are **built and registered** in `StepRegistry`: `DB_QUERY`, `DB_SCHEMA_CHECK`, `DB_MIGRATION` now resolve to real executors (previously `UNKNOWN_STEP_TYPE` → `FAILED`). Connection failures wrap with `Constant.Message.Db` dialect hint; lecturer SQL errors wrap with `Constant.Message.Db.SQL_EXECUTION_ERROR`. Each executor runs inside the existing `runSteps` wrapper (after compose boot); a separate grading-time gate (`ENSURE_IMAGES`, UC-13 Step 2) ensures declared images before boot.
   - **`DB_MIGRATION` atomicity is engine-dependent:** PostgreSQL honours the "commit-all-or-rollback-all" guarantee for both DDL and DML. MySQL and MariaDB force an implicit commit on DDL statements (`CREATE/ALTER/DROP TABLE`, `CREATE/DROP INDEX`, `TRUNCATE` — MySQL §15.3.3, MariaDB "SQL statements Causing an Implicit Commit"), so a DDL migration followed by a failing statement is best-effort: the DDL is already durably applied, `rollback()` has nothing to undo, and the step reports `ERROR` without indicating the schema is partially migrated. A lecturer on MySQL/MariaDB should keep DDL and DML in separate steps or expect this behaviour.
 
+### 3.7 Ví Dụ Toàn Bộ Cấu Hình Phức Tức Nhất
+
+Kịch bản: **giảng viên muốn kiểm thử API quản lý sách có filter/search, yêu cầu đăng nhập trước, và phải tạo dữ liệu trước khi filter.** Config dưới đây kết hợp hầu hết tính năng Phase 1: login lấy token, tạo 4 sách khác nhau qua `data[]`, extract toàn bộ danh sách (`as: "json"`), extract với `fallback`, filter search, kiểm tra độ dài mảng, kiểm tra giá trị lớn hơn, kiểm tra định dạng regex, và `any_of` cho định dạng ngày linh hoạt.
+
+```json
+{
+  "method": "POST",
+  "path": "/api/v1/auth/login",
+  "body": {"username": "lecturer", "password": "secret"},
+  "expected_status": 200,
+  "extract": [
+    { "name": "accessToken", "from": "response_body", "expression": "$.accessToken" }
+  ]
+}
+```
+
+```json
+{
+  "method": "POST",
+  "path": "/api/v1/books",
+  "headers": {"Authorization": "Bearer ${accessToken}"},
+  "data": [
+    {"title": "Sách A", "year": 1941, "price": 100},
+    {"title": "Sách B", "year": 1950, "price": 150},
+    {"title": "Sách C", "year": 1960, "price": 200},
+    {"title": "Dế Mèn Phiêu Lưu Ký", "year": 1941, "price": 120}
+  ],
+  "body": {"title": "${title}", "author": "Tô Hoài", "year": ${year}, "price": ${price}},
+  "expected_status": 201,
+  "extract": [
+    { "name": "bookId_${index}", "from": "response_body", "expression": "$.id" },
+    { "name": "wholeList", "from": "response_body", "expression": "$", "as": "json", "fallback": "[]" }
+  ]
+}
+```
+
+```json
+{
+  "method": "GET",
+  "path": "/api/v1/books",
+  "headers": {"Authorization": "Bearer ${accessToken}"},
+  "query_params": {"title": "Dế Mèn"},
+  "expected_status": 200,
+  "assertions": [
+    { "kind": "status", "equals": 200 },
+    { "kind": "array_length", "path": "$", "equals": 1 },
+    { "kind": "contains_item", "path": "$[*].title", "equals": "Dế Mèn Phiêu Lưu Ký" },
+    { "kind": "greater_than", "path": "$[0].price", "value": 100 },
+    { "kind": "matches_regex", "path": "$[0].isbn", "pattern": "^ISBN-\\d{4}$" },
+    { "kind": "any_of", "assertions": [
+      { "kind": "matches_regex", "path": "$[0].published_date", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+      { "kind": "matches_regex", "path": "$[0].published_date", "pattern": "^\\d{2}/\\d{2}/\\d{4}$" }
+    ]}
+  ]
+}
+```
+
+**Giải thích luồng chạy:**
+
+| Bước | Hành động | Kết quả lưu biến |
+|------|-----------|------------------|
+| 1 | POST `/api/v1/auth/login` | `accessToken` = token JWT từ response |
+| 2 | POST `/api/v1/books` ×4 (qua `data[]`) | `bookId_0`…`bookId_3`, `wholeList` = chuỗi JSON toàn bộ danh sách |
+| 3 | GET `/api/v1/books?title=D%E1%BB%89%20M%C3%A8n` + header `Authorization: Bearer ${accessToken}` | Kiểm tra filter trả về đúng 1 cuốn, giá trị lớn hơn 100, ISBN khớp regex, ngày xuất bản khớp 1 trong 2 định dạng |
+
+**Lưu ý:**
+- `accessToken` từ bước 1 được dùng lại ở bước 2 và 3 qua `${accessToken}` trong header.
+- `bookId_${index}` tạo ra 4 biến riêng biệt (mỗi lần lặp một giá trị), bước sau có thể dùng `${bookId_0}`…`${bookId_3}`.
+- `wholeList` lưu toàn bộ mảng JSON (do `as: "json"`), có thể dùng `${wholeList}` trong bước sau để xem danh sách đầy đủ.
+- Nếu bước 3 trả về mảng rỗng, `array_length` = 0 → FAILED (không crash job).
+- `any_of` chỉ cần 1 trong 2 định dạng ngày khớp → PASSED, giúp sinh viên linh hoạt về định dạng ngày.
+
 ---
 
 ## 4. Assertion Config
@@ -179,6 +281,13 @@ Lưu ý multi-DBMS:
 | `body_equals` | `{ "kind": "body_equals", "json": { "id": "abc" } }` | Toàn bộ body bằng nhau | Gson deep equals |
 | `body_structure` | `{ "kind": "body_structure", "json": { "id": "" } }` | Cấu trúc JSON (không giá trị) | Same key set, same types |
 | `field_equals` | `{ "kind": "field_equals", "path": "$.id", "equals": "${bookId}" }` | 1 field = giá trị kỳ vọng | JsonPath read + equals |
+| `array_length` | `{ "kind": "array_length", "path": "$", "equals": 4 }` | Độ dài mảng tại JsonPath | Số phần tử mảng == expected |
+| `contains_item` | `{ "kind": "contains_item", "path": "$[*].title", "equals": "X" }` | Mảng chứa phần tử có giá trị | Phần tử nào đó bằng expected |
+| `json_path_equals` | `{ "kind": "json_path_equals", "path": "$.id", "equals": "${bookId}" }` | Giá trị trường = biến/giá trị | Hỗ trợ số, boolean, chuỗi |
+| `greater_than` | `{ "kind": "greater_than", "path": "$.price", "value": 100 }` | Giá trị số lớn hơn expected | Số > expected |
+| `less_than` | `{ "kind": "less_than", "path": "$.price", "value": 100 }` | Giá trị số nhỏ hơn expected | Số < expected |
+| `matches_regex` | `{ "kind": "matches_regex", "path": "$.code", "pattern": "^ABC-\\d+$" }` | Giá trị khớp regex | Regex matches |
+| `any_of` | `{ "kind": "any_of", "assertions": [ {...}, {...} ] }` | Ít nhất 1 điều kiện con đúng | Toán tử OR |
 
 > Kind là chữ thường và phân biệt hoa/thường — validator (`StepConfigValidator`) và executor (`AssertionEngine`) đều dùng chữ thường. Viết hoa sẽ rớt validation lúc lưu step.
 
@@ -279,6 +388,8 @@ Lưu ý multi-DBMS:
 | `name` | String | ✅ | Tên biến (dùng trong `${tên}`) | `"bookId"` |
 | `from` | String | ✅ | Nguồn dữ liệu | `"response_body"` |
 | `expression` | String | ✅ | JsonPath | `"$.id"` |
+| `as` | String | ❌ | `"scalar"` | Kiểu lưu: `"scalar"` (chuỗi đơn) hoặc `"json"` (toàn bộ object/mảng) |
+| `fallback` | String | ❌ | `""` | Giá trị mặc định nếu JsonPath không tìm thấy / lỗi, tránh crash job |
 
 ### 5.2 Các Giá Trị Của `from`
 
@@ -476,7 +587,7 @@ Cấu hình trong `application.yaml` của executor-service. Đọc qua `@Config
 
 ### 9.1 VariableContext
 
-`VariableContext` là object **per-job** (mỗi grading job có 1 instance). Lưu trữ các biến được trích xuất từ response body.
+`VariableContext` là object **per-job** (mỗi grading job có 1 instance). Lưu trữ các biến được trích xuất từ response body. Các giá trị được lưu dưới dạng **Object** (không chỉ chuỗi), nên một biến chứa mảng/đối tượng JSON (từ `extract as: "json"`) có thể được truy cập sâu ở bước sau.
 
 ### 9.2 Quy Trình Thay Biến
 
@@ -491,7 +602,34 @@ Cấu hình trong `application.yaml` của executor-service. Đọc qua `@Config
 
 Tự động thêm extract entries vào bước trước khi bước sau cần biến đó.
 
-### 9.4 Quy Tắc Tên Biến
+### 9.4 Biến Động Nội Bổ Sung (Built-in Dynamic Variables)
+
+Một số biến được hệ thống sinh tự động, giảng viên không cần định nghĩa trước. Tên biến bắt đầu bằng ký hiệu `$`:
+
+| Biến | Ý nghĩa | Ví dụ |
+|------|---------|-------|
+| `${$UUID}` | Chuỗi UUID ngẫu nhiên, sinh mới mỗi lần tham chiếu | `550e8400-e29b-41d4-a716-446655440000` |
+| `${$TIMESTAMP}` | Thời gian Unix (milliseconds) | `1787654321000` |
+| `${$FAKER_NAME}` | Họ tên giả ngẫu nhiên | `Nguyen Van A` |
+| `${$FAKER_BOOK_TITLE}` | Tên sách giả kèm số ngẫu nhiên | `Lap trinh Java @1234` |
+| `${$FAKER_WORD}` | Từ giả ngẫu nhiên | `alpha` |
+| `${$FAKER_EMAIL}` | Email giả ngẫu nhiên | `alpha1234@gmail.com` |
+
+**Lưu ý:** Biến động sinh mới **mỗi lần** được tham chiếu. Nếu dùng `${$UUID}` ở 2 bước khác nhau, mỗi bước nhận một UUID khác nhau — dùng khi cần tránh trùng dữ liệu (unique constraint) giữa các lượt chấm.
+
+### 9.5 Truy Cập Sâu (Deep Access)
+
+Biến đã lưu dưới dạng JSON có thể truy cập sâu bằng JsonPath trong `${...}`:
+
+| Biến | Ý nghĩa | Ví dụ |
+|------|---------|-------|
+| `${books[0].id}` | Phần tử đầu tiên của mảng `audio`, trường `id` | `b1` |
+| `${books[*].id}` | Tất cả trường `id` của mảng | `["b1","b2"]` |
+| `${books[-1].id}` | Phần tử cuối cùng của mảng | `b2` |
+
+Nếu biến cơ sở không tồn tại hoặc path không khớp → chuỗi rỗng `""` (không crash job).
+
+### 9.6 Quy Tắc Tên Biến
 
 | Quy tắc | Mô tả |
 |----------|--------|
@@ -500,6 +638,7 @@ Tự động thêm extract entries vào bước trước khi bước sau cần b
 | Phạm vi | Per-job (không chia sẻ giữa các job) |
 | Overwrite | Biến cùng tên sẽ bị ghi đè |
 | Lifecycle | Được tạo khi extract, xóa khi job kết thúc |
+| Token `$` | Bắt đầu bằng `$` là biến động nội built-in, **không được đặt tên biến lecturer trùng** |
 
 ---
 
@@ -643,6 +782,13 @@ services:
 | `body_equals` | `{ "kind": "body_equals", "json": { ... } }` | Body bằng nhau |
 | `body_structure` | `{ "kind": "body_structure", "json": { ... } }` | Cấu trúc khớp |
 | `field_equals` | `{ "kind": "field_equals", "path": "$.id", "equals": "${bookId}" }` | 1 field = giá trị |
+| `array_length` | `{ "kind": "array_length", "path": "$", "equals": 4 }` | Độ dài mảng |
+| `contains_item` | `{ "kind": "contains_item", "path": "$[*].title", "equals": "X" }` | Mảng chứa mục |
+| `json_path_equals` | `{ "kind": "json_path_equals", "path": "$.id", "equals": "${bookId}" }` | Giá trị trường bằng biến |
+| `greater_than` | `{ "kind": "greater_than", "path": "$.price", "value": 100 }` | Giá trị > expected |
+| `less_than` | `{ "kind": "less_than", "path": "$.price", "value": 100 }` | Giá trị < expected |
+| `matches_regex` | `{ "kind": "matches_regex", "path": "$.code", "pattern": "^ABC-\\d+$" }` | Khớp regex |
+| `any_of` | `{ "kind": "any_of", "assertions": [ {...} ] }` | Ít nhất 1 điều kiện con đúng |
 
 ### 13.2 Tất Cả Các HTTP Methods
 
@@ -672,6 +818,7 @@ services:
 | `expected_status` | ❌ | int | Status mong đợi |
 | `extract` | ❌ | List | Trích biến |
 | `assertions` | ❌ | List | Điều kiện kiểm tra |
+| `data` | ❌ | List | Danh sách dữ liệu lặp (data-driven) |
 | `required` | ❌ | boolean | Bắt buộc? |
 | `timeoutMs` | ❌ | long | Timeout |
 
@@ -682,6 +829,8 @@ services:
 | `name` | ✅ | Tên biến |
 | `from` | ✅ | Nguồn (response_body) |
 | `expression` | ✅ | JsonPath |
+| `as` | ❌ | Kiểu lưu: `scalar` (chuỗi đơn) hoặc `json` (toàn bộ object/mảng) |
+| `fallback` | ❌ | Giá trị mặc định nếu JsonPath không tìm thấy / lỗi |
 
 ### 13.6 Tất Cả Các Trường GraderConfig
 
@@ -701,3 +850,80 @@ services:
 | Số decimal | 2 | HALF_UP |
 | Điểm max | 10.00 | Điểm tối đa |
 | SKIPPED | Không tính | Không计入 passed/ran weight |
+
+---
+
+## 14. Frontend Configuration UI (Test Step Editor)
+
+### 14.1 Tổng Quan
+
+Giao diện Frontend (React + Ant Design) tại `frontend-src/web-grading-system-fe/src/features/assignments/` cung cấp form trực quan để giảng viên cấu hình test step mà không cần viết JSON thủ công.
+
+### 14.2 Các Thành Phần Chính
+
+| File | Mô tả |
+|------|-------|
+| `StepEditor.tsx` | Form soạn step cũ (guided + advanced JSON), giữ lại cho tương thích ngược |
+| `StepBuilderForm.tsx` | Form cha chọn step type, render form con tương ứng |
+| `HttpStepForm.tsx` | Form HTTP_REQUEST đầy đủ (method, path, headers, query, body, assertions, extracts, data[], auto_inject_headers) |
+| `DbStepForm.tsx` | Form DB step (connection, query/checks/statements, expected result) |
+| `stepBuilder.ts` | Helpers build/reverse config JSON giữa form và backend |
+| `useStepBuilder.ts` | Hook quản lý state form, validation, submit |
+
+### 14.3 Các Trường Hỗ Trợ Trong Form HTTP
+
+| Trường | Mô tả |
+|------|-------|
+| Method | GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS |
+| Path | Bắt buộc, bắt đầu bằng `/` |
+| Expected Status | 100–599 |
+| Headers | Danh sách key/value, có thể enable/disable |
+| Query Params | Danh sách key/value, có thể enable/disable |
+| Body | None hoặc Raw JSON |
+| Assertions | Danh sách assertion (xem mục 4.1) |
+| Extracts | Danh sách biến extract với `as` (scalar/json) và `fallback` |
+| Data Rows | Mảng dữ liệu lặp (tối đa 10 dòng), mỗi dòng sinh 1 request |
+| Auto Inject Headers | Tự động tiêm header auth vào bước sau |
+| Weight / Timeout / Required | Cấu hình bước chấm |
+
+### 14.4 Ví Dụ Config JSON Tự Động Sinh Từ Form
+
+Khi giảng viên điền form và nhấn Lưu, hệ thống tự động sinh JSON config tương ứng:
+
+```json
+{
+  "method": "POST",
+  "path": "/api/v1/books",
+  "headers": {"Authorization": "Bearer ${accessToken}"},
+  "data": [
+    {"title": "Sách A", "year": 1941},
+    {"title": "Sách B", "year": 1950}
+  ],
+  "body": {"title": "${title}", "author": "Tô Hoài", "year": ${year}},
+  "expected_status": 201,
+  "extract": [
+    {"name": "bookId", "from": "response_body", "expression": "$.id", "as": "scalar", "fallback": ""}
+  ],
+  "assertions": [
+    {"kind": "status", "equals": 201},
+    {"kind": "array_length", "path": "$", "equals": 2}
+  ]
+}
+```
+
+### 14.5 Lệnh Kiểm Tra FE
+
+```bash
+cd frontend-src/web-grading-system-fe
+npm run lint          # Kiểm tra lỗi code style
+npm run i18n:check    # Kiểm tra vi.json / en.json đồng bộ
+npx tsc -b            # Kiểm tra TypeScript
+npm run build         # Build production
+```
+
+### 14.6 Lưu Ý Khi Sử Dụng
+
+- **Guided mode** khuyến khích dùng cho lecturer không quen JSON.
+- **Advanced mode** cho phép edit JSON thô trực tiếp.
+- Biến động `${$UUID}`, `${$TIMESTAMP}`, `${$FAKER_*}` có sẵn để chọn trong panel biến.
+- `data[]` giới hạn tối đa 10 dòng để tránh quá tải executor.

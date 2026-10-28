@@ -32,6 +32,9 @@
 \contentsline {figure}{\numberline {2.28}{\ignorespaces Sơ đồ tuần tự chức năng Nộp bài tập.}}{47}{figure.caption.51}%
 \contentsline {figure}{\numberline {2.29}{\ignorespaces Sơ đồ tuần tự chức năng Xem kết quả chấm bài tập của bản thân.}}{48}{figure.caption.52}%
 \contentsline {figure}{\numberline {2.30}{\ignorespaces Sơ đồ tuần tự chức năng Xem điểm và kết quả cá nhân.}}{49}{figure.caption.53}%
+\contentsline {figure}{\numberline {2.31}{\ignorespaces Kiến trúc tổng thể của hệ thống.}}{49}{figure.caption.54}%
 \addvspace {10\p@ }
+\contentsline {figure}{\numberline {3.1}{\ignorespaces Kiến trúc triển khai của hệ thống trên cụm k3s.}}{51}{figure.caption.55}%
+\contentsline {figure}{\numberline {3.2}{\ignorespaces Quy trình CI/CD từ mã nguồn đến cụm triển khai.}}{54}{figure.caption.57}%
 \contentsfinish 
 \contentsfinish 

@@ -439,6 +439,37 @@ routes that 404 for lecturers). The parent supplies already-resolved values (fro
 `useTestPlans` / `getAssignment` via the lecturer endpoint) via props; the card only falls
 back to student endpoints when props are absent (standalone student usage).
 
+### 11.5d Detail routes: gate on the route param, never on the fetched entity
+
+A page that serves both a list and a detail route (`practice` + `practice/:assignmentId`
+rendered by the same component) must branch on `useParams()`, not on
+`assignmentId && entity`:
+
+```tsx
+const { assignmentId } = useParams()
+if (assignmentId) return <DetailScreen id={assignmentId} />   // loading | error | 404 | data
+return <ListScreen />
+```
+
+Reason: with `assignmentId && entity` the first render after navigation has `entity === null`,
+so the list branch mounts, fires its list request (e.g.
+`GET /api/v1/assignments?purpose=PRACTICE&page=0&size=20`) on a detail URL, and if the
+detail fetch then fails, the user silently stays on the list. A click on "Details" looks
+like a no-op. Guards a detail route must render inside the `assignmentId` branch:
+
+- loading → `<Spin>`/`Skeleton`
+- fetch failure → `<Result status="error" title={t('assignments.detailLoadFailed')}>` + Retry
+  (`common.retry`) and Back (`assignments.back`)
+- loaded-but-null → `<Result status="404" title={t('assignments.notFound')}>`
+- shared modals (e.g. `EditAssignmentModal`) must be rendered in **both** branches: an
+  early `return` for the detail branch otherwise drops the modal that `setEditing` opens.
+
+Reuse the existing editor instead of stubbing the body: `<TestPlanEditor assignmentId={id} />`
+already renders plans + steps and works for class-independent practice assignments.
+
+Never invent an i18n key: `assignments.loadFailed` does not exist (use
+`assignments.detailLoadFailed`); a missing key renders the raw key string in the toast.
+
 ### 11.5a Dynamic select options (dropdown whose choices come from a fetch)
 
 A `type: 'select'` filter whose options are data-driven (e.g. a student-code dropdown on
@@ -1050,3 +1081,24 @@ runtime checklist `docs/guide/PASSWORD-GATEWAY-RUNBOOK.md` §10.
   instead of the generic `auth.initFailed`. Both keys are documented in
   `.env.example` — a production build cannot start without
   `VITE_KEYCLOAK_AUTHORITY`.
+
+## 24. Server-fixed field: remove it from the UI *and* the payload
+
+When a product decision makes a field constant server-side (e.g. every assignment
+is `STUDENT_DOCKER_COMPOSE`), the FE must stop expressing it at all:
+
+- Remove every display: table columns, detail paragraphs, `Form.Item` selects,
+  conditional fields that only existed for the other value, and the `useWatch`
+  that powered them. Sweep with `grep -rn "<field>" src --include=*.tsx`.
+- Remove it from the create/update payload too, not just the UI. Sending a
+  hardcoded constant keeps the FE coupled to a decision the server owns.
+- Remove it from handler param types (`handleCreate`, `handleSaveEdit`) so the
+  types describe the real payload. Drop imports that become unused.
+- **Keep the response type field** in `shared/types`: the API still returns it.
+  Optional request fields can stay as documentation.
+- Backend `update()` must already be null-tolerant (keep stored value when the
+  field is absent); verify before deleting the payload line, otherwise editing
+  silently clears it.
+- i18n keys can stay even when unused; deleting them is a separate, optional
+  cleanup — do not bundle it into the behaviour change without asking.
+
