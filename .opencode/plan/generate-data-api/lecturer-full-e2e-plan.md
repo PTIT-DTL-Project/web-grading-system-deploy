@@ -2462,3 +2462,245 @@ Kiểm tra cấu trúc đã lưu:
 *Phase 18 added to lecturer-full-e2e-plan.md. Date added: 2026-10-28. Backend Phase 3 (data[] loop, auto_inject_headers, ANY_OF) đã triển khai và verify qua unit test executor-service + course-service.*
 
 *This document was written based on actual code in repo `web-grading-system-deploy`: `docs/design/grading-config-reference.md`, `docs/design/http-test-plan-config.md`, `docs/design/exercise-management-plan.md`, `docs/design/usecase-flows.md`, `src-services/course-service/.../controller/*.java`, `src-services/course-service/.../dto/request/*.java`. Date written: 2026-10-27.*
+
+---
+
+## 18.7 Assignment mẫu A — Dùng `data[]` tạo nhiều dữ liệu khác nhau trong 1 step
+
+Mục tiêu: Thay vì viết 4 step riêng cho 4 sách, dùng 1 step có `data[]` 4 phần tử. Mỗi phần tử sinh 1 request HTTP, extract ra `bookId_0`…`bookId_3`.
+
+**API:** `POST /api/v1/assignments`
+
+**Headers:** `X-User-Id`, `X-Gateway-Secret`
+
+**Body:**
+```json
+{
+  "title": "Tạo nhiều sách cùng lúc (data[])",
+  "description": "1 step chạy 4 lần qua data[], mỗi lần title/year khác nhau, extract bookId_index",
+  "classId": "{classId}",
+  "purpose": "GRADED",
+  "topic": "Vòng lặp dữ liệu",
+  "gradingStrategy": "STUDENT_DOCKER_COMPOSE",
+  "dockerComposePort": 8080,
+  "startupTimeoutMs": 60000,
+  "executionTimeoutMs": 300000,
+  "maxMemoryMb": 256,
+  "maxCpu": 0.5
+}
+```
+**Expected:** `201 Created`, `data.id` = `{assignmentId_dataLoop}`.
+
+**Plan:**
+```json
+{ "name": "Data loop — tạo 4 sách", "description": "data[] 4 phần tử, extract bookId_${index}", "sequenceOrder": 1, "weight": 10 }
+```
+**Expected:** `201 Created`, `data.id` = `{planId_dataLoop}`.
+
+**Step 1 — Tạo 4 sách qua data[] (không cần 4 step riêng):**
+```json
+{
+  "stepOrder": 1,
+  "name": "Tạo 4 sách khác nhau",
+  "stepType": "HTTP_REQUEST",
+  "config": {
+    "method": "POST",
+    "path": "/api/v1/books",
+    "headers": { "Content-Type": "application/json" },
+    "body": { "title": "${title}", "author": "Tô Hoài", "year": "${year}" },
+    "expected_status": 201,
+    "data": [
+      { "title": "Sách A", "year": "1941" },
+      { "title": "Sách B", "year": "1950" },
+      { "title": "Sách C", "year": "1960" },
+      { "title": "Dế Mèn Phiêu Lưu Ký", "year": "1941" }
+    ],
+    "extract": [
+      { "name": "bookId_${index}", "from": "response_body", "expression": "$.id" }
+    ],
+    "required": true,
+    "timeoutMs": 10000
+  },
+  "weight": 1
+}
+```
+
+**Lưu ý:** `${title}`, `${year}` được substitute từ từng bản ghi `data[]`; `${index}` là 0,1,2,3. Extract `bookId_0`…`bookId_3` lưu vào `VariableContext`, bước sau có thể dùng `${bookId_1}` v.v.
+
+**Negative (lưu step → 400):** `data[]` 11 phần tử → `400 "at most 10 entries"`; `data[]` rỗng → `400 "non-empty array"`; entry không phải object → `400 "data entries must be objects"`.
+
+---
+
+## 18.8 Assignment mẫu B — Dùng `auto_inject_headers` cấp Plan (login 1 lần, tiêm cho mọi bước sau)
+
+Mục tiêu: Bước login extract `accessToken`, khai báo `auto_inject_headers`; các bước sau KHÔNG cần gán `Authorization: Bearer ${token}` thủ công.
+
+**API:** `POST /api/v1/assignments`
+
+**Body:**
+```json
+{
+  "title": "Tự động tiêm header auth (auto_inject_headers)",
+  "description": "Login lấy token, auto_inject_headers tiêm Authorization vào bước 2,3; không gán thủ công mỗi bước",
+  "classId": "{classId}",
+  "purpose": "GRADED",
+  "topic": "Tự động tiêm header",
+  "gradingStrategy": "STUDENT_DOCKER_COMPOSE",
+  "dockerComposePort": 8080,
+  "startupTimeoutMs": 60000,
+  "executionTimeoutMs": 300000,
+  "maxMemoryMb": 256,
+  "maxCpu": 0.5
+}
+```
+**Expected:** `201 Created`, `data.id` = `{assignmentId_autoInject}`.
+
+**Plan:**
+```json
+{ "name": "Auto inject header", "description": "Login → tiêm Authorization cho bước sau", "sequenceOrder": 1, "weight": 10 }
+```
+**Expected:** `201 Created`, `data.id` = `{planId_autoInject}`.
+
+**Step 1 — Đăng nhập (khai báo auto_inject_headers, extract accessToken):**
+```json
+{
+  "stepOrder": 1,
+  "name": "Đăng nhập lấy token",
+  "stepType": "HTTP_REQUEST",
+  "config": {
+    "method": "POST",
+    "path": "/api/v1/auth/login",
+    "body": { "username": "lecturer", "password": "secret" },
+    "expected_status": 200,
+    "auto_inject_headers": {
+      "Authorization": "Bearer ${accessToken}"
+    },
+    "assertions": [
+      { "kind": "status", "equals": 200 },
+      { "kind": "json_path", "path": "$.accessToken", "exists": true }
+    ],
+    "extract": [
+      { "name": "accessToken", "from": "response_body", "expression": "$.accessToken" }
+    ],
+    "required": true,
+    "timeoutMs": 5000
+  },
+  "weight": 1
+}
+```
+
+**Step 2 — GET sách (KHÔNG có header Authorization trong config, phụ thuộc auto_inject_headers từ bước 1):**
+```json
+{
+  "stepOrder": 2,
+  "name": "Lấy danh sách sách (dùng token từ bước 1)",
+  "stepType": "HTTP_REQUEST",
+  "config": {
+    "method": "GET",
+    "path": "/api/v1/books",
+    "query_params": { "title": "Dế Mèn" },
+    "expected_status": 200,
+    "assertions": [
+      { "kind": "status", "equals": 200 },
+      { "kind": "json_path", "path": "$", "exists": true }
+    ]
+  },
+  "weight": 1
+}
+```
+
+**Lưu ý triển khai:**
+- Bước 1 có `auto_inject_headers` → executor tiêm `Authorization: Bearer ${accessToken}` vào bước 2 (và mọi bước sau trong cùng plan).
+- Bước 2 config **không** chứa khóa `headers.Authorization` — chứng minh header được tiêm runtime bởi orchestrator, không lưu cứng config.
+- Nếu bước 2 tự gán `Authorization` trong `headers`, giá trị đó sẽ giữ nguyên (không bị `auto_inject_headers` ghi đè).
+
+---
+
+## 18.9 Assignment mẫu C — Dùng `ANY_OF` assertion (toán tử OR)
+
+Mục tiêu: Chỉ cần 1 điều kiện con đúng là step PASS. Ví dụ: định dạng ngày `YYYY-MM-DD` HOẶC `DD/MM/YYYY` đều chấp nhận.
+
+**API:** `POST /api/v1/assignments`
+
+**Body:**
+```json
+{
+  "title": "Kiểm tra định dạng linh hoạt (ANY_OF)",
+  "description": "ANY_OF: ít nhất 1 trong 2 định dạng ngày khớp → PASSED",
+  "classId": "{classId}",
+  "purpose": "GRADED",
+  "topic": "Assertion linh hoạt",
+  "gradingStrategy": "STUDENT_DOCKER_COMPOSE",
+  "dockerComposePort": 8080,
+  "startupTimeoutMs": 60000,
+  "executionTimeoutMs": 300000,
+  "maxMemoryMb": 256,
+  "maxCpu": 0.5
+}
+```
+**Expected:** `201 Created`, `data.id` = `{assignmentId_anyOf}`.
+
+**Plan:**
+```json
+{ "name": "ANY_OF assertion", "description": "OR operator — 1 điều kiện con đúng là pass", "sequenceOrder": 1, "weight": 10 }
+```
+**Expected:** `201 Created`, `data.id` = `{planId_anyOf}`.
+
+**Step 1 — Kiểm tra định dạng ngày (ANY_OF 2 pattern):**
+```json
+{
+  "stepOrder": 1,
+  "name": "Kiểm tra ngày xuất bản (YYYY-MM-DD hoặc DD/MM/YYYY)",
+  "stepType": "HTTP_REQUEST",
+  "config": {
+    "method": "GET",
+    "path": "/api/v1/books",
+    "query_params": { "title": "Dế Mèn" },
+    "expected_status": 200,
+    "assertions": [
+      { "kind": "status", "equals": 200 },
+      { "kind": "json_path", "path": "$[0].published_date", "exists": true },
+      { "kind": "any_of", "assertions": [
+        { "kind": "matches_regex", "path": "$[0].published_date", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+        { "kind": "matches_regex", "path": "$[0].published_date", "pattern": "^\\d{2}/\\d{2}/\\d{4}$" }
+      ]}
+    ]
+  },
+  "weight": 1
+}
+```
+
+**Kết quả chạy:**
+- Nếu `published_date = "2026-10-28"` → pattern 1 khớp → `ANY_OF` PASSED.
+- Nếu `published_date = "28/10/2026"` → pattern 2 khớp → `ANY_OF` PASSED.
+- Nếu `published_date = "not-a-date"` → cả 2 sai → `ANY_OF` FAILED → step FAILED.
+
+**Negative (lưu step → 400):** `any_of` thiếu `assertions` hoặc `assertions` rỗng → `400 "'assertions' must be a non-empty array"`.
+
+---
+
+## 18.10 Bảng tổng hợp assignment dùng tính năng mới (Phase 18)
+
+| # | Assignment | Tính năng chính | assignmentId | planId | Steps |
+|---|------------|-----------------|--------------|--------|-------|
+| A | Tạo nhiều sách cùng lúc (data[]) | `data[]` 4 phần tử, `${index}`, extract `bookId_${index}` | `{assignmentId_dataLoop}` | `{planId_dataLoop}` | 1 |
+| B | Tự động tiêm header auth | `auto_inject_headers` bước 1, bước 2 không gán Authorization thủ công | `{assignmentId_autoInject}` | `{planId_autoInject}` | 2 |
+| C | Kiểm tra định dạng linh hoạt | `ANY_OF` 2 pattern ngày (OR) | `{assignmentId_anyOf}` | `{planId_anyOf}` | 1 |
+
+**Lưu ý:** Các assignment này có thể chạy độc lập hoặc gộp thành 1 plan nhiều step như trong section 18.2–18.4.
+
+---
+
+## 18.11 Cập nhật Definition of Done (tổng hợp Phase 18)
+
+- [ ] Assignment A (`data[]`): tạo thành công, step chạy 4 lần, extract `bookId_0`…`bookId_3`.
+- [ ] Assignment B (`auto_inject_headers`): login extract `accessToken`, bước sau không gán `Authorization` thủ công, `GET /plans` xác nhận bước 2 không lưu header `Authorization`.
+- [ ] Assignment C (`ANY_OF`): 1 trong 2 pattern ngày khớp → PASSED; cả 2 sai → FAILED.
+- [ ] Negative cases: `data[]` >10 → 400; `data[]` rỗng → 400; entry không phải object → 400; `any_of` assertions rỗng → 400; `auto_inject_headers` sai dạng → 400.
+- [ ] Tất cả assignment đã publish (`POST /publish` → 200).
+
+---
+
+*Phase 18 sections 18.7–18.11 added. Date added: 2026-10-28. Backend Phase 3 (data[] loop, auto_inject_headers, ANY_OF) đã triển khai và verify qua unit test executor-service + course-service.*
+
+*This document was written based on actual code in repo `web-grading-system-deploy`: `docs/design/grading-config-reference.md`, `docs/design/http-test-plan-config.md`, `docs/design/exercise-management-plan.md`, `docs/design/usecase-flows.md`, `src-services/course-service/.../controller/*.java`, `src-services/course-service/.../dto/request/*.java`. Date written: 2026-10-27.*

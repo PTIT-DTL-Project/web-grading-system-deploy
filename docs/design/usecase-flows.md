@@ -1459,3 +1459,131 @@ against is the one the row belongs to.
    triggered by expanding a row: it costs an LLM round-trip.
 3. **On success** `setQueryData` seeds `['ai-explanation', submissionId]` — the same key the
    student card uses, so both audiences share one cache entry for one submission.
+
+---
+
+## UC-20: Lecturer dry-runs a grading config before applying to a class
+
+**Actor:** lecturer (`X-User-Id`, `X-User-Roles: LECTURER`, `X-Gateway-Secret`). **Service:** course-service → executor-service (internal). **Preconditions:** published assignment exists (UC-02), reference code zip uploaded to RustFS.
+
+Dry-run lets a lecturer validate a test-plan config against the student's app without affecting any grades or submission status.
+
+### Step 1 — Get the assignment's plans (optional, to reuse existing config)
+
+```
+GET /api/v1/assignments/{assignmentId}/plans
+X-User-Id: <lecturer-uuid>
+X-Gateway-Secret: <secret>
+```
+
+**Expected:** `200`, plans with steps. Save `plans` for the dry-run request body.
+
+### Step 2 — Run dry-run
+
+```
+POST /api/v1/internal/assignments/{assignmentId}/dry-run
+X-User-Id: <lecturer-uuid>
+X-Gateway-Secret: <secret>
+{
+  "referenceCodeZipUrl": "rustfs://bucket/ref-code-123.zip",
+  "plans": [ ... from step 1, or custom plans ... ]
+}
+```
+
+**Expected:** `200` with `DryRunReport`:
+```json
+{
+  "dryRunId": "...",
+  "steps": [
+    {
+      "stepOrder": 1,
+      "stepName": "Login",
+      "stepType": "HTTP_REQUEST",
+      "status": "PASSED",
+      "durationMs": 340,
+      "extractedVariables": {"accessToken": "tok-123"},
+      "errorMessage": null
+    },
+    {
+      "stepOrder": 2,
+      "stepName": "Create books",
+      "stepType": "HTTP_REQUEST",
+      "status": "PASSED",
+      "durationMs": 450,
+      "extractedVariables": {"bookId_0": "b1", "bookId_1": "b2"},
+      "errorMessage": null
+    }
+  ],
+  "summary": "Passed 2/2 steps (100%), Score: 10.00/10.00"
+}
+```
+
+**Negative:**
+- Assignment not owned → `404`
+- Not `LECTURER` → `403`
+- Missing `X-Gateway-Secret` → `401`
+- Invalid config (e.g. `data[]` > 10 entries) → `400` from executor validation
+- Reference code zip unreachable → `502` (dry-run fails)
+
+### Side effects
+
+- **None on grades:** no row written to `result-service`, no `submission-status` update.
+- **None on data:** compose container is torn down after dry-run; DB is left as-is (no reset between plans inside dry-run — each plan sees the same DB state).
+- Executor logs each step's HTTP request/response for lecturer review.
+
+### What the lecturer learns
+
+- Whether each step would PASS/FAIL/ERROR against the real student app.
+- Which variables each step extracts (e.g. `bookId_0`, `accessToken`) for chaining into later steps.
+- Per-step duration to estimate total grading time.
+- Whether `auto_inject_headers` correctly propagates tokens across steps.
+
+---
+
+## UC-21: Lecturer retrieves JSON Schema for step config
+
+**Actor:** lecturer (`X-User-Id`, `X-User-Roles: LECTURER`, `X-Gateway-Secret`). **Service:** course-service (internal). **Preconditions:** assignment exists (UC-02).
+
+Lecturer fetches the JSON Schema (draft-07) for HTTP_REQUEST step config to validate the step editor in real time before saving to the backend.
+
+### Step 1 — Get JSON Schema
+
+```
+GET /api/v1/internal/assignments/{assignmentId}/config-schema
+X-User-Id: <lecturer-uuid>
+X-Gateway-Secret: <secret>
+```
+
+**Expected:** `200` with JSON Schema document (draft-07):
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "HTTP_REQUEST step config",
+  "type": "object",
+  "required": ["method", "path"],
+  "properties": {
+    "method": { "type": "string", "enum": ["GET","POST","PUT","PATCH","DELETE","HEAD","OPTIONS"] },
+    "path": { "type": "string", "pattern": "^/" },
+    "expected_status": { "type": "integer", "minimum": 100, "maximum": 599 },
+    "assertions": { "type": "array", ... },
+    "extract": { "type": "array", ... },
+    "data": { "type": "array", ... },
+    "auto_inject_headers": { "type": "object", ... }
+  }
+}
+```
+
+**Negative:**
+- Assignment not found → `404`
+- Not `LECTURER` → `403`
+- Missing `X-Gateway-Secret` → `401`
+
+### Side effects
+
+- None — read-only endpoint, no grading state changes.
+
+### What the lecturer learns
+
+- Complete structure of HTTP_REQUEST step config, including all assertion kinds, extract options, data[] loop format, and auto_inject_headers format.
+- Frontend can validate step config client-side before calling the save endpoint, reducing round trips and invalid config submissions.

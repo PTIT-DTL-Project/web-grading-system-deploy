@@ -23,6 +23,8 @@
 12. [Docker Compose Template](#12-docker-compose-template)
 13. [Bảng Tổng Hợp](#13-bảng-tổng-hợp)
 14. [Frontend Configuration UI](#14-frontend-configuration-ui)
+15. [DB Isolation Sandbox](#15-db-isolation-sandbox)
+16. [Dry-Run Mode](#16-dry-run-mode)
 
 ---
 
@@ -556,6 +558,7 @@ Cấu hình trong `application.yaml` của executor-service. Đọc qua `@Config
 | Connect timeout | 10 seconds | Timeout kết nối |
 | HTTP version | HTTP_1_1 | Dùng HTTP/1.1 |
 | Instance | Singleton (bean) | Reused across requests |
+| Execution | `sendAsync()` + Virtual Thread | Phase 4: `HttpClient.sendAsync().join()` chạy trên `Executors.newVirtualThreadPerTaskExecutor()`. Step treo/io chậm chỉ chiếm virtual thread (rẻ), không block platform thread. |
 
 ### 8.2 Per-Step Timeout
 
@@ -569,6 +572,7 @@ Cấu hình trong `application.yaml` của executor-service. Đọc qua `@Config
 1. VariableContext.substitute(path) → thay ${varName}
 2. Build URI: http://localhost:{port}{path} + query string
 3. Build HttpRequest với method, headers, body
+4. Gửi qua virtual thread executor: sendAsync().join()
 ```
 
 ### 8.4 Response Handling
@@ -578,7 +582,7 @@ Cấu hình trong `application.yaml` của executor-service. Đọc qua `@Config
 | 2xx | Parse body, run assertions |
 | 4xx/5xx | Parse body (nếu có), run assertions, status != expected → FAIL |
 | Timeout | `HttpTimeoutException` → ERROR step |
-| Connection refused | ERROR step, log warning |
+| Connection refused | ERROR step, log warning (root cause unwrapped from CompletionException) |
 | Empty body | Handle gracefully, assertions trên body sẽ fail |
 
 ---
@@ -927,3 +931,240 @@ npm run build         # Build production
 - **Advanced mode** cho phép edit JSON thô trực tiếp.
 - Biến động `${$UUID}`, `${$TIMESTAMP}`, `${$FAKER_*}` có sẵn để chọn trong panel biến.
 - `data[]` giới hạn tối đa 10 dòng để tránh quá tải executor.
+
+---
+
+## 15. DB Isolation Sandbox
+
+Mỗi grading job chạy trên một DB container cô isolates (được claim port riêng qua `PortAllocator.claimDbPort()`). Các bước `DB_QUERY` / `DB_SCHEMA_CHECK` / `DB_MIGRATION` kết nối vào DB qua `${db_port}` trong `VariableContext`.
+
+### 15.1 Reset DB giữa các plan
+
+Khi một assignment có nhiều plan, các plan chạy trên cùng một compose container (app + DB). Để tránh dữ liệu từ plan trước làm ảnh hưởng plan sau, executor reset DB sau mỗi plan:
+
+1. Kết nối vào DB hệ thống (`postgres` cho PostgreSQL, `mysql` cho MySQL/MariaDB) qua JDBC.
+2. Ngắt kết nối các session đang kết nối tới DB mục tiêu (PostgreSQL: `pg_terminate_backend`).
+3. `DROP DATABASE IF EXISTS <db>; CREATE DATABASE <db>;` — tạo lại DB trống.
+
+Điều này đảm bảo mỗi plan bắt đầu với DB sạch, không bị rác dữ liệu từ plan trước.
+
+### 15.2 Các hằng số (`Constant.DbSandbox`)
+
+| Hằng số | Giá trị | Mô tả |
+|---------|---------|-------|
+| `PG_SYSTEM_DB` | `"postgres"` | DB hệ thống để kết nối admin (PostgreSQL) |
+| `MYSQL_SYSTEM_DB` | `"mysql"` | DB hệ thống để kết nối admin (MySQL/MariaDB) |
+| `PG_DROP_DB` | `"DROP DATABASE IF EXISTS %s"` | SQL drop database (PostgreSQL) |
+| `PG_CREATE_DB` | `"CREATE DATABASE %s"` | SQL create database (PostgreSQL) |
+| `PG_TERMINATE_CONNECTIONS` | `SELECT pg_terminate_backend(...) WHERE datname = '%s'` | Ngắt kết nối session cũ (PostgreSQL) |
+| `MYSQL_DROP_DB` | `"DROP DATABASE IF EXISTS %s"` | SQL drop database (MySQL/MariaDB) |
+| `MYSQL_CREATE_DB` | `"CREATE DATABASE %s"` | SQL create database (MySQL/MariaDB) |
+| `RESET_TIMEOUT_MS` | `30000` | Timeout cho kết nối reset |
+
+### 15.3 Luồng chạy
+
+```
+Job bắt đầu
+  └─> Claim appPort + dbPort
+  └─> Boot compose: App + DB
+  └─> Chạy Plan 1
+  └─> Reset DB (drop + recreate)
+  └─> Chạy Plan 2 (trên DB sạch)
+  └─> ...
+  └─> Dọn dẹp compose container, giải phóng port
+Job kết thúc
+```
+
+Lưu ý: `DB_MIGRATION` trên MySQL/MariaDB gây implicit commit trên DDL (`CREATE/ALTER/DROP`, `TRUNCATE`). Nếu migration thất bại giữa chừng, DDL đã thực thi không thể rollback. Giảng viên nên tách DDL và DML thành các step riêng.
+
+---
+
+## 16. Dry-Run Mode
+
+### 16.1 Tổng quan
+
+Dry-run cho phép giảng viên chạy thử cấu hình chấm bài trước khi áp dụng cho toàn khóa học. Executor chạy toàn bộ flow (boot compose, chạy các step) nhưng **không** ghi điểm vào result-service và **không** cập nhật trạng thái submission. Kết quả trả về là báo cáo chi tiết từng bước.
+
+### 16.2 Endpoint
+
+```
+POST /api/v1/internal/assignments/{id}/dry-run
+```
+
+**Headers:** `X-User-Id`, `X-Gateway-Secret` (lecturer only)
+
+**Body:**
+```json
+{
+  "referenceCodeZipUrl": "rustfs://bucket/ref-code-123.zip",
+  "plans": [
+    {
+      "id": "...",
+      "name": "Plan 1",
+      "sequenceOrder": 1,
+      "weight": 10,
+      "steps": [
+        {
+          "stepOrder": 1,
+          "name": "Login",
+          "stepType": "HTTP_REQUEST",
+          "config": {
+            "method": "POST",
+            "path": "/api/v1/auth/login",
+            "body": {"username": "lecturer", "password": "secret"},
+            "extract": [{"name": "accessToken", "from": "response_body", "expression": "$.accessToken"}],
+            "auto_inject_headers": {"Authorization": "Bearer ${accessToken}"}
+          },
+          "weight": 1,
+          "required": true
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Trả về:**
+```json
+{
+  "dryRunId": "...",
+  "steps": [
+    {
+      "stepOrder": 1,
+      "stepName": "Login",
+      "stepType": "HTTP_REQUEST",
+      "status": "PASSED",
+      "durationMs": 340,
+      "extractedVariables": {"accessToken": "abc-123"},
+      "errorMessage": null
+    }
+  ],
+  "summary": "Passed 1/1 steps (100%), Score: 10.00/10.00"
+}
+```
+
+### 16.3 Luồng chạy
+
+```
+Lecturer gọi POST /api/v1/internal/assignments/{id}/dry-run
+  └─> Course-service gọi Executor dry-run endpoint
+  └─> Executor download reference code zip từ RustFS
+  └─> Claim appPort + dbPort
+  └─> Boot compose (App + DB)
+  └─> Chạy tất cả các step (không lưu điểm)
+  └─> Dọn d.compose container, giải phóng port
+  └─> Trả báo cáo chi tiết từng bước
+```
+
+### 16.4 Lưu ý
+
+- Không có side effect: không ghi điểm vào result-service, không cập nhật submission-status.
+- Mỗi step trong báo cáo có `status` (PASSED/FAILED/ERROR/SKIPPED), `durationMs`, `extractedVariables`, và `errorMessage` (nếu có).
+- Nếu một step required fail, các step sau được đánh dấu SKIPPED.
+- Thời gian timeout mặc định cho dry-run là 5 phút (300_000 ms).
+
+---
+
+## 17. JSON Schema cho Step Config
+
+### 17.1 Tổng quan
+
+Endpoint `GET /api/v1/internal/assignments/{id}/config-schema` trả về JSON Schema (draft-07) mô tả cấu trúc config của bước `HTTP_REQUEST`. Frontend dùng schema này để validate real-time trước khi lưu step vào course-service, giúp giảng viên phát hiện lỗi cấu hình sớm mà không cần chờ backend phản hồi.
+
+### 17.2 Endpoint
+
+```
+GET /api/v1/internal/assignments/{id}/config-schema
+```
+
+**Headers:** `X-User-Id`, `X-Gateway-Secret` (lecturer only)
+
+**Trả về:** JSON Schema document (draft-07) mô tả toàn bộ cấu trúc config của `HTTP_REQUEST` step, bao gồm:
+
+| Thuộc tính | Mô tả |
+|------------|-------|
+| `method` | HTTP method (GET/POST/PUT/PATCH/DELETE/HEAD/OPTIONS), bắt đầu bằng `/` |
+| `path` | URL path, bắt buộc bắt đầu bằng `/` |
+| `expected_status` | Số nguyên 100–599 |
+| `headers` | Object name → string value |
+| `query_params` | Object name → string value |
+| `body` | JSON body (tùy chọn) |
+| `assertions` | Mảng các assertion (status, json_path, contains, field_equals, array_length, contains_item, json_path_equals, greater_than, less_than, matches_regex, any_of, body_equals, body_structure) |
+| `extract` | Mảng các extract entry (name, from, expression, as, fallback) |
+| `data` | Mảng các dòng dữ liệu cho data[] loop (tối đa 10) |
+| `auto_inject_headers` | Object name → string template, tiêm vào bước sau |
+
+### 17.3 Ví dụ schema (đoạn trích)
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "HTTP_REQUEST step config",
+  "type": "object",
+  "required": ["method", "path"],
+  "properties": {
+    "method": {
+      "type": "string",
+      "enum": ["GET","POST","PUT","PATCH","DELETE","HEAD","OPTIONS"]
+    },
+    "path": {
+      "type": "string",
+      "pattern": "^/"
+    },
+    "expected_status": {
+      "type": "integer",
+      "minimum": 100,
+      "maximum": 599
+    },
+    "assertions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind"],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": ["status","body_structure","body_equals","json_path","contains","field_equals","array_length","contains_item","json_path_equals","greater_than","less_than","matches_regex","any_of"]
+          },
+          "path": { "type": "string" },
+          "equals": { },
+          "text": { "type": "string" },
+          "pattern": { "type": "string" },
+          "value": { },
+          "pattern": { "type": "string" },
+          "exists": { "type": "boolean" },
+          "json": { },
+          "assertions": { "type": "array" }
+        }
+      }
+    },
+    "extract": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name","from","expression"],
+        "properties": {
+          "name": { "type": "string" },
+          "from": { "type": "string" },
+          "expression": { "type": "string" },
+          "as": { "type": "string", "enum": ["scalar","json"] },
+          "fallback": { "type": "string" }
+        }
+      }
+    },
+    "data": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "auto_inject_headers": {
+      "type": "object"
+    }
+  }
+}
+```
+
+### 17.4 Lưu ý
+
+- Schema được sinh từ `StepConfigValidator.generateHttpSchema()` và luôn đồng bộ với validation logic backend. Nếu validator thay đổi, schema cũng thay đổi theo.
+- Schema chỉ mô tả cấu trúc nhận diện được (syntactic validation). Các ràng buộc chéo (ví dụ: `data` entries phải là object) được kiểm tra thêm bởi `StepConfigValidator.validateAndSerialize`.
+- Endpoint là internal, không được exposing qua API gateway — chỉ executor-service và course-service nội bộ có thể gọi.
