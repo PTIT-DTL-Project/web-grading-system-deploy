@@ -2701,6 +2701,1302 @@ Mục tiêu: Chỉ cần 1 điều kiện con đúng là step PASS. Ví dụ: đ
 
 ---
 
-*Phase 18 sections 18.7–18.11 added. Date added: 2026-10-28. Backend Phase 3 (data[] loop, auto_inject_headers, ANY_OF) đã triển khai và verify qua unit test executor-service + course-service.*
+---
 
-*This document was written based on actual code in repo `web-grading-system-deploy`: `docs/design/grading-config-reference.md`, `docs/design/http-test-plan-config.md`, `docs/design/exercise-management-plan.md`, `docs/design/usecase-flows.md`, `src-services/course-service/.../controller/*.java`, `src-services/course-service/.../dto/request/*.java`. Date written: 2026-10-27.*
+## 19. Phase 19 — DB Isolation Sandbox (Backend Phase 5)
+
+Mục tiêu: Xác thực rằng mỗi grading job có database riêng, cô lập, không bị ảnh hưởng dữ liệu giữa các lần chấm (không flaky test). Đây là tính năng backend orchestration, lecturer không gọi trực tiếp API riêng mà quan sát qua log và kết quả chấm.
+
+### 19.1 Nguyên tắc hoạt động
+
+- Mỗi grading job claim `appPort` + `dbPort` riêng từ range 20000-30000 (PortAllocator).
+- Compose boot: App + DB container cô lập cho job này.
+- Sau mỗi Plan: executor gọi `DbSandboxService.resetDatabase()` → kết nối DB hệ thống (`postgres` cho PostgreSQL, `mysql` cho MySQL/MariaDB), thực hiện `DROP DATABASE IF EXISTS <db>; CREATE DATABASE <db>` → DB trống cho plan tiếp theo.
+- Sau job kết thúc: dọn dẹp container DB, giải phóng port.
+
+**Lưu ý:** PostgreSQL hỗ trợ transaction rollback DDL/DML tốt; MySQL/MariaDB force implicit commit trên DDL (`CREATE/ALTER/DROP`, `TRUNCATE`) — lecturer nên tách DDL và DML thành các step riêng.
+
+### 19.2 Lệnh verify (giảng viên quan sát qua log và kết quả chấm)
+
+Lecturer không gọi trực tiếp API reset DB (là internal orchestration), nhưng có thể verify qua:
+
+1. **Xem log grading job:** Tìm thông báo `"DB port allocated: host=<port> service=<db_service> db_type=<db_type>"` → xác nhận mỗi job có port DB riêng.
+2. **Chạy 2 plan liên tiếp trên cùng assignment:** Plan 1 tạo data, Plan 2 chạy trên DB sạch (dữ liệu Plan 1 không bị carry-over).
+3. **Kiểm tra DB_QUERY/DB_SCHEMA_CHECK:** Các step DB chạy độc lập, không bị ảnh hưởng dữ liệu từ plan trước.
+
+### 19.3 Danh sách kiểm tra hoàn tất (Definition of Done) cho Phase 19
+
+- [ ] Mỗi grading job có DB container riêng, port DB không trùng với job khác.
+- [ ] Sau mỗi Plan, DB được reset về trạng thái sạch (drop + recreate).
+- [ ] Dữ liệu từ Plan trước không ảnh hưởng Plan sau.
+- [ ] Lecturer verify qua log grading job có thông tin dbPort riêng.
+
+---
+
+## 20. Phase 20 — Dry-Run Mode (Backend Phase 6)
+
+Mục tiêu: Lecturer chạy thử cấu hình chấm bài trước khi áp dụng cho sinh viên, không ghi điểm vào result-service và không cập nhật submission-status.
+
+### 20.1 Endpoint
+
+**API:** `POST /api/v1/internal/assignments/{assignmentId}/dry-run`
+
+**Headers:** `X-User-Id`, `X-Gateway-Secret`
+
+**Body:**
+```json
+{
+  "referenceCodeZipUrl": "rustfs://bucket/ref-code-123.zip",
+  "config": { ... test plan config ... }
+}
+```
+
+**Trả về:** `200` với `DryRunReport`:
+```json
+{
+  "dryRunId": "...",
+  "steps": [
+    {
+      "stepOrder": 1,
+      "status": "PASSED",
+      "durationMs": 340,
+      "extractedVariables": {"accessToken": "tok-123"},
+      "errorMessage": null
+    },
+    {
+      "stepOrder": 2,
+      "status": "FAILED",
+      "durationMs": 120,
+      "errorMessage": "Expected 200 but got 404"
+    }
+  ],
+  "summary": "Passed 1/2 steps, Score: 5.00/10.00"
+}
+```
+
+**Negative:**
+- Assignment không tồn tại → `404`
+- Không phải `LECTURER` → `403`
+- Thiếu `X-Gateway-Secret` → `401`
+- Config không hợp lệ → `400` (từ `StepConfigValidator`)
+- Reference code zip không tồn tại → `502`
+
+### 20.2 Lưu ý
+
+- **Không có side effect:** Không ghi điểm vào `result-service`, không cập nhật `submission-status`. An toàn để lecturer chạy thử vô số lần.
+- Thời gian timeout mặc định cho dry-run là 5 phút (300.000 ms).
+- Lecturer có thể xem biến `extractedVariables` được sinh ra ở mỗi bước để tinh chỉnh config.
+
+### 20.3 Danh sách kiểm tra hoàn tất (Definition of Done) cho Phase 20
+
+- [ ] Endpoint dry-run trả về báo cáo chi tiết từng bước (status, durationMs, extractedVariables, errorMessage).
+- [ ] Không có side effect ghi điểm vào `result-service` sau dry-run.
+- [ ] Lecturer có thể xem biến extract để tinh chỉnh config.
+- [ ] Negative cases: 404, 403, 401, 400, 502 hoạt động đúng.
+
+---
+
+## 21. Phase 21 — JSON Schema cho Step Config (Backend Phase 7)
+
+Mục tiêu: Lecturer lấy schema chuẩn của cấu hình step để validate real-time trước khi lưu, giảm lỗi cấu hình.
+
+### 21.1 Endpoint
+
+**API:** `GET /api/v1/internal/assignments/{id}/config-schema`
+
+**Headers:** `X-User-Id`, `X-Gateway-Secret`
+
+**Trả về:** `200` với JSON Schema (draft-07):
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "HTTP_REQUEST step config",
+  "type": "object",
+  "required": ["method", "path"],
+  "properties": {
+    "method": { "type": "string", "enum": ["GET","POST","PUT","PATCH","DELETE","HEAD","OPTIONS"] },
+    "path": { "type": "string", "pattern": "^/" },
+    "expected_status": { "type": "integer", "minimum": 100, "maximum": 599 },
+    "headers": { "type": "object" },
+    "query_params": { "type": "object" },
+    "body": {},
+    "assertions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind"],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": ["status","body_structure","body_equals","json_path","contains","field_equals","array_length","contains_item","json_path_equals","greater_than","less_than","matches_regex","any_of"]
+          },
+          "path": { "type": "string" },
+          "equals": {},
+          "text": { "type": "string" },
+          "pattern": { "type": "string" },
+          "value": {},
+          "exists": { "type": "boolean" },
+          "json": {},
+          "assertions": { "type": "array" }
+        }
+      }
+    },
+    "extract": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "from", "expression"],
+        "properties": {
+          "name": { "type": "string" },
+          "from": { "type": "string" },
+          "expression": { "type": "string" },
+          "as": { "type": "string", "enum": ["scalar", "json"] },
+          "fallback": { "type": "string" }
+        }
+      }
+    },
+    "data": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "auto_inject_headers": { "type": "object" }
+  }
+}
+```
+
+### 21.2 Lưu ý
+
+- Schema được sinh từ `StepConfigValidator.generateHttpSchema()` và luôn đồng bộ với validation logic backend.
+- Nếu validator thay đổi, schema cũng thay đổi theo (không cần lecturer cập nhật thủ công).
+- Schema chỉ mô tả cấu trúc nhận diện được (syntactic validation). Các ràng buộc chéo (ví dụ: `data[]` entries phải là object) được kiểm tra thêm bởi `StepConfigValidator.validateAndSerialize`.
+- Endpoint là internal, không được exposing qua API gateway — chỉ course-service và executor-service nội bộ có thể gọi.
+
+### 21.3 Danh sách kiểm tra hoàn tất (Definition of Done) cho Phase 21
+
+- [ ] Endpoint `GET /api/v1/internal/assignments/{id}/config-schema` trả về JSON Schema hợp lệ (draft-07).
+- [ ] Schema có đầy đủ các trường: `method`, `path`, `expected_status`, `assertions`, `extract`, `data`, `auto_inject_headers`.
+- [ ] Schema đồng bộ với `StepConfigValidator` (không có trường thiếu hoặc thừa).
+
+---
+
+## 22. Bảng tổng hợp tất cả tính năng phức tạp đã triển khai (Phases 5-7)
+
+| # | Tính năng | Endpoint | Backend | FE |
+|---|-----------|----------|---------|-----|
+| 1 | DB Isolation Sandbox | Internal (orchestration) | ✅ `DbSandboxService`, `GradingOrchestrator.runSteps` | - |
+| 2 | Dry-Run Mode | `POST /api/v1/internal/assignments/{id}/dry-run` | ✅ `DryRunController`, `GradingOrchestrator.dryRun()` | - |
+| 3 | JSON Schema | `GET /api/v1/internal/assignments/{id}/config-schema` | ✅ `StepConfigValidator.generateHttpSchema()`, `InternalAssignmentController` | ✅ `SchemaPreview.tsx`, `schema.ts` endpoint |
+| 4 | `data[]` loop | - | ✅ `HttpStepExecutor`, `StepConfigValidator` | ✅ `HttpStepForm.tsx` |
+| 5 | `auto_inject_headers` | - | ✅ `GradingOrchestrator.runSteps` | ✅ `HttpStepForm.tsx` |
+| 6 | `ANY_OF` assertion | - | ✅ `AssertionEngine.checkAnyOf`, `StepConfigValidator` | ✅ `HttpStepForm.tsx` |
+| 7 | Virtual Threads + `sendAsync()` | - | ✅ `HttpStepExecutor` | - |
+| 8 | Dynamic Faker `${$FAKER_*}` | - | ✅ `VariableContext.resolveDynamic()` | ✅ `HttpStepForm.tsx` |
+
+---
+
+## 23. Danh sách kiểm tra hoàn tất (Definition of Done) tổng hợp
+
+- [ ] Tạo lớp thành công, có `classId`.
+- [ ] Import CSV thành công, `imported > 0`.
+- [ ] Cấu hình score components thành công (ATTENDANCE/EXERCISE/FINAL_EXAM).
+- [ ] Tạo graded assignment, có `assignmentId`.
+- [ ] Tạo plan, có `planId`.
+- [ ] Tạo 8 step cơ bản, cover tất cả assertion type, HTTP method, DB_SCHEMA_CHECK, DB_QUERY, extract biến giữa step.
+- [ ] Tạo practice assignment (purpose=PRACTICE, không classId).
+- [ ] Tạo 3 assignment khác nhau, lọc danh sách theo classId/search/topic/purpose đúng dữ liệu.
+- [ ] Tạo 10 bài tập đa dạng (Graded + Practice) - Phase 17.
+- [ ] Tạo assignment dùng `data[]` loop (tạo 4 sách khác nhau trong 1 step).
+- [ ] Tạo assignment dùng `auto_inject_headers` (login 1 lần, bước sau không gán Authorization thủ công).
+- [ ] Tạo assignment dùng `ANY_OF` assertion (1 trong 2 điều kiện con đúng là pass).
+- [ ] Tạo assignment dùng các assertion nâng cao: `array_length`, `contains_item`, `greater_than`, `less_than`, `matches_regex`, `json_path_equals`, `fallback`, `as: "json"`.
+- [ ] Publish tất cả assignment.
+- [ ] Xem kết quả chấm bài giảng viên (results + submissions).
+- [ ] Nhập điểm thủ công, xem transcript.
+- [ ] Negative cases: 404 unowned, 403 non-lecturer, 400 validation (data[] >10, any_of assertions rỗng, auto_inject_headers sai dạng, method sai, path thiếu `/`, expected_status ngoài range, kind viết hoa, db_type oracle, ...).
+- [ ] Verify DB Isolation: mỗi job có DB riêng, sau mỗi plan DB được reset.
+- [ ] Verify Dry-Run: chạy thử config mà không ghi điểm, xem báo cáo chi tiết từng bước.
+- [ ] Verify JSON Schema: `GET /config-schema` trả về schema đầy đủ, đồng bộ với validator.
+
+---
+
+*Phases 19-23 added to lecturer-full-e2e-plan.md. Date added: 2026-10-28. Backend Phases 5-7 (DB Isolation, Dry-Run, JSON Schema) và FE Phase 7 (ImportModal, SchemaPreview, schema.ts endpoint) đã triển khai và verify qua unit test.*
+
+---
+
+## 24. Lệnh thực thi chi tiết (API Request Specifications)
+
+Tất cả lệnh dưới đây gọi qua **API Gateway**: `https://web-dev1-api.vucongtuanduong.dpdns.org`
+
+Header chuẩn mọi request:
+```bash
+export GATEWAY="https://web-dev1-api.vucongtuanduong.dpdns.org"
+export LECTURER_TOKEN="<access_token_tu_Keycloak>"
+export LECTURER_UUID="<lecturer_uuid_tu_JWT_sub>"
+export GATEWAY_SECRET="<x_gateway_secret>"
+export CLASS_ID="<classId>"
+export ASSIGNMENT_ID="<assignmentId>"
+export PLAN_ID="<planId>"
+```
+
+---
+
+### 24.1 Tạo lớp (UC-01)
+
+```bash
+curl -X POST "$GATEWAY/api/v1/classes" \
+  -H "Authorization: Bearer $LECTURER_TOKEN" \
+  -H "X-User-Id: $LECTURER_UUID" \
+  -H "X-Gateway-Secret: $GATEWAY_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "PTIT CNTT-K68",
+    "semester": "20261"
+  }'
+# Expected: 201 Created, data.id = {classId}
+```
+
+---
+
+### 24.2 Tạo graded assignment + plan + steps (UC-02, UC-03)
+
+```bash
+# 1. Tạo assignment
+curl -X POST "$GATEWAY/api/v1/assignments" \
+  -H "Authorization: Bearer $LECTURER_TOKEN" \
+  -H "X-User-Id: $LECTURER_UUID" \
+  -H "X-Gateway-Secret: $GATEWAY_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Lab 01 - Quản lý sách REST API",
+    "description": "Xây dựng REST API quản lý sách",
+    "classId": "'"$CLASS_ID"'",
+    "purpose": "GRADED",
+    "topic": "Lập trình web",
+    "gradingStrategy": "STUDENT_DOCKER_COMPOSE",
+    "dockerComposePort": 8080,
+    "startupTimeoutMs": 60000,
+    "executionTimeoutMs": 300000,
+    "maxMemoryMb": 256,
+    "maxCpu": 0.5
+  }'
+# Expected: 201, data.id = {assignmentId}
+
+# 2. Tạo plan
+curl -X POST "$GATEWAY/api/v1/assignments/$ASSIGNMENT_ID/plans" \
+  -H "Authorization: Bearer $LECTURER_TOKEN" \
+  -H "X-User-Id: $LECTURER_UUID" \
+  -H "X-Gateway-Secret: $GATEWAY_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "CRUD Book API — Full",
+    "sequenceOrder": 1,
+    "weight": 10
+  }'
+# Expected: 201, data.id = {planId}
+
+# 3. Tạo step 1 — POST tạo sách (extract bookId)
+curl -X POST "$GATEWAY/api/v1/assignments/$ASSIGNMENT_ID/plans/$PLAN_ID/steps" \
+  -H "Authorization: Bearer $LECTURER_TOKEN" \
+  -H "X-User-Id: $LECTURER_UUID" \
+  -H "X-Gateway-Secret: $GATEWAY_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "stepOrder": 1,
+    "name": "Tạo sách mới",
+    "stepType": "HTTP_REQUEST",
+    "config": {
+      "method": "POST",
+      "path": "/api/v1/books",
+      "headers": { "Content-Type": "application/json" },
+      "body": { "title": "Dế Mèn Phiêu Lưu Ký", "author": "Tô Hoài", "year": 1941 },
+      "expected_status": 201,
+      "assertions": [
+        { "kind": "status", "equals": 201 },
+        { "kind": "json_path", "path": "$.id", "exists": true },
+        { "kind": "contains", "text": "Dế Mèn" }
+      ],
+      "extract": [
+        { "name": "bookId", "from": "response_body", "expression": "$.id" }
+      ],
+      "required": true,
+      "timeoutMs": 5000
+    },
+    "weight": 1
+  }'
+# Expected: 201 Created
+
+# 4. Publish assignment
+curl -X POST "$GATEWAY/api/v1/assignments/$ASSIGNMENT_ID/publish" \
+  -H "Authorization: Bearer $LECTURER_TOKEN" \
+  -H "X-User-Id: $LECTURER_UUID" \
+  -H "X-Gateway-Secret: $GATEWAY_SECRET"
+# Expected: 200 OK
+```
+
+---
+
+### 24.2b Tạo assignment dùng `data[]` loop (tạo 4 sách khác nhau trong 1 step)
+
+```bash
+curl -X POST "$GATEWAY/api/v1/assignments/$ASSIGNMENT_ID/plans/$PLAN_ID/steps" \
+  -H "Authorization: Bearer $LECTURER_TOKEN" \
+  -H "X-User-Id: $LECTURER_UUID" \
+  -H "X-Gateway-Secret: $GATEWAY_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "stepOrder": 2,
+    "name": "Tạo 4 sách khác nhau (data[])",
+    "stepType": "HTTP_REQUEST",
+    "config": {
+      "method": "POST",
+      "path": "/api/v1/books",
+      "headers": { "Content-Type": "application/json" },
+      "body": { "title": "${title}", "author": "Tô Hoài", "year": "${year}" },
+      "expected_status": 201,
+      "data": [
+        { "title": "Sách A", "year": "1941" },
+        { "title": "Sách B", "year": "1950" },
+        { "title": "Sách C", "year": "1960" },
+        { "title": "Dế Mèn Phiêu Lưu Ký", "year": "1941" }
+      ],
+      "extract": [
+        { "name": "bookId_${index}", "from": "response_body", "expression": "$.id" }
+      ],
+      "required": true,
+      "timeoutMs": 10000
+    },
+    "weight": 1
+  }'
+# Expected: 201 Created
+# Lúc chạy: step chạy 4 lần, extract bookId_0..bookId_3
+```
+
+---
+
+### 24.3 Tạo assignment dùng `auto_inject_headers` (login 1 lần, bước sau không gán Authorization thủ công)
+
+```bash
+# Bước 1: Login + khai báo auto_inject_headers
+curl -X POST "$GATEWAY/api/v1/assignments/$ASSIGNMENT_ID/plans/$PLAN_ID/steps" \
+  -H "Authorization: Bearer $LECTURER_TOKEN" \
+  -H "X-User-Id: $LECTURER_UUID" \
+  -H "X-Gateway-Secret: $GATEWAY_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "stepOrder": 1,
+    "name": "Đăng nhập lấy token",
+    "stepType": "HTTP_REQUEST",
+    "config": {
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "body": { "username": "lecturer", "password": "secret" },
+      "expected_status": 200,
+      "auto_inject_headers": {
+        "Authorization": "Bearer ${accessToken}"
+      },
+      "assertions": [
+        { "kind": "status", "equals": 200 },
+        { "kind": "json_path", "path": "$.accessToken", "exists": true }
+      ],
+      "extract": [
+        { "name": "accessToken", "from": "response_body", "expression": "$.accessToken" }
+      ],
+      "required": true,
+      "timeoutMs": 5000
+    },
+    "weight": 1
+  }'
+
+# Bước 2: GET sách (KHÔNG gán Authorization thủ công, phụ thuộc auto_inject_headers)
+curl -X POST "$GATEWAY/api/v1/assignments/$ASSIGNMENT_ID/plans/$PLAN_ID/steps" \
+  -H "Authorization: Bearer $LECTURER_TOKEN" \
+  -H "X-User-Id: $LECTURER_UUID" \
+  -H "X-Gateway-Secret: $GATEWAY_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "stepOrder": 2,
+    "name": "Lấy danh sách sách",
+    "stepType": "HTTP_REQUEST",
+    "config": {
+      "method": "GET",
+      "path": "/api/v1/books",
+      "query_params": { "title": "Dế Mèn" },
+      "expected_status": 200,
+      "assertions": [
+        { "kind": "status", "equals": 200 },
+        { "kind": "json_path", "path": "$", "exists": true }
+      ]
+    },
+    "weight": 1
+  }'
+# Executor tiêm Authorization: Bearer ${accessToken} vào bước 2 tự động
+```
+
+---
+
+### 24.4 Tạo assignment dùng `ANY_OF` assertion
+
+```bash
+curl -X POST "$GATEWAY/api/v1/assignments/$ASSIGNMENT_ID/plans/$PLAN_ID/steps" \
+  -H "Authorization: Bearer $LECTURER_TOKEN" \
+  -H "X-User-Id: $LECTURER_UUID" \
+  -H "X-Gateway-Secret: $GATEWAY_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "stepOrder": 3,
+    "name": "Lọc sách (ANY_OF định dạng ngày)",
+    "stepType": "HTTP_REQUEST",
+    "config": {
+      "method": "GET",
+      "path": "/api/v1/books",
+      "query_params": { "title": "Dế Mèn" },
+      "expected_status": 200,
+      "assertions": [
+        { "kind": "status", "equals": 200 },
+        { "kind": "array_length", "path": "$", "equals": 1 },
+        { "kind": "contains_item", "path": "$[*].title", "equals": "Dế Mèn Phiêu Lưu Ký" },
+        { "kind": "any_of", "assertions": [
+          { "kind": "matches_regex", "path": "$[0].published_date", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+          { "kind": "matches_regex", "path": "$[0].published_date", "pattern": "^\\d{2}/\\d{2}/\\d{4}$" }
+        ]}
+      ]
+    },
+    "weight": 1
+  }'
+# ANY_OF PASSED nếu ít nhất 1 định dạng ngày khớp
+```
+
+---
+
+### 24.5 Dry-Run Mode (Phase 20)
+
+```bash
+# Chạy thử config trước khi áp dụng cho sinh viên
+curl -X POST "$GATEWAY/api/v1/internal/assignments/$ASSIGNMENT_ID/dry-run" \
+  -H "Authorization: Bearer $LECTURER_TOKEN" \
+  -H "X-User-Id: $LECTURER_UUID" \
+  -H "X-Gateway-Secret: $GATEWAY_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "referenceCodeZipUrl": "rustfs://bucket/ref-code-123.zip",
+    "config": {
+      "method": "POST",
+      "path": "/api/v1/books",
+      "body": { "title": "Test Book", "author": "Author", "year": 2000 },
+      "expected_status": 201,
+      "assertions": [
+        { "kind": "status", "equals": 201 },
+        { "kind": "json_path", "path": "$.id", "exists": true }
+      ],
+      "extract": [
+        { "name": "bookId", "from": "response_body", "expression": "$.id" }
+      ]
+    }
+  }'
+# Expected: 200 với DryRunReport chi tiết từng bước
+# Không ghi điểm vào result-service, không cập nhật submission-status
+```
+
+---
+
+### 24.6 JSON Schema (Phase 21)
+
+```bash
+# Lấy JSON Schema cho HTTP_REQUEST step config
+curl -X GET "$GATEWAY/api/v1/internal/assignments/$ASSIGNMENT_ID/config-schema" \
+  -H "Authorization: Bearer $LECTURER_TOKEN" \
+  -H "X-User-Id: $LECTURER_UUID" \
+  -H "X-Gateway-Secret: $GATEWAY_SECRET" \
+  -H "Content-Type: application/json"
+# Expected: 200 với JSON Schema draft-07
+```
+
+---
+
+### 24.7 Negative cases (phải nhận 400)
+
+```bash
+# data[] 11 phần tử
+curl -X POST "$GATEWAY/api/v1/assignments/$ASSIGNMENT_ID/plans/$PLAN_ID/steps" \
+  -H "Authorization: Bearer $LECTURER_TOKEN" \
+  -H "X-User-Id: $LECTURER_UUID" \
+  -H "X-Gateway-Secret: $GATEWAY_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "stepOrder": 99,
+    "name": "data[] quá lớn",
+    "stepType": "HTTP_REQUEST",
+    "config": {
+      "method": "POST",
+      "path": "/api/v1/books",
+      "data": [
+        {"title":"S1","year":"1941"},{"title":"S2","year":"1942"},{"title":"S3","year":"1943"},
+        {"title":"S4","year":"1944"},{"title":"S5","year":"1945"},{"title":"S6","year":"1946"},
+        {"title":"S7","year":"1947"},{"title":"S8","year":"1948"},{"title":"S9","year":"1949"},
+        {"title":"S10","year":"1950"},{"title":"S11","year":"1951"}
+      ],
+      "body": {"title": "${title}", "year": "${year}"}
+    }
+  }'
+# Expected: 400 "data must contain at most 10 entries"
+
+# any_of assertions rỗng
+curl -X POST "$GATEWAY/api/v1/assignments/$ASSIGNMENT_ID/plans/$PLAN_ID/steps" \
+  -H "Authorization: Bearer $LECTURER_TOKEN" \
+  -H "X-User-Id: $LECTURER_UUID" \
+  -H "X-Gateway-Secret: $GATEWAY_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "stepOrder": 99,
+    "name": "any_of rỗng",
+    "stepType": "HTTP_REQUEST",
+    "config": {
+      "method": "GET",
+      "path": "/api/v1/books",
+      "expected_status": 200,
+      "assertions": [{"kind": "any_of", "assertions": []}]
+    }
+  }'
+# Expected: 400 "'assertions' must be a non-empty array"
+
+# method sai
+curl -X POST "$GATEWAY/api/v1/assignments/$ASSIGNMENT_ID/plans/$PLAN_ID/steps" \
+  -H "Authorization: Bearer $LECTURER_TOKEN" \
+  -H "X-User-Id: $LECTURER_UUID" \
+  -H "X-Gateway-Secret: $GATEWAY_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "stepOrder": 99,
+    "name": "method sai",
+    "stepType": "HTTP_REQUEST",
+    "config": {
+      "method": "TELEPORT",
+      "path": "/api/v1/books",
+      "expected_status": 200
+    }
+  }'
+# Expected: 400 "unknown method"
+```
+
+---
+
+### 24.8 Verify log DB Isolation (Phase 19)
+
+```bash
+# Sau khi chạy grading job, xem log để xác nhận mỗi job có dbPort riêng
+GET /api/v1/grading-jobs/$JOB_ID/logs
+# Tìm: "DB port allocated: host=24567 service=db db_type=postgres"
+```
+
+---
+
+*Phase 24 added to lecturer-full-e2e-plan.md. Date added: 2026-10-28. API request specifications cho các tính năng phức tạp (Phases 19-23) đã bổ sung.*
+
+---
+
+## 24. Cấu hình JSON chi tiết cho các tính năng phức tạp (Chi tiết nhất)
+
+Phần này cung cấp các ví dụ JSON config chi tiết nhất, cover tất cả các loại assertion, step types, và cấu trúc phức tạp mà backend hỗ trợ. Lecturer có thể copy-paste trực tiếp vào API để tạo step.
+
+### 24.1 HTTP_REQUEST — Tất cả assertion types
+
+#### 24.1.1 status assertion
+
+```json
+{
+  "method": "GET",
+  "path": "/api/v1/books/${bookId}",
+  "expected_status": 200,
+  "assertions": [
+    { "kind": "status", "equals": 200 }
+  ],
+  "required": true,
+  "timeoutMs": 5000
+}
+```
+
+#### 24.1.2 json_path assertion
+
+```json
+{
+  "method": "GET",
+  "path": "/api/v1/books/${bookId}",
+  "expected_status": 200,
+  "assertions": [
+    { "kind": "json_path", "path": "$.id", "exists": true },
+    { "kind": "json_path", "path": "$.title", "exists": true },
+    { "kind": "json_path", "path": "$.author", "exists": true },
+    { "kind": "json_path", "path": "$.year", "exists": true },
+    { "kind": "json_path", "path": "$.metadata.created_at", "exists": false }
+  ]
+}
+```
+
+#### 24.1.3 contains assertion
+
+```json
+{
+  "method": "GET",
+  "path": "/api/v1/books",
+  "query_params": { "title": "Dế Mèn" },
+  "expected_status": 200,
+  "assertions": [
+    { "kind": "contains", "text": "Dế Mèn" },
+    { "kind": "contains", "text": "Tô Hoài" }
+  ]
+}
+```
+
+#### 24.1.4 field_equals assertion
+
+```json
+{
+  "method": "GET",
+  "path": "/api/v1/books/${bookId}",
+  "expected_status": 200,
+  "assertions": [
+    { "kind": "field_equals", "path": "$.id", "equals": "${bookId}" },
+    { "kind": "field_equals", "path": "$.title", "equals": "Dế Mèn Phiêu Lưu Ký" },
+    { "kind": "field_equals", "path": "$.author", "equals": "Tô Hoài" },
+    { "kind": "field_equals", "path": "$.year", "equals": "1941" }
+  ]
+}
+```
+
+#### 24.1.5 array_length assertion
+
+```json
+{
+  "method": "GET",
+  "path": "/api/v1/books",
+  "query_params": { "title": "Dế Mèn" },
+  "expected_status": 200,
+  "assertions": [
+    { "kind": "array_length", "path": "$", "equals": 1 },
+    { "kind": "array_length", "path": "$", "equals": 0 },
+    { "kind": "array_length", "path": "$.books", "equals": 5 },
+    { "kind": "array_length", "path": "$.missing", "equals": 0 }
+  ]
+}
+```
+
+#### 24.1.6 contains_item assertion
+
+```json
+{
+  "method": "GET",
+  "path": "/api/v1/books",
+  "query_params": { "title": "Dế Mèn" },
+  "expected_status": 200,
+  "assertions": [
+    { "kind": "contains_item", "path": "$[*].title", "equals": "Dế Mèn Phiêu Lưu Ký" },
+    { "kind": "contains_item", "path": "$[*].title", "equals": "Sách A" },
+    { "kind": "contains_item", "path": "$[*].year", "equals": "1941" },
+    { "kind": "contains_item", "path": "$.books[*].id", "equals": "abc-123" }
+  ]
+}
+```
+
+#### 24.1.7 json_path_equals assertion
+
+```json
+{
+  "method": "GET",
+  "path": "/api/v1/books/${bookId}",
+  "expected_status": 200,
+  "assertions": [
+    { "kind": "json_path_equals", "path": "$.id", "equals": "${bookId}" },
+    { "kind": "json_path_equals", "path": "$.year", "equals": "1941" },
+    { "kind": "json_path_equals", "path": "$.available", "equals": "true" }
+  ]
+}
+```
+
+#### 24.1.8 greater_than assertion
+
+```json
+{
+  "method": "GET",
+  "path": "/api/v1/books/${bookId}",
+  "expected_status": 200,
+  "assertions": [
+    { "kind": "greater_than", "path": "$.year", "value": "1900" },
+    { "kind": "greater_than", "path": "$.price", "value": "100000" },
+    { "kind": "greater_than", "path": "$.rating", "value": "4.0" }
+  ]
+}
+```
+
+#### 24.1.9 less_than assertion
+
+```json
+{
+  "method": "GET",
+  "path": "/api/v1/books/${bookId}",
+  "expected_status": 200,
+  "assertions": [
+    { "kind": "less_than", "path": "$.year", "value": "2020" },
+    { "kind": "less_than", "path": "$.price", "value": "500000" },
+    { "kind": "less_than", "path": "$.rating", "value": "5.0" }
+  ]
+}
+```
+
+#### 24.1.10 matches_regex assertion
+
+```json
+{
+  "method": "GET",
+  "path": "/api/v1/books/${bookId}",
+  "expected_status": 200,
+  "assertions": [
+    { "kind": "matches_regex", "path": "$.isbn", "pattern": "^ISBN-\\d{4}$" },
+    { "kind": "matches_regex", "path": "$.email", "pattern": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$" },
+    { "kind": "matches_regex", "path": "$.phone", "pattern": "^\\+84\\d{9,10}$" },
+    { "kind": "matches_regex", "path": "$.code", "pattern": "^[A-Z]{2}-\\d{3}$" }
+  ]
+}
+```
+
+#### 24.1.11 any_of assertion (OR operator)
+
+```json
+{
+  "method": "GET",
+  "path": "/api/v1/books/${bookId}",
+  "expected_status": 200,
+  "assertions": [
+    { "kind": "status", "equals": 200 },
+    { "kind": "json_path", "path": "$[0].published_date", "exists": true },
+    {
+      "kind": "any_of",
+      "assertions": [
+        { "kind": "matches_regex", "path": "$[0].published_date", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+        { "kind": "matches_regex", "path": "$[0].published_date", "pattern": "^\\d{2}/\\d{2}/\\d{4}$" },
+        { "kind": "matches_regex", "path": "$[0].published_date", "pattern": "^\\d{2}-\\d{2}-\\d{4}$" }
+      ]
+    },
+    {
+      "kind": "any_of",
+      "assertions": [
+        { "kind": "field_equals", "path": "$[0].status", "equals": "published" },
+        { "kind": "field_equals", "path": "$[0].status", "equals": "draft" },
+        { "kind": "field_equals", "path": "$[0].status", "equals": "archived" }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+### 24.2 HTTP_REQUEST — Extract variables (extract[])
+
+#### 24.2.1 Extract scalar (mặc định)
+
+```json
+{
+  "method": "POST",
+  "path": "/api/v1/books",
+  "body": { "title": "Sách A", "author": "Tô Hoài", "year": 1941 },
+  "expected_status": 201,
+  "extract": [
+    { "name": "bookId", "from": "response_body", "expression": "$.id" }
+  ]
+}
+```
+
+#### 24.2.2 Extract as JSON (toàn bộ object/mảng)
+
+```json
+{
+  "method": "POST",
+  "path": "/api/v1/books",
+  "body": { "title": "Sách A", "author": "Tô Hoài", "year": 1941 },
+  "expected_status": 201,
+  "extract": [
+    { "name": "wholeBook", "from": "response_body", "expression": "$", "as": "json" },
+    { "name": "bookList", "from": "response_body", "expression": "$", "as": "json" }
+  ]
+}
+```
+
+#### 24.2.3 Extract với fallback
+
+```json
+{
+  "method": "GET",
+  "path": "/api/v1/books/${bookId}",
+  "expected_status": 200,
+  "extract": [
+    { "name": "author", "from": "response_body", "expression": "$.author", "fallback": "Unknown" },
+    { "name": "isbn", "from": "response_body", "expression": "$.isbn", "fallback": "N/A" },
+    { "name": "description", "from": "response_body", "expression": "$.description", "fallback": "" }
+  ]
+}
+```
+
+#### 24.2.4 Extract indexed (${index})
+
+```json
+{
+  "method": "POST",
+  "path": "/api/v1/books",
+  "data": [
+    { "title": "Sách A", "year": "1941" },
+    { "title": "Sách B", "year": "1950" },
+    { "title": "Sách C", "year": "1960" }
+  ],
+  "body": { "title": "${title}", "author": "Tô Hoài", "year": "${year}" },
+  "expected_status": 201,
+  "extract": [
+    { "name": "bookId_${index}", "from": "response_body", "expression": "$.id" }
+  ]
+}
+```
+
+---
+
+### 24.3 HTTP_REQUEST — data[] loop (vòng lặp dữ liệu)
+
+#### 24.3.1 data[] với 4 bản ghi
+
+```json
+{
+  "method": "POST",
+  "path": "/api/v1/books",
+  "body": { "title": "${title}", "author": "Tô Hoài", "year": "${year}" },
+  "expected_status": 201,
+  "data": [
+    { "title": "Sách A", "year": "1941" },
+    { "title": "Sách B", "year": "1950" },
+    { "title": "Sách C", "year": "1960" },
+    { "title": "Dế Mèn Phiêu Lưu Ký", "year": "1941" }
+  ],
+  "extract": [
+    { "name": "bookId_${index}", "from": "response_body", "expression": "$.id" }
+  ],
+  "required": true,
+  "timeoutMs": 10000
+}
+```
+
+#### 24.3.2 data[] với nhiều fields
+
+```json
+{
+  "method": "POST",
+  "path": "/api/v1/orders",
+  "body": {
+    "customerName": "${customerName}",
+    "items": "${items}",
+    "total": "${total}",
+    "status": "${status}"
+  },
+  "expected_status": 201,
+  "data": [
+    { "customerName": "Nguyen Van A", "items": "[\"Sach A\",\"Sach B\"]", "total": "250000", "status": "PENDING" },
+    { "customerName": "Tran Thi B", "items": "[\"Sach C\"]", "total": "150000", "status": "SHIPPED" },
+    { "customerName": "Le Van C", "items": "[\"Sach D\",\"Sach E\",\"Sach F\"]", "total": "450000", "status": "DELIVERED" }
+  ],
+  "extract": [
+    { "name": "orderId_${index}", "from": "response_body", "expression": "$.id" },
+    { "name": "orderStatus_${index}", "from": "response_body", "expression": "$.status" }
+  ]
+}
+```
+
+#### 24.3.3 data[] kết hợp với auto_inject_headers
+
+```json
+{
+  "method": "POST",
+  "path": "/api/v1/books",
+  "body": { "title": "${title}", "author": "Tô Hoài", "year": "${year}" },
+  "expected_status": 201,
+  "data": [
+    { "title": "Sách A", "year": "1941" },
+    { "title": "Sách B", "year": "1950" },
+    { "title": "Sách C", "year": "1960" },
+    { "title": "Dế Mèn Phiêu Lưu Ký", "year": "1941" }
+  ],
+  "extract": [
+    { "name": "bookId_${index}", "from": "response_body", "expression": "$.id" }
+  ],
+  "required": true,
+  "timeoutMs": 10000
+}
+```
+
+---
+
+### 24.4 HTTP_REQUEST — auto_inject_headers
+
+#### 24.4.1 Login step (khai báo auto_inject_headers)
+
+```json
+{
+  "stepOrder": 1,
+  "name": "Đăng nhập lấy token",
+  "stepType": "HTTP_REQUEST",
+  "config": {
+    "method": "POST",
+    "path": "/api/v1/auth/login",
+    "body": { "username": "lecturer", "password": "secret" },
+    "expected_status": 200,
+    "auto_inject_headers": {
+      "Authorization": "Bearer ${accessToken}"
+    },
+    "assertions": [
+      { "kind": "status", "equals": 200 },
+      { "kind": "json_path", "path": "$.accessToken", "exists": true }
+    ],
+    "extract": [
+      { "name": "accessToken", "from": "response_body", "expression": "$.accessToken" }
+    ],
+    "required": true,
+    "timeoutMs": 5000
+  }
+}
+```
+
+#### 24.4.2 Bước sau (không gán Authorization thủ công)
+
+```json
+{
+  "stepOrder": 2,
+  "name": "Lấy danh sách sách",
+  "stepType": "HTTP_REQUEST",
+  "config": {
+    "method": "GET",
+    "path": "/api/v1/books",
+    "query_params": { "title": "Dế Mèn" },
+    "expected_status": 200,
+    "assertions": [
+      { "kind": "status", "equals": 200 },
+      { "kind": "json_path", "path": "$", "exists": true }
+    ]
+  },
+  "weight": 1
+}
+```
+
+#### 24.4.3 Nhiều auto_inject_headers
+
+```json
+{
+  "method": "POST",
+  "path": "/api/v1/auth/login",
+  "body": { "username": "lecturer", "password": "secret" },
+  "expected_status": 200,
+  "auto_inject_headers": {
+    "Authorization": "Bearer ${accessToken}",
+    "X-Client-Id": "lecturer-web",
+    "X-Request-Source": "grading-system"
+  },
+  "assertions": [
+    { "kind": "status", "equals": 200 },
+    { "kind": "json_path", "path": "$.accessToken", "exists": true }
+  ],
+  "extract": [
+    { "name": "accessToken", "from": "response_body", "expression": "$.accessToken" }
+  ],
+  "required": true
+}
+```
+
+---
+
+### 24.5 DB_SCHEMA_CHECK
+
+```json
+{
+  "stepOrder": 1,
+  "name": "Kiểm tra schema bảng books",
+  "stepType": "DB_SCHEMA_CHECK",
+  "config": {
+    "connection": {
+      "db_type": "postgres",
+      "database": "bookstore",
+      "username": "postgres",
+      "password": "postgres"
+    },
+    "checks": [
+      { "kind": "TABLE_EXISTS", "table_name": "books" },
+      { "kind": "COLUMN_EXISTS", "table_name": "books", "column_name": "title" },
+      { "kind": "COLUMN_EXISTS", "table_name": "books", "column_name": "author", "data_type": "VARCHAR" },
+      { "kind": "COLUMN_EXISTS", "table_name": "books", "column_name": "year", "data_type": "INTEGER" },
+      { "kind": "PRIMARY_KEY", "table_name": "books", "column": "id" },
+      { "kind": "INDEX_EXISTS", "table_name": "books", "index_name": "idx_books_title" }
+    ],
+    "timeoutMs": 30000
+  },
+  "weight": 1
+}
+```
+
+---
+
+### 24.6 DB_QUERY
+
+```json
+{
+  "stepOrder": 2,
+  "name": "Kiểm tra dữ liệu sách đã tạo",
+  "stepType": "DB_QUERY",
+  "config": {
+    "connection": {
+      "db_type": "postgres",
+      "database": "bookstore",
+      "username": "postgres",
+      "password": "postgres"
+    },
+    "query": "SELECT COUNT(*) FROM books WHERE id = ${bookId}",
+    "expected": { "row_count": 1, "columns": ["count"] },
+    "timeoutMs": 30000
+  },
+  "expectedResult": { "row_count": 1 },
+  "weight": 1
+}
+```
+
+```json
+{
+  "stepOrder": 3,
+  "name": "Kiểm tra dữ liệu sinh viên",
+  "stepType": "DB_QUERY",
+  "config": {
+    "connection": {
+      "db_type": "mysql",
+      "database": "students_db",
+      "username": "root",
+      "password": "root"
+    },
+    "query": "SELECT COUNT(*) FROM students WHERE class_id = ${classId}",
+    "expected": { "row_count": 1, "columns": ["count"] },
+    "timeoutMs": 30000
+  },
+  "weight": 1
+}
+```
+
+---
+
+### 24.7 DB_MIGRATION
+
+```json
+{
+  "stepOrder": 1,
+  "name": "Tạo bảng books",
+  "stepType": "DB_MIGRATION",
+  "config": {
+    "connection": {
+      "db_type": "postgres",
+      "database": "bookstore",
+      "username": "postgres",
+      "password": "postgres"
+    },
+    "statements": [
+      "CREATE TABLE IF NOT EXISTS books (id SERIAL PRIMARY KEY, title VARCHAR(255) NOT NULL, author VARCHAR(255), year INTEGER, created_at TIMESTAMP DEFAULT NOW())",
+      "CREATE INDEX IF NOT EXISTS idx_books_title ON books(title)",
+      "CREATE INDEX IF NOT EXISTS idx_books_author ON books(author)"
+    ],
+    "timeoutMs": 30000
+  },
+  "weight": 1
+}
+```
+
+---
+
+### 24.8 Multi-step chaining (chuỗi bước liên kết)
+
+```json
+{
+  "stepOrder": 1,
+  "name": "Đăng nhập lấy token",
+  "stepType": "HTTP_REQUEST",
+  "config": {
+    "method": "POST",
+    "path": "/api/v1/auth/login",
+    "body": { "username": "lecturer", "password": "secret" },
+    "expected_status": 200,
+    "auto_inject_headers": { "Authorization": "Bearer ${accessToken}" },
+    "assertions": [
+      { "kind": "status", "equals": 200 },
+      { "kind": "json_path", "path": "$.accessToken", "exists": true }
+    ],
+    "extract": [
+      { "name": "accessToken", "from": "response_body", "expression": "$.accessToken" }
+    ],
+    "required": true,
+    "timeoutMs": 5000
+  },
+  "weight": 1
+}
+
+{
+  "stepOrder": 2,
+  "name": "Tạo sách (extract bookId)",
+  "stepType": "HTTP_REQUEST",
+  "config": {
+    "method": "POST",
+    "path": "/api/v1/books",
+    "body": { "title": "Sách A", "author": "Tô Hoài", "year": 1941 },
+    "expected_status": 201,
+    "assertions": [
+      { "kind": "status", "equals": 201 },
+      { "kind": "json_path", "path": "$.id", "exists": true }
+    ],
+    "extract": [
+      { "name": "bookId", "from": "response_body", "expression": "$.id" }
+    ],
+    "required": true,
+    "timeoutMs": 5000
+  },
+  "weight": 1
+}
+
+{
+  "stepOrder": 3,
+  "name": "Lấy sách theo ID (dùng bookId từ step 2)",
+  "stepType": "HTTP_REQUEST",
+  "config": {
+    "method": "GET",
+    "path": "/api/v1/books/${bookId}",
+    "expected_status": 200,
+    "assertions": [
+      { "kind": "status", "equals": 200 },
+      { "kind": "field_equals", "path": "$.id", "equals": "${bookId}" },
+      { "kind": "json_path", "path": "$.title", "exists": true }
+    ]
+  },
+  "weight": 1
+}
+
+{
+  "stepOrder": 4,
+  "name": "Cập nhật sách (dùng bookId)",
+  "stepType": "HTTP_REQUEST",
+  "config": {
+    "method": "PATCH",
+    "path": "/api/v1/books/${bookId}",
+    "body": { "title": "Sách A - Bản sửa" },
+    "expected_status": 200,
+    "assertions": [
+      { "kind": "status", "equals": 200 },
+      { "kind": "contains", "text": "Bản sửa" }
+    ]
+  },
+  "weight": 1
+}
+
+{
+  "stepOrder": 5,
+  "name": "Xóa sách (dùng bookId)",
+  "stepType": "HTTP_REQUEST",
+  "config": {
+    "method": "DELETE",
+    "path": "/api/v1/books/${bookId}",
+    "expected_status": 204,
+    "required": true
+  },
+  "weight": 1
+}
+
+{
+  "stepOrder": 6,
+  "name": "Kiểm tra đã xóa (404)",
+  "stepType": "HTTP_REQUEST",
+  "config": {
+    "method": "GET",
+    "path": "/api/v1/books/${bookId}",
+    "expected_status": 404,
+    "assertions": [
+      { "kind": "status", "equals": 404 }
+    ]
+  },
+  "weight": 1
+}
+```
+
+---
+
+### 24.9 Faker / Dynamic variables
+
+```json
+{
+  "method": "POST",
+  "path": "/api/v1/books",
+  "body": {
+    "title": "${$FAKER_BOOK_TITLE}",
+    "author": "${$FAKER_NAME}",
+    "isbn": "${$UUID}",
+    "email": "${$FAKER_EMAIL}"
+  },
+  "expected_status": 201,
+  "assertions": [
+    { "kind": "status", "equals": 201 },
+    { "kind": "json_path", "path": "$.id", "exists": true },
+    { "kind": "json_path", "path": "$.isbn", "exists": true }
+  ],
+  "extract": [
+    { "name": "bookId", "from": "response_body", "expression": "$.id" }
+  ]
+}
+```
+
+---
+
+### 24.10 Kết hợp toàn bộ tính năng trong 1 step (phức tạp nhất)
+
+```json
+{
+  "stepOrder": 1,
+  "name": "Tạo 4 sách khác nhau với data[] và auto_inject_headers",
+  "stepType": "HTTP_REQUEST",
+  "config": {
+    "method": "POST",
+    "path": "/api/v1/books",
+    "body": {
+      "title": "${title}",
+      "author": "Tô Hoài",
+      "year": "${year}",
+      "isbn": "${$UUID}"
+    },
+    "expected_status": 201,
+    "auto_inject_headers": {
+      "Authorization": "Bearer ${accessToken}"
+    },
+    "data": [
+      { "title": "Sách A", "year": "1941" },
+      { "title": "Sách B", "year": "1950" },
+      { "title": "Sách C", "year": "1960" },
+      { "title": "Dế Mèn Phiêu Lưu Ký", "year": "1941" }
+    ],
+    "extract": [
+      { "name": "bookId_${index}", "from": "response_body", "expression": "$.id", "fallback": "" },
+      { "name": "wholeResponse_${index}", "from": "response_body", "expression": "$", "as": "json" }
+    ],
+    "assertions": [
+      { "kind": "status", "equals": 201 },
+      { "kind": "json_path", "path": "$.id", "exists": true },
+      { "kind": "array_length", "path": "$", "equals": 1 },
+      { "kind": "any_of", "assertions": [
+        { "kind": "matches_regex", "path": "$.title", "pattern": "^Sách [A-C]$" },
+        { "kind": "matches_regex", "path": "$.title", "pattern": "^Dế Mèn" }
+      ]}
+    ],
+    "required": true,
+    "timeoutMs": 10000
+  },
+  "weight": 1
+}
+```
+
+---
+
+*Section 24 added to lecturer-full-e2e-plan.md. Date added: 2026-10-28. Cấu hình JSON chi tiết nhất cho tất cả tính năng phức tạp (Phases 1-7) đã bổ sung.*
+
+*This document is based on actual code in repo `web-grading-system-deploy`. Date written: 2026-10-28.*

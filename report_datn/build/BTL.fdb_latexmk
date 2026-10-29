@@ -1,15 +1,15 @@
 # Fdb version 4
-["bibtex build/BTL"] 1793169364.26442 "build/BTL.aux" "build/BTL.bbl" "build/BTL" 1793169463.64852 0
+["bibtex build/BTL"] 1793236183.30193 "build/BTL.aux" "build/BTL.bbl" "build/BTL" 1793236397.04427 0
   "./Danh_sach_tai_lieu_tham_khao.bib" 1793150120.26591 8294 825c713b5beb05d0b5d3dce12709ff5d ""
   "/usr/share/texmf-dist/bibtex/bst/biblatex/biblatex.bst" 1775415801 65510 9a2a51799b543ff279b8ea2dd91ec499 ""
-  "build/BTL-blx.bib" 1793169462.93692 343 eecd58be191eac03682f8fda492bb690 "pdflatex"
-  "build/BTL.aux" 1793169462.91861 49503 2c64a5c31bfbc2941b4eff259315091a "pdflatex"
+  "build/BTL-blx.bib" 1793236396.50692 343 eecd58be191eac03682f8fda492bb690 "pdflatex"
+  "build/BTL.aux" 1793236396.49277 49503 30c6f8613b15aaf27689194c4e48546a "pdflatex"
   (generated)
   "build/BTL.bbl"
   "build/BTL.blg"
   (rewritten before read)
-["pdflatex"] 1793169447.29466 "/home/duongvct/Documents/workspace/PTIT/web-grading-system-deploy/report_datn/BTL.tex" "build/BTL.pdf" "BTL" 1793169463.64891 0
-  "/home/duongvct/Documents/workspace/PTIT/web-grading-system-deploy/report_datn/BTL.tex" 1793169446.44961 11727 cc19956c2390e40b37b21cc926dfa352 ""
+["pdflatex"] 1793236380.74836 "/home/duongvct/Documents/workspace/PTIT/web-grading-system-deploy/report_datn/BTL.tex" "build/BTL.pdf" "BTL" 1793236397.04465 0
+  "/home/duongvct/Documents/workspace/PTIT/web-grading-system-deploy/report_datn/BTL.tex" 1793236379.99576 11727 cc19956c2390e40b37b21cc926dfa352 ""
   "/usr/share/texmf-dist/fonts/enc/dvips/base/8r.enc" 1775415801 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/share/texmf-dist/fonts/enc/dvips/vntex/t5.enc" 1775415801 7824 21ade6c3c7fd67cb4ace8dbc91c53118 ""
   "/usr/share/texmf-dist/fonts/map/fontname/texfonts.map" 1775415801 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -207,12 +207,12 @@
   "/usr/share/texmf-dist/web2c/texmf.cnf" 1775415801 43569 fd570f2fa160877d211e859f687312ba ""
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1793029401 5418909 d48fb256e573d3b961fb0e6b9b49cec7 ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1793029325 2426823 c30a68a27286e8b4880a6f6a14e666ae ""
-  "BTL.tex" 1793169446.44961 11727 cc19956c2390e40b37b21cc926dfa352 ""
+  "BTL.tex" 1793236379.99576 11727 cc19956c2390e40b37b21cc926dfa352 ""
   "Bia.tex" 1793075135.07929 1337 d53f63b561388dd4344af097d73f447d ""
   "Chuong/0_2_Loi_cam_on.tex" 1791247733 801 f3f8dfcbe2fa709f8384b41e181bf4bf ""
   "Chuong/0_3_Nhan_xet_huong_dan.tex" 1793075822.56515 787 cbf1ee5bdbb9ffce0f8f773075ca4fe6 ""
   "Chuong/0_4_Nhan_xet_phan_bien.tex" 1793075822.56515 785 79e5f3400155fcf46644e3cbb0e1360c ""
-  "Chuong/0_5_Danh_muc_viet_tat.tex" 1793149868.89113 9205 40750a4b7bd8c301932dd3610f009168 ""
+  "Chuong/0_5_Danh_muc_viet_tat.tex" 1793236141.81642 17168 9b2afece2bb9e59da9e590b2d66e98e2 ""
   "Chuong/0_Loi_mo_dau.tex" 1792510351.24382 2769 86a019e7bcebd543694443475e0f025d ""
   "Chuong/1_Co_so_ly_thuyet.tex" 1793101342.99237 28711 9bbf4c869c14ccffbda5f5b024f68525 ""
   "Chuong/2_Phan_tich_thiet_ke.tex" 1793149805.53685 61544 e482433cfd5b9908564b28abb3f39c98 ""
@@ -251,13 +251,13 @@
   "Hinhve/Hinh2_9_usecase_xem_ket_qua_lop.png" 1792200851.32639 39857 531fd3963f331144524c4ef7ff4543f9 ""
   "Hinhve/ptit_logo_1.png" 1791247734 106734 86bfae721e249ebe650ef31acddb42d3 ""
   "Tu_viet_tat.tex" 1791247733 4034 5a79193b55b4e2db3168374b0a9dbd36 ""
-  "build/BTL.aux" 1793169462.91861 49503 2c64a5c31bfbc2941b4eff259315091a "pdflatex"
-  "build/BTL.bbl" 1793169364.39208 20524 c63d1b40223cd1f3879edccb3730c8e2 "bibtex build/BTL"
-  "build/BTL.lof" 1793169462.94022 5273 bfd2a7eef766a8cad77bae66e6acf21f "pdflatex"
-  "build/BTL.lot" 1793169462.94022 2506 4c03a21bfcc6db1271d585d23208b1a4 "pdflatex"
-  "build/BTL.out" 1793169462.92992 22937 57e8fc0c7e1730ead0f1b0c220e72e92 "pdflatex"
-  "build/BTL.run.xml" 1793169462.94022 2628 f693dc06f2612c61c0c342c8fb16e6db "pdflatex"
-  "build/BTL.toc" 1793169462.94022 11210 aae91cbb88bb3c4b13a6f42fb6d63129 "pdflatex"
+  "build/BTL.aux" 1793236396.49277 49503 30c6f8613b15aaf27689194c4e48546a "pdflatex"
+  "build/BTL.bbl" 1793236183.46083 20524 c63d1b40223cd1f3879edccb3730c8e2 "bibtex build/BTL"
+  "build/BTL.lof" 1793236396.50903 5273 bfd2a7eef766a8cad77bae66e6acf21f "pdflatex"
+  "build/BTL.lot" 1793236396.50903 2506 4c03a21bfcc6db1271d585d23208b1a4 "pdflatex"
+  "build/BTL.out" 1793236396.50092 22937 57e8fc0c7e1730ead0f1b0c220e72e92 "pdflatex"
+  "build/BTL.run.xml" 1793236396.50903 2628 f693dc06f2612c61c0c342c8fb16e6db "pdflatex"
+  "build/BTL.toc" 1793236396.50903 11210 aae91cbb88bb3c4b13a6f42fb6d63129 "pdflatex"
   "build/lstlisting" 0 -1 0 ""
   "lstlisting" 0 -1 0 ""
   (generated)
