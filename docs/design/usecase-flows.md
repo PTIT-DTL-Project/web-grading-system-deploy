@@ -1164,10 +1164,13 @@ Columns: `username, fullName, email, role?` — `role` is `STUDENT`/`LECTURER`
 (optional `ROLE_` prefix tolerated), blank means `STUDENT` (secure default).
 Unknown role values fail the row, never the batch. Caps: 2 MB, 2000 rows.
 
-### Step 2 — Per-row orchestration (server-side, sequential)
+### Step 2 — Per-row orchestration (server-side, at most 3 rows in flight)
 
-For each row: duplicate check by username, then email (either hit → `skipped`
-with reason) → `POST users` (`enabled: true`,
+For each row: duplicate check by username, then email. A username duplicate
+that already HAS a password → `skipped` (`duplicate_username`); one WITHOUT a
+password is a half-provisioned account left by an earlier failed run and gets
+its temporary password and role now, reported as `created` — re-importing the
+same file is the repair path. New rows: `POST users` (`enabled: true`,
 `requiredActions: ["UPDATE_PASSWORD"]`) → temporary password (= the username)
 → realm role from a per-import cache. A `409` race on create degrades to
 `skipped`; any other row failure lands in the report with a machine reason
@@ -1175,13 +1178,21 @@ with reason) → `POST users` (`enabled: true`,
 `invalid_input`, `weak_password`, `provider_error`, `role_not_assigned`,
 `duplicate_username`, `duplicate_email`).
 
+Transient Keycloak answers — 5xx, connection resets, and the 400
+`Cannot parse the JSON` its streaming user search returns under load — are
+retried up to 3 attempts with capped backoff. They never turn into a verdict
+about the row: the old shortcut of reading them as "user not found"/"weak
+password" is what produced half-provisioned accounts. Concurrency is capped at
+3 rows because a wider burst overloads a single-node Keycloak.
+
 ### Step 3 — Read the report
 
 Expected: `200` with
 `data = {created: {STUDENT, LECTURER}, skipped, failed: [{row, username, role,
-reason}]}`. Re-running a file is safe (created rows skip as duplicates), with
-one caveat: a row that failed at role assignment stays role-less on re-run —
-repair it manually, the report names it via `role_not_assigned`.
+reason}]}`. Re-running a file is safe: complete accounts skip as duplicates and
+half-provisioned ones are completed. One caveat remains: a row that failed at
+role assignment already has a password, so a re-run skips it — repair that one
+manually, the report names it via `role_not_assigned`.
 
 ### Step 4 — First login (no app changes needed)
 

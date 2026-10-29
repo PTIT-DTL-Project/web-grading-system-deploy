@@ -181,6 +181,20 @@ Plan that drove the Phase 1 changes:
   `PUT /admin/realms/{realm}/clients/{cid}/default-client-scopes/{scopeId}` → expect 204.
 - The change-password endpoint the gateway exposes is documented end-to-end in
   `docs/design/usecase-flows.md` (UC-14) and `docs/api/API-TEST-GUIDE.md` (§5).
+- **Never turn an admin 5xx into a verdict about a row.** Bulk provisioning retries
+  5xx, connection resets and the 400 `Cannot parse the JSON` that Keycloak's
+  streaming user search returns under load (keycloak#34857) — up to 3 attempts
+  with capped backoff. Reading them as "user not found" or "weak password" leaves
+  half-provisioned accounts behind (2026-10-29 incident).
+- **A username duplicate is only a duplicate if it has a password.**
+  `GET /admin/realms/{realm}/users/{id}/credentials` answers `[]` for an account
+  created while `reset-password` was failing; a re-import must complete it
+  (temporary password + realm role) rather than skip it, or the gap is permanent.
+  Verified live 2026-10-29 against `b22dckh022`.
+- **Bulk-import concurrency stays <= 3.** A single `start-dev` Keycloak serializes
+  user-list reads against the writes each row performs; 10 rows in flight produced
+  intermittent 400/500/connection resets. Retrying is the mitigation, not more
+  parallelism.
 
 ## 9. Phase 2 hardening (chốt 2026-10-03): policy syntax, bootstrap admin, rotation
 

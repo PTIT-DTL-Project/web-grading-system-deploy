@@ -24,6 +24,19 @@ dind limits AND `replicas`/partition math (`execute-plan-v1.0.md` §7).
 `DOCKER_HOST=tcp://localhost:2375` (DinD sidecar). The runtime image has no
 `docker` CLI, so shelling out to `docker compose` is not an option.
 `TESTCONTAINERS_RYUK_DISABLED=true` is set in the chart (Ryuk can't run in-pod).
+
+- **A failed boot must stop its own project.** `DockerComposeRunner.boot` calls
+  `stopQuietly(compose)` before rethrowing when `compose.start()` fails. Ryuk is
+  disabled, so a timed-out or port-clashing start otherwise leaves the project's
+  containers running, their published host port stays bound in the pod netns, and
+  the next job dies on `Bind for 0.0.0.0:20000 failed: port is already allocated`
+  (incident 2026-10-29).
+- **`PortAllocator` probes each candidate port** by binding `0.0.0.0:<port>`
+  before handing it out. Pod containers share one network namespace, so the probe
+  sees exactly what Docker will see. A port held by something outside the
+  allocator (leaked container) is skipped and stays marked for the JVM's life, so
+  the next job moves to the next free port instead of failing.
+  Covered by `PortAllocatorTest.claim_skipsPortAlreadyBoundInThePod`.
 `testcontainers` is a **compile**-scope dep in executor-service `pom.xml`.
 
 ## 3. Compose patching is pure logic (`DockerComposePatcher`)

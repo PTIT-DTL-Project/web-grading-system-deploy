@@ -216,7 +216,7 @@ This is how a later step can call `/api/v1/books/${bookId}` after an earlier ste
 
 ### 5.3 Request construction
 
-Implemented in `HttpStepExecutor.java:54-115`.
+Implemented in `HttpStepExecutor.executeSingle`.
 
 1. Resolve method, defaulting to `GET`.
 2. Resolve path, defaulting to `/`.
@@ -226,7 +226,10 @@ Implemented in `HttpStepExecutor.java:54-115`.
 http://localhost:${app_port}${path}[?query]
 ```
 
-4. Append each `query_params` entry as `key=value`, joined with `&`. Keys and values are not URL-encoded by the current implementation.
+4. Append each `query_params` entry as `key=value`, joined with `&`. Keys and values are
+   percent-encoded as UTF-8 (space becomes `%20`, `ế` becomes `%E1%BA%BF`) so a title with
+   spaces or non-ASCII letters can be sent at all — `URI.create` rejects those characters
+   otherwise. Write raw values: an already-escaped `%20` is escaped again.
 5. Substitute every header value; no request is sent without processing configured headers first.
 6. If `body` is present, stringify it and substitute variables inside the resulting string.
 7. If a body exists and no `Content-Type` header is present, add `Content-Type: application/json`.
