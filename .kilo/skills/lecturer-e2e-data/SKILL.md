@@ -87,15 +87,43 @@ and `DELAY` are rejected at save time (400): extract via the HTTP step's `config
 
 `config` keys are **snake_case** and only structurally validated (`StepConfigValidator`):
 - HTTP: `method` (GET/POST/PUT/PATCH/DELETE/HEAD/OPTIONS), `path` must start with `/`,
-  `headers`, `query_params`, `body`, `expected_status` (int 100–599),
-  `assertions[]` kinds `status | body_structure | body_equals | json_path | contains | field_equals`,
-  `extract[]{name,from,expression}`.
+  `headers`, `query_params`, `body`, `expected_status` (int 100–599), `extract[]`,
+  `data[]` (≤10 rows, one request per row), `auto_inject_headers` (harvested after the step,
+  applied to the following steps of the plan).
+- `assertions[]` accepts all 13 kinds the executor scores: `status{equals}`, `json_path{path,exists}`,
+  `contains{text}`, `body_equals{json}`, `body_structure{json}` (same key set and primitive types,
+  values ignored), `field_equals{path,equals}`, `json_path_equals{path,equals}`,
+  `array_length{path,equals}`, `contains_item{path,equals}`, `greater_than{path,value}`,
+  `less_than{path,value}`, `matches_regex{path,pattern}` (`String.matches`, whole string),
+  `any_of{assertions[]}`.
+- `extract[]` entries are `{name, from:"response_body", expression:"$...."}` with optional
+  `as: scalar|json` and `fallback`. Inside a `data[]` loop the name is a template
+  (`bookId_${index}`); row fields and `${index}` are substituted into a fresh copy of the config.
+- `${var}` is substituted in `path`, `headers`, `query_params`, `body`, `extract[].name`, and in
+  the `equals` of `field_equals` / `json_path_equals`. It is not substituted in `contains.text`,
+  `matches_regex.pattern`, `array_length.equals`, `contains_item.equals` or the `value` of
+  `greater_than` / `less_than`.
 - DB: optional `connection{db_type: postgres|mysql|mariadb, database (bare [A-Za-z0-9_$]+), db_port 1–65535}`,
   `query` (DB_QUERY), `checks[]` (DB_SCHEMA_CHECK: TABLE_EXISTS/COLUMN_EXISTS/INDEX_EXISTS/PRIMARY_KEY).
 - Config `required`/`timeoutMs` duplicate the step-level columns; unknown keys are tolerated.
 
 Response shapes to remember: plan steps expose **`type`**, not `stepType`; plans are read back
 nested via `GET /api/v1/assignments/{aid}/plans` (each plan carries `steps[]`).
+
+### 4.1 Plan language and data (2026-10-30)
+
+- Plan name, step names, descriptions and every string in `config` are **English**. Vietnamese
+  test data is a defect: it turns encoding bugs into assertion mismatches and hides the cause.
+- Keep `contains` / `body_equals` text ASCII. Flask's `jsonify` escapes non-ASCII as `\uXXXX`,
+  so `contains "Tô Hoài"` can never match a body that really contains "Tô Hoài". Vietnamese
+  content belongs in the assignment title/topic/description, not in step data.
+- `query_params` values are raw (`?title=The Little Prince`, never pre-encoded); the executor
+  percent-encodes names and values as UTF-8, space becomes `%20`.
+- Give every HTTP step `timeoutMs` 10000. A 12-step plan with one `data[]` loop makes ~15
+  requests, so the 30 s per-request default can exhaust `executionTimeoutMs` 300000 on a broken
+  app; at 10 s the worst case still fits.
+- Only add a step the student app can satisfy. Read the mock's `docker-compose.yml` first: a
+  Flask-only mock has no Postgres, so DB steps can never pass there.
 
 ## 5. Verify filters
 
@@ -104,6 +132,11 @@ nested via `GET /api/v1/assignments/{aid}/plans` (each plan carries `steps[]`).
 `GET /api/v1/assignments/topics?purpose=GRADED|PRACTICE` for the distinct-topic list.
 
 ## 6. DB step pattern (Phase 17)
+
+DB steps only pass when the student's `docker-compose.yml` starts a reachable DB service
+(the executor connects to `localhost:<db_port>` from inside the graded container network).
+The Flask mock `mock/book-app-login-v1` ships no database, so the book assignment plan is
+HTTP-only; see §17.17 of `.opencode/plan/generate-data-api/lecturer-full-e2e-plan.md`.
 
 DB steps are added **after** HTTP steps on each plan, running on the student container:
 
