@@ -4114,6 +4114,27 @@ và chấm thật submission `c2279f84-e940-4953-9cc6-2633eae5944e`: 8/8 bước
 
 ---
 
+### 17.21 Sửa plan "Quản lý thư viện" để chấm đủ 7 bước HTTP + DB (2026-10-30)
+
+Assignment `155e2459-c734-4425-b926-0f84d96e7821`, plan
+`7ad3bf24-75b7-48d8-b574-4bd9fa92d1a1` ("Thư viện — Mượn trả"), 7 bước, weight 10.
+Như ba plan trước, 4 lỗi cấu hình DB phải sửa mới chấm được bước 6 và 7:
+
+| Lỗi | Triệu chứng | Sửa |
+|-----|-------------|-----|
+| `connection` thiếu `db_service`, `username`, `password` | Executor không publish port DB; JDBC connection refused | Thêm `"db_service":"db","username":"postgres","password":"postgres"` |
+| `db_port: 8083` (app port) | Patcher publish `<host>:8083`; Postgres nghe 5432 | Đổi `"db_port":5432` |
+| `PRIMARY_KEY` thiếu `table_name` | `PRIMARY KEY (id) missing on ''` | Thêm `"table_name":"library"` vào check đó |
+| `SELECT COUNT(*)` + `row_count: 0` | `COUNT(*)` luôn trả 1 dòng | Query `SELECT id FROM library WHERE id::text = '${libBookId}'` |
+
+Lý do query bước 7 lọc theo id: chỉ xóa một cuốn sách theo libBookId, bảng library vẫn có thể chứa sách khác, nên không thể asserted toàn bảng rỗng. `row_count` đếm số dòng result-set, nên `SELECT COUNT(*)` không bao giờ bằng 0.
+
+Mock solution: `mock/library-management-solution/` (Flask + psycopg + Postgres 16, service `library-app` cổng 8083 và service `db` database `library_db`), zip phẳng
+`mock/library-management-solution.zip` gồm 5 file. Đã kiểm tra local 12/12 check (HTTP + psql)
+và chấm thật submission `c9c3e863-41ca-45c2-8f79-2ef73ae09247`: 7/7 bước PASSED, 10.00/10.
+
+---
+
 *Section 24 added to lecturer-full-e2e-plan.md. Date added: 2026-10-28. Cấu hình JSON chi tiết nhất cho tất cả tính năng phức tạp (Phases 1-7) đã bổ sung.*
 
 *This document is based on actual code in repo `web-grading-system-deploy`. Date written: 2026-10-28.*
