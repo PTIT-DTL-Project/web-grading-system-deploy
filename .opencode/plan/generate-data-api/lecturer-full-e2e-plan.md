@@ -4093,6 +4093,27 @@ và chấm thật submission `004d7e34-902a-44bb-baa5-2a2dfe79e2b5`: 7/7 bước
 
 ---
 
+### 17.20 Sửa plan "Hệ thống chấm điểm" để chấm đủ 8 bước HTTP + DB (2026-10-30)
+
+Assignment `4d127dd9-ad03-4d88-b2d1-9e39dc4d22f7`, plan
+`97b64df7-4118-4b31-8b4f-d0fea38fe06c` ("Chấm điểm — Nhập và xử lý"), 8 bước, weight 10.
+Như hai plan trước, 4 lỗi cấu hình DB phải sửa mới chấm được bước 7 và 8:
+
+| Lỗi | Triệu chứng | Sửa |
+|-----|-------------|-----|
+| `connection` thiếu `db_service`, `username`, `password` | Executor không publish port DB; JDBC connection refused | Thêm `"db_service":"db","username":"postgres","password":"postgres"` |
+| `db_port: 8084` (app port) | Patcher publish `<host>:8084`; Postgres nghe 5432 | Đổi `"db_port":5432` |
+| `PRIMARY_KEY` thiếu `table_name` | `PRIMARY KEY (id) missing on ''` | Thêm `"table_name":"grades"` vào check đó |
+| `SELECT COUNT(*)` + `row_count: 0` | `COUNT(*)` luôn trả 1 dòng | Query `SELECT id FROM grades WHERE id::text = '${scoreId}'` |
+
+Lý do query bước 8 lọc theo id: chỉ xóa một bản ghi theo scoreId, bảng grades vẫn có thể chứa bản ghi khác, nên không thể asserted toàn bảng rỗng. `row_count` đếm số dòng result-set, nên `SELECT COUNT(*)` không bao giờ bằng 0.
+
+Mock solution: `mock/grades-management-solution/` (Flask + psycopg + Postgres 16, service `grades-app` cổng 8084 và service `db` database `grades_db`), zip phẳng
+`mock/grades-management-solution.zip` gồm 5 file. Đã kiểm tra local 15/15 check (HTTP + psql)
+và chấm thật submission `c2279f84-e940-4953-9cc6-2633eae5944e`: 8/8 bước PASSED, 10.00/10.
+
+---
+
 *Section 24 added to lecturer-full-e2e-plan.md. Date added: 2026-10-28. Cấu hình JSON chi tiết nhất cho tất cả tính năng phức tạp (Phases 1-7) đã bổ sung.*
 
 *This document is based on actual code in repo `web-grading-system-deploy`. Date written: 2026-10-28.*
