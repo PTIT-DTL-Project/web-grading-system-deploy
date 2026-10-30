@@ -4072,6 +4072,25 @@ Mock solution: `mock/asset-management-solution/` (Flask + psycopg + Postgres 16,
 `mock/asset-management-solution.zip` gồm 5 file. Đã kiểm tra local 15/15 check (HTTP + psql)
 và chấm thật submission `d5b186e6-87d8-4e16-a67e-84686937bdc0`: 7/7 bước PASSED, 10.00/10.
 
+### 17.19 Sửa plan "Quản lý kho hàng" để chấm đủ 7 bước HTTP + DB (2026-10-30)
+
+Assignment `e39e0f42-c8c9-4da7-8a8d-53e357e9848a`, plan
+`c3ed9afa-c3fa-4398-a3c2-b61d469787c4` ("Kho hàng — Nhập/Xuất"), 7 bước, weight 10.
+Như plan tài sản, 4 lỗi cấu hình DB phải sửa mới chấm được bước 6 và 7:
+
+| Lỗi | Triệu chứng | Sửa |
+|-----|-------------|-----|
+| `connection` thiếu `db_service`, `username`, `password` | Executor không publish port DB; JDBC connection refused | Thêm `"db_service":"db","username":"postgres","password":"postgres"` |
+| `db_port: 8085` (app port) | Patcher publish `<host>:8085`; Postgres nghe 5432 | Đổi `"db_port":5432` |
+| `PRIMARY_KEY` thiếu `table_name` | `PRIMARY KEY (id) missing on ''` | Thêm `"table_name":"inventory"` vào check đó |
+| `SELECT COUNT(*)` + `row_count: 0` | `COUNT(*)` luôn trả 1 dòng | Query `SELECT id FROM inventory WHERE id::text = '${outboundId}'` |
+
+Lý do query bước 7 lọc theo id: inbound receipt vẫn còn trong bảng `inventory`, nên không thể asserted toàn bảng rỗng. `row_count` đếm số dòng result-set, nên `SELECT COUNT(*)` không bao giờ bằng 0.
+
+Mock solution: `mock/inventory-management-solution/` (Flask + psycopg + Postgres 16, service `inventory-app` cổng 8085 và service `db` database `inventory_db`), zip phẳng
+`mock/inventory-management-solution.zip` gồm 5 file. Đã kiểm tra local 16/16 check (HTTP + psql)
+và chấm thật submission `004d7e34-902a-44bb-baa5-2a2dfe79e2b5`: 7/7 bước PASSED, 10.00/10.
+
 ---
 
 *Section 24 added to lecturer-full-e2e-plan.md. Date added: 2026-10-28. Cấu hình JSON chi tiết nhất cho tất cả tính năng phức tạp (Phases 1-7) đã bổ sung.*
