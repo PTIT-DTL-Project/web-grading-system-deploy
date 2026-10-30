@@ -3997,6 +3997,50 @@ Phần này cung cấp các ví dụ JSON config chi tiết nhất, cover tất 
 
 ---
 
+### 17.17 Nâng cấp plan bài 1 sang tiếng Anh (2026-10-30)
+
+Mục này thay thế cấu hình 6 bước HTTP và 2 bước DB của §17.2, §17.16 cho assignment
+"Quản lý sách REST API" ở lớp `D22CQKH02-B`. Hai lý do:
+
+- Mock `mock/book-app-login-v1` là Flask thuần, `docker-compose.yml` chỉ có service `book-app`,
+  không có Postgres, nên 2 bước DB không bao giờ pass.
+- Dữ liệu tiếng Việt ("Dế Mèn", "Tô Hoài") vừa làm `contains`/`body_equals` lệch (Flask escape
+  non-ASCII thành `\uXXXX`) vừa che mất lỗi encode query của executor.
+
+Plan hiện tại: **Book CRUD - Full grading plan**, 12 bước HTTP, tổng weight 18.
+
+| # | Bước | Request | Assertion chính | Weight |
+|---|------|---------|-----------------|--------|
+| 1 | Health check | `GET /api/v1/health` | `field_equals` status=healthy, service=book-grading-mock; `json_path` `$.status` | 1 |
+| 2 | Log in and extract the access token | `POST /api/v1/auth/login` | `json_path` accessToken; `matches_regex` `^mock-access-token-[0-9a-f-]{36}$`; `greater_than`/`less_than` expires_in; extract `accessToken`; `auto_inject_headers` Authorization | 2 |
+| 3 | Reject a wrong password | `POST /api/v1/auth/login` (sai mật khẩu) | `expected_status` 401; `json_path` `$.error`; `any_of` gồm `contains` "Invalid credentials" hoặc `field_equals` error | 1 |
+| 4 | Create a book and extract its id | `POST /api/v1/books` | `body_structure` 7 khoá; `matches_regex` isbn `^ISBN-[0-9a-f]{8}$`; `contains` author; extract `bookId` | 2 |
+| 5 | Read the book by id | `GET /api/v1/books/${bookId}` | `field_equals` id, title, year | 1 |
+| 6 | Filter books by title | `GET /api/v1/books?title=The Little Prince` | `array_length` `$` = 1; `contains_item` `$[*].title`; `json_path_equals` `$[0].author` | 2 |
+| 7 | Update the book title | `PATCH /api/v1/books/${bookId}` | `field_equals` title; `contains` "Updated"; `json_path` `$.isbn` | 1 |
+| 8 | Re-read the updated book | `GET /api/v1/books/${bookId}` | `field_equals` title | 1 |
+| 9 | Create four books with a data[] loop | `POST /api/v1/books`, 4 dòng `data[]` | `field_equals` title/author theo `${title}`/`${author}`; `matches_regex` isbn; extract `bookId_${index}` | 3 |
+| 10 | List every book | `GET /api/v1/books` | `array_length` `$` = 5; `contains_item` title và author; `json_path` `$[0].id` | 1 |
+| 11 | Delete the book | `DELETE /api/v1/books/${bookId}` | `expected_status` 204 | 1 |
+| 12 | Confirm the deleted book returns 404 | `GET /api/v1/books/${bookId}` | `expected_status` 404; `body_equals` `{"error":"Book not found"}`; `field_equals` `$.error` | 2 |
+
+Phủ đủ 13 assertion kind: `status`, `json_path`, `contains`, `body_structure`, `body_equals`,
+`field_equals`, `array_length`, `contains_item`, `json_path_equals`, `greater_than`, `less_than`,
+`matches_regex`, `any_of`.
+
+Kết quả chấm thật ngày 2026-10-30 (submission `c49eb1e3`, zip `book-app-login-v1.zip`):
+12/12 bước PASSED, điểm 10.00/10; bước 6 gọi đúng URL
+`/api/v1/books?title=The%20Little%20Prince`; bước 9 tạo đủ 4 sách và extract `bookId_0..3`.
+
+Quy ước khi sửa plan (đã ghi vào skill `lecturer-e2e-data`):
+
+- Tên bước, mô tả và dữ liệu viết bằng tiếng Anh.
+- Chuỗi trong `contains`/`body_equals` chỉ dùng ASCII.
+- `query_params` nhận giá trị thô, executor tự percent-encode.
+- Mỗi bước đặt `timeoutMs` 10000.
+
+---
+
 *Section 24 added to lecturer-full-e2e-plan.md. Date added: 2026-10-28. Cấu hình JSON chi tiết nhất cho tất cả tính năng phức tạp (Phases 1-7) đã bổ sung.*
 
 *This document is based on actual code in repo `web-grading-system-deploy`. Date written: 2026-10-28.*
