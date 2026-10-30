@@ -133,10 +133,33 @@ nested via `GET /api/v1/assignments/{aid}/plans` (each plan carries `steps[]`).
 
 ## 6. DB step pattern (Phase 17)
 
-DB steps only pass when the student's `docker-compose.yml` starts a reachable DB service
-(the executor connects to `localhost:<db_port>` from inside the graded container network).
-The Flask mock `mock/book-app-login-v1` ships no database, so the book assignment plan is
-HTTP-only; see §17.17 of `.opencode/plan/generate-data-api/lecturer-full-e2e-plan.md`.
+DB steps only pass when the student's `docker-compose.yml` starts the DB service named in
+`connection.db_service` and that service listens on the container port in
+`connection.db_port` (Postgres `5432`, MySQL/MariaDB `3306`). The executor allocates its own
+host port, patches the compose file to publish `<hostPort>:<db_port>` on that service, and
+JDBC-connects to `localhost:<hostPort>`. `db_port` is **container-internal**, never the app's
+host port and never the port the student published by hand.
+
+`connection` must also carry `username` and `password`; empty credentials cannot log in.
+The full block for a Postgres service named `db`, database `assets_db`:
+
+```json
+"connection": {
+  "db_type": "postgres",
+  "db_service": "db",
+  "db_port": 5432,
+  "database": "assets_db",
+  "username": "postgres",
+  "password": "postgres"
+}
+```
+
+- Omitting `db_service` → no port is patched, DB steps fail with connection refused.
+- Putting the app port in `db_port` (e.g. `8086`) → the executor publishes the wrong container
+  port and JDBC cannot reach Postgres.
+- Credentials must match the compose service's `POSTGRES_USER` / `POSTGRES_PASSWORD`.
+- The Flask mock `mock/book-app-login-v1` ships no database, so the book assignment plan is
+  HTTP-only; see §17.17 of `.opencode/plan/generate-data-api/lecturer-full-e2e-plan.md`.
 
 DB steps are added **after** HTTP steps on each plan, running on the student container:
 
@@ -146,24 +169,40 @@ POST /api/v1/assignments/{aid}/plans/{pid}/steps
 
 DB_SCHEMA_CHECK body:
 ```json
-{"stepOrder":N,"name":"Kiểm tra cấu trúc DB (<db>)","stepType":"DB_SCHEMA_CHECK",
- "config":{"connection":{"db_type":"postgres","database":"<db>","db_port":<port>},
-           "checks":[{"kind":"TABLE_EXISTS","table_name":"<table>"},{"kind":"PRIMARY_KEY","column":"id"}]},
+{"stepOrder":N,"name":"Check DB structure (assets_db)","stepType":"DB_SCHEMA_CHECK",
+ "config":{"connection":{"db_type":"postgres","db_service":"db","db_port":5432,
+                         "database":"assets_db","username":"postgres","password":"postgres"},
+           "checks":[{"kind":"TABLE_EXISTS","table_name":"assets"},
+                     {"kind":"PRIMARY_KEY","table_name":"assets","column":"id"}]},
  "weight":1,"required":true,"timeoutMs":5000}
 ```
 
+Every table check carries its own `table_name`: `TABLE_EXISTS`, `PRIMARY_KEY`,
+`COLUMN_EXISTS` (`table_name` + `column_name`), `INDEX_EXISTS` (`table_name` + `index_name`).
+A `PRIMARY_KEY` check without `table_name` queries `table_name = ''` and fails with
+`PRIMARY KEY (id) missing on ''`.
+
 DB_QUERY body:
 ```json
-{"stepOrder":N,"name":"Truy vấn dữ liệu (<db>)","stepType":"DB_QUERY",
- "config":{"connection":{"db_type":"postgres","database":"<db>","db_port":<port>},
-           "query":"SELECT COUNT(*) FROM <table>","expected":{"row_count":0}},
+{"stepOrder":N,"name":"Check no assets remain","stepType":"DB_QUERY",
+ "config":{"connection":{"db_type":"postgres","db_service":"db","db_port":5432,
+                         "database":"assets_db","username":"postgres","password":"postgres"},
+           "query":"SELECT id FROM assets","expected":{"row_count":0}},
  "weight":1,"required":false,"timeoutMs":5000}
 ```
 
-Phase 17 DB mapping (lecturer-defined; sinh viên phải tuân theo):
+`expected.row_count` is the **number of result-set rows**, not the scalar value of `COUNT(*)`.
+`SELECT COUNT(*) FROM assets` always returns one row, so `{"row_count":0}` can never pass.
+To assert emptiness return the rows themselves (`SELECT id FROM assets`, `SELECT * FROM t`)
+and expect 0; to assert N rows return N rows. `expected.columns` compares the column labels
+in order.
 
-| # | Bài | DB | Port | Table |
-|---|-----|----|------|-------|
+Phase 17 DB mapping (lecturer-defined; sinh viên phải tuân theo). **App port** is the
+assignment's `dockerComposePort`, not the DB port; Postgres DB steps always use
+`db_port: 5432`.
+
+| # | Bài | DB | App port | Table |
+|----|-----|----|----------|-------|
 | 1 | Quản lý sách REST API | `books_db` | 8080 | `books` |
 | 2 | Quản lý sinh viên | `students_db` | 8081 | `students` |
 | 3 | Quản lý đơn hàng | `orders_db` | 8082 | `orders` |

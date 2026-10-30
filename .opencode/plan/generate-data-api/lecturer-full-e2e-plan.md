@@ -4039,6 +4039,39 @@ Quy ước khi sửa plan (đã ghi vào skill `lecturer-e2e-data`):
 - `query_params` nhận giá trị thô, executor tự percent-encode.
 - Mỗi bước đặt `timeoutMs` 10000.
 
+### 17.18 Sửa plan "Quản lý tài sản" để chấm đủ 7 bước HTTP + DB (2026-10-30)
+
+Assignment `83580461-ee6e-478a-84f6-ec1bb63e9548`, plan
+`b7631721-53bf-410a-ba38-c1fa4c784b34` ("Tài sản — Quản lý"), 7 bước, weight 10.
+Bốn lỗi cấu hình làm bước DB không thể pass dù app đúng:
+
+| Lỗi | Triệu chứng | Sửa |
+|-----|-------------|-----|
+| `connection` thiếu `db_service`, `username`, `password` | Executor không publish port DB; JDBC `localhost:<hostPort>` connection refused | Thêm `"db_service":"db","username":"postgres","password":"postgres"` |
+| `db_port: 8086` (app port) | Patcher publish `<host>:8086`; Postgres nghe 5432 | Đổi `"db_port":5432` (port trong container) |
+| `PRIMARY_KEY` thiếu `table_name` | `PRIMARY KEY (id) missing on ''` | Thêm `"table_name":"assets"` vào chính check đó |
+| `SELECT COUNT(*) FROM assets` + `row_count:0` | `row_count` đếm số dòng result-set; `COUNT(*)` luôn trả 1 dòng | Đổi query thành `SELECT id FROM assets` |
+
+Plan sau khi sửa (7 bước, weight 10):
+
+| # | Bước | Request / query | Assertion chính |
+|---|------|-----------------|-----------------|
+| 1 | Add new asset | `POST /api/v1/assets` | 201; `json_path $.id`; `contains "Máy chủ Dell"`; extract `assetId` |
+| 2 | Get asset by ID | `GET /api/v1/assets/${assetId}` | 200; `body_structure` đúng 5 khoá `id,name,category,purchaseDate,originalValue` |
+| 3 | Update asset value | `PATCH /api/v1/assets/${assetId}` `{"currentValue":40000000}` | 200; `contains "40000000"` |
+| 4 | Delete asset | `DELETE /api/v1/assets/${assetId}` | 204 |
+| 5 | Check asset deleted | `GET /api/v1/assets/${assetId}` | 404 |
+| 6 | Check DB structure (assets_db) | `TABLE_EXISTS assets`, `PRIMARY_KEY assets.id` | cả hai true |
+| 7 | Query data (assets_db) | `SELECT id FROM assets` | `row_count: 0` |
+
+`GET` chỉ trả 5 khoá vì bước 2 dùng `body_structure`; `currentValue` chỉ xuất hiện ở response
+`PATCH` (bước 3 chỉ kiểm tra substring).
+
+Mock solution: `mock/asset-management-solution/` (Flask + psycopg + Postgres 16, service
+`asset-app` cổng 8086 và service `db` database `assets_db`), zip phẳng
+`mock/asset-management-solution.zip` gồm 5 file. Đã kiểm tra local 15/15 check (HTTP + psql)
+và chấm thật submission `d5b186e6-87d8-4e16-a67e-84686937bdc0`: 7/7 bước PASSED, 10.00/10.
+
 ---
 
 *Section 24 added to lecturer-full-e2e-plan.md. Date added: 2026-10-28. Cấu hình JSON chi tiết nhất cho tất cả tính năng phức tạp (Phases 1-7) đã bổ sung.*
