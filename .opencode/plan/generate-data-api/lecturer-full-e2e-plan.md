@@ -4133,6 +4133,27 @@ Mock solution: `mock/library-management-solution/` (Flask + psycopg + Postgres 1
 `mock/library-management-solution.zip` gồm 5 file. Đã kiểm tra local 12/12 check (HTTP + psql)
 và chấm thật submission `c9c3e863-41ca-45c2-8f79-2ef73ae09247`: 7/7 bước PASSED, 10.00/10.
 
+### 17.22 Sửa plan "Quản lý đơn hàng" để chấm đủ 7 bước HTTP + DB (2026-10-30)
+
+Assignment `bd2b9ea6-9454-4f0b-ae25-2394265ea07f`, plan
+`36e2af52-7372-4844-839a-5c1e29f70928` ("Đơn hàng — Quy trình"), 7 bước, weight 12.
+Như ba plan trước, 4 lỗi cấu hình DB phải sửa mới chấm được bước 6 và 7:
+
+| Lỗi | Triệu chứng | Sửa |
+|-----|-------------|-----|
+| `connection` thiếu `db_service`, `username`, `password` | Executor không publish port DB; JDBC connection refused | Thêm `"db_service":"db","username":"postgres","password":"postgres"` |
+| `db_port: 8082` (app port) | Patcher publish `<host>:8082`; Postgres nghe 5432 | Đổi `"db_port":5432` |
+| `PRIMARY_KEY` thiếu `table_name` | `PRIMARY KEY (id) missing on ''` | Thêm `"table_name":"orders"` vào check đó |
+| `SELECT COUNT(*)` + `row_count: 0` | `COUNT(*)` luôn trả 1 dòng | Query `SELECT id FROM orders WHERE id::text = '${orderId}'` |
+
+Lý do query bước 7 lọc theo id: chỉ xóa một đơn hàng theo orderId, bảng orders vẫn có thể chứa đơn khác, nên không thể asserted toàn bảng rỗng. `row_count` đếm số dòng result-set, nên `SELECT COUNT(*)` không bao giờ bằng 0.
+
+Bước 2 dùng `body_structure` với `items: ["", ""]` (2 phần tử) để khớp kích thước mảng của body trả về khi tạo đơn có 2 items. GET trả đúng 5 khoá `id, items, total, status, customerName`; `status` mặc định `PENDING` nên bước 2 `field_equals $.status == "PENDING"` pass.
+
+Mock solution: `mock/order-management-solution/` (Flask + psycopg + Postgres 16, service `order-app` cổng 8082 và service `db` database `orders_db`), zip phẳng
+`mock/order-management-solution.zip` gồm 5 file. Đã kiểm tra local 14/14 check (HTTP + psql)
+và chấm thật submission `cd12add7-21d6-479a-813c-5514fc10da16`: 7/7 bước PASSED, 10.00/10.
+
 ---
 
 *Section 24 added to lecturer-full-e2e-plan.md. Date added: 2026-10-28. Cấu hình JSON chi tiết nhất cho tất cả tính năng phức tạp (Phases 1-7) đã bổ sung.*
