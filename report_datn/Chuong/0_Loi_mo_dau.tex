@@ -8,12 +8,12 @@
 
 Trong các môn lập trình ứng dụng, đặc biệt là môn Lập trình Web, việc chấm bài thủ công bộc lộ nhiều hạn chế: giảng viên mất nhiều thời gian chạy thử từng bài làm, kết quả thiếu nhất quán giữa các lần chấm, sinh viên phải chờ lâu mới nhận được phản hồi. Khó khăn tăng lên khi sĩ số lớp đông và mỗi sinh viên nộp nhiều bài tập trong kỳ.
 
-Yêu cầu đặc thù của môn học khiến bài toán phức tạp hơn: bài làm của sinh viên là mã nguồn phía máy chủ (backend), nên chấm tĩnh dựa trên mã nguồn là không khả thi — hệ thống bắt buộc phải dựng và chạy được server từ bài nộp để kiểm tra hành vi thực tế qua API, đồng thời kiểm tra các điều kiện của cơ sở dữ liệu mà bài tập sử dụng. Việc thực thi mã nguồn không tin cậy đòi hỏi một cơ chế cách ly an toàn, và hệ thống phải chịu được tải khi nhiều sinh viên nộp bài cùng lúc.
+Yêu cầu đặc thù của môn học khiến bài toán phức tạp hơn: bài làm của sinh viên là mã nguồn phía máy chủ (backend), nên chấm tĩnh dựa trên mã nguồn là không khả thi - hệ thống bắt buộc phải dựng và chạy được server từ bài nộp để kiểm tra hành vi thực tế qua API, đồng thời kiểm tra các điều kiện của cơ sở dữ liệu mà bài tập sử dụng. Việc thực thi mã nguồn không tin cậy đòi hỏi một cơ chế cách ly an toàn, và hệ thống phải chịu được tải khi nhiều sinh viên nộp bài cùng lúc.
 
 \section{Giải pháp}
 \label{section:0.2}
 
-Đồ án xây dựng hệ thống chấm bài tự động môn Lập trình Web theo kiến trúc vi dịch vụ, gồm cổng API (API Gateway), các dịch vụ quản lý lớp học và bài tập, dịch vụ nộp bài, dịch vụ thực thi chấm bài và dịch vụ quản lý kết quả. Sinh viên đóng gói bài làm thành file zip và tải lên hệ thống lưu trữ đối tượng; sự kiện nộp bài được đưa qua hàng đợi tin nhắn để dịch vụ chấm bài xử lý bất đồng bộ mà không bắt sinh viên chờ đợi. Mỗi bài làm được dựng và chạy trong container Docker cách ly, sau đó hệ thống thực hiện các kịch bản kiểm tra đã được giảng viên cấu hình — từ các phương thức HTTP cơ bản đến kiểm tra cấu trúc bảng, ràng buộc dữ liệu và cách xử lý ngoại lệ. Xác thực và phân quyền tập trung qua Keycloak với vai trò giảng viên và sinh viên; toàn bộ công nghệ sử dụng là mã nguồn mở.
+Đồ án xây dựng hệ thống chấm bài tự động môn Lập trình Web theo kiến trúc vi dịch vụ, gồm các dịch vụ quản lý lớp học và bài tập, dịch vụ nộp bài, dịch vụ thực thi chấm bài và dịch vụ quản lý kết quả. Sinh viên đóng gói bài làm thành file zip và tải lên hệ thống lưu trữ đối tượng; sự kiện nộp bài được đưa qua hàng đợi tin nhắn để dịch vụ chấm bài xử lý bất đồng bộ mà không bắt sinh viên chờ đợi. Mỗi bài làm được dựng và chạy trong môi trường cách ly, sau đó hệ thống thực hiện các kịch bản kiểm tra đã được giảng viên cấu hình - từ kiểm tra chức năng cơ bản đến kiểm tra cấu trúc dữ liệu, ràng buộc và cách xử lý ngoại lệ. Xác thực và phân quyền tập trung theo vai trò giảng viên và sinh viên; toàn bộ công nghệ sử dụng là mã nguồn mở.
 
 \section{Cấu trúc báo cáo}
 \label{section:0.3}

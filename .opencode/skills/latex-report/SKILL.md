@@ -209,9 +209,29 @@ Chapter 2 keeps include/extend/generalization out of prose — the
 relations live inside the exported diagram images.
 Subsubsection note: `BTL.tex` redefines `\thesubsubsection` to `\alph`
 (the heading label is bare), so the actor groups print as `a,`/`b,` with
-no parent number — that matches the thesis sample, keep it. Text tone
+no parent number - that matches the thesis sample, keep it. Text tone
 placement in this report follows the traditional style (`hoà`, `xoá`),
 match it.
+
+## Dấu gạch ngang (hyphen) thay vì gạch ngang đôi (em-dash)
+
+Trong văn bản LaTeX của báo cáo, dùng dấu gạch ngang đơn `-` (hyphen,
+U+002D), **không dùng** dấu gạch ngang đôi `—` (em-dash, U+2014) hay
+`---` (em-dash LaTeX). Lý do: OT1 font rendering của `---` và `—` trong
+văn bản tiếng Việt không mong muốn; dấu gạch ngang đơn an toàn, hiển thị
+đúng trên mọi trình duyệt PDF.
+
+Áp dụng cho mọi văn bản trong các file `.tex` của `report_datn/`,
+bao gồm tiêu đề section/subsection, caption, itemize, enumerate, và
+chú thích.
+
+Ví dụ đúng:
+- `\subsection{OAuth 2.0 - Khái niệm chung về ủy quyền}`
+- `không khả thi - hệ thống bắt buộc phải dựng và chạy được server`
+
+Ví dụ sai (đã sửa):
+- `—` (em-dash) → `-` (hyphen)
+- `---` (LaTeX em-dash) → `-` (hyphen)
 
 ## Chương 3 (triển khai và đánh giá)
 

@@ -42,9 +42,9 @@
 \contentsline {subsection}{\numberline {1.7.3}Helm và ArgoCD}{7}{subsection.1.7.3}%
 \contentsline {section}{\numberline {1.8}Quản lý danh tính và truy cập}{8}{section.1.8}%
 \contentsline {subsection}{\numberline {1.8.1}Khái niệm IAM}{8}{subsection.1.8.1}%
-\contentsline {subsection}{\numberline {1.8.2}OAuth 2.0 — Khái niệm chung về ủy quyền}{8}{subsection.1.8.2}%
+\contentsline {subsection}{\numberline {1.8.2}OAuth 2.0 - Khái niệm chung về ủy quyền}{8}{subsection.1.8.2}%
 \contentsline {subsection}{\numberline {1.8.3}OpenID Connect và JWT}{9}{subsection.1.8.3}%
-\contentsline {subsection}{\numberline {1.8.4}Xác thực trên trình duyệt — Authorization Code Flow và PKCE}{9}{subsection.1.8.4}%
+\contentsline {subsection}{\numberline {1.8.4}Xác thực trên trình duyệt - Authorization Code Flow và PKCE}{9}{subsection.1.8.4}%
 \contentsline {section}{\numberline {1.9}Giao diện người dùng phía trước}{11}{section.1.9}%
 \contentsline {subsection}{\numberline {1.9.1}React và TypeScript}{11}{subsection.1.9.1}%
 \contentsline {subsection}{\numberline {1.9.2}Các thư viện hỗ trợ}{11}{subsection.1.9.2}%

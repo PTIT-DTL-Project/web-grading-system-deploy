@@ -1,0 +1,10 @@
+{
+  "mcp": {
+    "servers": {
+      "flovia": {
+        "type": "remote",
+        "url": "https://api.flovia.dev/mcp"
+      }
+    }
+  }
+}
