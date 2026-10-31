@@ -63,7 +63,7 @@ Dịch vụ thực thi chấm là trường hợp đặc biệt vì cần Docker
 
 Cấu hình triển khai được đóng gói bằng Helm~\cite{helmdocs}. Kho cấu hình chứa một chart cho mỗi dịch vụ, gồm Deployment và Service; các Ingress được quản lý riêng trong kho triển khai. Tệp values-stg.yaml khai báo image, tag, profile Spring, tên cơ sở dữ liệu, cổng, tài nguyên và số bản sao. Tài nguyên mặc định của mỗi container là 200m CPU và 256Mi bộ nhớ cho yêu cầu, 500m CPU và 512Mi cho giới hạn; container DinD có yêu cầu và giới hạn riêng. Tên tài nguyên được sinh từ tên release, mà ArgoCD đặt theo tên Application, nên các Service có tiền tố grading- ghép với tên dịch vụ.
 
-Phần lớn chart dùng endpoint /actuator/health cho readiness và liveness, với thời gian chờ khởi động lần lượt 30 giây và 60 giây. Riêng dịch vụ trợ lý AI dùng ba probe riêng biệt trỏ tới các nhóm /actuator/health/readiness và /actuator/health/liveness. Lý do là endpoint /actuator/health gốc chạy cả chỉ báo cơ sở dữ liệu; khi compute của PostgreSQL được đánh thức từ trạng thái tạm dừng, chỉ báo này có thể giữ probe lâu hơn thời gian chờ mặc định và khiến Pod bị khởi động lại. Các nhóm health chỉ kiểm tra trạng thái nội bộ của ứng dụng nên trả lời nhanh và không phụ thuộc cơ sở dữ liệu.
+Phần lớn chart dùng điểm cuối /actuator/health cho readiness và liveness, với thời gian chờ khởi động lần lượt 30 giây và 60 giây. Riêng dịch vụ trợ lý AI dùng ba probe riêng biệt trỏ tới các nhóm /actuator/health/readiness và /actuator/health/liveness. Lý do là điểm cuối /actuator/health gốc chạy cả chỉ báo cơ sở dữ liệu; khi compute của PostgreSQL được đánh thức từ trạng thái tạm dừng, chỉ báo này có thể giữ probe lâu hơn thời gian chờ mặc định và khiến Pod bị khởi động lại. Các nhóm health chỉ kiểm tra trạng thái nội bộ của ứng dụng nên trả lời nhanh và không phụ thuộc cơ sở dữ liệu.
 
 \subsection{Tích hợp liên tục với GitHub Actions}
 \label{section:3.1.3}
@@ -132,7 +132,7 @@ Ngoài các thành phần trên, Kafka UI dùng để xem topic, partition và t
 Secret & Nội dung & Mục đích \\ \hline
 db-secret & Máy chủ, cổng, tên đăng nhập và mật khẩu PostgreSQL & Kết nối cơ sở dữ liệu của từng dịch vụ \\ \hline
 kafka-aiven-credentials & Địa chỉ bootstrap, tài khoản, mật khẩu và chứng chỉ CA & Kết nối Kafka qua SASL\_SSL \\ \hline
-rustfs-secret & Endpoint nội bộ, endpoint công khai, access key và secret key & Truy cập RustFS và tạo presigned URL \\ \hline
+rustfs-secret & Điểm cuối nội bộ, điểm cuối công khai, access key và secret key & Truy cập RustFS và tạo presigned URL \\ \hline
 gateway-trust & Khóa bí mật dùng chung & Xác thực yêu cầu nội bộ gửi từ gateway \\ \hline
 keycloak-db & Thông tin kết nối cơ sở dữ liệu và tài khoản quản trị Keycloak & Khởi tạo và kết nối Keycloak \\ \hline
 ai-credentials & Khóa API, tên mô hình và địa chỉ nhà cung cấp mô hình & Gọi nhà cung cấp mô hình cho trợ lý AI \\ \hline
@@ -248,7 +248,7 @@ Grading Saga & Gửi trùng sự kiện, đặt lại job FAILED, job tồn đ�
 
 Kiểm thử hiệu năng sẽ được thực hiện bằng k6 với bốn loại kịch bản. Kịch bản smoke chạy một lượng nhỏ yêu cầu để xác nhận hệ thống hoạt động sau khi triển khai. Kịch bản load tăng dần số người dùng ảo để đo thời gian phản hồi và số yêu cầu mỗi giây ở mức tải dự kiến. Kịch bản stress đẩy tải vượt mức dự kiến để tìm điểm bão hòa và quan sát cách hệ thống suy giảm. Kịch bản spike tăng tải đột ngột trong thời gian ngắn để kiểm tra khả năng chịu đỉnh và tốc độ phục hồi.
 
-Các endpoint được chọn để đo gồm đăng nhập qua Keycloak, lấy danh sách bài tập, nộp bài, theo dõi trạng thái chấm và xem kết quả. Với luồng chấm, phép đo không chỉ là thời gian phản hồi HTTP mà còn là thời gian từ lúc sự kiện GRADE\_SUBMISSION được phát đến khi job đạt trạng thái DONE hoặc FAILED. Kịch bản chấm đồng thời nhiều bài được dùng để kiểm tra giới hạn của hai bản sao dịch vụ thực thi và của Docker daemon trong mỗi Pod.
+Các điểm cuối được chọn để đo gồm đăng nhập qua Keycloak, lấy danh sách bài tập, nộp bài, theo dõi trạng thái chấm và xem kết quả. Với luồng chấm, phép đo không chỉ là thời gian phản hồi HTTP mà còn là thời gian từ lúc sự kiện GRADE\_SUBMISSION được phát đến khi job đạt trạng thái DONE hoặc FAILED. Kịch bản chấm đồng thời nhiều bài được dùng để kiểm tra giới hạn của hai bản sao dịch vụ thực thi và của Docker daemon trong mỗi Pod.
 
 Kiểm thử độ tin cậy gồm các tác động sau: xóa Pod dịch vụ thực thi khi job đang ở trạng thái BUILDING hoặc RUNNING; gửi trùng sự kiện chấm; chặn tạm thời dịch vụ kết quả để quan sát cơ chế thử lại; thay đổi một tài nguyên trên cụm để kiểm tra selfHeal của ArgoCD; và quay lại image trước đó để kiểm tra khả năng rollback. Sau mỗi tác động, hệ thống được kiểm tra theo ba câu hỏi: job có tiếp tục hoặc được đưa lại hàng đợi hay không, có xuất hiện job trùng hay không, và trạng thái cuối cùng trong cơ sở dữ liệu có khớp với kết quả trong dịch vụ kết quả hay không.
 
@@ -270,7 +270,7 @@ Việc dùng các dịch vụ quản lý cho PostgreSQL và Kafka giảm công s
 
 Bên cạnh các ưu điểm, môi trường triển khai còn một số hạn chế cần được xử lý trước khi vận hành chính thức.
 
-Thứ nhất, một số dịch vụ nội bộ như dịch vụ quản lý lớp học và điểm, dịch vụ nộp bài, dịch vụ kết quả chấm, dịch vụ thực thi chấm và dịch vụ trợ lý AI vẫn có Ingress riêng. Phần lớn các dịch vụ này kiểm tra khóa gateway ở tầng ứng dụng; riêng dịch vụ thực thi chấm chưa có kiểm tra này, nên endpoint đặt lại công việc có thể bị gọi trực tiếp nếu tên miền được biết. Việc mở thêm tên miền công khai làm tăng bề mặt tấn công và đi ngược mục tiêu chỉ có một điểm vào duy nhất. Khi vận hành chính thức, nên xóa các Ingress không cần thiết hoặc giới hạn chúng bằng chính sách mạng và Cloudflare Access; riêng dịch vụ thực thi chấm cần được bảo vệ bằng khóa gateway trước khi giữ lại Ingress.
+Thứ nhất, một số dịch vụ nội bộ như dịch vụ quản lý lớp học và điểm, dịch vụ nộp bài, dịch vụ kết quả chấm, dịch vụ thực thi chấm và dịch vụ trợ lý AI vẫn có Ingress riêng. Phần lớn các dịch vụ này kiểm tra khóa gateway ở tầng ứng dụng; riêng dịch vụ thực thi chấm chưa có kiểm tra này, nên điểm cuối đặt lại công việc có thể bị gọi trực tiếp nếu tên miền được biết. Việc mở thêm tên miền công khai làm tăng bề mặt tấn công và đi ngược mục tiêu chỉ có một điểm vào duy nhất. Khi vận hành chính thức, nên xóa các Ingress không cần thiết hoặc giới hạn chúng bằng chính sách mạng và Cloudflare Access; riêng dịch vụ thực thi chấm cần được bảo vệ bằng khóa gateway trước khi giữ lại Ingress.
 
 Thứ hai, Keycloak đang chạy ở chế độ start-dev và giao diện quản trị được mở công khai. Chế độ này thuận tiện cho phát triển nhưng không phù hợp với môi trường thật vì giảm các kiểm tra bảo mật và không tối ưu hiệu năng. Cần chuyển sang chế độ vận hành chính thức, đổi tài khoản quản trị mặc định và giới hạn đường dẫn /admin bằng Cloudflare Access hoặc quy tắc tường lửa ứng dụng web (WAF).
 

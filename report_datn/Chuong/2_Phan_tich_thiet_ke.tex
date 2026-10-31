@@ -88,8 +88,7 @@ Kịch bản chính &
     \item Người dùng mở menu tài khoản và chọn chức năng Đổi mật khẩu.
     \item Hệ thống hiển thị hộp thoại gồm ba trường: mật khẩu hiện tại, mật khẩu mới và xác nhận mật khẩu mới.
     \item Người dùng nhập thông tin; giao diện kiểm tra ngay độ dài tối thiểu và sự trùng khớp giữa mật khẩu mới với phần xác nhận trước khi gửi yêu cầu.
-    \item Hệ thống xác minh mật khẩu hiện tại, sau đó đặt mật khẩu mới cho tài khoản.
-    \item Hệ thống thông báo đổi mật khẩu thành công và đóng hộp thoại.
+    \item Hệ thống xác minh mật khẩu hiện tại, sau đó đặt mật khẩu mới cho tài khoản và thông báo đổi mật khẩu thành công và đóng hộp thoại.
 \end{enumerate} \\ \hline
 Kịch bản ngoại lệ &
 \begin{itemize}[leftmargin=*, nosep]
@@ -164,8 +163,8 @@ Kịch bản chính &
     \item Hệ thống hiển thị giao diện tạo lớp mới với các trường thông tin như tên lớp và học kỳ.
     \item Giảng viên nhập thông tin lớp và nhấn nút tạo.
     \item Hệ thống tạo lớp ở trạng thái đang hoạt động.
-    \item Giảng viên nhấn nút Vào lớp.
-    \item Hệ thống hiển thị giao diện quản lý lớp của giảng viên gồm các phần danh sách lớp, nhập danh sách sinh viên, thành phần điểm và bảng điểm của lớp.
+    \item Tại dòng có hiển thị thông tin lớp, giảng viên nhấn nút Mở.
+    \item Hệ thống hiển thị giao diện quản lý lớp chi tiết của giảng viên gồm các phần danh sách lớp, nhập danh sách sinh viên, thành phần điểm và bảng điểm của lớp.
 \end{enumerate} \\ \hline
 \end{tabularx}
 \caption{Kịch bản chức năng Quản lý lớp học.}
@@ -184,14 +183,17 @@ Kịch bản chính (tiếp) &
     \item Giảng viên nhấn nút nhập danh sách sinh viên và chọn tệp CSV tương ứng.
     \item Hệ thống báo số sinh viên được thêm và số dòng bị bỏ qua.
     \item Giảng viên nhấn vào phần thành phần điểm trên giao diện quản lý chi tiết lớp học
-    \item Hệ thống hiển thị giao diện thành phần điểm của lớp với danh sách các thành phần điểm và nút cấu hình
-    \item Giảng viên nhấn nút cấu hình điểm thành phần của lớp
-    \item Hệ thống hiển thị hộp thoại thành phần điểm, với danh sách các loại điểm thành phần và trọng số để giảng viên nhập
-    \item Giảng viên cấu hình các thành phần điểm của lớp (chuyên cần, bài tập, thi cuối kỳ) cùng trọng số tương ứng.
+    \item Hệ thống hiển thị giao diện thành phần điểm của lớp với danh sách các thành phần điểm và nút thêm thành phần điểm
+    \item Giảng viên nhấn nút thêm thành phần điểm của lớp
+    \item Hệ thống hiển thị hộp thoại thêm thành phần điểm, với danh sách các loại điểm thành phần để chọn và trọng số để giảng viên nhập
+    \item Giảng viên cấu hình các thành phần điểm của lớp (chuyên cần, bài tập, thi cuối kỳ) cùng trọng số tương ứng và nhấn tạo
     \item Hệ thống kiểm tra các ràng buộc về trọng số và lưu cấu trúc điểm.
-    \item Giảng viên nhập điểm thủ công cho từng sinh viên.
-    \item Hệ thống lấy điểm thành phần bài tập từ kết quả chấm bài nộp và tính điểm tổng kết, điểm chữ, điểm hệ 4.
-    \item Giảng viên xem bảng điểm của cả lớp hoặc lưu trữ lớp khi kết thúc học kỳ.
+    \item Giảng viên nhấn sang màn bảng điểm để xem bảng điểm của lớp.
+    \item Hệ thống hiển thị màn bảng điểm của cả lớp là một bảng với các cột thông tin sinh viên và điểm thành phần cũng như xếp loại và GPA của sinh viên, kèm thêm thao tác nhập điểm thủ công cho từng sinh viên
+    \item Giảng viên nhấn vào nút nhập điểm
+    \item Hệ thống hiển thị giao diện nhập điểm thủ công cho từng sinh viên, gồm các thành phần điểm có thể nhập được
+    \item Giảng viên nhập điểm và nhấn nút lưu
+    \item Hệ thống thông báo nhập điểm thành công và lấy điểm thành phần bài tập từ kết quả chấm bài nộp và tính điểm tổng kết, điểm chữ, điểm hệ 4.
 \end{enumerate} \\ \hline
 Kịch bản ngoại lệ &
 \begin{itemize}[leftmargin=*, nosep]
@@ -249,14 +251,16 @@ Kịch bản chính &
 \hline
 Tên mục & Nội dung mô tả \\ \hline
 Kịch bản chính (tiếp) &
-\begin{enumerate}[leftmargin=*, nosep, start=8]
-    \item Hệ thống kiểm tra tính hợp lệ của các bước chấm.
-    \item Giảng viên chọn môi trường chạy cần thiết cho bài tập.
-    \item Hệ thống lưu các câu và môi trường chạy vào bài tập.
-    \item Giảng viên công bố bài tập.
+\begin{enumerate}[leftmargin=*, nosep, start=9]
+    \item Giảng viên nhấn vào nút thêm câu kiểm tra
+    \item Hệ thống hiển thị hộp thoại thêm câu kiểm tra với những thông tin như: tên câu kiểm tra và mô tả, và nút lưu
+    \item Giảng viên nhập thông tin câu kiểm tra, mô tả và nhấn nút lưu
+    \item Hệ thống thông báo lưu thành công
+    \item Tiếp tục tại câu đó, giảng viên tiến hành tạo bước cho câu đó bằng cách nhấn vào nút thêm bước
+    \item Hệ thống hiển thị chi tiết giao diện cấu hình bước chấm để giảng viên có thể cấu hình theo ý của mình và nhấn nút lưu sau khi cấu hình xong.
+    \item Hệ thống kiểm tra tính hợp lệ của các bước chấm và thông báo thành công.
+    \item Sau khi tạo xong các bước chấm, giảng viên nhấn công bố bài tập.
     \item Hệ thống chuyển bài tập sang trạng thái đã công bố và hiển thị bài tập cho sinh viên đã ghi danh.
-    \item Giảng viên xem kết quả chấm, sửa thông tin hoặc xoá bài tập khi không còn sử dụng.
-    \item Hệ thống áp dụng thay đổi tương ứng lên bài tập.
 \end{enumerate} \\ \hline
 Kịch bản ngoại lệ &
 \begin{itemize}[leftmargin=*, nosep]

@@ -233,6 +233,34 @@ Ví dụ sai (đã sửa):
 - `—` (em-dash) → `-` (hyphen)
 - `---` (LaTeX em-dash) → `-` (hyphen)
 
+## Dịch từ tiếng Anh sang tiếng Việt trong văn bản báo cáo
+
+Trong văn bản LaTeX của báo cáo, dịch các từ tiếng Anh có đương equivalents tiếng Việt phổ biến sang tiếng Việt. Giữ nguyên tên công nghệ, tên công ty, tên dự án, tên tài nguyên Kubernetes (ví dụ `Service`, `Deployment`, `Ingress`, `ConfigMap`, `Secret`, `Pod`, `Namespace`), tên biến môi trường, tên file, và các lệnh kỹ thuật.
+
+| Từ tiếng Anh | Tiếng Việt | Ghi chú |
+|---|---|---|
+| `deploy` | `triển khai` | Chỉ khi dùng làm động từ trong văn bản, không phải tên label/ref |
+| `config` | `cấu hình` | Chỉ khi dùng làm từ độc lập, không phải phần của tên biến/env |
+| `endpoint` | `điểm cuối` | Chỉ khi dùng làm từ độc lập, không phải URL path |
+| `service` | `dịch vụ` | Chỉ khi dùng nghĩa chung; K8s `Service` resource giữ nguyên |
+| `build` | `xây dựng` | Chỉ khi dùng ngữ nghĩa chung; `docker build` giữ nguyên |
+| `config map` | `bản đồ cấu hình` | |
+| `cluster` | `cụm` | Chỉ khi dùng nghĩa chung, không phải tên tài nguyên K8s |
+| `license`/`licence` | `giấy phép` | |
+| `interception attack` | `tấn công chặn bắt` | |
+| `attacker` | `kẻ tấn công` | |
+
+Ví dụ đúng:
+- `Build và triển khai toàn bộ cùng lúc`
+- `mỗi dịch vụ có thể được build, triển khai và cập nhật`
+- `giảm thiểu sai sót khi triển khai`
+- `các điểm cuối cần gọi`
+- `một điểm cuối server`
+
+Ví dụ sai (đã sửa):
+- `deploy` → `triển khai`
+- `endpoint` → `điểm cuối`
+
 ## Chương 3 (triển khai và đánh giá)
 
 Chương 3 hiện tạm bỏ phần giám sát và quan sát hệ thống (Prometheus,
