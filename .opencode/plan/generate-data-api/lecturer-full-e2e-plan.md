@@ -4175,7 +4175,26 @@ Mock solution: `mock/student-management-solution/` (Flask + psycopg + Postgres 1
 `mock/student-management-solution.zip` gồm 5 file. Đã kiểm tra local 16/16 check (HTTP + psql)
 và chấm thật submission `f7910fee-fcd3-480d-a051-eab394da0943`: 8/8 bước PASSED, 10.00/10.
 
+### 17.24 Tạo assignment nhiều câu: "Hệ thống quản lý bệnh viện đa khoa" (2026-10-31)
+
+Assignment `8c958eef-32f6-4892-93fd-1926cdcc6b28`, port 8087, topic "Y tế", purpose GRADED.
+**3 câu (plans), mỗi câu 7 bước HTTP + DB, tổng 21 bước, weight 30:**
+
+| Câu | Plan name | Table | Database | Endpoint | Weight |
+|-----|-----------|-------|----------|----------|--------|
+| 1 | Bác sĩ — CRUD | doctors | doctors_db | `/api/v1/doctors` | 10 |
+| 2 | Bệnh nhân — CRUD | patients | patients_db | `/api/v1/patients` | 10 |
+| 3 | Lịch hẹn khám — CRUD | appointments | appointments_db | `/api/v1/appointments` | 10 |
+
+Mỗi câu theo mẫu 7 bước: POST (extract id) → GET (body_structure 5 khoá + field_equals) → PATCH (contains) → DELETE (204) → GET (404) → DB_SCHEMA_CHECK (TABLE_EXISTS + PRIMARY_KEY) → DB_QUERY (SELECT id WHERE id::text='${id}' → row_count:0).
+
+4 lỗi DB config đã sửa trực tiếp trên live plan (giống 6 bài trước): thiếu `db_service`/`username`/`password`, `db_port` = app port thay vì 5432, `PRIMARY_KEY` thiếu `table_name`, `SELECT COUNT(*)` thay vì lọc theo id.
+
+Mock solution: `mock/hospital-management-solution/` (Flask + psycopg + Postgres 16, service `hospital-app` cổng 8087, service `db` tạo 3 database), zip phẳng `mock/hospital-management-solution.zip` gồm 5 file. Đã kiểm tra local 42/42 check (HTTP + psql, 3 câu × 14 check)
+và chấm thật submission `30ea99de-7d28-448b-b37d-7670fb7b68b5`: **21/21 bước PASSED, 10.00/10**.
+
 ---
+
 
 *Section 24 added to lecturer-full-e2e-plan.md. Date added: 2026-10-28. Cấu hình JSON chi tiết nhất cho tất cả tính năng phức tạp (Phases 1-7) đã bổ sung.*
 
