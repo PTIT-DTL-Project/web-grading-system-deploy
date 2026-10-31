@@ -4242,7 +4242,22 @@ Tạo 8 assignment trên 8 port (8080–8088), mỗi assignment kiểm tra một
 | 8086 | `83580461-...` | Dữ liệu tham chiếu | Kiểm tra dữ liệu tham chiếu | 7 | 10 |
 | 8088 | `d48bf215-...` | Liên kết DB & FK | Kiểm tra liên kết CSDL | 10 | 15 |
 
-Tất cả 8 assignment đã được sửa title/mô tả qua API `PUT /api/v1/assignments/{id}` và cập nhật config từng step qua `PUT /api/v1/assignments/{aid}/plans/{pid}/steps/{sid}`. Mock solution cho mỗi port nằm trong `mock/*-management-solution/` hoặc `mock/book-crud-solution/` / `mock/hospital-integrated-solution/`, đã tạo zip và nộp chấm thật 10/10.
+### 17.26 Tạo 8 assignment kiểm tra theo loại hình (2026-10-31)
+
+Tạo 8 assignment trên 8 port (8080–8088), mỗi assignment kiểm tra một loại hình kiểm thử cụ thể. Tất cả đã chấm thật 10/10.
+
+| Port | Assignment ID | Name (tên gốc) | Topic (loại kiểm tra) | Bước | Weight | Điểm |
+|------|--------------|---------------|----------------------|------|--------|------|
+| 8080 | `bab5b767-...` | Quản lý sách REST API | CRUD cơ bản | 13 | 10 | 10.00 |
+| 8081 | `c4a883cc-...` | Quản lý sinh viên | Xử lý lỗi | 8 | 8 | 10.00 |
+| 8082 | `bd2b9ea6-...` | Quản lý đơn hàng | Extract & biến | 7 | 12 | 10.00 |
+| 8083 | `155e2459-...` | Quản lý thư viện | Cấu trúc phản hồi | 7 | 10 | 10.00 |
+| 8084 | `4d127dd9-...` | Hệ thống chấm điểm | Validation dữ liệu | 8 | 10 | 10.00 |
+| 8085 | `e39e0f42-...` | Quản lý kho hàng | CSDL phức tạp | 7 | 10 | 10.00 |
+| 8086 | `83580461-...` | Quản lý tài sản | Dữ liệu tham chiếu | 7 | 10 | 10.00 |
+| 8088 | `d48bf215-...` | Hệ thống quản lý bệnh viện đa khoa - Lịch hẹn khám tích hợp | Liên kết CSDL | 10 | 15 | 10.00 |
+
+Tất cả 8 assignment đã được sửa `name` về tên gốc và `topic` thành loại kiểm tra qua API `PUT /api/v1/assignments/{id}`. Config từng step đã được cập nhật qua `PUT /api/v1/assignments/{aid}/plans/{pid}/steps/{sid}`. Mock solution cho mỗi port nằm trong `mock/*-management-solution/` hoặc `mock/book-crud-solution/` / `mock/hospital-integrated-solution/`, đã tạo zip và nộp chấm thật 10/10.
 
 4 lỗi DB config đã sửa trực tiếp trên tất cả các plan DB (giống 6 bài trước): thiếu `db_service`/`username`/`password`, `db_port` = app port thay vì 5432, `PRIMARY_KEY` thiếu `table_name`, `SELECT COUNT(*)` thay vì lọc theo id.
 
