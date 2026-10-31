@@ -4196,6 +4196,37 @@ và chấm thật submission `30ea99de-7d28-448b-b37d-7670fb7b68b5`: **21/21 bư
 ---
 
 
+
+
+### 17.25 Tạo assignment 1 câu nhiều thực thể liên kết FK: "Lịch hẹn khám tích hợp" (2026-10-31)
+
+Assignment `d48bf215-b429-429b-af2f-10e1867d0490`, port 8088, topic "Y tế", purpose GRADED.
+**1 câu (plan), 10 bước HTTP + DB, weight 15:**
+
+| Bước | Method | Path | Mục tiêu | Weight |
+|------|--------|------|----------|--------|
+| 1 | POST | `/api/v1/doctors` | 201, extract `doctorId` | 1 |
+| 2 | POST | `/api/v1/patients` | 201, extract `patientId` | 1 |
+| 3 | POST | `/api/v1/appointments` | 201, FK `doctorId`+`patientId`, extract `appointmentId` | 1 |
+| 4 | GET | `/api/v1/appointments/{id}` | 200, `body_structure` 5 khoá, `field_equals` FK | 1 |
+| 5 | DB_QUERY | — | JOIN verify FK tồn tại, `row_count: 1` | 1 |
+| 6 | PATCH | `/api/v1/appointments/{id}` | 200, cập nhật trạng thái | 1 |
+| 7 | DELETE | `/api/v1/appointments/{id}` | 204, xóa lịch hẹn | 1 |
+| 8 | GET | `/api/v1/appointments/{id}` | 404 sau khi xóa | 1 |
+| 9 | DB_SCHEMA_CHECK | — | `TABLE_EXISTS`×3, `PRIMARY_KEY`×3 | 1 |
+| 10 | DB_QUERY | — | Xác nhận đã xóa, `row_count: 0` | 1 |
+
+**Điểm khác biệt so với 6 bài trước:**
+- **Một câu duy nhất, nhiều thực thể liên kết FK**: bác sĩ → bệnh nhân → lịch hẹn.
+- `appointments.doctor_id` và `appointments.patient_id` là **foreign key** tham chiếu `doctors.id` và `patients.id`.
+- Bước 5 dùng `JOIN` để verify FK thật sự hoạt động (không chỉ check bảng đơn lẻ).
+- `GET /api/v1/appointments/{id}` trả đúng 5 khoá `{id, doctorId, patientId, appointmentDate, status}` cho `body_structure`.
+
+4 lỗi DB config đã sửa trực tiếp trên live plan (giống 6 bài trước): thiếu `db_service`/`username`/`password`, `db_port` = app port (8088) thay vì 5432, `PRIMARY_KEY` thiếu `table_name`, `SELECT COUNT(*)` thay vì lọc theo id.
+
+Mock solution: `mock/hospital-integrated-solution/` (Flask + psycopg + Postgres 16, service `hospital-app` cổng 8088, service `db` database `hospital_db` với 3 bảng liên kết FK), zip phẳng `mock/hospital-integrated-solution.zip` gồm 5 file. Đã kiểm tra local 28/28 check (HTTP + psql, 10 bước)
+và chấm thật submission `aae9db4f-f48c-4692-b53a-a1ca514084d1`: **10/10 bước PASSED, 10.00/10**.
+
 *Section 24 added to lecturer-full-e2e-plan.md. Date added: 2026-10-28. Cấu hình JSON chi tiết nhất cho tất cả tính năng phức tạp (Phases 1-7) đã bổ sung.*
 
 *This document is based on actual code in repo `web-grading-system-deploy`. Date written: 2026-10-28.*
