@@ -4227,6 +4227,27 @@ Assignment `d48bf215-b429-429b-af2f-10e1867d0490`, port 8088, topic "Y tế", pu
 Mock solution: `mock/hospital-integrated-solution/` (Flask + psycopg + Postgres 16, service `hospital-app` cổng 8088, service `db` database `hospital_db` với 3 bảng liên kết FK), zip phẳng `mock/hospital-integrated-solution.zip` gồm 5 file. Đã kiểm tra local 28/28 check (HTTP + psql, 10 bước)
 và chấm thật submission `aae9db4f-f48c-4692-b53a-a1ca514084d1`: **10/10 bước PASSED, 10.00/10**.
 
+### 17.26 Tạo 8 assignment kiểm tra theo loại hình (2026-10-31)
+
+Tạo 8 assignment trên 8 port (8080–8088), mỗi assignment kiểm tra một loại hình kiểm thử cụ thể. Tất cả đã chấm thật 10/10.
+
+| Port | Assignment ID | Loại kiểm tra | Tiêu đề | Bước | Weight |
+|------|--------------|---------------|---------|------|--------|
+| 8080 | `bab5b767-...` | CRUD Cơ bản | Kiểm tra CRUD cơ bản | 13 | 10 |
+| 8081 | `c4a883cc-...` | Xử lý lỗi | Kiểm tra xử lý lỗi | 8 | 8 |
+| 8082 | `bd2b9ea6-...` | Extract & biến | Kiểm tra trích xuất biến | 7 | 12 |
+| 8083 | `155e2459-...` | Cấu trúc response | Kiểm tra cấu trúc phản hồi | 7 | 10 |
+| 8084 | `4d127dd9-...` | Validation dữ liệu | Kiểm tra validation dữ liệu | 8 | 10 |
+| 8085 | `e39e0f42-...` | DB phức tạp | Kiểm tra CSDL phức tạp | 7 | 10 |
+| 8086 | `83580461-...` | Dữ liệu tham chiếu | Kiểm tra dữ liệu tham chiếu | 7 | 10 |
+| 8088 | `d48bf215-...` | Liên kết DB & FK | Kiểm tra liên kết CSDL | 10 | 15 |
+
+Tất cả 8 assignment đã được sửa title/mô tả qua API `PUT /api/v1/assignments/{id}` và cập nhật config từng step qua `PUT /api/v1/assignments/{aid}/plans/{pid}/steps/{sid}`. Mock solution cho mỗi port nằm trong `mock/*-management-solution/` hoặc `mock/book-crud-solution/` / `mock/hospital-integrated-solution/`, đã tạo zip và nộp chấm thật 10/10.
+
+4 lỗi DB config đã sửa trực tiếp trên tất cả các plan DB (giống 6 bài trước): thiếu `db_service`/`username`/`password`, `db_port` = app port thay vì 5432, `PRIMARY_KEY` thiếu `table_name`, `SELECT COUNT(*)` thay vì lọc theo id.
+
+---
+
 *Section 24 added to lecturer-full-e2e-plan.md. Date added: 2026-10-28. Cấu hình JSON chi tiết nhất cho tất cả tính năng phức tạp (Phases 1-7) đã bổ sung.*
 
 *This document is based on actual code in repo `web-grading-system-deploy`. Date written: 2026-10-28.*
