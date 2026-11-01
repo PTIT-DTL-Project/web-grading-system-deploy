@@ -137,6 +137,14 @@ kubectl create secret generic ai-credentials \
   --from-literal=AI_API_KEY="${AI_API_KEY:-}" \
   --from-literal=AI_MODEL_NAME="${AI_MODEL_NAME:-gpt-4o-mini}" \
   --from-literal=AI_BASE_URL="${AI_BASE_URL:-https://api.openai.com/v1}" \
+  --from-literal=AI_AGENT_PROVIDER="${AI_AGENT_PROVIDER:-}" \
+  --from-literal=AI_AGENT_API_KEY="${AI_AGENT_API_KEY:-}" \
+  --from-literal=AI_AGENT_MODEL_NAME="${AI_AGENT_MODEL_NAME:-}" \
+  --from-literal=AI_AGENT_BASE_URL="${AI_AGENT_BASE_URL:-}" \
+  --from-literal=AI_EXPLAIN_PROVIDER="${AI_EXPLAIN_PROVIDER:-}" \
+  --from-literal=AI_EXPLAIN_API_KEY="${AI_EXPLAIN_API_KEY:-}" \
+  --from-literal=AI_EXPLAIN_MODEL_NAME="${AI_EXPLAIN_MODEL_NAME:-}" \
+  --from-literal=AI_EXPLAIN_BASE_URL="${AI_EXPLAIN_BASE_URL:-}" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 echo "Namespace and secrets created"
