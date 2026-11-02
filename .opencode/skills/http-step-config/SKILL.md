@@ -21,6 +21,7 @@ Editing or reviewing HTTP_REQUEST step config handling in `executor-service` (`H
 
 ## auto_inject_headers (plan scope, executor `GradingOrchestrator.runSteps`)
 - Declared on a step (typically login), not on every step. It is **plan-scoped**: accumulated into a per-plan map and injected into every subsequent `HTTP_REQUEST` step in the same plan.
+- **Placement:** declare at a step that runs **before** steps that need it; the header is **not** injected into the step that declares it. Bước âm tính (401/403) phải tự đặt `headers` để "shield" (đã có header cùng tên sẽ không bị ghi đè).
 - Header templates are substituted against the current `VariableContext` at injection time, so `${accessToken}` resolves after the login step extracted it. Already-set headers on a step are not overridden.
 - The key `auto_inject_headers` is removed from the config before reaching `HttpStepExecutor` (orchestrator concern, not an executor config key).
 - course-service `StepConfigValidator` requires `auto_inject_headers` to be an object of string values (400 otherwise).
@@ -63,10 +64,11 @@ Editing or reviewing HTTP_REQUEST step config handling in `executor-service` (`H
 
 ## JSON Schema generation (Phase 7)
 
-- `StepConfigValidator.generateHttpSchema()` returns a JSON Schema (draft-07) `JsonNode` describing the HTTP_REQUEST step config structure accepted by `validateAndSerialize`.
-- Schema covers: `method` (enum), `path` (pattern `^/`), `expected_status` (integer 100–599), `headers` (object), `query_params` (object), `body` (JSON), `assertions` (array with kind enum + recursive any_of), `extract` (array with name/from/expression/as/fallback), `data` (array of objects), `auto_inject_headers` (object).
+- `StepConfigValidator.generateSchema(StepType)` / `generateHttpSchema()` returns JSON Schema (draft-07) for each runnable step type. DB schemas require `connection` with `database`/`username`/`password`.
+- Schema covers: `method` (enum), `path` (pattern `^/`), `expected_status` (integer 100–599), `headers` (object), `query_params` (object), `body` (JSON), `assertions` (array with kind enum + recursive any_of; `any_of` cannot contain `status`), `extract` (array with name/from/expression/as/fallback), `data` (array of objects, max 10), `auto_inject_headers` (object).
 - Schema is generated fresh each call — safe to mutate by callers.
-- `InternalAssignmentController.GET /api/v1/internal/assignments/{id}/config-schema` — returns the schema as `JsonNode`. Internal-only endpoint, not gateway-exposed.
+- `InternalAssignmentController.GET /api/v1/internal/assignments/{id}/config-schema?type=` — returns schema per step type (default HTTP_REQUEST).
+- `InternalTestPlanController.GET /api/v1/internal/test-plans/capabilities` and `POST /validate-step` provide single-source-of-truth capabilities/validation.
 - Course-service DTOs (`DryRunRequest`, `DryRunReport`, `DryRunStepReport`) mirror executor-service DTOs via JSON structure (separate Maven modules, no shared classes).
 
 ## Constants (executor-service `Constant.java`)
@@ -76,8 +78,13 @@ Editing or reviewing HTTP_REQUEST step config handling in `executor-service` (`H
 - Assertion kind `ANY_OF = "any_of"` (already implemented in `AssertionEngine.checkAnyOf` + validator).
 - No new dependencies: substitution uses `tools.jackson.databind.ObjectMapper` tree walk (`.properties()` on objects, enhanced-for on arrays), not string regex on raw JSON.
 
+## DB connection (course-service `StepConfigValidator`)
+- For `DB_QUERY`/`DB_SCHEMA_CHECK`/`DB_MIGRATION`, `connection` is **required** with `database`, `username`, `password` (bare identifier for database). `db_type` defaults to `postgres` if omitted but credentials are mandatory. Sandbox reset between plans uses these credentials.
+
 ## Validation (course-service `StepConfigValidator.validateHttp`)
 - `data`: non-empty array, entries objects, ≤ 10 entries.
+- `any_of` must not contain `status` assertion.
+- `DB_QUERY.expected` may include `row_count` and `columns`.
 - `auto_inject_headers`: object of strings.
 - Reuse existing `ASSERTION_KINDS` set (already includes `any_of` and Phase 1/2 kinds).
 

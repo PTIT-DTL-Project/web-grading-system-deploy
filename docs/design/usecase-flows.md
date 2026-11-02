@@ -543,8 +543,7 @@ errors and grading failures behave as in UC-03 / `execute-plan-v1.0.md` §6.
 **Service:** executor-service (after compose boot). **FE:** n/a.
 
 **Preconditions:** plan's compose started and healthy (`RUNNING`); the plan's step
-has type `DB_QUERY`, `DB_SCHEMA_CHECK`, or `DB_MIGRATION`; `connection.db_type` set
-(default `postgres`, allowed `{postgres, mysql, mariadb}`; MariaDB = MySQL alias).
+has type `DB_QUERY`, `DB_SCHEMA_CHECK`, or `DB_MIGRATION`; `connection` must include `database`, `username`, `password` (`connection.db_type` defaults to `postgres`, allowed `{postgres, mysql, mariadb}`; MariaDB = MySQL alias). Sandbox reset between plans requires credentials with DB admin privileges.
 
 ### Step 1 — Resolve engine and port
 
@@ -1598,3 +1597,72 @@ X-Gateway-Secret: <secret>
 
 - Complete structure of HTTP_REQUEST step config, including all assertion kinds, extract options, data[] loop format, and auto_inject_headers format.
 - Frontend can validate step config client-side before calling the save endpoint, reducing round trips and invalid config submissions.
+
+---
+
+## UC-22: Student asks the chat agent for assignments, submissions or result links (deep links)
+
+**Actor:** student (`X-User-Id`, `X-User-Roles: STUDENT`). **Service:** ai-assistant-service
+(port 8086, gateway-routed at `/api/v1/ai/**`); agent run via `AgentOrchestrator` →
+`ContextBuilder` → `AgentRuntime`. **Preconditions:** authenticated student; course-service,
+submission-service and result-service reachable.
+
+The agent looks up the student's own data with read-only tools, then answers with relative
+markdown links into the student-guarded FE routes; the student clicks a link and lands on
+the assignment / submission / result screen.
+
+### Step 1 — Send a chat message
+
+```
+POST /api/v1/ai/conversations/{conversationId}/messages
+{ "content": "Tìm bài tập có bước HTTP_REQUEST và cho tôi link" }
+```
+
+**Expected:** `202` with a `runId`; the run executes asynchronously. Progress streams over
+`GET /api/v1/ai/runs/{runId}/events` (`text/event-stream`: deltas, `tool.started`/`tool.finished`,
+then `run.completed`).
+
+### Step 2 — Agent looks up the student's data (tools, read-only)
+
+| Tool | Upstream call |
+|---|---|
+| `listMyAssignments` | `GET /api/v1/student/assignments?classId=&purpose=&topic=&search=&page=&size=` (course-service; `purpose` defaults to `GRADED`, `PRACTICE` lists practice) |
+| `getMyAssignment` | `GET /api/v1/student/assignments/{assignmentId}` |
+| `listMyTestPlans` | `GET /api/v1/student/assignments/{assignmentId}/plans` (sanitized steps, no hidden answers) |
+| `listMySubmissions` | `GET /api/v1/submissions?page=&size=&search=` (submission-service) |
+| `getMyAssignmentResults` | `GET /api/v1/results/student/assignment/{assignmentId}` (result-service; unsubmitted plans count 0) |
+| `getMySubmissionResults` | `GET /api/v1/results/{submissionId}` (result-service; owner-checked) |
+
+All calls carry the gateway headers (`X-User-Id`, `X-User-Roles`, `X-User-Email`,
+`X-Gateway-Secret`); upstreams re-check ownership. Step-type filtering is done by fetching
+`listMyTestPlans` per candidate assignment and matching `steps[].type`.
+
+### Step 3 — Assistant reply with links
+
+**Expected:** the assistant message contains relative markdown links to the **student-gated**
+routes; `AssistantMessage.tsx` renders them with `target="_blank" rel="noopener noreferrer"`:
+
+- `/student/assignments` — list; `/student/assignments/{assignmentId}` — detail
+  (`?submit=1` opens the submit modal)
+- `/student/practice` — practice list; `/student/practice/{assignmentId}` — practice detail
+- `/student/submissions` — submissions list
+- `/student/submissions/{submissionId}/results` — result screen
+
+**Negative:**
+- No matching assignment / submission → the agent answers without a link (no invented URLs).
+- Upstream down → the tool returns `DOMAIN_API_UNAVAILABLE` and the agent reports that the
+  lookup failed instead of fabricating data.
+
+### Side effects
+
+- Reads only; conversation/message rows are persisted, no domain writes, no approval step.
+
+### Implementation notes (drift guards)
+
+- The route table lives in `ContextBuilder.SYSTEM_TEMPLATE` (rules 11–12). Literal route
+  braces must stay escaped (`\\{assignmentId}`) or `SystemPromptTemplate` rendering throws and
+  every chat run fails (`ContextBuilderTest.studentPromptRendersLiteralDeepLinkRoutes`).
+- Routes must mirror the FE router's role guards in
+  `frontend-src/web-grading-system-fe/src/app/router.tsx`: `/practice/{assignmentId}` is
+  LECTURER-only; students use `/student/practice/{assignmentId}`. A mismatched role fails
+  closed to `/no-role`.

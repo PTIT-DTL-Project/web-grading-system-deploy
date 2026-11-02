@@ -173,9 +173,9 @@ Chi tiết: [design-db-v1.0.md §2.3](design-db-v1.0.md).
 | `db_type` | String | ❌ | `postgres` | Engine: `postgres` \| `mysql` \| `mariadb` (không phân biệt hoa thường) — chọn JDBC dialect (`DbDialectRegistry` trong executor). `mariadb` = alias của `mysql` (wire-compatible). Giá trị khác → 400 lúc lưu step |
 | `db_service` | String | ❌ | `db` | Tên service DB trong compose — executor expose port của service này ra host |
 | `db_port` | int | ❌ | Theo engine: 5432 / 3306 | Port DB nghe trong container |
-| `database` | String | ❌ | — | Tên database (cần để kết nối) |
-| `username` | String | ❌ | — | Tài khoản (cần để kết nối) |
-| `password` | String | ❌ | — | Mật khẩu (cần để kết nối) |
+| `database` | String | **✅** | — | Tên database (**bắt buộc**) |
+| `username` | String | **✅** | — | Tài khoản (**bắt buộc**) |
+| `password` | String | **✅** | — | Mật khẩu (**bắt buộc**) |
 
 ```json
 {
