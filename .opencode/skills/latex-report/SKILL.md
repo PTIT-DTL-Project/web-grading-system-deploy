@@ -250,6 +250,13 @@ Trong văn bản LaTeX của báo cáo, dịch các từ tiếng Anh có đươn
 | `interception attack` | `tấn công chặn bắt` | |
 | `attacker` | `kẻ tấn công` | |
 
+## Usecase kế thừa từ usecase trừu tượng
+
+Khi một usecase kế thừa từ một usecase trừu tượng (ví dụ: "Giảng viên trò chuyện với trợ lý AI" kế thừa từ "Trò chuyện với trợ lý AI"), cần ghi rõ trong mô tả: "Usecase này kế thừa từ usecase trừu tượng <Tên usecase cha>." Điều này giúp độc lập rõ ràng quan hệ giữa các usecase trong phần mô tả văn bản, bên cạnh quan hệ được vẽ trong biểu đồ usecase chi tiết.
+
+Ví dụ đúng:
+- `Usecase này kế thừa từ usecase trừu tượng Trò chuyện với trợ lý AI.`
+
 Ví dụ đúng:
 - `Build và triển khai toàn bộ cùng lúc`
 - `mỗi dịch vụ có thể được build, triển khai và cập nhật`

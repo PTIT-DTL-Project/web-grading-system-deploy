@@ -7,8 +7,8 @@ Hệ thống chấm bài tự động có bốn tác nhân, trong đó User là 
 \begin{itemize}
     \item Người dùng (User): tác nhân trừu tượng đại diện cho mọi tài khoản truy cập hệ thống; các tác nhân còn lại đều kế thừa User nên đều thực hiện được hai usecase chung là đăng nhập và đổi mật khẩu.
     \item Quản trị viên (Admin): quản trị tài khoản ở mức hệ thống; là tác nhân duy nhất được phép nhập danh sách tài khoản người dùng từ tệp CSV để cấp tài khoản ban đầu cho giảng viên và sinh viên.
-    \item Giảng viên (Lecturer): quản lý lớp học của mình gồm tạo lớp, nhập danh sách sinh viên, cấu hình thành phần điểm và xem bảng điểm; quản lý bài tập kèm các bước chấm tự động; xem kết quả chấm bài của cả lớp.
-    \item Sinh viên (Student): tham gia các lớp đã được ghi danh, nộp bài thực hành để hệ thống chấm điểm tự động và xem điểm, kết quả chấm của bản thân.
+    \item Giảng viên (Lecturer): quản lý lớp học của mình gồm tạo lớp, nhập danh sách sinh viên, cấu hình thành phần điểm và xem bảng điểm; quản lý bài tập kèm các bước chấm tự động; xem kết quả chấm bài của cả lớp; trò chuyện với trợ lý AI để được hỗ trợ giải đáp các thắc mắc liên quan đến lớp học, bài tập và chấm điểm.
+    \item Sinh viên (Student): tham gia các lớp đã được ghi danh, nộp bài thực hành để hệ thống chấm điểm tự động và xem điểm, kết quả chấm của bản thân; trò chuyện với trợ lý AI để được hỗ trợ giải đáp các thắc mắc liên quan đến lớp học, bài tập và chấm điểm.
 \end{itemize}
 
 \subsection{Biểu đồ ca chức năng (usecase) tổng quan của hệ thống}
@@ -34,6 +34,8 @@ Mô tả các usecase của hệ thống:
     \item Nộp bài tập: Usecase này cho phép sinh viên nộp bài thực hành của mình dưới dạng tệp nén để hệ thống tải lên và chấm điểm tự động, đồng thời theo dõi trạng thái chấm và xem lại kết quả của các lần nộp.
     \item Xem điểm và kết quả cá nhân: Usecase này cho phép sinh viên xem điểm thành phần, điểm tổng kết, điểm chữ và điểm hệ 4 của mình trong mỗi lớp đã ghi danh để tự đánh giá kết quả học tập của bản thân.
     \item Xem kết quả chấm bài tập của bản thân: Usecase này cho phép sinh viên xem điểm và chi tiết từng bước chấm của các bài tập mình đã nộp, giúp hiểu rõ vì sao bài làm đạt hay chưa đạt yêu cầu của đề bài.
+    \item Giảng viên trò chuyện với trợ lý AI: Usecase này cho phép giảng viên tương tác với trợ lý AI để được hỗ trợ giải đáp các thắc mắc liên quan đến lớp học, bài tập, hệ thống chấm điểm và các vấn đề khác trong quá trình sử dụng hệ thống. Usecase này kế thừa từ usecase trừu tượng Trò chuyện với trợ lý AI.
+    \item Sinh viên trò chuyện với trợ lý AI: Usecase này cho phép sinh viên tương tác với trợ lý AI để được hỗ trợ giải đáp các thắc mắc liên quan đến lớp học, bài tập, điểm số và các vấn đề khác trong quá trình học tập và sử dụng hệ thống. Usecase này kế thừa từ usecase trừu tượng Trò chuyện với trợ lý AI.
 \end{itemize}
 
 \subsection{Kịch bản các chức năng}
@@ -442,6 +444,60 @@ Kịch bản ngoại lệ &
 \end{table}
 
 
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+\hline
+Tên mục & Nội dung mô tả \\ \hline
+Tên kịch bản & Giảng viên trò chuyện với trợ lý AI \\ \hline
+Tác nhân & Giảng viên \\ \hline
+Tiền điều kiện & Giảng viên đã đăng nhập vào hệ thống. \\ \hline
+Hậu điều kiện & Hệ thống lưu lại lịch sử trò chuyện giữa giảng viên và trợ lý AI. \\ \hline
+Kịch bản chính &
+\begin{enumerate}[leftmargin=*, nosep]
+    \item Giảng viên mở giao diện trò chuyện với trợ lý AI.
+    \item Hệ thống hiển thị giao diện chat trống, sẵn sàng nhận câu hỏi.
+    \item Giảng viên nhập câu hỏi liên quan đến bài tập, hệ thống chấm điểm hoặc hệ thống.
+    \item Hệ thống hiển thị câu trả lời của trợ lý AI cho giảng viên xem.
+    \item Giảng viên có thể tiếp tục đặt câu hỏi bổ sung hoặc kết thúc cuộc trò chuyện.
+\end{enumerate} \\ \hline
+Kịch bản ngoại lệ &
+\begin{itemize}[leftmargin=*, nosep]
+    \item Hệ thống không phản hồi: trợ lý AI không phản hồi trong thời gian quy định; hệ thống thông báo lỗi và gợi ý giảng viên thử lại sau.
+    \item Câu hỏi không liên quan: trợ lý AI trả lời rằng không thể hỗ trợ câu hỏi này và gợi ý các chủ đề liên quan đến hệ thống chấm bài.
+\end{itemize} \\ \hline
+\end{tabularx}
+\caption{Kịch bản chức năng Giảng viên trò chuyện với trợ lý AI.}
+\label{tab:uc-lecturer-chat-ai}
+\end{table}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+\hline
+Tên mục & Nội dung mô tả \\ \hline
+Tên kịch bản & Sinh viên trò chuyện với trợ lý AI \\ \hline
+Tác nhân & Sinh viên \\ \hline
+Tiền điều kiện & Sinh viên đã đăng nhập vào hệ thống. \\ \hline
+Hậu điều kiện & Hệ thống lưu lại lịch sử trò chuyện giữa sinh viên và trợ lý AI. \\ \hline
+Kịch bản chính &
+\begin{enumerate}[leftmargin=*, nosep]
+    \item Sinh viên mở giao diện trò chuyện với trợ lý AI.
+    \item Hệ thống hiển thị giao diện chat trống, sẵn sàng nhận câu hỏi.
+    \item Sinh viên nhập câu hỏi liên quan đến bài tập, điểm số hoặc quy trình chấm điểm.
+    \item Hệ thống hiển thị câu trả lời của trợ lý AI cho sinh viên xem.
+    \item Sinh viên có thể tiếp tục đặt câu hỏi bổ sung hoặc kết thúc cuộc trò chuyện.
+\end{enumerate} \\ \hline
+Kịch bản ngoại lệ &
+\begin{itemize}[leftmargin=*, nosep]
+    \item Hệ thống không phản hồi: trợ lý AI không phản hồi trong thời gian quy định; hệ thống thông báo lỗi và gợi ý sinh viên thử lại sau.
+    \item Câu hỏi không liên quan: trợ lý AI trả lời rằng không thể hỗ trợ câu hỏi này và gợi ý các chủ đề liên quan đến bài tập và chấm điểm.
+\end{itemize} \\ \hline
+\end{tabularx}
+\caption{Kịch bản chức năng Sinh viên trò chuyện với trợ lý AI.}
+\label{tab:uc-student-chat-ai}
+\end{table}
 
 \subsection{Biểu đồ lớp toàn hệ thống}
 
