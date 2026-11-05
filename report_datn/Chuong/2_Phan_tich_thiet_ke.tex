@@ -513,7 +513,7 @@ Hai lớp Người dùng (User) và Vai trò (Role) biểu diễn tác nhân và
 
 Trong mô hình toàn hệ thống, kết quả thực thi từng bước và kết quả chấm từng bước được mô hình hóa chung thành lớp StepResult; bản ghi thực thi riêng của dịch vụ thực thi được trình bày ở mục 2.1.6.
 
-\subsubsection{Bước 4: Xét quan hệ số lượng giữa các lớp}
+\subsubsection{Xét quan hệ số lượng giữa các lớp}
 
 Xác định quan hệ số lượng giữa các lớp dựa trên số lượng đối tượng có thể tham gia quan hệ ở mỗi phía. Với quan hệ 1 - n, một đối tượng ở phía 1 có thể liên kết với nhiều đối tượng ở phía n, nhưng mỗi đối tượng ở phía n chỉ liên kết với đúng một đối tượng ở phía 1. Các quan hệ 1 - n trong hệ thống được xác định như sau:
 
@@ -546,16 +546,16 @@ Bên cạnh các quan hệ 1 - n, hệ thống còn có các quan hệ n - n c�
 Việc tách các quan hệ n - n được thực hiện bằng cách xác định một lớp trung gian sao cho mỗi phía của quan hệ ban đầu có quan hệ 1 - n với lớp trung gian. Sau đó, cần kiểm tra xem lớp trung gian có thỏa mãn điều kiện của lớp kết hợp hay không.
 
 \begin{itemize}[leftmargin=*, nosep]
-    \item Với quan hệ giữa User và Role, ta thêm lớp UserRole. Một người dùng có nhiều bản ghi UserRole và một vai trò cũng có nhiều bản ghi UserRole, nhưng mỗi cặp User-Role chỉ có duy nhất một bản ghi UserRole. Do đó UserRole là lớp kết hợp, và mỗi bản ghi chỉ cần giữ userId và roleId.
+    \item Với quan hệ giữa User và Role, ta thêm lớp UserRole. Một người dùng có nhiều bản ghi UserRole và một vai trò cũng có nhiều bản ghi UserRole, nhưng mỗi cặp User-Role chỉ có duy nhất một bản ghi UserRole. Do đó UserRole là lớp kết hợp.
     \item Với quan hệ giữa ClassStudent và ScoreComponent, ta thêm lớp StudentScore. Một sinh viên có nhiều bản ghi StudentScore và một thành phần điểm cũng có nhiều bản ghi StudentScore, nhưng mỗi cặp ClassStudent-ScoreComponent chỉ có duy nhất một bản ghi StudentScore. Do đó StudentScore là lớp kết hợp, và mỗi bản ghi giữ điểm của sinh viên ở thành phần điểm tương ứng.
     \item Với quan hệ giữa Assignment và ClassStudent, ta xét lớp Submission làm lớp trung gian. Một bài tập có nhiều bài nộp và một sinh viên cũng có nhiều bài nộp, nhưng mỗi bài nộp chỉ thuộc về đúng một bài tập và đúng một sinh viên. Để kiểm tra Submission có phải lớp kết hợp hay không, ta xét câu hỏi: một cặp Assignment-ClassStudent có duy nhất một Submission không? Câu trả lời là không, vì sinh viên có thể nộp lại cùng một bài tập nhiều lần. Mỗi lần nộp tạo ra một bản ghi Submission mới, và chỉ một bản ghi được đánh dấu latest để biểu diễn bài nộp hiện tại. Vì không duy nhất trên mỗi cặp Assignment-ClassStudent, Submission không phải là lớp kết hợp. Submission là lớp thường đóng vai trò lớp trung gian, có định danh riêng và có các thuộc tính như tên tệp, đường dẫn tệp, trạng thái chấm và cờ latest.
 \end{itemize}
 
 Như vậy, chỉ UserRole và StudentScore là hai lớp kết hợp trong mô hình. Submission không phải lớp kết hợp vì một cặp Assignment-ClassStudent có thể có nhiều lần nộp.
 
-\subsubsection{Bước 5: Bổ sung quan hệ đối tượng giữa các lớp}
+\subsubsection{Bổ sung quan hệ đối tượng giữa các lớp}
 
-Sau khi xác định quan hệ số lượng, Bước 5 bổ sung quan hệ đối tượng giữa các lớp. Với mỗi quan hệ 1 - n, ta xét xem đối tượng ở phía n có phải là thành phần của đối tượng ở phía 1 hay không. Nếu có, quan hệ được biểu diễn bằng composition; nếu đối tượng ở phía n tồn tại độc lập, quan hệ được biểu diễn bằng aggregation hoặc association.
+Sau khi xác định quan hệ số lượng cần bổ sung quan hệ đối tượng giữa các lớp. Với mỗi quan hệ 1 - n, ta xét xem đối tượng ở phía n có phải là thành phần của đối tượng ở phía 1 hay không. Nếu có, quan hệ được biểu diễn bằng composition; nếu đối tượng ở phía n tồn tại độc lập, quan hệ được biểu diễn bằng aggregation hoặc association.
 
 Các quan hệ thành phần trong hệ thống gồm:
 
@@ -635,6 +635,17 @@ STT & Miền chức năng & Mô tả \\ \hline
 \label{tab:functional-domains}
 \end{table}
 
+\subsection{Biểu đồ lớp thiết kế chi tiết toàn hệ thống}
+
+Biểu đồ dưới đây mô tả toàn bộ các lớp thực thể của hệ thống và quan hệ giữa chúng trước khi phân rã thành các dịch vụ độc lập.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_36_class_diagram_toan_he_thong}
+\caption{Biểu đồ lớp thiết kế toàn hệ thống.}
+\label{fig:class-system}
+\end{figure}
+
 \subsection{Biểu đồ lớp chi tiết từng dịch vụ}
 
 Sau khi phân rã, mỗi miền chức năng được thiết kế thành một dịch vụ độc lập với cơ sở dữ liệu riêng. Các mục dưới đây trình bày biểu đồ lớp chi tiết của từng dịch vụ.
@@ -643,7 +654,7 @@ Sau khi phân rã, mỗi miền chức năng được thiết kế thành một 
 
 \subsubsection{Biểu đồ lớp pha phân tích miền Xác thực và phân quyền}
 
-Miền Xác thực và phân quyền gồm Người dùng (User), Vai trò (Role) và lớp kết hợp Liên kết người dùng - vai trò (UserRole). Lớp UserRole biểu diễn quan hệ nhiều-nhiều giữa người dùng và vai trò, trong đó mỗi bản ghi giữ userId và roleId.
+Miền Xác thực và phân quyền gồm Người dùng (User), Vai trò (Role) và lớp kết hợp Liên kết người dùng - vai trò (UserRole). Lớp UserRole biểu diễn quan hệ nhiều-nhiều giữa người dùng và vai trò.
 
 \begin{figure}[H]
 \centering

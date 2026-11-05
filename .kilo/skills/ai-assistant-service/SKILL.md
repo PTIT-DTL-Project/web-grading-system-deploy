@@ -68,3 +68,5 @@ result-service RestClient (`feign.result-service.url` / `RESULT_SERVICE_URI`, al
 - Agent tools: `getTestStepCapabilities` (calls capabilities endpoint), `getStepConfigSchema` (calls config-schema by type). Replace bespoke static tool classes with DomainApiTool beans.
 - `DomainApiTool.validateStepPayloads`: `createTestQuestion`/`createTestStep` validated via validate endpoints; `updateTestStep` validated via `/validate-step` only if `config` present, and requires `stepType` when validating config; skip validation if no config.
 - DB steps require `connection` with `database`, `username`, `password`. `auto_inject_headers` applies to subsequent steps only; negative auth steps must shield headers.
+
+

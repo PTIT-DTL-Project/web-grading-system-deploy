@@ -207,6 +207,16 @@ dimensions). Never type `<<include>>`/`<<extend>>` in the `.tex`: OT1
 renders `<<` as "¡¡" (in text write `bao gồm (quan hệ include)`).
 Chapter 2 keeps include/extend/generalization out of prose — the
 relations live inside the exported diagram images.
+
+Class diagram design: `Biểu đồ lớp thiết kế chi tiết toàn hệ thống` is
+placed immediately before `\subsection{Biểu đồ lớp chi tiết từng dịch vụ}`
+in chapter 2. Caption: `Biểu đồ lớp thiết kế toàn hệ thống.`, label
+`fig:class-system`, image `Hinhve/Hinh2_36_class_diagram_toan_he_thong.png`
+with `\includegraphics[width=\textwidth]`. Each service-specific class
+diagram follows with its own `\subsubsection{Biểu đồ lớp chi tiết dịch
+vụ <Tên>}`, `\includegraphics[width=<width>\textwidth]{Hinhve/Hinh2_XX_...}`,
+caption `Biểu đồ lớp thiết kế dịch vụ <Tên>.`, and label
+`fig:class-<slug>`.
 Subsubsection note: `BTL.tex` redefines `\thesubsubsection` to `\alph`
 (the heading label is bare), so the actor groups print as `a,`/`b,` with
 no parent number - that matches the thesis sample, keep it. Text tone

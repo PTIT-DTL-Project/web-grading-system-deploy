@@ -52,6 +52,25 @@ Every time you add or change an endpoint/API (or anything client-facing):
 Example of the expected format: the Classes & Scores flow in `src-services/README.md`
 (create → import → score-components → scores → transcript).
 
+## API reference documentation (mandatory)
+
+Every time you add or change a controller, API endpoint, function, or anything
+client-facing:
+
+1. First imagine the FULL function flow it belongs to end-to-end: who calls what,
+   in which order, preconditions, input/output shape, and expected result at each step.
+2. Write/update the matching file in `docs/api/docs/<service>/<controller-name>.md`
+   (create the file if missing): one section per function, with input, output,
+   step-by-step flow, HTTP request/response examples, and error codes.
+3. Write in Vietnamese. Cover DTOs (each field, type, required, default), every
+   controller handler and its service counterpart, private helpers, error summary
+   table, and an end-to-end data-flow diagram in plain text.
+4. If an existing endpoint/function changes (renamed, moved, new validation, new
+   step, new parameter), update its section in the same task — stale API docs are
+   worse than none.
+5. The canonical API reference is `docs/api/docs/`. Keep it in sync with code;
+   do not add an endpoint without its doc file.
+
 ## Configuration must use @ConfigurationProperties, not @Value
 
 NEVER use `@Value` for configuration properties. Group all related

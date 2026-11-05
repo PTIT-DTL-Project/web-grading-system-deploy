@@ -1125,3 +1125,59 @@ rows written before the change keep the old value and downstream branches on it
   already 10/10 normalised, so the migration is a no-op there but protects
   stg/prod.
 
+## 26. Java record DTOs — canonical constructor, not @Builder (ai-assistant-service plan module)
+
+When creating new record DTOs in `ai-assistant-service` (or any service), use Java records
+with canonical constructors. Do NOT use Lombok `@Builder` on records — the project's Lombok
+version does not generate working `@Builder` methods on records (builder methods like
+`.field(val)` are not found at compile time).
+
+**Record DTO pattern** (used in `ai-assistant-service/dto/plan/`):
+
+```java
+public record PlanConfigResult(
+        String assignmentTitle,
+        String assignmentTopic,
+        List<PlanStepConfig> plans,
+        String configJson,
+        List<String> warnings,
+        List<String> errors,
+        boolean valid
+) {
+    public record PlanStepConfig(
+            String planName,
+            String description,
+            Integer sequenceOrder,
+            Integer weight,
+            List<StepConfig> steps
+    ) {
+        public record StepConfig(
+                Integer stepOrder,
+                String name,
+                String stepType,
+                String config,
+                Integer stepOrderOverride
+        ) {
+        }
+    }
+}
+```
+
+**Construction:** Use the canonical constructor directly (`new X(a, b, c)`), not
+`X.builder()`. The ">2 positional args → @Builder" rule (§12.6) applies to regular
+classes, not records — records' canonical constructors are the idiomatic way to
+construct them.
+
+**Record accessor:** Use `fieldName()` (e.g. `intent.steps()`, `result.valid()`),
+NOT `getFieldName()` (e.g. `intent.getSteps()`, `result.getValid()`).
+
+**Regular classes (not records):** Continue using `@Builder` + `@Data` + Lombok
+(e.g. `CreatePlanRequest`, `CreateStepRequest` in `ai-assistant-service/client/dto/`).
+
+**Record + @Builder conflict:** If you add `@Builder` to a record, compilation fails
+with `cannot find symbol method fieldName(java.lang.String)` on builder calls and
+`cannot find symbol method fieldName()` on accessor calls. Remove `@Builder` and use
+canonical constructors instead.
+
+
+
