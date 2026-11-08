@@ -25,6 +25,7 @@ với box 8 GB sau khi sửa — không cần bỏ thành phần nào.
 | d | Grafana lệch `domain` / `root_url` / `serve_from_sub_path` + key sai tên | `charts/kube-prometheus-stack-values.yaml` | Redirect loop qua ingress |
 | e | Backend `web-grading` không resolve `tempo.observability.svc.cluster.local` | `charts/tempo-values.yaml` | Trace không lên, log đầy `UnknownHostException` |
 | f | Tempo OTLP receivers bind `localhost` (không phải `0.0.0.0`) | `charts/tempo-values.yaml` | Connection refused từ backend, zero traces ingested |
+| g | Tempo HTTP server listen port 3100 (không phải 3200) | `charts/tempo-values.yaml` | Grafana i/o timeout, không query được traces |
 
 ---
 
@@ -583,6 +584,54 @@ curl http://localhost:3200/metrics | grep tempo_distributor_spans_received_total
 
 ---
 
+### 2.l — Tempo HTTP server listen port 3100 (không phải 3200) — Grafana không kết nối được (2026-11-08)
+
+**Triệu chứng:**
+- Tempo pod Running, Service có port 4318/4317 ✅
+- Nhưng Grafana datasource Tempo trả `i/o timeout` khi connect `tempo.observability.svc.cluster.local:3200` ❌
+- Tempo logs: `server listening on addresses http=[::]:3100 grpc=[::]:9095` ❌ (listen 3100, không phải 3200)
+- Service Endpoints không có `:3200` ❌
+
+**Root cause:** Chart `grafana/tempo` v1.21.1 mặc định dùng **port 3100** cho HTTP server (legacy port).
+Grafana datasource được cấu hình trong `kube-prometheus-stack-values.yaml` trỏ tới
+`http://tempo.observability.svc.cluster.local:3200` → mismatch port → Grafana không query được traces.
+
+**Cách sửa:** Thêm cấu hình `server.http_listen_port: 3200` vào `deploy/observability/charts/tempo-values.yaml`:
+
+```yaml
+server:
+  http_listen_port: 3200
+  grpc_listen_port: 9095
+```
+
+Service `tempo` đã khai báo `port: 3200, targetPort: 3200` → giờ pod sẽ listen đúng 3200, Service forward đúng.
+
+**Verify sau khi cluster ổn định:**
+```bash
+# 1. Render Helm manifest có server config đúng
+helm template tempo grafana/tempo --version 1.21.1 -f deploy/observability/charts/tempo-values.yaml \
+  | grep -A5 "http_listen_port"
+
+# 2. Re-deploy Tempo
+cd deploy/observability && ./install.sh
+
+# 3. Kiểm tra pod listen port 3200
+kubectl exec -n observability tempo-0 -- ss -tlnp | grep :3200
+
+# 4. Kiểm tra Service Endpoints có :3200
+kubectl get endpoints -n observability tempo -o yaml | grep "3200"
+
+# 5. Test từ Grafana pod
+kubectl exec -n observability deployment/monitoring-grafana -- \
+  wget -O- --timeout=5 http://tempo.observability.svc.cluster.local:3200/ready
+
+# 6. Kiểm tra readiness probe
+kubectl get pod -n observability tempo-0 -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'
+# Expected: True
+```
+
+---
+
 ## 3. Vì sao 8 GB không đủ (ngân sách tài nguyên)
 
 Số dưới đây là **limits/ước tính đọc từ manifest**, không phải RSS đo runtime (cluster không truy cập
@@ -608,7 +657,7 @@ Nói cách khác: sự cố là do cấu hình sai, không phải do bản thân
 
 | Nhóm | File | Nội dung |
 |---|---|---|
-| Helm values | `deploy/observability/charts/tempo-values.yaml` | 2.a, 2.j (service ports), 2.k (distributor receivers 0.0.0.0) |
+| Helm values | `deploy/observability/charts/tempo-values.yaml` | 2.a, 2.j (service ports), 2.k (distributor receivers 0.0.0.0), 2.l (HTTP server port 3200) |
 | Helm values | `deploy/observability/charts/kube-prometheus-stack-values.yaml` | 2.b, 2.d, 2.f2, 2.h (datasource mount), 2.i (key camelCase cho KSM/node-exporter), retention, tắt control-plane |
 | Script | `deploy/observability/install.sh`, `uninstall.sh` | 2.e, 2.f1 (OCI + retry), 2.h (verify datasource), 2.i (verify Lite composition) |
 | Template | `deploy/observability/templates/application-observability.yaml` | 2.c (viết lại theo Boot 4.1) |
@@ -626,6 +675,7 @@ Nói cách khác: sự cố là do cấu hình sai, không phải do bản thân
 |---|---|
 | `helm template` Tempo (Helm 3.16.4) | ✅ `-mem-ballast-size-mbs=0`, `GOMEMLIMIT=400MiB`, `grafana/tempo:2.7.1`, `resources` đúng trong container spec |
 | `helm template` Tempo (distributor) | ✅ `distributor.receivers.otlp.protocols.http.endpoint: "0.0.0.0:4318"`, `grpc.endpoint: "0.0.0.0:4317"` |
+| `helm template` Tempo (server port) | ✅ `server.http_listen_port: 3200`, `grpc_listen_port: 9095` |
 | `helm template` kube-prometheus-stack | ✅ scrape config không còn bearer token, có filter app/phase/ready/port; Grafana config domain literal; `retentionSize`; đúng **2 datasource** (Prometheus isDefault + Tempo), không còn Alertmanager; không còn ServiceMonitor control-plane |
 | `helm template` qua OCI (GHCR, helm 3.16.4) | ✅ `tempo` + `kube-prometheus-stack` pull được, không phụ thuộc GitHub Releases CDN |
 | `grafana.ini` render | ✅ `[auth.anonymous] enabled = false`; `grep -c 'map\['` = 0 |

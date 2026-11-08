@@ -46,6 +46,12 @@ distributor:
         http:
           endpoint: "0.0.0.0:4318"
 
+# Tempo HTTP server phải listen port 3200 (không phải 3100 mặc định của chart)
+# để khớp với Grafana datasource url: http://tempo.observability.svc.cluster.local:3200
+server:
+  http_listen_port: 3200
+  grpc_listen_port: 9095
+
 persistence:
   enabled: true
   storageClassName: local-path
