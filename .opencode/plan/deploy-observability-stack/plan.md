@@ -92,7 +92,7 @@ serviceMonitor:
 ```
 
 **Cách phát hiện / verify:** `helm template tempo grafana/tempo -f charts/tempo-values.yaml` phải ra
-`-mem-ballast-size-mbs=0`, `GOMEMLIMIT=400MiB`, `image: grafana/tempo:2.4.0` và `resources` nằm trong
+`-mem-ballast-size-mbs=0`, `GOMEMLIMIT=400MiB`, `image: grafana/tempo` và `resources` nằm trong
 container spec. Nếu render ra pod không có `resources` → key vẫn sai nhánh.
 
 **Bài học:** với Helm chart, **không tin key đã đúng** — luôn `helm template` rồi grep vào spec container.
@@ -590,8 +590,6 @@ config: |
   metrics_generator:
     storage:
       path: /var/tempo/wal
-    local_blocks_storage:
-      path: /var/tempo/wal/blocks
     registry:
       external_labels:
         source: "tempo"
@@ -726,7 +724,7 @@ Nói cách khác: sự cố là do cấu hình sai, không phải do bản thân
 
 | Check | Kết quả |
 |---|---|
-| `helm template` Tempo (Helm 3.16.4) | ✅ `-mem-ballast-size-mbs=0`, `GOMEMLIMIT=400MiB`, `grafana/tempo:2.4.0`, `resources` đúng trong container spec |
+| `helm template` Tempo (Helm 3.16.4) | ✅ `-mem-ballast-size-mbs=0`, `GOMEMLIMIT=400MiB`, `grafana/tempo`, `resources` đúng trong container spec |
 | `helm template` Tempo (config block) | ✅ `tempo.config:` có `server.http_listen_port: 3200`, `distributor.receivers.otlp.protocols.http.endpoint: "0.0.0.0:4318"`, `grpc.endpoint: "0.0.0.0:4317"`, `memberlist`, `metrics_generator.ring.kvstore.store: memberlist` |
 | `helm template` Tempo (metricsGenerator) | ✅ `metricsGenerator.enabled: true` (cần cho TraceQL `| rate()`) |
 | `helm template` kube-prometheus-stack | ✅ scrape config không còn bearer token, có filter app/phase/ready/port; Grafana config domain literal; `retentionSize`; đúng **2 datasource** (Prometheus isDefault + Tempo), không còn Alertmanager; không còn ServiceMonitor control-plane |

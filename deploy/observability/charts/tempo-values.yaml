@@ -55,8 +55,6 @@ config: |
   metrics_generator:
     storage:
       path: /var/tempo/wal
-    local_blocks_storage:
-      path: /var/tempo/wal/blocks
     registry:
       external_labels:
         source: "tempo"
