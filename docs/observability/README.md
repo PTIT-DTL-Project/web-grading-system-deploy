@@ -185,8 +185,13 @@ management:
   tracing:
     sampling:
       probability: ${OTEL_TRACES_SAMPLING_PROBABILITY:1.0}
+    # Boot 4.1 mặc định true (key cũ management.tracing.enabled bị báo error).
+    # Khai báo tường minh để 6 service dùng cùng một bộ key.
+    export:
+      enabled: true
   # Spring Boot 4.x. Không dùng management.otlp.tracing.* hay
   # management.tracing.enabled nữa: cả hai đã deprecated ở mức error.
+  # Đã đối chiếu metadata spring-boot-*-4.1.0.
   opentelemetry:
     tracing:
       export:
@@ -194,11 +199,15 @@ management:
           endpoint: ${OTLP_TRACES_ENDPOINT:http://tempo.observability.svc.cluster.local:4318/v1/traces}
   otlp:
     metrics:
+      # Metrics vẫn ở namespace management.otlp.metrics.* trong Boot 4.1 và
+      # mặc định enabled=true. Đổi sang management.opentelemetry.metrics.* sẽ
+      # bị bỏ qua (key không tồn tại) và push tự bật lại.
       export:
         enabled: false
 
 logging:
   pattern:
+    # MDC key do micrometer-tracing-bridge-otel đặt: traceId/spanId.
     level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
 ```
 
@@ -224,8 +233,11 @@ curl -s --get "http://localhost:3200/api/search" \
 
 ## 8. Grafana
 
-- Prometheus datasource: tự tạo bởi `defaultDatasourcesEnabled: true`.
-- Tempo datasource: khai báo trong `additionalDataSources`.
+- Cả hai datasource (Prometheus + Tempo) khai báo tường minh trong
+  `grafana.additionalDataSources`, kèm `uid` cố định; Prometheus là `isDefault`.
+- `defaultDatasourceEnabled: false`: chart không tự provision nữa, vì bản tự
+  động luôn kèm datasource Alertmanager dù Alertmanager không được deploy
+  (dead datasource trong UI).
 - Không có dashboard được provision sẵn (`defaultDashboardsEnabled: false`,
   dashboards sidecar tắt). Dùng **Explore** để query PromQL/TraceQL.
 - Nếu thêm dashboard: bật lại sidecar dashboards và tạo ConfigMap label

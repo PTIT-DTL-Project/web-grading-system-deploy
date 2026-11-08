@@ -45,6 +45,12 @@ cp .env.observability.example .env.observability   # set GRAFANA_ADMIN_PASSWORD
   `oci://` reference + `--version`.
 - Values live in `charts/tempo-values.yaml` and
   `charts/kube-prometheus-stack-values.yaml`.
+- Grafana datasources are declared explicitly in `grafana.additionalDataSources`
+  (Prometheus: uid `prometheus`, `isDefault: true`; Tempo: uid `tempo`) with
+  `grafana.sidecar.datasources.defaultDatasourceEnabled: false`. The chart's own
+  provisioning also emits an **Alertmanager** datasource even when
+  `alertmanager.enabled: false`, i.e. a dead datasource in the UI. Never rely on
+  it; keep exactly these two entries.
 - `install.sh` warns about leftover releases (loki/mimir/alloy/pyroscope) in
   the namespace; those keep using RAM and must be uninstalled manually.
 
@@ -112,12 +118,27 @@ logging:
     level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
 ```
 
-- Boot 4.x property names: `management.opentelemetry.tracing.export.otlp.*`.
-  `management.otlp.tracing.*` and `management.tracing.enabled` are deprecated
-  at error level (replacement: `management.tracing.export.enabled`).
-- Micrometer MDC keys are `traceId`/`spanId`; `trace_id`/`span_id` are wrong.
-- OTLP metrics export defaults to TRUE in Boot 4.x with
-  `http://localhost:4318/v1/metrics`. Always disable it when Prometheus pulls.
+- Verified against Spring Boot 4.1.0 configuration metadata (inspect
+  `META-INF/spring-configuration-metadata.json` in
+  `spring-boot-micrometer-tracing*` / `spring-boot-opentelemetry`):
+  - traces endpoint: `management.opentelemetry.tracing.export.otlp.endpoint`,
+    value is the FULL url including `/v1/traces`.
+  - export toggles: `management.tracing.export.enabled` (default true) and
+    `management.tracing.export.otlp.enabled` (default true).
+  - metrics OTLP stays at `management.otlp.metrics.export.*` and `enabled`
+    defaults to **true**. There is no `management.opentelemetry.metrics.*`
+    equivalent: writing that name is silently ignored and the push returns.
+  - deprecated at ERROR: `management.tracing.enabled` ->
+    `management.tracing.export.enabled`, and `management.otlp.tracing.*` ->
+    `management.opentelemetry.tracing.export.otlp.*`.
+  - `management.tracing.sampling.probability` defaults to **0.1**, hence the
+    explicit `${OTEL_TRACES_SAMPLING_PROBABILITY:1.0}`.
+- Unknown `management.*` keys are dropped silently, so a typo stops trace
+  export without any startup error. All six services must declare the SAME
+  management block; diff them before shipping (`grep -A30 '^management:'`).
+- Micrometer MDC keys are `traceId`/`spanId` (camelCase, written by
+  `Slf4JEventListener` in `micrometer-tracing-bridge-otel`); `trace_id`/`span_id`
+  render as empty fields. Logs are plain stdout, nothing parses the MDC.
 - Do not add `io.pyroscope:agent`; Pyroscope is not deployed.
 
 ## 6. Verify and debug
@@ -140,7 +161,11 @@ Symptom map:
   `serve_from_sub_path: true` while ingress routes `/`.
 - Service metrics missing -> wrong `app` label, not Ready, or port outside the
   scrape regex.
-- No traces -> OTLP endpoint wrong, Tempo down, or sampling 0.
+- Datasource missing in Grafana -> the datasource ConfigMap must carry
+  `grafana_datasource: "1"` and the `grafana-sc-datasources` sidecar must be
+  Ready.
+- No traces -> OTLP endpoint wrong/typo'd (unknown key is dropped silently),
+  Tempo down, or sampling 0.
 - Node lag after install -> check leftover Helm releases and
   `kubectl get events -A --sort-by=.lastTimestamp`.
 

@@ -24,8 +24,13 @@ management:
     sampling:
       # 1.0 = dev (100%). Đặt OTEL_TRACES_SAMPLING_PROBABILITY=0.1-0.3 ở prod.
       probability: ${OTEL_TRACES_SAMPLING_PROBABILITY:1.0}
+    # Boot 4.1 default là true (management.tracing.enabled cũ bị báo error).
+    # Khai báo tường minh để cả 6 service có cùng bộ key.
+    export:
+      enabled: true
   # Spring Boot 4.x: management.otlp.tracing.* và management.tracing.enabled
   # đã bị deprecate ở mức error. Dùng property mới dưới đây.
+  # Đã đối chiếu metadata spring-boot-micrometer-tracing-opentelemetry-4.1.0.
   opentelemetry:
     tracing:
       export:
@@ -35,11 +40,16 @@ management:
     metrics:
       # Prometheus pull /actuator/prometheus; tắt OTLP push để khỏi gửi
       # metrics tới Tempo (Tempo không nhận metrics) mỗi 60 giây.
+      # Lưu ý: metrics vẫn nằm dưới management.otlp.metrics.* ở Boot 4.1
+      # (default enabled=true). Không có management.opentelemetry.metrics.*,
+      # đổi sang đó sẽ bị bỏ qua và push tự bật lại.
       export:
         enabled: false
 
 logging:
   pattern:
+    # MDC key là camelCase do micrometer-tracing-bridge-otel (Slf4JEventListener)
+    # đặt: traceId/spanId. trace_id/span_id sẽ ra rỗng.
     level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
   level:
     root: INFO

@@ -27,8 +27,11 @@ cluster. Sized for an 8 GB RAM box.
 - **Tempo** receives OTLP/HTTP traces directly from each service
   (`tempo.observability.svc.cluster.local:4318/v1/traces`); there is no
   collector in between.
-- **Grafana** is the single pane. The Prometheus datasource is created by the
-  chart, the Tempo datasource is added in `charts/kube-prometheus-stack-values.yaml`.
+- **Grafana** is the single pane. Both datasources (Prometheus and Tempo) are
+  declared explicitly under `grafana.additionalDataSources` in
+  `charts/kube-prometheus-stack-values.yaml`; the chart's own provisioning is
+turned off (`defaultDatasourceEnabled: false`) because it also injects an
+  Alertmanager datasource even though Alertmanager is not deployed.
 
 There is **no Loki, Mimir, Alloy, Pyroscope, node-exporter, kube-state-metrics,
 or Alertmanager** in this deployment. Do not re-add them on the 8 GB box.
@@ -89,8 +92,11 @@ management:
   tracing:
     sampling:
       probability: ${OTEL_TRACES_SAMPLING_PROBABILITY:1.0}
+    export:
+      enabled: true   # Boot 4.1 default; declared so all six match
   # Spring Boot 4.x names. management.otlp.tracing.* and
   # management.tracing.enabled are deprecated at error level.
+  # Verified against spring-boot-micrometer-tracing-opentelemetry-4.1.0.
   opentelemetry:
     tracing:
       export:
@@ -106,8 +112,15 @@ logging:
     level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
 ```
 
-Micrometer's MDC keys are `traceId` and `spanId`. `trace_id`/`span_id` are
-wrong and produce empty log fields.
+Micrometer's MDC keys are `traceId` and `spanId` (`Slf4JEventListener` in
+`micrometer-tracing-bridge-otel`). `trace_id`/`span_id` are wrong and produce
+empty log fields. Logs are plain stdout — no aggregator parses them, so nothing
+else needs configuring.
+
+OTLP **metrics** keep the `management.otlp.metrics.export.*` namespace in Boot
+4.1 (`enabled` defaults to `true`). There is no
+`management.opentelemetry.metrics.*` equivalent; writing one is silently ignored
+and metrics export turns back on.
 
 ### What you get
 
