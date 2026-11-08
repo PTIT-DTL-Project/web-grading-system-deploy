@@ -9,7 +9,9 @@
 # pod unbounded.
 tempo:
   repository: grafana/tempo
-  tag: 2.7.1
+  # tag: Chart v3.1.0 defaults to Tempo 2.10.x or 3.0.x (maintained/recommended).
+  # Omit explicit tag to use chart's appVersion, ensuring compatibility.
+  # Review: 2026-11-08, removed hardcoded 2.7.1 to follow chart default.
   pullPolicy: IfNotPresent
 
   # Tempo 2.x allocates a 1 GiB ballast by default. That alone is twice the
