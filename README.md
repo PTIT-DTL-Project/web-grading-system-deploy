@@ -215,7 +215,7 @@ See [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md#adding-a-new-service)
 
 ## 🔍 Monitoring & Observability
 
-The system includes a complete observability stack:
+The system includes a lightweight observability stack sized for the 8 GB box:
 
 ```bash
 cd deploy/observability
@@ -223,10 +223,12 @@ cd deploy/observability
 ```
 
 Includes:
-- Prometheus - Metrics collection
-- Grafana - Visualization
-- Loki - Log aggregation
-- Tempo - Distributed tracing
+- Prometheus - Metrics collection (`/actuator/prometheus`)
+- Grafana - Visualization (Prometheus + Tempo datasources)
+- Tempo - Distributed tracing (OTLP)
+
+Loki, Mimir, Alloy and Pyroscope are intentionally not deployed. See
+[deploy/observability/README.md](./deploy/observability/README.md).
 
 ## 🔐 Security
 

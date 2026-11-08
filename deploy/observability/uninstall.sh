@@ -20,11 +20,11 @@ if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
 fi
 
 echo ""
-echo "[1/2] Removing kube-prometheus-stack..."
+echo "[1/3] Removing kube-prometheus-stack..."
 helm uninstall monitoring -n observability 2>/dev/null || true
 
 echo ""
-echo "[2/2] Removing Tempo..."
+echo "[2/3] Removing Tempo..."
 helm uninstall tempo -n observability 2>/dev/null || true
 
 echo ""

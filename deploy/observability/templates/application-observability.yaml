@@ -21,16 +21,22 @@ management:
       exposure:
         include: health,info,prometheus
   tracing:
-    enabled: true
     sampling:
-      probability: 1.0  # 1.0 = 100% traces (dev). 0.1-0.3 cho prod
-  otlp:
+      # 1.0 = dev (100%). Đặt OTEL_TRACES_SAMPLING_PROBABILITY=0.1-0.3 ở prod.
+      probability: ${OTEL_TRACES_SAMPLING_PROBABILITY:1.0}
+  # Spring Boot 4.x: management.otlp.tracing.* và management.tracing.enabled
+  # đã bị deprecate ở mức error. Dùng property mới dưới đây.
+  opentelemetry:
     tracing:
-      # Send OTLP traces directly to Tempo (no Alloy intermediary).
-      endpoint: http://tempo.observability.svc.cluster.local:4318/v1/traces
-      transport: http
-  # No OTLP metrics export here — Prometheus scrapes /actuator/prometheus
-  # directly (see kube-prometheus-stack additionalScrapeConfigs in install.sh).
+      export:
+        otlp:
+          endpoint: ${OTLP_TRACES_ENDPOINT:http://tempo.observability.svc.cluster.local:4318/v1/traces}
+  otlp:
+    metrics:
+      # Prometheus pull /actuator/prometheus; tắt OTLP push để khỏi gửi
+      # metrics tới Tempo (Tempo không nhận metrics) mỗi 60 giây.
+      export:
+        enabled: false
 
 logging:
   pattern:
@@ -39,4 +45,4 @@ logging:
     root: INFO
     vn.edu.ptit: DEBUG
     org.springframework.web: INFO
-    io.micrometer.tracing: DEBUG  # Debug tracing issues, tắt ở prod
+    io.micrometer.tracing: INFO

@@ -2,7 +2,7 @@
 # kube-prometheus-stack Helm Values (Lite: Prometheus + Grafana only)
 # Chart: prometheus-community/kube-prometheus-stack v72.6.2
 # Provides: Prometheus (metrics TSDB) + Grafana (UI).
-# kube-state-metrics, Alertmanager are DISABLED. Node Exporter is ENABLED.
+# kube-state-metrics, Alertmanager, Node Exporter are DISABLED (8 GB RAM box).
 # =============================================================================
 
 defaultRules:
@@ -11,15 +11,22 @@ defaultRules:
 grafana:
   enabled: true
   defaultDashboardsEnabled: false
-  defaultDatasourcesEnabled: true   # auto-create Prometheus datasource
 
   sidecar:
     dashboards:
       enabled: false
     datasources:
-      enabled: true                 # read ConfigMap datasources defined below
+      enabled: true
+      # Provision the Prometheus datasource. The kube-prometheus-stack key is
+      # singular (defaultDatasourceEnabled); "defaultDatasourcesEnabled" is
+      # silently ignored.
+      defaultDatasourceEnabled: true
       label: grafana_datasource
       labelValue: "1"
+    # The datasource sidecar is the only always-on sidecar; bound it too.
+    resources:
+      requests: { cpu: 10m, memory: 32Mi }
+      limits: { cpu: 50m, memory: 64Mi }
 
   persistence:
     enabled: true
@@ -44,11 +51,14 @@ grafana:
       url: http://tempo.observability.svc.cluster.local:3200
       editable: true
 
+  # Helm does NOT expand ${...} inside values files: the old literal
+  # "${GRAFANA_DOMAIN:-...}" became Grafana's domain verbatim and broke
+  # redirects/absolute URLs. Keep this host in sync with the ingress manifest.
   grafana.ini:
     server:
-      root_url: "%(protocol)s://%(domain)s/"
-      serve_from_sub_path: true
-      domain: "${GRAFANA_DOMAIN:-web-dev1-grafana.vucongtuanduong.dpdns.org}"
+      domain: web-dev1-grafana.vucongtuanduong.dpdns.org
+      root_url: "https://%(domain)s/"
+      serve_from_sub_path: false
     auth:
       anonymous:
         enabled: false
@@ -61,44 +71,79 @@ prometheus:
   prometheusSpec:
     enableRemoteWriteReceiver: true
     storageClassName: local-path
-    size: 8Gi
-    retention: 7d
+    size: 2Gi
+    retention: 3d
+    # Hard stop before the 2Gi PVC fills (Prometheus keeps head chunks too).
+    retentionSize: "1500MB"
     # Scrape Spring Boot backend services in the web-grading namespace.
-    # Each backend pod exposes /actuator/prometheus on its (single) HTTP
-    # container port. Pod-SD + the prometheus ServiceAccount token discover
-    # them; the token + cluster CA are mounted by the chart automatically.
+    # Pod-SD uses Prometheus's own ServiceAccount for the Kubernetes API; that
+    # credential must NOT be attached to the scrape requests. With
+    # bearer_token_file the gateway's reactive resource-server filter rejects
+    # the invalid Bearer token with 401 before permitAll() on
+    # /actuator/prometheus can apply, so gateway metrics stayed dark.
     additionalScrapeConfigs: |
       - job_name: "backend-services"
         metrics_path: "/actuator/prometheus"
         scheme: http
+        scrape_interval: 30s
         kubernetes_sd_configs:
           - role: pod
             namespaces:
               names:
                 - web-grading
-        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-        tls_config:
-          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
         relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            regex: "api-gateway|course-service|executor-service|result-service|submission-service|ai-assistant-service"
+            action: keep
           - source_labels: [__meta_kubernetes_pod_phase]
             regex: Running
             action: keep
+          - source_labels: [__meta_kubernetes_pod_ready]
+            regex: "true"
+            action: keep
+          # Only the application HTTP port: executor's dind sidecar exposes
+          # 2375 and Keycloak/RustFS pods are excluded by the app-label filter.
           - source_labels: [__meta_kubernetes_pod_container_port_number]
-            regex: .+
+            regex: "8080|8081|8082|8083|8084|8086"
             action: keep
           - source_labels: [__meta_kubernetes_namespace]
             target_label: namespace
           - source_labels: [__meta_kubernetes_pod_name]
             target_label: pod
-        honor_labels: true
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            target_label: service
 
     service:
       enabled: true
       type: ClusterIP
 
-# --- Node Exporter (host metrics DaemonSet) ---
+    resources:
+      limits: { cpu: 500m, memory: 768Mi }
+      requests: { cpu: 100m, memory: 256Mi }
+
+# --- Kubelet / cAdvisor ---
+# cAdvisor defaults to a 10s scrape, which is needless write amplification on
+# one node. Container CPU/memory are still fresh at 30s.
+kubelet:
+  serviceMonitor:
+    interval: 30s
+    cAdvisorInterval: 30s
+
+# --- Control-plane components ---
+# k3s runs these inside the k3s server process, not as separately scrapeable
+# pods. Leaving them enabled creates permanently-down targets and error noise.
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
+kubeEtcd:
+  enabled: false
+
+# --- Node Exporter (disabled — host metrics not needed on 8 GB box) ---
 prometheus-node-exporter:
-  enabled: true
+  enabled: false
 
 # --- kube-state-metrics (disabled — not needed for service-level metrics only) ---
 kube-state-metrics:
