@@ -17,10 +17,14 @@ grafana:
       enabled: false
     datasources:
       enabled: true
-      # Provision the Prometheus datasource. The kube-prometheus-stack key is
-      # singular (defaultDatasourceEnabled); "defaultDatasourcesEnabled" is
-      # silently ignored.
-      defaultDatasourceEnabled: true
+      # Off on purpose: the chart's own provisioning always emits a Prometheus
+      # AND an Alertmanager datasource, but alertmanager.enabled is false here,
+      # so Grafana would list a dead datasource pointing at a service that does
+      # not exist. Both datasources we use are declared explicitly in
+      # additionalDataSources below.
+      # (Key is singular: defaultDatasourceEnabled; "defaultDatasourcesEnabled"
+      # is silently ignored.)
+      defaultDatasourceEnabled: false
       label: grafana_datasource
       labelValue: "1"
     # The datasource sidecar is the only always-on sidecar; bound it too.
@@ -42,14 +46,27 @@ grafana:
   # Don't hardcode it here.
 
   # --- Datasource provisioning ---
-  # Prometheus is auto-provisioned by defaultDatasourcesEnabled: true.
-  # Tempo is added explicitly here so Grafana can query traces.
+  # Both datasources are declared here (and only here) so the set is explicit:
+  # Prometheus for metrics, Tempo for traces. Prometheus must stay isDefault so
+  # Explore and new panels work without picking a datasource manually.
   additionalDataSources:
+    - name: Prometheus
+      type: prometheus
+      uid: prometheus
+      access: proxy
+      url: http://monitoring-kube-prometheus-prometheus.observability.svc.cluster.local:9090
+      isDefault: true
+      editable: false
+      jsonData:
+        httpMethod: POST
+        # Matches prometheusSpec.scrapeInterval (30s) so graphs are step-correct.
+        timeInterval: 30s
     - name: Tempo
       type: tempo
+      uid: tempo
       access: proxy
       url: http://tempo.observability.svc.cluster.local:3200
-      editable: true
+      editable: false
 
   # Helm does NOT expand ${...} inside values files: the old literal
   # "${GRAFANA_DOMAIN:-...}" became Grafana's domain verbatim and broke
