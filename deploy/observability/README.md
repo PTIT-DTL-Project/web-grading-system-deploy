@@ -29,9 +29,20 @@ cluster. Sized for an 8 GB RAM box.
   collector in between.
 - **Grafana** is the single pane. Both datasources (Prometheus and Tempo) are
   declared explicitly under `grafana.additionalDataSources` in
-  `charts/kube-prometheus-stack-values.yaml`; the chart's own provisioning is
-turned off (`defaultDatasourceEnabled: false`) because it also injects an
-  Alertmanager datasource even though Alertmanager is not deployed.
+  `charts/kube-prometheus-stack-values.yaml`. The generated ConfigMap is mounted
+  **directly** into the Grafana pod at
+  `/etc/grafana/provisioning/datasources/datasource.yaml`
+  (`grafana.extraConfigmapMounts`), with the datasource sidecar off and
+  `forceDeployDatasources: true`. The chart's own provisioning is disabled
+  (`defaultDatasourceEnabled: false`) because it also injects an Alertmanager
+  datasource even though Alertmanager is not deployed.
+
+  Why not the sidecar: it writes the provisioning file after Grafana has read
+  the directory, so a fresh install can show an empty datasource list; it also
+  needs an extra image from quay.io and RBAC to watch ConfigMaps. Because the
+  mount uses `subPath`, changing `additionalDataSources` requires
+  `kubectl -n observability rollout restart deploy/monitoring-grafana`.
+  `install.sh` verifies the file from inside the pod at the end of the run.
 
 There is **no Loki, Mimir, Alloy, Pyroscope, node-exporter, kube-state-metrics,
 or Alertmanager** in this deployment. Do not re-add them on the 8 GB box.
@@ -159,7 +170,6 @@ Estimated total: **~0.8 GiB requests, ~1.8 GiB limits**.
 | Prometheus | 100m | 256Mi | 500m | 768Mi |
 | Grafana | 100m | 256Mi | 500m | 512Mi |
 | Tempo | 100m | 256Mi | 500m | 512Mi |
-| Grafana datasource sidecar | 10m | 32Mi | 50m | 64Mi |
 | **Total** | **310m** | **800Mi** | **1550m** | **1.81Gi** |
 
 ## 8 GB tuning notes

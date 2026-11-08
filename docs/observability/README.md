@@ -75,7 +75,6 @@ k3s cluster
 | Prometheus | kube-prometheus-stack | 100m / 500m | 256Mi / 768Mi | TSDB 2Gi, retention 3 ngày, cắt ở 1500MB |
 | Grafana | kube-prometheus-stack | 100m / 500m | 256Mi / 512Mi | PVC 2Gi |
 | Tempo | grafana/tempo 1.21.1 | 100m / 500m | 256Mi / 512Mi | PVC 2Gi, retention 24h |
-| Grafana datasource sidecar | kube-prometheus-stack | 10m / 50m | 32Mi / 64Mi | Chỉ sidecar datasource |
 
 Tổng request khoảng **0.8Gi**, tổng limit khoảng **1.8Gi**. Đây là mức tối đa
 nên dành cho observability trên máy 8 GB; phần còn lại phải chia cho k3s,
@@ -238,6 +237,15 @@ curl -s --get "http://localhost:3200/api/search" \
 - `defaultDatasourceEnabled: false`: chart không tự provision nữa, vì bản tự
   động luôn kèm datasource Alertmanager dù Alertmanager không được deploy
   (dead datasource trong UI).
+- ConfigMap sinh ra được **mount trực tiếp** vào pod Grafana tại
+  `/etc/grafana/provisioning/datasources/datasource.yaml`
+  (`grafana.extraConfigmapMounts`), `forceDeployDatasources: true`, sidecar
+  datasource **tắt**. Lý do: sidecar ghi file *sau* khi Grafana đã đọc thư mục
+  provisioning → cài mới có thể không thấy datasource nào; sidecar còn cần
+  image quay.io và quyền watch ConfigMap.
+- Vì dùng `subPath`, sửa `additionalDataSources` xong phải
+  `kubectl -n observability rollout restart deploy/monitoring-grafana`.
+  `install.sh` tự kiểm tra file provision bên trong pod ở bước cuối.
 - Không có dashboard được provision sẵn (`defaultDashboardsEnabled: false`,
   dashboards sidecar tắt). Dùng **Explore** để query PromQL/TraceQL.
 - Nếu thêm dashboard: bật lại sidecar dashboards và tạo ConfigMap label

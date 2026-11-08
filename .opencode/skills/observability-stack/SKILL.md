@@ -51,6 +51,18 @@ cp .env.observability.example .env.observability   # set GRAFANA_ADMIN_PASSWORD
   provisioning also emits an **Alertmanager** datasource even when
   `alertmanager.enabled: false`, i.e. a dead datasource in the UI. Never rely on
   it; keep exactly these two entries.
+- The datasource ConfigMap is consumed by a **direct mount**, not the
+  k8s-sidecar: `grafana.forceDeployDatasources: true` +
+  `grafana.sidecar.datasources.enabled: false` +
+  `grafana.extraConfigmapMounts` mounting
+  `'{{ .Release.Name }}-kube-prometheus-grafana-datasource'` (`subPath:
+  datasource.yaml`) at `/etc/grafana/provisioning/datasources/datasource.yaml`.
+  The sidecar writes the file after Grafana has read the directory, so a fresh
+  install can end up with an empty datasource list; the mount is read at
+  container start. Trade-off: `subPath` is not hot-reloaded, so after editing
+  `additionalDataSources` run
+  `kubectl -n observability rollout restart deploy/monitoring-grafana`.
+  `install.sh` verifies the file from inside the pod and fails if absent.
 - `install.sh` warns about leftover releases (loki/mimir/alloy/pyroscope) in
   the namespace; those keep using RAM and must be uninstalled manually.
 

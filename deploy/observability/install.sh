@@ -115,6 +115,24 @@ echo ""
 echo "[5/5] Applying ingress..."
 kubectl apply -f "$MANIFESTS_DIR/ingress/grafana.yaml"
 
+# ---- Verify datasources ----
+# Provisioning is a file mount inside the Grafana pod, so the check is done from
+# inside that pod: it proves the file Grafana actually reads, not just the values
+# file. A pod that survived a ConfigMap-only change keeps the old file, hence the
+# explicit restart hint on failure.
+echo ""
+echo "[verify] Grafana datasources..."
+DS_FILE="$(kubectl -n observability exec deploy/monitoring-grafana -c grafana -- \
+  cat /etc/grafana/provisioning/datasources/datasource.yaml 2>/dev/null || true)"
+if grep -q 'name: Prometheus' <<<"$DS_FILE" && grep -q 'name: Tempo' <<<"$DS_FILE"; then
+  echo "  OK: Prometheus + Tempo are provisioned in the Grafana pod"
+else
+  echo "[ERROR] Grafana does not see the provisioned datasources."
+  echo "  Try: kubectl -n observability rollout restart deploy/monitoring-grafana"
+  echo "  Then: kubectl -n observability logs deploy/monitoring-grafana -c grafana | grep -i datasource"
+  exit 1
+fi
+
 echo ""
 echo "========================================"
 echo " Observability Stack (Lite) deployed!"
