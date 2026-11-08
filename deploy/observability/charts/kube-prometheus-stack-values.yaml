@@ -11,13 +11,15 @@ defaultRules:
 grafana:
   enabled: true
   defaultDashboardsEnabled: false
-  defaultDatasourcesEnabled: true
+  defaultDatasourcesEnabled: true   # auto-create Prometheus datasource
 
   sidecar:
     dashboards:
       enabled: false
     datasources:
-      enabled: false
+      enabled: true                 # read ConfigMap datasources defined below
+      label: grafana_datasource
+      labelValue: "1"
 
   persistence:
     enabled: true
@@ -31,6 +33,16 @@ grafana:
   adminUser: admin
   # adminPassword is injected at install time via --set (see install.sh).
   # Don't hardcode it here.
+
+  # --- Datasource provisioning ---
+  # Prometheus is auto-provisioned by defaultDatasourcesEnabled: true.
+  # Tempo is added explicitly here so Grafana can query traces.
+  additionalDataSources:
+    - name: Tempo
+      type: tempo
+      access: proxy
+      url: http://tempo.observability.svc.cluster.local:3200
+      editable: true
 
   grafana.ini:
     server:
