@@ -82,6 +82,29 @@ service:
       port: 4318
       targetPort: 4318
 
+# ========== RING + MEMBERLIST (fix "empty ring" TraceQL) ==========
+# Tempo distributed mode (StatefulSet) cần ring để querier tìm distributor
+# khi chạy TraceQL aggregation (| rate(), | histogram(), ...).
+# Single-node (1 pod tempo-0): replication_factor = 1, memberlist không cần join node khác.
+# Review: 2026-11-08, TraceQL query trả 500 "error finding generators: empty ring".
+ring:
+  replication_factor: 1
+  instance_addr: 127.0.0.1
+  ring:
+    replication_factor: 1
+    zone_awareness_enabled: false
+  kvstore:
+    store: memberlist
+
+memberlist:
+  abort_if_cluster_join_fails: false
+  join_after_timeout: 45s
+  rejoin_interval: 1m
+  retry_interval: 1s
+  timeout: 2s
+  mark_leave_timeout: 5m
+# ===================================================================
+
 # Prometheus already scrapes the services; Tempo self-metrics are not needed.
 serviceMonitor:
   enabled: false
