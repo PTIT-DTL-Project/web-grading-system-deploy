@@ -88,11 +88,11 @@ kubectl create namespace observability 2>/dev/null || true
 # ---- Step 3: Install Tempo (trace storage) ----
 echo ""
 echo "[3/5] Installing Tempo (distributed tracing storage)..."
-if ! helm_pull oci://ghcr.io/grafana-community/helm-charts/tempo 3.1.0; then
+if ! helm_pull oci://ghcr.io/grafana-community/helm-charts/tempo 2.4.0; then
   echo "[ERROR] Could not download the Tempo chart from GHCR after 3 attempts."
   exit 1
 fi
-helm upgrade --install tempo "$CHARTS_TMP/tempo-3.1.0.tgz" \
+helm upgrade --install tempo "$CHARTS_TMP/tempo-2.4.0.tgz" \
   --namespace observability \
   -f "$CHARTS_DIR/tempo-values.yaml" \
   --wait --timeout 10m
@@ -100,11 +100,11 @@ helm upgrade --install tempo "$CHARTS_TMP/tempo-3.1.0.tgz" \
 # ---- Step 4: Install kube-prometheus-stack (Prometheus + Grafana) ----
 echo ""
 echo "[4/5] Installing Prometheus + Grafana (kube-prometheus-stack)..."
-if ! helm_pull oci://ghcr.io/prometheus-community/charts/kube-prometheus-stack 72.6.2; then
+if ! helm_pull oci://ghcr.io/prometheus-community/charts/kube-prometheus-stack 92.11.0; then
   echo "[ERROR] Could not download the kube-prometheus-stack chart from GHCR after 3 attempts."
   exit 1
 fi
-helm upgrade --install monitoring "$CHARTS_TMP/kube-prometheus-stack-72.6.2.tgz" \
+helm upgrade --install monitoring "$CHARTS_TMP/kube-prometheus-stack-92.11.0.tgz" \
   --namespace observability \
   -f "$CHARTS_DIR/kube-prometheus-stack-values.yaml" \
   --set-string "grafana.adminPassword=${ADMIN_PASSWORD_ESCAPED}" \

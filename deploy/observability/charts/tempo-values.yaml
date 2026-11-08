@@ -1,6 +1,6 @@
 # =============================================================================
 # Tempo Helm Values
-# Chart: grafana-community/tempo v3.1.0 (app 2.8+)
+# Chart: grafana-community/tempo v2.4.0 (stable intermediate version)
 # Trace storage only. Services push OTLP/HTTP straight to :4318.
 # =============================================================================
 
@@ -9,9 +9,9 @@
 # pod unbounded.
 tempo:
   repository: grafana/tempo
-  # tag: Chart v3.1.0 defaults to Tempo 2.10.x or 3.0.x (maintained/recommended).
-  # Omit explicit tag to use chart's appVersion, ensuring compatibility.
-  # Review: 2026-11-08, removed hardcoded 2.7.1 to follow chart default.
+  # tag: Chart v2.4.0 ships with compatible Tempo app version (2.10.x).
+  # Omit explicit tag to use chart's appVersion for compatibility.
+  # Review: 2026-11-08, using v2.4.0 as stable intermediate (v3.x has backend_scheduler crash).
   pullPolicy: IfNotPresent
 
   # Tempo 2.x allocates a 1 GiB ballast by default. That alone is twice the
@@ -49,11 +49,11 @@ distributor:
         http:
           endpoint: "0.0.0.0:4318"
 
-# Tempo HTTP server phải listen port 3200 để khớp với Grafana datasource URL:
+# Tempo HTTP server port 3200 để khớp với Grafana datasource URL:
 # http://tempo.observability.svc.cluster.local:3200
-# Từ chart v3.x (Tempo app 2.8+), port 3200 là mặc định, nhưng khai báo tường
-# minh ở đây để rõ ràng trong tài liệu và tránh nhầm lẫn khi đọc config.
-# Review: 2026-11-08, upgraded to chart v3.1.0, port 3200 is now default.
+# Chart v2.4.0 may or may not default to 3200 (needs verification), so we keep
+# explicit override for safety. Chart v1.x defaulted to 3100 (legacy).
+# Review: 2026-11-08, using chart v2.4.0 to avoid v3.x backend_scheduler crash.
 server:
   http_listen_port: 3200
   grpc_listen_port: 9095
