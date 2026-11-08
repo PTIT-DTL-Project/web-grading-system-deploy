@@ -32,6 +32,20 @@ tempo:
     requests: { cpu: 100m, memory: 256Mi }
     limits: { cpu: 500m, memory: 512Mi }
 
+# OTLP receivers phải bind 0.0.0.0 để accessible từ namespace khác (web-grading).
+# OpenTelemetry Collector >=v0.112.0 (dùng trong grafana/tempo 1.21.1) mặc định
+# bind localhost thay vì 0.0.0.0 (breaking change, xem https://github.com/grafana/tempo/issues/4465).
+# Nếu không khai báo endpoint tường minh, receiver chỉ lắng nghe localhost
+# → connection refused từ bên ngoài pod, mặc dù Service và DNS vẫn đúng.
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: "0.0.0.0:4317"
+        http:
+          endpoint: "0.0.0.0:4318"
+
 persistence:
   enabled: true
   storageClassName: local-path
