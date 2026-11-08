@@ -37,10 +37,21 @@ persistence:
   storageClassName: local-path
   size: 2Gi
 
-# The chart exposes every container port (3200 query, 4317 gRPC, 4318 HTTP)
-# on this ClusterIP service automatically.
+# Service phải được bật rõ ràng và khai báo port 4318 (OTLP HTTP) để các backend
+# ở namespace khác (web-grading) có thể resolve DNS: tempo.observability.svc.cluster.local:4318
 service:
+  enabled: true
   type: ClusterIP
+  ports:
+    - name: http
+      port: 3200
+      targetPort: 3200
+    - name: otlp-grpc
+      port: 4317
+      targetPort: 4317
+    - name: otlp-http
+      port: 4318
+      targetPort: 4318
 
 # Prometheus already scrapes the services; Tempo self-metrics are not needed.
 serviceMonitor:
