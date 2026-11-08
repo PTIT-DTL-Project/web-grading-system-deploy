@@ -4,20 +4,13 @@
 # Trace storage only. Services push OTLP/HTTP straight to :4318.
 # =============================================================================
 
-# Chart schema: image and resources live under `tempo.*`. Top-level keys are
-# ignored by this chart, so a top-level `resources:` block silently leaves the
-# pod unbounded.
+# Cấu hình pod/container (image, resources, env) — nằm trong nhánh `tempo.*`.
 tempo:
   repository: grafana/tempo
-  # tag: Chart v2.4.0 ships with compatible Tempo app version (2.10.x).
-  # Omit explicit tag to use chart's appVersion for compatibility.
-  # Review: 2026-11-08, using v2.4.0 as stable intermediate (v3.x has backend_scheduler crash).
   pullPolicy: IfNotPresent
 
-  # Tempo 2.x allocates a 1 GiB ballast by default. That alone is twice the
-  # container limit below, so the default guarantees an OOMKill / node pressure.
+  # Tempo 2.x allocates 1 GiB ballast by default → OOMKill trên box 8 GB.
   memBallastSizeMbs: 0
-  # Go soft memory limit: GC earlier instead of letting the heap reach 512Mi.
   extraEnv:
     - name: GOMEMLIMIT
       value: 400MiB
@@ -25,49 +18,75 @@ tempo:
   reportingEnabled: false
   retention: 24h
 
-  # Span metrics CẦN metrics generator + remote-write target.
-  # Nếu muốn dùng TraceQL metrics queries (| rate(), | histogram(), etc.),
-  # phải enable generator này. Chi phí: +100-200MB RAM, +100m CPU.
-  # Hiện tại DISABLE vì dev env không cần. HTTP metrics đến từ Prometheus.
-  # Review: 2026-11-08, kept disabled for dev; Grafana UI should not use | rate().
+  # Bật metrics generator để dùng TraceQL |rate(), |histogram(), ...
+  # Chi phí: ~100-200MB RAM, chấp nhận được trên box 8 GB.
   metricsGenerator:
-    enabled: false
+    enabled: true
 
   resources:
     requests: { cpu: 100m, memory: 256Mi }
     limits: { cpu: 500m, memory: 512Mi }
 
-# OTLP receivers phải bind 0.0.0.0 để accessible từ namespace khác (web-grading).
-# OpenTelemetry Collector >=v0.112.0 (dùng trong grafana/tempo 1.21.1) mặc định
-# bind localhost thay vì 0.0.0.0 (breaking change, xem https://github.com/grafana/tempo/issues/4465).
-# Nếu không khai báo endpoint tường minh, receiver chỉ lắng nghe localhost
-# → connection refused từ bên ngoài pod, mặc dù Service và DNS vẫn đúng.
-# Review: 2026-11-08, runtime evidence + research.
-distributor:
-  receivers:
-    otlp:
-      protocols:
-        grpc:
-          endpoint: "0.0.0.0:4317"
-        http:
-          endpoint: "0.0.0.0:4318"
+# =============================================================================
+# CẤU HÌNH LÕI TEMPO (BẮT BUỘC PHẢI Ở CẤP GỐC — ROOT LEVEL)
+# Helm chart `grafana/tempo` đọc toàn bộ config YAML từ khóa `config:` ở gốc,
+# không phải bên trong `tempo:`. Nếu để sai cấp, chart bỏ qua im lặng.
+# =============================================================================
+config: |
+  server:
+    http_listen_port: 3200
+    grpc_listen_port: 9095
 
-# Tempo HTTP server port 3200 để khớp với Grafana datasource URL:
-# http://tempo.observability.svc.cluster.local:3200
-# Chart v2.4.0 may or may not default to 3200 (needs verification), so we keep
-# explicit override for safety. Chart v1.x defaulted to 3100 (legacy).
-# Review: 2026-11-08, using chart v2.4.0 to avoid v3.x backend_scheduler crash.
-server:
-  http_listen_port: 3200
-  grpc_listen_port: 9095
+  distributor:
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: "0.0.0.0:4317"
+          http:
+            endpoint: "0.0.0.0:4318"
 
+  memberlist:
+    abort_if_cluster_join_fails: false
+    bind_port: 7946
+    join_members:
+      - 127.0.0.1:7946
+
+  metrics_generator:
+    storage:
+      path: /var/tempo/wal
+    local_blocks_storage:
+      path: /var/tempo/wal/blocks
+    registry:
+      external_labels:
+        source: "tempo"
+    ring:
+      kvstore:
+        store: memberlist
+
+  ingester:
+    lifecycler:
+      ring:
+        kvstore:
+          store: memberlist
+        replication_factor: 1
+
+  storage:
+    trace:
+      backend: local
+      local:
+        path: /var/tempo/traces
+      wal:
+        path: /var/tempo/wal
+
+# =============================================================================
+# Kubernetes Native Resource Configurations (cấp gốc, không nằm trong `config:`)
+# =============================================================================
 persistence:
   enabled: true
   storageClassName: local-path
   size: 2Gi
 
-# Service phải được bật rõ ràng và khai báo port 4318 (OTLP HTTP) để các backend
-# ở namespace khác (web-grading) có thể resolve DNS: tempo.observability.svc.cluster.local:4318
 service:
   enabled: true
   type: ClusterIP
@@ -82,29 +101,6 @@ service:
       port: 4318
       targetPort: 4318
 
-# ========== RING + MEMBERLIST (fix "empty ring" TraceQL) ==========
-# Tempo distributed mode (StatefulSet) cần ring để querier tìm distributor
-# khi chạy TraceQL aggregation (| rate(), | histogram(), ...).
-# Single-node (1 pod tempo-0): replication_factor = 1, memberlist không cần join node khác.
-# Review: 2026-11-08, TraceQL query trả 500 "error finding generators: empty ring".
-ring:
-  replication_factor: 1
-  instance_addr: 127.0.0.1
-  ring:
-    replication_factor: 1
-    zone_awareness_enabled: false
-  kvstore:
-    store: memberlist
-
-memberlist:
-  abort_if_cluster_join_fails: false
-  join_after_timeout: 45s
-  rejoin_interval: 1m
-  retry_interval: 1s
-  timeout: 2s
-  mark_leave_timeout: 5m
-# ===================================================================
-
-# Prometheus already scrapes the services; Tempo self-metrics are not needed.
+# Prometheus đã scrape service; self-metrics Tempo không cần.
 serviceMonitor:
   enabled: false

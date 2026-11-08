@@ -24,8 +24,7 @@ với box 8 GB sau khi sửa — không cần bỏ thành phần nào.
 | c | Property tracing Boot 4.1 sai + OTLP metrics bật mặc định | `templates/application-observability.yaml` + 6 `application.yaml` | Retry storm + log không nối trace |
 | d | Grafana lệch `domain` / `root_url` / `serve_from_sub_path` + key sai tên | `charts/kube-prometheus-stack-values.yaml` | Redirect loop qua ingress |
 | e | Backend `web-grading` không resolve `tempo.observability.svc.cluster.local` | `charts/tempo-values.yaml` | Trace không lên, log đầy `UnknownHostException` |
-| f | Tempo OTLP receivers bind `localhost` (không phải `0.0.0.0`) | `charts/tempo-values.yaml` | Connection refused từ backend, zero traces ingested |
-| g | Tempo HTTP server listen port 3100 (không phải 3200) | `charts/tempo-values.yaml` | Grafana i/o timeout, không query được traces |
+| f | Tempo OTLP receivers bind `localhost` + HTTP port 3100 + Empty Ring generator | `charts/tempo-values.yaml` | Connection refused từ backend, Grafana timeout, query TraceQL lỗi 500 |
 
 ---
 
@@ -50,7 +49,7 @@ với box 8 GB sau khi sửa — không cần bỏ thành phần nào.
 # tempo-values.yaml (bản cũ)
 image:                      # ← top-level
   repository: grafana/tempo
-  tag: 2.7.1
+
 resources:                  # ← top-level
   requests: { memory: 256Mi }
   limits:   { memory: 512Mi }
@@ -69,7 +68,7 @@ mặc định **1024 MB** của Tempo 2.x → container alloc 1 GiB ngay khi sta
 ```yaml
 tempo:
   repository: grafana/tempo
-  tag: 2.7.1
+
   pullPolicy: IfNotPresent
   memBallastSizeMbs: 0                 # bỏ ballast 1 GiB
   extraEnv:
@@ -78,7 +77,7 @@ tempo:
   reportingEnabled: false
   retention: 24h
   metricsGenerator:
-    enabled: false                      # không có remote-write target, chỉ tốn CPU/RAM
+    enabled: true                      # cần cho TraceQL |rate() (xem phần 2.k)
   resources:
     requests: { cpu: 100m, memory: 256Mi }
     limits:   { cpu: 500m, memory: 512Mi }
@@ -93,7 +92,7 @@ serviceMonitor:
 ```
 
 **Cách phát hiện / verify:** `helm template tempo grafana/tempo -f charts/tempo-values.yaml` phải ra
-`-mem-ballast-size-mbs=0`, `GOMEMLIMIT=400MiB`, `image: grafana/tempo:2.7.1` và `resources` nằm trong
+`-mem-ballast-size-mbs=0`, `GOMEMLIMIT=400MiB`, `image: grafana/tempo:2.4.0` và `resources` nằm trong
 container spec. Nếu render ra pod không có `resources` → key vẫn sai nhánh.
 
 **Bài học:** với Helm chart, **không tin key đã đúng** — luôn `helm template` rồi grep vào spec container.
@@ -527,108 +526,162 @@ kubectl exec -n web-grading deploy/course-service -- sh -c 'getent hosts tempo.o
 
 ---
 
-### 2.k — Tempo OTLP receivers bind `localhost` (không phải `0.0.0.0`) — các trace không đến Tempo (2026-11-08)
+### 2.k — Tempo OTLP receivers bind `localhost` + HTTP port 3100 + Empty Ring generator (2026-11-08)
 
 **Triệu chứng:**
 - Service `tempo.observability.svc.cluster.local` resolve được ✅
 - Port 4318 expose trong Service ✅
 - Pod `tempo-0` Running, không crash ✅
 - Nhưng backend logs: `Connection refused` khi POST OTLP traces ❌
+- Grafana datasource Tempo: `i/o timeout` connect `...:3200` ❌ (Tempo listen 3100)
+- Grafana Explore Tempo query `| rate()` → lỗi 500 "error finding generators" ❌
 - `tempo_distributor_spans_received_total = 0` ❌
-- Grafana Explore Tempo → "No data" ❌
 
-**Root cause:** Tempo chart `grafana/tempo` v1.21.1 dùng OpenTelemetry Collector >=v0.112.0,
-trong đó receivers mặc định bind **`localhost`** thay vì `0.0.0.0` (breaking change vì lý do security).
-File `charts/tempo-values.yaml` **không có cấu hình `distributor.receivers`** → Tempo binary khởi
-động với built-in defaults của Collector → OTLP gRPC/HTTP chỉ lắng nghe trên `localhost:4317`/`localhost:4318`
-trong container → backend từ namespace `web-grading` không kết nối được.
+**Root cause (3 lớp lỗi trong cùng một file):**
 
-**Bằng chứng:** [grafana/tempo#4465](https://github.com/grafana/tempo/issues/4465) xác nhận breaking change này.
+1. **`config:` nằm sai cấp:** Các key hệ thống của Tempo (`server:`, `distributor:`, `memberlist:`, `metrics_generator:`, `ingester:`, `storage:`) phải nằm trong block `config:` ở **cấp gốc (root-level)**, ngang hàng với `tempo:`. Trong bản trước, các key này đặt bên trong `tempo:` hoặc ở top-level lộn xộn → chart `grafana/tempo` bỏ qua **im lặng** → Tempo chạy với built-in defaults của OpenTelemetry Collector.
 
-**Cách sửa:** Thêm cấu hình `distributor.receivers.otlp.protocols.*.endpoint: "0.0.0.0:4317/4318"`
-vào `deploy/observability/charts/tempo-values.yaml`:
+2. **OTel Collector >=v0.112.0 binding receivers đến `localhost`:** Built-in defaults của Collector v0.112.0+ bind `localhost:4317`/`localhost:4318` thay vì `0.0.0.0` (breaking change, xem [grafana/tempo#4465](https://github.com/grafana/tempo/issues/4465)). Backend từ namespace `web-grading` không kết nối được → `Connection refused`.
+
+3. **HTTP server listen port 3100 (mặc định chart) mà Grafana gọi port 3200:** Chart default `http_listen_port: 3100`, nhưng Grafana datasource URL là `http://tempo.observability.svc.cluster.local:3200` → mismatch → `i/o timeout`.
+
+4. **Empty Ring generator:** `metricsGenerator.enabled: false` làm hash ring của generator trống rỗng. Khi Grafana chạy TraceQL `| rate() by(...)`, Querier phải tìm node xử lý số liệu (generators) → ring rỗng → lỗi 500 "error finding generators in Querier...: error finding generators".
+
+**Cách sửa:** Gom toàn bộ cấu hình lõi vào block `config:` (text block) ở cấp gốc, bật `metricsGenerator.enabled: true` với cấu hình memberlist ring cục bộ:
 
 ```yaml
-distributor:
-  receivers:
-    otlp:
-      protocols:
-        grpc:
-          endpoint: "0.0.0.0:4317"
-        http:
-          endpoint: "0.0.0.0:4318"
+tempo:
+  repository: grafana/tempo
+
+  pullPolicy: IfNotPresent
+  memBallastSizeMbs: 0
+  extraEnv:
+    - name: GOMEMLIMIT
+      value: 400MiB
+  reportingEnabled: false
+  retention: 24h
+  metricsGenerator:
+    enabled: true
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { cpu: 500m, memory: 512Mi }
+
+# Cấu hình hệ thống Tempo — BẮT BUỘC ở cấp gốc, ngang hàng với `tempo:`.
+config: |
+  server:
+    http_listen_port: 3200
+    grpc_listen_port: 9095
+
+  distributor:
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: "0.0.0.0:4317"
+          http:
+            endpoint: "0.0.0.0:4318"
+
+  memberlist:
+    abort_if_cluster_join_fails: false
+    bind_port: 7946
+    join_members:
+      - 127.0.0.1:7946
+
+  metrics_generator:
+    storage:
+      path: /var/tempo/wal
+    local_blocks_storage:
+      path: /var/tempo/wal/blocks
+    registry:
+      external_labels:
+        source: "tempo"
+    ring:
+      kvstore:
+        store: memberlist
+
+  ingester:
+    lifecycler:
+      ring:
+        kvstore:
+          store: memberlist
+        replication_factor: 1
+
+  storage:
+    trace:
+      backend: local
+      local:
+        path: /var/tempo/traces
+      wal:
+        path: /var/tempo/wal
+
+persistence:
+  enabled: true
+  storageClassName: local-path
+  size: 2Gi
+
+service:
+  enabled: true
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 3200
+      targetPort: 3200
+    - name: otlp-grpc
+      port: 4317
+      targetPort: 4317
+    - name: otlp-http
+      port: 4318
+      targetPort: 4318
+
+serviceMonitor:
+  enabled: false
 ```
+
+**Giải thích các điểm mấu chốt:**
+- `config: |` ở cấp gốc — chart `grafana/tempo` đọc toàn bộ config YAML từ khóa này. Nếu để `config:` bên trong `tempo:` hay để `server:`/`distributor:` ở top-level lộn xộn, chart sẽ bỏ qua **im lặng**.
+- `metricsGenerator.enabled: true` — cần cho TraceQL `| rate()`. Tốn thêm ~50MB RAM, chấp nhận được trên box 8GB.
+- `memberlist` + `ring.kvstore.store: memberlist` — khởi tạo hash ring cục bộ qua `127.0.0.1:7946`, xử lý dứt điểm lỗi "empty ring" của generator.
+- `replication_factor: 1` — đơn node, không cần replication cao.
+- `persistence:`, `service:`, `serviceMonitor:` ở cấp gốc vì là cấu hình K8s resource (PVC, Service, ServiceMonitor), không phải Tempo config.
 
 **Verify sau khi cluster ổn định:**
 ```bash
-# 1. Render Helm manifest có receivers config đúng
+# 1. Render Helm manifest có config block đúng
 helm template tempo grafana/tempo --version 1.21.1 -f deploy/observability/charts/tempo-values.yaml \
-  | grep -A10 "endpoint:"
+  | grep -A30 "^config:"
 
-# 2. Re-deploy Tempo
+# 2. Kiểm tra config block có server, distributor, memberlist
+helm template tempo grafana/tempo --version 1.21.1 -f deploy/observability/charts/tempo-values.yaml \
+  | grep -E "http_listen_port|0.0.0.0:4318|store: memberlist|replication_factor"
+
+# 3. Re-deploy Tempo
 cd deploy/observability && ./install.sh
 
-# 3. Kiểm tra Tempo logs
-kubectl logs -n observability tempo-0 --tail=100 | grep -i "otlp\|receiver\|4318"
+# 4. Kiểm tra Tempo logs
+kubectl logs -n observability tempo-0 --tail=100 | grep -i "otlp\|receiver\|4318\|server listening"
 
-# 4. Test connectivity từ web-grading namespace
+# 5. Kiểm tra pod listen port 3200
+kubectl exec -n observability tempo-0 -- ss -tlnp | grep :3200
+
+# 6. Test connectivity từ web-grading namespace
 kubectl run curl-test --rm -it --image=curlimages/curl -n web-grading -- \
   curl -v http://tempo.observability.svc.cluster.local:4318/v1/traces
 
-# 5. Verify metric ingested
+# 7. Verify metric ingested
 kubectl port-forward -n observability tempo-0 3200:3200 &
 curl http://localhost:3200/metrics | grep tempo_distributor_spans_received_total
 
-# 6. Query traces từ Grafana Explore → Tempo → service.name = "ai-assistant-service"
+# 8. Kiểm tra readiness probe
+kubectl get pod -n observability tempo-0 -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'
+# Expected: True
+
+# 9. Query traces từ Grafana Explore → Tempo → service.name = "ai-assistant-service"
+# Thử query TraceQL: {service.name="ai-assistant-service"} | rate() by(resource.service.name)
 ```
 
 ---
 
-### 2.l — Tempo HTTP server listen port 3100 (không phải 3200) — Grafana không kết nối được (2026-11-08)
-
-**Triệu chứng:**
-- Tempo pod Running, Service có port 4318/4317 ✅
-- Nhưng Grafana datasource Tempo trả `i/o timeout` khi connect `tempo.observability.svc.cluster.local:3200` ❌
-- Tempo logs: `server listening on addresses http=[::]:3100 grpc=[::]:9095` ❌ (listen 3100, không phải 3200)
-- Service Endpoints không có `:3200` ❌
-
-**Root cause:** Chart `grafana/tempo` v1.21.1 mặc định dùng **port 3100** cho HTTP server (legacy port).
-Grafana datasource được cấu hình trong `kube-prometheus-stack-values.yaml` trỏ tới
-`http://tempo.observability.svc.cluster.local:3200` → mismatch port → Grafana không query được traces.
-
-**Cách sửa:** Thêm cấu hình `server.http_listen_port: 3200` vào `deploy/observability/charts/tempo-values.yaml`:
-
-```yaml
-server:
-  http_listen_port: 3200
-  grpc_listen_port: 9095
-```
-
-Service `tempo` đã khai báo `port: 3200, targetPort: 3200` → giờ pod sẽ listen đúng 3200, Service forward đúng.
-
-**Verify sau khi cluster ổn định:**
-```bash
-# 1. Render Helm manifest có server config đúng
-helm template tempo grafana/tempo --version 1.21.1 -f deploy/observability/charts/tempo-values.yaml \
-  | grep -A5 "http_listen_port"
-
-# 2. Re-deploy Tempo
-cd deploy/observability && ./install.sh
-
-# 3. Kiểm tra pod listen port 3200
-kubectl exec -n observability tempo-0 -- ss -tlnp | grep :3200
-
-# 4. Kiểm tra Service Endpoints có :3200
-kubectl get endpoints -n observability tempo -o yaml | grep "3200"
-
-# 5. Test từ Grafana pod
-kubectl exec -n observability deployment/monitoring-grafana -- \
-  wget -O- --timeout=5 http://tempo.observability.svc.cluster.local:3200/ready
-
-# 6. Kiểm tra readiness probe
-kubectl get pod -n observability tempo-0 -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'
-# Expected: True
-```
+### 2.l — (Đã gộp vào 2.k)
 
 ---
 
@@ -657,7 +710,7 @@ Nói cách khác: sự cố là do cấu hình sai, không phải do bản thân
 
 | Nhóm | File | Nội dung |
 |---|---|---|
-| Helm values | `deploy/observability/charts/tempo-values.yaml` | 2.a, 2.j (service ports), 2.k (distributor receivers 0.0.0.0), 2.l (HTTP server port 3200) |
+| Helm values | `deploy/observability/charts/tempo-values.yaml` | 2.a, 2.j (service ports), 2.k (config: |, distributor 0.0.0.0, server 3200, metricsGenerator true, memberlist ring) |
 | Helm values | `deploy/observability/charts/kube-prometheus-stack-values.yaml` | 2.b, 2.d, 2.f2, 2.h (datasource mount), 2.i (key camelCase cho KSM/node-exporter), retention, tắt control-plane |
 | Script | `deploy/observability/install.sh`, `uninstall.sh` | 2.e, 2.f1 (OCI + retry), 2.h (verify datasource), 2.i (verify Lite composition) |
 | Template | `deploy/observability/templates/application-observability.yaml` | 2.c (viết lại theo Boot 4.1) |
@@ -673,9 +726,9 @@ Nói cách khác: sự cố là do cấu hình sai, không phải do bản thân
 
 | Check | Kết quả |
 |---|---|
-| `helm template` Tempo (Helm 3.16.4) | ✅ `-mem-ballast-size-mbs=0`, `GOMEMLIMIT=400MiB`, `grafana/tempo:2.7.1`, `resources` đúng trong container spec |
-| `helm template` Tempo (distributor) | ✅ `distributor.receivers.otlp.protocols.http.endpoint: "0.0.0.0:4318"`, `grpc.endpoint: "0.0.0.0:4317"` |
-| `helm template` Tempo (server port) | ✅ `server.http_listen_port: 3200`, `grpc_listen_port: 9095` |
+| `helm template` Tempo (Helm 3.16.4) | ✅ `-mem-ballast-size-mbs=0`, `GOMEMLIMIT=400MiB`, `grafana/tempo:2.4.0`, `resources` đúng trong container spec |
+| `helm template` Tempo (config block) | ✅ `tempo.config:` có `server.http_listen_port: 3200`, `distributor.receivers.otlp.protocols.http.endpoint: "0.0.0.0:4318"`, `grpc.endpoint: "0.0.0.0:4317"`, `memberlist`, `metrics_generator.ring.kvstore.store: memberlist` |
+| `helm template` Tempo (metricsGenerator) | ✅ `metricsGenerator.enabled: true` (cần cho TraceQL `| rate()`) |
 | `helm template` kube-prometheus-stack | ✅ scrape config không còn bearer token, có filter app/phase/ready/port; Grafana config domain literal; `retentionSize`; đúng **2 datasource** (Prometheus isDefault + Tempo), không còn Alertmanager; không còn ServiceMonitor control-plane |
 | `helm template` qua OCI (GHCR, helm 3.16.4) | ✅ `tempo` + `kube-prometheus-stack` pull được, không phụ thuộc GitHub Releases CDN |
 | `grafana.ini` render | ✅ `[auth.anonymous] enabled = false`; `grep -c 'map\['` = 0 |
@@ -747,3 +800,10 @@ kubectl -n web-grading logs deploy/api-gateway --tail=50 | grep -E "\[api-gatewa
    phải khai báo `distributor.receivers.otlp.protocols.http.endpoint: "0.0.0.0:4318"` tường minh,
    nếu không cross-namespace OTLP ingestion fail im lặng (pod healthy, Service exists, DNS resolves,
    nhưng connection refused).
+9. **Tất cả cấu hình hệ thống Tempo phải nằm trong `tempo.config` block**: Các key `distributor:`,
+   `server:`, `memberlist:`, `ingester:` đặt ở top-level ngoài cùng bị chart `grafana/tempo`
+   bỏ qua **im lặng** (không báo lỗi, không warning). Luôn dùng `config: |` text block và render
+   lại bằng `helm template` để xác nhận có xuất hiện trong `/etc/tempo/tempo.yaml`.
+10. **TraceQL `| rate()` cần metricsGenerator.enabled: true**: Nếu tắt hoàn toàn, hash ring của
+    generator trống rỗng (empty ring) → Querier lỗi 500 "error finding generators". Phải bật
+    và cấu hình `memberlist` ring cục bộ cho generator trên đơn node.
