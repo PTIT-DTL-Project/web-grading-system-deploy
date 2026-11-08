@@ -47,12 +47,38 @@ if kubectl get namespace observability >/dev/null 2>&1; then
   fi
 fi
 
-# ---- Step 1: Add Helm repositories ----
+# ---- Step 1: Verify Helm ----
 echo ""
-echo "[1/5] Adding Helm repositories..."
-helm repo add grafana https://grafana.github.io/helm-charts
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm repo update
+echo "[1/5] Checking Helm CLI..."
+if ! command -v helm >/dev/null 2>&1; then
+  echo "[ERROR] helm not found in PATH. Install Helm 3.16+ first."
+  exit 1
+fi
+helm version --short
+
+# Charts are pulled straight from GHCR as OCI artifacts instead of via
+# `helm repo add`. The classic path resolves to
+# github.com/<org>/helm-charts/releases/download/... whose CDN intermittently
+# answers 504 Gateway Timeout (seen 2026-11-08) and aborts the whole install.
+# GHCR is a separate backend and also removes the repo add/update round-trip.
+#
+# Retry the download, not the install: a failed fetch never creates a Helm
+# release, whereas retrying a half-finished release fails with
+# "another operation in progress" and leaves it pending. 3 attempts, 10s/20s.
+CHARTS_TMP="$(mktemp -d)"
+trap 'rm -rf "$CHARTS_TMP"' EXIT
+
+helm_pull() {
+  local url="$1" version="$2" attempt
+  for attempt in 1 2 3; do
+    if helm pull "$url" --version "$version" -d "$CHARTS_TMP"; then
+      return 0
+    fi
+    echo "[WARN] helm pull ${url}:${version} failed (attempt ${attempt}/3)"
+    [[ "$attempt" -lt 3 ]] && sleep $(( attempt * 10 ))
+  done
+  return 1
+}
 
 # ---- Step 2: Create namespace ----
 echo ""
@@ -62,8 +88,11 @@ kubectl create namespace observability 2>/dev/null || true
 # ---- Step 3: Install Tempo (trace storage) ----
 echo ""
 echo "[3/5] Installing Tempo (distributed tracing storage)..."
-helm upgrade --install tempo grafana/tempo \
-  --version 1.21.1 \
+if ! helm_pull oci://ghcr.io/grafana/helm-charts/tempo 1.21.1; then
+  echo "[ERROR] Could not download the Tempo chart from GHCR after 3 attempts."
+  exit 1
+fi
+helm upgrade --install tempo "$CHARTS_TMP/tempo-1.21.1.tgz" \
   --namespace observability \
   -f "$CHARTS_DIR/tempo-values.yaml" \
   --wait --timeout 10m
@@ -71,8 +100,11 @@ helm upgrade --install tempo grafana/tempo \
 # ---- Step 4: Install kube-prometheus-stack (Prometheus + Grafana) ----
 echo ""
 echo "[4/5] Installing Prometheus + Grafana (kube-prometheus-stack)..."
-helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
-  --version 72.6.2 \
+if ! helm_pull oci://ghcr.io/prometheus-community/charts/kube-prometheus-stack 72.6.2; then
+  echo "[ERROR] Could not download the kube-prometheus-stack chart from GHCR after 3 attempts."
+  exit 1
+fi
+helm upgrade --install monitoring "$CHARTS_TMP/kube-prometheus-stack-72.6.2.tgz" \
   --namespace observability \
   -f "$CHARTS_DIR/kube-prometheus-stack-values.yaml" \
   --set-string "grafana.adminPassword=${ADMIN_PASSWORD_ESCAPED}" \

@@ -59,9 +59,12 @@ grafana:
       domain: web-dev1-grafana.vucongtuanduong.dpdns.org
       root_url: "https://%(domain)s/"
       serve_from_sub_path: false
-    auth:
-      anonymous:
-        enabled: false
+    # grafana.ini sections are flat maps of key: value. A nested map
+    # (auth: { anonymous: { enabled: false } }) renders as
+    # `anonymous = map[enabled:false]`, i.e. an unknown option — grafana
+    # ignores it instead of disabling anonymous access.
+    auth.anonymous:
+      enabled: false
     users:
       allow_sign_up: false
 

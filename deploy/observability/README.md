@@ -178,10 +178,24 @@ Estimated total: **~0.8 GiB requests, ~1.8 GiB limits**.
 
 ## Troubleshooting
 
+**`helm` fails with `504 Gateway Timeout` while installing Tempo**
+The classic `grafana/tempo` repo path resolves to
+`github.com/grafana/helm-charts/releases/download/...`, whose CDN intermittently
+answers 504. `install.sh` therefore pulls both charts from GHCR as OCI
+artifacts (`oci://ghcr.io/grafana/helm-charts/tempo`,
+`oci://ghcr.io/prometheus-community/charts/kube-prometheus-stack`) and retries
+each release 3 times. No `helm repo add` is needed; if you install by hand, use
+the `oci://` reference instead of `grafana/tempo`.
+
 **Grafana redirects to the wrong host / login loop**
 Check `grafana.ini.server.domain`, `root_url` and `serve_from_sub_path` in
 `charts/kube-prometheus-stack-values.yaml`. They must match the ingress host and
 the ingress must route `/` (not a sub-path).
+
+**`grafana.ini` has `anonymous = map[enabled:false]`**
+Sections in `grafana.ini` must be flat key/value maps. A nested block
+(`auth: { anonymous: { enabled: false } }`) is rendered by the chart as an
+unknown option. Use `auth.anonymous: { enabled: false }`.
 
 **Tempo keeps restarting (OOMKilled)**
 `kubectl describe pod -n observability tempo-0` → look at `Last State`.

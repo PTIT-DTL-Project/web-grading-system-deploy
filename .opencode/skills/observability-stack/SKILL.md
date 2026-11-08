@@ -35,12 +35,28 @@ cp .env.observability.example .env.observability   # set GRAFANA_ADMIN_PASSWORD
 ```
 
 - Env file is REQUIRED.
+- Charts are pulled as OCI artifacts: `oci://ghcr.io/grafana/helm-charts/tempo`
+  and `oci://ghcr.io/prometheus-community/charts/kube-prometheus-stack`. No
+  `helm repo add` is needed, and each release is retried 3x.
+  NEVER switch back to `grafana/tempo` / `prometheus-community/...` repo refs:
+  those resolve to `github.com/*/helm-charts/releases/download/...`, which
+  intermittently returns **504 Gateway Timeout** (seen 2026-11-08, edge
+  `southeastasia`) and aborts the install. If installing by hand, use the same
+  `oci://` reference + `--version`.
 - Values live in `charts/tempo-values.yaml` and
   `charts/kube-prometheus-stack-values.yaml`.
 - `install.sh` warns about leftover releases (loki/mimir/alloy/pyroscope) in
   the namespace; those keep using RAM and must be uninstalled manually.
 
-## 3. Chart-schema gotchas (Tempo)
+## 3. Chart-schema gotchas
+
+`grafana.ini` (kube-prometheus-stack) is rendered as INI sections of flat
+key/value pairs. Nested maps are printed as Go values: `auth: { anonymous: {
+  enabled: false } }` becomes `anonymous = map[enabled:false]`, an unknown option
+Grafana ignores. Write `auth.anonymous: { enabled: false }` instead. After any
+values change, `helm template ... | grep 'map\['` must return nothing.
+
+Tempo:
 
 - Image and resources MUST be under `tempo.*`
   (`tempo.repository`, `tempo.tag`, `tempo.resources`). Top-level `image:` or
