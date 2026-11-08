@@ -303,3 +303,25 @@ Plan/decisions: `.opencode/plan/phase-3-pkce.md` (**D7–D12**) · runtime comma
   not contain `web-grading-fe` nor `wgs-password-verify` (§1), so it is not a faithful
   mirror; strip every client's `secret` field before committing, and check `wgs-postman`
   (`redirectUris: ["*"]`, direct ON) is still used before keeping it that permissive.
+
+## 11. FE bootstrap: the 3P-cookie probe can block `keycloak.init()` (2026-11-05)
+
+`web-grading-system-fe/src/shared/auth/keycloak.ts` calls `keycloak.init({ onLoad: 'check-sso',
+silentCheckSsoRedirectUri })`. With silent SSO configured, keycloak-js first probes the realm's
+`/protocol/openid-connect/3p-cookies/step1.html` in a hidden iframe and waits
+`messageReceiveTimeout` (adapter default 10s). A blocked iframe (adblocker,
+`net::ERR_BLOCKED_BY_CLIENT`, Safari/Firefox 3P-cookie policy) never posts `supported` /
+`unsupported` back, so init rejects with `Timeout when waiting for 3rd party check iframe
+message.` and the app shows the "init failed" screen.
+
+- `THIRD_PARTY_CHECK_TIMEOUT_MS = 15_000` is passed as `messageReceiveTimeout`.
+- On that specific error, retry with a fresh `Keycloak` instance WITHOUT
+  `silentCheckSsoRedirectUri`: `#check3pCookiesSupported` returns early when neither
+  `checkLoginIframe` nor silent SSO is set, so the probe is skipped and check-sso falls back
+  to a full-page `prompt=none` redirect, which works without 3P cookies.
+- On a callback URL (`state` + `code|error`) never set `silentCheckSsoRedirectUri`; an error
+  callback would otherwise redirect again and loop.
+- `AuthGate`'s watchdog (`INIT_TIMEOUT_MS = 20_000`) must outlast the 15s probe plus the
+  fallback init — keep the two constants in sync.
+- Covered by `src/shared/auth/keycloak.test.ts` (adapter mocked): raised timeout, fallback
+  drops silent SSO, other init errors propagate without a retry.

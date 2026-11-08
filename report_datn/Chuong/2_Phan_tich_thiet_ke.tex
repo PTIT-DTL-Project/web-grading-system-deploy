@@ -511,7 +511,7 @@ Người dùng (User), Vai trò (Role), Liên kết người dùng - vai trò (U
 
 Hai lớp Người dùng (User) và Vai trò (Role) biểu diễn tác nhân và quyền truy cập của hệ thống; lớp UserRole biểu diễn liên kết nhiều-nhiều giữa hai lớp này.
 
-Trong mô hình toàn hệ thống, kết quả thực thi từng bước và kết quả chấm từng bước được mô hình hóa chung thành lớp StepResult; bản ghi thực thi riêng của dịch vụ thực thi được trình bày ở mục 2.1.6.
+Trong mô hình toàn hệ thống, kết quả thực thi từng bước và kết quả chấm từng bước được mô hình hóa chung thành lớp StepResult; bản ghi thực thi riêng của dịch vụ thực thi được trình bày ở mục \ref{sec:class-design-services}.
 
 \subsubsection{Xét quan hệ số lượng giữa các lớp}
 
@@ -596,12 +596,12 @@ Hai lớp kết hợp trong mô hình gồm:
 
 Như vậy, mô hình chỉ còn hai lớp kết hợp là UserRole và StudentScore. ClassStudent là lớp thường vì có định danh riêng và các thuộc tính studentCode, studentName, email. Submission cũng là lớp thường vì có định danh riêng, có nhiều bản ghi trên một cặp Assignment-ClassStudent và có thuộc tính tệp nộp, trạng thái chấm, cờ latest.
 
-\subsubsection{Biểu đồ lớp thực thể pha phân tích}
+\subsubsection{Biểu đồ lớp thực thể pha phân tích toàn hệ thống }
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{Hinhve/Hinh2_13_bieu_do_lop}
-\caption{Biểu đồ lớp thực thể pha phân tích.}
+\caption{Biểu đồ lớp thực thể pha phân tích toàn hệ thống.}
 \label{fig:class-diagram}
 \end{figure}
 
@@ -635,18 +635,9 @@ STT & Miền chức năng & Mô tả \\ \hline
 \label{tab:functional-domains}
 \end{table}
 
-\subsection{Biểu đồ lớp thiết kế chi tiết toàn hệ thống}
 
-Biểu đồ dưới đây mô tả toàn bộ các lớp thực thể của hệ thống và quan hệ giữa chúng trước khi phân rã thành các dịch vụ độc lập.
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=\textwidth]{Hinhve/Hinh2_36_class_diagram_toan_he_thong}
-\caption{Biểu đồ lớp thiết kế toàn hệ thống.}
-\label{fig:class-system}
-\end{figure}
-
-\subsection{Biểu đồ lớp chi tiết từng dịch vụ}
+\subsection{Biểu đồ lớp pha phân tích chi tiết từng dịch vụ}
+\label{sec:class-design-services}
 
 Sau khi phân rã, mỗi miền chức năng được thiết kế thành một dịch vụ độc lập với cơ sở dữ liệu riêng. Các mục dưới đây trình bày biểu đồ lớp chi tiết của từng dịch vụ.
 
@@ -721,10 +712,9 @@ Các lớp thuộc dịch vụ trợ lý AI gồm Giải thích của trợ lý 
 
 
 \section{Thiết kế hệ thống}
+\subsection{Biểu đồ lớp thiết kế toàn hệ thống}
 
-\subsection{Biểu đồ lớp thiết kế chi tiết từng dịch vụ}
-
-Sau khi phân rã hệ thống thành các miền chức năng, mỗi miền được thiết kế thành một dịch vụ độc lập với cơ sở dữ liệu riêng. Dưới đây là biểu đồ lớp thiết kế chi tiết của từng dịch vụ.
+Biểu đồ dưới đây mô tả toàn bộ các lớp thực thể được thiết kế của hệ thống
 
 \begin{figure}[H]
 \centering
@@ -732,6 +722,12 @@ Sau khi phân rã hệ thống thành các miền chức năng, mỗi miền đ�
 \caption{Biểu đồ lớp thiết kế toàn hệ thống.}
 \label{fig:class-system}
 \end{figure}
+
+\subsection{Biểu đồ lớp thiết kế chi tiết từng dịch vụ}
+
+Sau khi phân rã hệ thống thành các miền chức năng, mỗi miền được thiết kế thành một dịch vụ độc lập với cơ sở dữ liệu riêng. Dưới đây là biểu đồ lớp thiết kế chi tiết của từng dịch vụ.
+
+
 
 \subsubsection{Dịch vụ Xác thực và phân quyền}
 

@@ -1,15 +1,15 @@
 # Fdb version 4
-["bibtex Chuong/build/2_Phan_tich_thiet_ke"] 1793883875.37377 "Chuong/build/2_Phan_tich_thiet_ke.aux" "Chuong/build/2_Phan_tich_thiet_ke.bbl" "Chuong/build/2_Phan_tich_thiet_ke" 1793886933.68986 0
+["bibtex Chuong/build/2_Phan_tich_thiet_ke"] 1794015089.10665 "Chuong/build/2_Phan_tich_thiet_ke.aux" "Chuong/build/2_Phan_tich_thiet_ke.bbl" "Chuong/build/2_Phan_tich_thiet_ke" 1794015099.54947 0
   "./Danh_sach_tai_lieu_tham_khao.bib" 1793150120.26591 8294 825c713b5beb05d0b5d3dce12709ff5d ""
   "/usr/share/texmf-dist/bibtex/bst/biblatex/biblatex.bst" 1775415801 65510 9a2a51799b543ff279b8ea2dd91ec499 ""
-  "Chuong/build/2_Phan_tich_thiet_ke-blx.bib" 1793886931.55708 343 eecd58be191eac03682f8fda492bb690 "pdflatex"
-  "Chuong/build/2_Phan_tich_thiet_ke.aux" 1793886931.50608 20950 d7b1c4515dcbc94d93ba91bfd15424b2 "pdflatex"
+  "Chuong/build/2_Phan_tich_thiet_ke-blx.bib" 1794015098.89082 343 eecd58be191eac03682f8fda492bb690 "pdflatex"
+  "Chuong/build/2_Phan_tich_thiet_ke.aux" 1794015098.88147 21322 a27e79441011b66b8019684d307f7f6e "pdflatex"
   (generated)
   "Chuong/build/2_Phan_tich_thiet_ke.bbl"
   "Chuong/build/2_Phan_tich_thiet_ke.blg"
   (rewritten before read)
-["pdflatex"] 1793886902.91492 "/home/duongvct/Documents/workspace/PTIT/web-grading-system-deploy/report_datn/Chuong/2_Phan_tich_thiet_ke.tex" "Chuong/build/2_Phan_tich_thiet_ke.pdf" "2_Phan_tich_thiet_ke" 1793886933.69084 0
-  "/home/duongvct/Documents/workspace/PTIT/web-grading-system-deploy/report_datn/Chuong/2_Phan_tich_thiet_ke.tex" 1793886901.11979 66757 a6cddaa61b146048b5df5e9a56b433e9 ""
+["pdflatex"] 1794015089.22997 "/home/duongvct/Documents/workspace/PTIT/web-grading-system-deploy/report_datn/Chuong/2_Phan_tich_thiet_ke.tex" "Chuong/build/2_Phan_tich_thiet_ke.pdf" "2_Phan_tich_thiet_ke" 1794015099.54996 0
+  "/home/duongvct/Documents/workspace/PTIT/web-grading-system-deploy/report_datn/Chuong/2_Phan_tich_thiet_ke.tex" 1794015035.22413 67052 6b7fe0e4a48c0ae1b062bffca3a61b65 ""
   "/usr/share/texmf-dist/fonts/enc/dvips/base/8r.enc" 1775415801 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/share/texmf-dist/fonts/enc/dvips/vntex/t5.enc" 1775415801 7824 21ade6c3c7fd67cb4ace8dbc91c53118 ""
   "/usr/share/texmf-dist/fonts/map/fontname/texfonts.map" 1775415801 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -196,12 +196,12 @@
   "/usr/share/texmf-dist/web2c/texmf.cnf" 1775415801 43569 fd570f2fa160877d211e859f687312ba ""
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1793029401 5418909 d48fb256e573d3b961fb0e6b9b49cec7 ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1793029325 2426823 c30a68a27286e8b4880a6f6a14e666ae ""
-  "Chuong/2_Phan_tich_thiet_ke.tex" 1793886901.11979 66757 a6cddaa61b146048b5df5e9a56b433e9 ""
-  "Chuong/build/../../BTL.tex" 1793886908.29586 11727 cc19956c2390e40b37b21cc926dfa352 ""
-  "Chuong/build/2_Phan_tich_thiet_ke.aux" 1793886931.50608 20950 d7b1c4515dcbc94d93ba91bfd15424b2 "pdflatex"
-  "Chuong/build/2_Phan_tich_thiet_ke.bbl" 1793883875.62369 520 47390d0fec917a8062f60a58a9b6d248 "bibtex Chuong/build/2_Phan_tich_thiet_ke"
-  "Chuong/build/2_Phan_tich_thiet_ke.out" 1793886931.51808 2981 9392dbb658d7ff66cc1ff417898fae95 "pdflatex"
-  "Chuong/build/2_Phan_tich_thiet_ke.run.xml" 1793886931.57008 2781 7bcf15a44d6dc8ffc73ab077b8f55f72 "pdflatex"
+  "Chuong/2_Phan_tich_thiet_ke.tex" 1794015035.22413 67052 6b7fe0e4a48c0ae1b062bffca3a61b65 ""
+  "Chuong/build/../../BTL.tex" 1794015015.52072 11727 cc19956c2390e40b37b21cc926dfa352 ""
+  "Chuong/build/2_Phan_tich_thiet_ke.aux" 1794015098.88147 21322 a27e79441011b66b8019684d307f7f6e "pdflatex"
+  "Chuong/build/2_Phan_tich_thiet_ke.bbl" 1794015089.21627 520 47390d0fec917a8062f60a58a9b6d248 "bibtex Chuong/build/2_Phan_tich_thiet_ke"
+  "Chuong/build/2_Phan_tich_thiet_ke.out" 1794015098.88347 3346 7eac57e84256ec36b3dc8426b09f07fb "pdflatex"
+  "Chuong/build/2_Phan_tich_thiet_ke.run.xml" 1794015098.89307 2781 7bcf15a44d6dc8ffc73ab077b8f55f72 "pdflatex"
   "Chuong/build/lstlisting" 0 -1 0 ""
   "Hinhve/Hinh2_10_usecase_nop_bai.png" 1792166604.10748 39929 4e56091ce9b579c608a377f285c4d265 ""
   "Hinhve/Hinh2_11_usecase_xem_diem_ca_nhan.png" 1792166604.19148 24670 e1439ae733263abf1c1a08f5ee381135 ""

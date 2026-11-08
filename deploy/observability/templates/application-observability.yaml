@@ -26,8 +26,8 @@ management:
       probability: 1.0  # 1.0 = 100% traces (dev). 0.1-0.3 cho prod
   otlp:
     tracing:
-      # Send OTLP traces to Alloy, which forwards them to Tempo.
-      endpoint: http://alloy.observability.svc.cluster.local:4318/v1/traces
+      # Send OTLP traces directly to Tempo (no Alloy intermediary).
+      endpoint: http://tempo.observability.svc.cluster.local:4318/v1/traces
       transport: http
   # No OTLP metrics export here — Prometheus scrapes /actuator/prometheus
   # directly (see kube-prometheus-stack additionalScrapeConfigs in install.sh).

@@ -9,7 +9,7 @@
 \contentsline {figure}{\numberline {2.5}{\ignorespaces Biểu đồ usecase chi tiết Nộp bài tập của sinh viên.}}{24}{figure.caption.24}%
 \contentsline {figure}{\numberline {2.6}{\ignorespaces Biểu đồ usecase chi tiết Xem điểm và kết quả cá nhân của sinh viên.}}{25}{figure.caption.26}%
 \contentsline {figure}{\numberline {2.7}{\ignorespaces Biểu đồ usecase chi tiết Xem kết quả chấm bài tập của bản thân dành cho sinh viên.}}{27}{figure.caption.28}%
-\contentsline {figure}{\numberline {2.8}{\ignorespaces Biểu đồ lớp thực thể pha phân tích.}}{34}{figure.caption.32}%
+\contentsline {figure}{\numberline {2.8}{\ignorespaces Biểu đồ lớp thực thể pha phân tích toàn hệ thống.}}{34}{figure.caption.32}%
 \contentsline {figure}{\numberline {2.9}{\ignorespaces Biểu đồ lớp pha phân tích miền Xác thực và phân quyền.}}{36}{figure.caption.34}%
 \contentsline {figure}{\numberline {2.10}{\ignorespaces Biểu đồ lớp pha phân tích dịch vụ quản lý lớp học và điểm.}}{37}{figure.caption.35}%
 \contentsline {figure}{\numberline {2.11}{\ignorespaces Biểu đồ lớp pha phân tích dịch vụ nộp bài.}}{37}{figure.caption.36}%

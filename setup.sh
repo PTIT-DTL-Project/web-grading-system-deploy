@@ -68,7 +68,7 @@ bash "$SCRIPT_DIR/deploy/install-argocd.sh"
 print_success "ArgoCD installed and applications deployed"
 
 print_step "6. Install Observability Stack"
-echo "  (Grafana + Loki + Mimir + Tempo + Alloy)"
+echo "  (Prometheus + Grafana UI + Tempo traces)"
 bash "$SCRIPT_DIR/deploy/observability/install.sh"
 print_success "Observability stack installed"
 

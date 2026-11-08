@@ -62,9 +62,9 @@
 \contentsline {subsubsection}{\numberline {a}Xác định các lớp của hệ thống}{29}{subsubsection.2.1.4.1}%
 \contentsline {subsubsection}{\numberline {b}Xét quan hệ số lượng giữa các lớp}{30}{subsubsection.2.1.4.2}%
 \contentsline {subsubsection}{\numberline {c}Bổ sung quan hệ đối tượng giữa các lớp}{32}{subsubsection.2.1.4.3}%
-\contentsline {subsubsection}{\numberline {d}Biểu đồ lớp thực thể pha phân tích}{34}{subsubsection.2.1.4.4}%
+\contentsline {subsubsection}{\numberline {d}Biểu đồ lớp thực thể pha phân tích toàn hệ thống }{34}{subsubsection.2.1.4.4}%
 \contentsline {subsection}{\numberline {2.1.5}Phân rã hệ thống theo miền chức năng}{34}{subsection.2.1.5}%
-\contentsline {subsection}{\numberline {2.1.6}Biểu đồ lớp chi tiết từng dịch vụ}{35}{subsection.2.1.6}%
+\contentsline {subsection}{\numberline {2.1.6}Biểu đồ lớp pha phân tích chi tiết từng dịch vụ}{35}{subsection.2.1.6}%
 \contentsline {subsubsection}{\numberline {a}Biểu đồ lớp pha phân tích miền Xác thực và phân quyền}{35}{subsubsection.2.1.6.1}%
 \contentsline {subsubsection}{\numberline {b}Biểu đồ lớp pha phân tích dịch vụ quản lý lớp học và điểm}{36}{subsubsection.2.1.6.2}%
 \contentsline {subsubsection}{\numberline {c}Biểu đồ lớp pha phân tích dịch vụ nộp bài}{37}{subsubsection.2.1.6.3}%
@@ -72,23 +72,24 @@
 \contentsline {subsubsection}{\numberline {e}Biểu đồ lớp pha phân tích dịch vụ kết quả chấm}{38}{subsubsection.2.1.6.5}%
 \contentsline {subsubsection}{\numberline {f}Biểu đồ lớp pha phân tích dịch vụ trợ lý AI}{39}{subsubsection.2.1.6.6}%
 \contentsline {section}{\numberline {2.2}Thiết kế hệ thống}{39}{section.2.2}%
-\contentsline {subsection}{\numberline {2.2.1}Biểu đồ lớp thiết kế chi tiết từng dịch vụ}{39}{subsection.2.2.1}%
-\contentsline {subsubsection}{\numberline {a}Dịch vụ Xác thực và phân quyền}{40}{subsubsection.2.2.1.1}%
-\contentsline {subsubsection}{\numberline {b}Dịch vụ Quản lý lớp học và điểm}{40}{subsubsection.2.2.1.2}%
-\contentsline {subsubsection}{\numberline {c}Dịch vụ Nộp bài}{40}{subsubsection.2.2.1.3}%
-\contentsline {subsubsection}{\numberline {d}Dịch vụ Thực thi chấm}{41}{subsubsection.2.2.1.4}%
-\contentsline {subsubsection}{\numberline {e}Dịch vụ Kết quả chấm}{42}{subsubsection.2.2.1.5}%
-\contentsline {subsubsection}{\numberline {f}Dịch vụ Trợ lý AI}{44}{subsubsection.2.2.1.6}%
-\contentsline {subsection}{\numberline {2.2.2}Thiết kế cơ sở dữ liệu theo dịch vụ}{44}{subsection.2.2.2}%
-\contentsline {subsection}{\numberline {2.2.3}Sơ đồ tuần tự các chức năng}{46}{subsection.2.2.3}%
-\contentsline {subsubsection}{\numberline {a}Đăng nhập}{46}{subsubsection.2.2.3.1}%
-\contentsline {subsubsection}{\numberline {b}Quản lý lớp học}{47}{subsubsection.2.2.3.2}%
-\contentsline {subsubsection}{\numberline {c}Quản lý bài tập}{48}{subsubsection.2.2.3.3}%
-\contentsline {subsubsection}{\numberline {d}Xem kết quả chấm của cả lớp}{49}{subsubsection.2.2.3.4}%
-\contentsline {subsubsection}{\numberline {e}Nộp bài tập}{50}{subsubsection.2.2.3.5}%
-\contentsline {subsubsection}{\numberline {f}Xem kết quả chấm bài tập của bản thân}{51}{subsubsection.2.2.3.6}%
-\contentsline {subsubsection}{\numberline {g}Xem điểm và kết quả cá nhân}{51}{subsubsection.2.2.3.7}%
-\contentsline {subsection}{\numberline {2.2.4}Kiến trúc hệ thống}{52}{subsection.2.2.4}%
+\contentsline {subsection}{\numberline {2.2.1}Biểu đồ lớp thiết kế toàn hệ thống}{39}{subsection.2.2.1}%
+\contentsline {subsection}{\numberline {2.2.2}Biểu đồ lớp thiết kế chi tiết từng dịch vụ}{40}{subsection.2.2.2}%
+\contentsline {subsubsection}{\numberline {a}Dịch vụ Xác thực và phân quyền}{40}{subsubsection.2.2.2.1}%
+\contentsline {subsubsection}{\numberline {b}Dịch vụ Quản lý lớp học và điểm}{40}{subsubsection.2.2.2.2}%
+\contentsline {subsubsection}{\numberline {c}Dịch vụ Nộp bài}{40}{subsubsection.2.2.2.3}%
+\contentsline {subsubsection}{\numberline {d}Dịch vụ Thực thi chấm}{41}{subsubsection.2.2.2.4}%
+\contentsline {subsubsection}{\numberline {e}Dịch vụ Kết quả chấm}{42}{subsubsection.2.2.2.5}%
+\contentsline {subsubsection}{\numberline {f}Dịch vụ Trợ lý AI}{44}{subsubsection.2.2.2.6}%
+\contentsline {subsection}{\numberline {2.2.3}Thiết kế cơ sở dữ liệu theo dịch vụ}{44}{subsection.2.2.3}%
+\contentsline {subsection}{\numberline {2.2.4}Sơ đồ tuần tự các chức năng}{46}{subsection.2.2.4}%
+\contentsline {subsubsection}{\numberline {a}Đăng nhập}{46}{subsubsection.2.2.4.1}%
+\contentsline {subsubsection}{\numberline {b}Quản lý lớp học}{47}{subsubsection.2.2.4.2}%
+\contentsline {subsubsection}{\numberline {c}Quản lý bài tập}{48}{subsubsection.2.2.4.3}%
+\contentsline {subsubsection}{\numberline {d}Xem kết quả chấm của cả lớp}{49}{subsubsection.2.2.4.4}%
+\contentsline {subsubsection}{\numberline {e}Nộp bài tập}{50}{subsubsection.2.2.4.5}%
+\contentsline {subsubsection}{\numberline {f}Xem kết quả chấm bài tập của bản thân}{51}{subsubsection.2.2.4.6}%
+\contentsline {subsubsection}{\numberline {g}Xem điểm và kết quả cá nhân}{51}{subsubsection.2.2.4.7}%
+\contentsline {subsection}{\numberline {2.2.5}Kiến trúc hệ thống}{52}{subsection.2.2.5}%
 \contentsline {chapter}{\numberline {3}TRIỂN KHAI VÀ ĐÁNH GIÁ HỆ THỐNG}{54}{chapter.3}%
 \contentsline {section}{\numberline {3.1}Triển khai hệ thống}{54}{section.3.1}%
 \contentsline {subsection}{\numberline {3.1.1}Môi trường và kiến trúc triển khai}{54}{subsection.3.1.1}%
