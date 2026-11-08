@@ -182,11 +182,18 @@ kubeEtcd:
   enabled: false
 
 # --- Node Exporter (disabled — host metrics not needed on 8 GB box) ---
-prometheus-node-exporter:
+# Chart 72.x gates this subchart on `nodeExporter.enabled` (camelCase — see
+# Chart.yaml dependencies[].condition). `prometheus-node-exporter` is only the
+# subchart's own values namespace, so `prometheus-node-exporter.enabled: false`
+# was silently ignored and the DaemonSet kept deploying (seen 2026-11-08: the
+# node-exporter pod was still running next to this supposedly Lite stack).
+nodeExporter:
   enabled: false
 
 # --- kube-state-metrics (disabled — not needed for service-level metrics only) ---
-kube-state-metrics:
+# Same camelCase gating rule as nodeExporter above: `kube-state-metrics.enabled`
+# does nothing on chart 72.x, `kubeStateMetrics.enabled` is the real switch.
+kubeStateMetrics:
   enabled: false
 
 # --- Alertmanager (disabled — not needed for metrics + tracing only) ---

@@ -20,6 +20,15 @@ All components live in the `observability` namespace. Deploy docs:
 NOT deployed: Loki, Mimir, Alloy, Pyroscope, node-exporter,
 kube-state-metrics, Alertmanager. Do not add them back on this box.
 
+Gating keys are **camelCase**: `nodeExporter.enabled`, `kubeStateMetrics.enabled`.
+On kube-prometheus-stack 72.x the kebab-case blocks (`prometheus-node-exporter`,
+`kube-state-metrics`) are the subcharts' own value namespaces, so
+`enabled: false` there is silently ignored and BOTH workloads still render.
+Symptom: node-exporter/KSM pods exist next to a stack documented as Lite, and
+the node starts OOM-restarting pods. Always confirm with
+`helm template ... | grep -c 'kind: DaemonSet'` (must be 0) instead of trusting
+the values file.
+
 Data paths:
 - Metrics: Prometheus -> pod SD in `web-grading` -> app label + port filter.
 - Traces: service -> OTLP/HTTP -> `tempo.observability.svc.cluster.local:4318`.

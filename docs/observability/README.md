@@ -92,6 +92,12 @@ Các thành phần **không triển khai**:
 | kube-state-metrics | Không cần object metrics |
 | Alertmanager | Không có alerting |
 
+> Hai thành phần cuối được tắt bằng **key camelCase** `nodeExporter.enabled` và
+> `kubeStateMetrics.enabled` (chart 72.x). Key kebab-case
+> `prometheus-node-exporter.enabled` / `kube-state-metrics.enabled` chỉ là
+> namespace values của subchart nên **bị bỏ qua im lặng** — đặt `false` mà
+> DaemonSet/Deployment vẫn được tạo.
+
 ---
 
 ## 4. Luồng dữ liệu Metrics

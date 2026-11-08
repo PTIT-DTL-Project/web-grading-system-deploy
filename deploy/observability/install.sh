@@ -133,6 +133,23 @@ else
   exit 1
 fi
 
+# The Lite stack must contain zero DaemonSets and no kube-state-metrics pod.
+# Chart 72.x gates those subcharts with camelCase keys (nodeExporter.enabled /
+# kubeStateMetrics.enabled); with the old kebab-case keys the values file looks
+# right while both workloads still deploy, which is exactly how this box ended
+# up OOM-restarting pods on an 8 GB node. Warn only: during an upgrade the old
+# pods are still terminating, so a hard failure here would be a false alarm.
+echo ""
+echo "[verify] Lite stack composition..."
+STRAY="$(kubectl -n observability get pods -o name 2>/dev/null \
+  | grep -E 'node-exporter|kube-state-metrics' || true)"
+if [[ -n "$STRAY" ]]; then
+  echo "[WARN] node-exporter / kube-state-metrics pods should not be part of the Lite stack:"
+  echo "$STRAY" | sed 's/^/  - /'
+  echo "       If they persist, the release values are stale: check the gating keys"
+  echo "       nodeExporter.enabled / kubeStateMetrics.enabled in charts/."
+fi
+
 echo ""
 echo "========================================"
 echo " Observability Stack (Lite) deployed!"

@@ -47,6 +47,14 @@ cluster. Sized for an 8 GB RAM box.
 There is **no Loki, Mimir, Alloy, Pyroscope, node-exporter, kube-state-metrics,
 or Alertmanager** in this deployment. Do not re-add them on the 8 GB box.
 
+node-exporter and kube-state-metrics are switched off with the **camelCase
+condition keys** `nodeExporter.enabled` / `kubeStateMetrics.enabled`. On chart
+72.x the kebab-case `prometheus-node-exporter` / `kube-state-metrics` blocks are
+only the subcharts' own value namespaces: `enabled: false` there is silently
+ignored and both workloads still render (seen 2026-11-08 — the pods were running
+next to this supposedly Lite stack and the node kept restarting pods).
+`install.sh` warns if either pod is still present after the upgrade.
+
 ## Components
 
 | Component | Mode | Memory | Purpose |
