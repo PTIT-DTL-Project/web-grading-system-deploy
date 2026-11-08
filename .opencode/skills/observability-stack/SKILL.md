@@ -85,6 +85,12 @@ values change, `helm template ... | grep 'map\['` must return nothing.
 
 Tempo:
 
+- **CRITICAL: HTTP server port must be 3200.** Chart default is 3100 (legacy
+  Loki port). Grafana datasource expects 3200. Without
+  `server.http_listen_port: 3200`, Grafana queries timeout ("dial tcp ...3200:
+  i/o timeout"). `install.sh` now verifies this and fails if wrong. Verify
+  runtime: `kubectl exec tempo-0 -- cat /conf/tempo.yaml | grep
+  http_listen_port` → must output `3200`.
 - Image and resources MUST be under `tempo.*`
   (`tempo.repository`, `tempo.tag`, `tempo.resources`). Top-level `image:` or
   `resources:` are silently ignored by grafana/tempo.

@@ -75,6 +75,11 @@ vim .env.observability  # set GRAFANA_ADMIN_PASSWORD
 
 # 3. Check
 kubectl get pods -n observability
+
+# 4. CRITICAL: Verify Tempo is on port 3200 (not 3100)
+kubectl exec -n observability tempo-0 -- cat /conf/tempo.yaml | grep http_listen_port
+# Must output: http_listen_port: 3200
+# If 3100 → re-run ./install.sh to apply latest config
 ```
 
 `install.sh` prints a warning if other Helm releases still exist in the
@@ -208,6 +213,38 @@ Estimated total: **~0.8 GiB requests, ~1.8 GiB limits**.
 - Tempo OTLP (in-cluster): `tempo.observability.svc.cluster.local:4318`
 
 ## Troubleshooting
+
+**Grafana shows "dial tcp ...3200: i/o timeout" when querying Tempo**
+
+**Cause:** Tempo is listening on port 3100 (chart default) instead of 3200 (expected by Grafana datasource).
+
+**Diagnosis:**
+```bash
+kubectl exec -n observability tempo-0 -- cat /conf/tempo.yaml | grep http_listen_port
+```
+If output is `http_listen_port: 3100` → config not applied.
+
+**Fix:**
+```bash
+cd deploy/observability
+./install.sh  # Re-deploy with correct config (already in tempo-values.yaml)
+```
+
+**Verify:**
+```bash
+# 1. Check config
+kubectl exec -n observability tempo-0 -- cat /conf/tempo.yaml | grep http_listen_port
+# Output: http_listen_port: 3200 ✓
+
+# 2. Test connectivity
+kubectl exec -n observability deployment/monitoring-grafana -- \
+  wget -O- --timeout=5 http://tempo.observability.svc.cluster.local:3200/ready
+# Should respond within <5s, NOT timeout
+```
+
+See: `.opencode/plan/deploy-observability-stack/tempo-port-mismatch-fix.md` for full root cause analysis.
+
+---
 
 **`helm` fails with `504 Gateway Timeout` while installing Tempo**
 The classic `grafana/tempo` repo path resolves to
