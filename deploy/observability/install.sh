@@ -88,11 +88,11 @@ kubectl create namespace observability 2>/dev/null || true
 # ---- Step 3: Install Tempo (trace storage) ----
 echo ""
 echo "[3/5] Installing Tempo (distributed tracing storage)..."
-if ! helm_pull oci://ghcr.io/grafana/helm-charts/tempo 1.21.1; then
+if ! helm_pull oci://ghcr.io/grafana-community/helm-charts/tempo 3.1.0; then
   echo "[ERROR] Could not download the Tempo chart from GHCR after 3 attempts."
   exit 1
 fi
-helm upgrade --install tempo "$CHARTS_TMP/tempo-1.21.1.tgz" \
+helm upgrade --install tempo "$CHARTS_TMP/tempo-3.1.0.tgz" \
   --namespace observability \
   -f "$CHARTS_DIR/tempo-values.yaml" \
   --wait --timeout 10m

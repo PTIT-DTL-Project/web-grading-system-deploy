@@ -1,6 +1,6 @@
 # =============================================================================
 # Tempo Helm Values
-# Chart: grafana/tempo v1.21.1 (app 2.7.1)
+# Chart: grafana-community/tempo v3.1.0 (app 2.8+)
 # Trace storage only. Services push OTLP/HTTP straight to :4318.
 # =============================================================================
 
@@ -47,11 +47,11 @@ distributor:
         http:
           endpoint: "0.0.0.0:4318"
 
-# Tempo HTTP server phải listen port 3200 (không phải 3100 mặc định của chart)
-# để khớp với Grafana datasource url: http://tempo.observability.svc.cluster.local:3200
-# Chart grafana/tempo v1.21.1 mặc định dùng port 3100 (legacy từ Loki/Cortex).
-# Nếu không override này, Tempo listen 3100 → Grafana query 3200 → timeout.
-# Review: 2026-11-08, port mismatch causing "dial tcp ...3200: i/o timeout".
+# Tempo HTTP server phải listen port 3200 để khớp với Grafana datasource URL:
+# http://tempo.observability.svc.cluster.local:3200
+# Từ chart v3.x (Tempo app 2.8+), port 3200 là mặc định, nhưng khai báo tường
+# minh ở đây để rõ ràng trong tài liệu và tránh nhầm lẫn khi đọc config.
+# Review: 2026-11-08, upgraded to chart v3.1.0, port 3200 is now default.
 server:
   http_listen_port: 3200
   grpc_listen_port: 9095

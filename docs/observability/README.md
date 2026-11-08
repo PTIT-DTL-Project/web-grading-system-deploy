@@ -74,7 +74,7 @@ k3s cluster
 |---|---|---|---|---|
 | Prometheus | kube-prometheus-stack | 100m / 500m | 256Mi / 768Mi | TSDB 2Gi, retention 3 ngày, cắt ở 1500MB |
 | Grafana | kube-prometheus-stack | 100m / 500m | 256Mi / 512Mi | PVC 2Gi |
-| Tempo | grafana/tempo 1.21.1 | 100m / 500m | 256Mi / 512Mi | PVC 2Gi, retention 24h |
+| Tempo | grafana-community/tempo 3.1.0 | 100m / 500m | 256Mi / 512Mi | PVC 2Gi, retention 24h, port 3200 |
 
 Tổng request khoảng **0.8Gi**, tổng limit khoảng **1.8Gi**. Đây là mức tối đa
 nên dành cho observability trên máy 8 GB; phần còn lại phải chia cho k3s,
