@@ -1,6 +1,6 @@
 # =============================================================================
 # kube-prometheus-stack Helm Values (Lite: Prometheus + Grafana only)
-# Chart: prometheus-community/kube-prometheus-stack v72.6.2
+# Chart: prometheus-community/kube-prometheus-stack v92.11.0
 # Provides: Prometheus (metrics TSDB) + Grafana (UI).
 # kube-state-metrics, Alertmanager, Node Exporter are DISABLED (8 GB RAM box).
 # =============================================================================
@@ -87,6 +87,18 @@ grafana:
       access: proxy
       url: http://tempo.observability.svc.cluster.local:3200
       editable: false
+      jsonData:
+        # Link to Prometheus for "View related metrics" button in trace view.
+        # This enables jumping from a trace to related metrics in Prometheus.
+        tracesToMetrics:
+          datasourceUid: prometheus
+        # Disable streaming metrics queries to prevent TraceQL metrics errors
+        # when metricsGenerator is disabled. Grafana will not attempt to query
+        # metrics via TraceQL (| rate(), | histogram()) in Explore Traces UI.
+        # Review: 2026-11-08, metrics generator disabled to save RAM in dev.
+        streamingEnabled:
+          search: true
+          metrics: false  # Disable metrics queries
 
   # Helm does NOT expand ${...} inside values files: the old literal
   # "${GRAFANA_DOMAIN:-...}" became Grafana's domain verbatim and broke
