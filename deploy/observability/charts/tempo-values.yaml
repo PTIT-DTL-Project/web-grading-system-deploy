@@ -25,8 +25,11 @@ tempo:
   reportingEnabled: false
   retention: 24h
 
-  # Span metrics need the metrics generator plus a remote-write target; both
-  # cost CPU/RAM we do not have here. HTTP metrics come from Prometheus.
+  # Span metrics CẦN metrics generator + remote-write target.
+  # Nếu muốn dùng TraceQL metrics queries (| rate(), | histogram(), etc.),
+  # phải enable generator này. Chi phí: +100-200MB RAM, +100m CPU.
+  # Hiện tại DISABLE vì dev env không cần. HTTP metrics đến từ Prometheus.
+  # Review: 2026-11-08, kept disabled for dev; Grafana UI should not use | rate().
   metricsGenerator:
     enabled: false
 
