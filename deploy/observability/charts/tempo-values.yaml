@@ -29,53 +29,52 @@ tempo:
 
 # =============================================================================
 # CẤU HÌNH LÕI TEMPO (BẮT BUỘC PHẢI Ở CẤP GỐC — ROOT LEVEL)
-# Helm chart `grafana/tempo` đọc toàn bộ config YAML từ khóa `config:` ở gốc,
-# không phải bên trong `tempo:`. Nếu để sai cấp, chart bỏ qua im lặng.
+# Helm chart `grafana/tempo` đọc toàn bộ config YAML từ các khóa ở cấp gốc,
+# KHÔNG phải bên trong `config:`. Nếu để sai cấp, chart bỏ qua im lặng.
 # =============================================================================
-config: |
-  server:
-    http_listen_port: 3200
-    grpc_listen_port: 9095
+server:
+  http_listen_port: 3200
+  grpc_listen_port: 9095
 
-  distributor:
-    receivers:
-      otlp:
-        protocols:
-          grpc:
-            endpoint: "0.0.0.0:4317"
-          http:
-            endpoint: "0.0.0.0:4318"
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: "0.0.0.0:4317"
+        http:
+          endpoint: "0.0.0.0:4318"
 
-  memberlist:
-    abort_if_cluster_join_fails: false
-    bind_port: 7946
-    join_members:
-      - 127.0.0.1:7946
+memberlist:
+  abort_if_cluster_join_fails: false
+  bind_port: 7946
+  join_members:
+    - 127.0.0.1:7946
 
-  metrics_generator:
-    storage:
-      path: /var/tempo/wal
-    registry:
-      external_labels:
-        source: "tempo"
+metrics_generator:
+  storage:
+    path: /var/tempo/wal
+  registry:
+    external_labels:
+      source: "tempo"
+  ring:
+    kvstore:
+      store: memberlist
+
+ingester:
+  lifecycler:
     ring:
       kvstore:
         store: memberlist
+      replication_factor: 1
 
-  ingester:
-    lifecycler:
-      ring:
-        kvstore:
-          store: memberlist
-        replication_factor: 1
-
-  storage:
-    trace:
-      backend: local
-      local:
-        path: /var/tempo/traces
-      wal:
-        path: /var/tempo/wal
+storage:
+  trace:
+    backend: local
+    local:
+      path: /var/tempo/traces
+    wal:
+      path: /var/tempo/wal
 
 # =============================================================================
 # Kubernetes Native Resource Configurations (cấp gốc, không nằm trong `config:`)
