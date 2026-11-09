@@ -89,16 +89,18 @@ grafana:
       editable: false
       jsonData:
         # Link to Prometheus for "View related metrics" button in trace view.
-        # This enables jumping from a trace to related metrics in Prometheus.
         tracesToMetrics:
           datasourceUid: prometheus
-        # Disable streaming metrics queries to prevent TraceQL metrics errors
-        # when metricsGenerator is disabled. Grafana will not attempt to query
-        # metrics via TraceQL (| rate(), | histogram()) in Explore Traces UI.
-        # Review: 2026-11-08, metrics generator disabled to save RAM in dev.
+        # Grafana Tempo datasource stream TraceQL search bằng gRPC trên chính
+        # URL datasource (port 3200, h2c) — plugin không có setting
+        # grpc.address. Tempo phải chạy với stream_over_http_enabled: true
+        # (đặt qua tempo.streamOverHttpEnabled trong tempo-values.yaml), nếu
+        # không port 3200 trả HTTP/1.1 và Grafana báo:
+        #   "http2: frame too large ... looked like an HTTP/1.1 header"
+        # Metrics streaming tắt để giảm tải; | rate() vẫn chạy qua query_range.
         streamingEnabled:
           search: true
-          metrics: false  # Disable metrics queries
+          metrics: false
 
   # Helm does NOT expand ${...} inside values files: the old literal
   # "${GRAFANA_DOMAIN:-...}" became Grafana's domain verbatim and broke
