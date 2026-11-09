@@ -15,7 +15,7 @@ All components live in the `observability` namespace. Deploy docs:
 |---|---|---|
 | Prometheus | prometheus-community/kube-prometheus-stack | Pulls `/actuator/prometheus` every 30 s, 3-day retention |
 | Grafana | prometheus-community/kube-prometheus-stack | UI; Prometheus + Tempo datasources |
-| Tempo | grafana/tempo 1.21.1 | Trace storage, OTLP 4317/4318, 24 h retention |
+| Tempo | grafana-community/tempo 2.4.0 (app 2.10.8) | Trace storage, OTLP 4317/4318, 24 h retention, metrics-generator |
 
 NOT deployed: Loki, Mimir, Alloy, Pyroscope, node-exporter,
 kube-state-metrics, Alertmanager. Do not add them back on this box.
@@ -85,20 +85,41 @@ values change, `helm template ... | grep 'map\['` must return nothing.
 
 Tempo:
 
+- **Chart 2.x renders config from the `tempo.*` keys. Never add a root-level
+  `config:` block.** A root `config: |` makes the chart ignore every `tempo.*`
+  key (probes, resources, metricsGenerator) without any error. Source of truth:
+  `charts/tempo-values.yaml`.
 - **CRITICAL: HTTP server port must be 3200.** Chart default is 3100 (legacy
-  Loki port). Grafana datasource expects 3200. Without
-  `server.http_listen_port: 3200`, Grafana queries timeout ("dial tcp ...3200:
-  i/o timeout"). `install.sh` now verifies this and fails if wrong. Verify
-  runtime: `kubectl exec tempo-0 -- cat /conf/tempo.yaml | grep
-  http_listen_port` → must output `3200`.
+  Loki port). Grafana datasource expects 3200. Probes must also target 3200
+  (`tempo.livenessProbe` / `tempo.readinessProbe`); chart 1.x probes pointed at
+  3100 and crash-looped the pod. Verify runtime:
+  `kubectl exec tempo-0 -- cat /conf/tempo.yaml | grep http_listen_port` →
+  must output `3200`.
+- `tempo.streamOverHttpEnabled: true` is mandatory for Grafana streaming
+  TraceQL. Without it port 3200 answers HTTP/1.1 and Grafana logs
+  `http2: frame too large ... looked like an HTTP/1.1 header`. Verify with
+  `curl --http2-prior-knowledge http://127.0.0.1:3200/ready` → HTTP/2 200.
+- Traces Drilldown "Span rate" needs the metrics-generator, not just traces.
+  Required config:
+  `tempo.metricsGenerator.enabled: true`,
+  `tempo.metricsGenerator.processor.{span_metrics,service_graphs,local_blocks}`,
+  `tempo.metricsGenerator.processor.local_blocks.flush_to_storage: true`,
+  `tempo.overrides.defaults.metrics_generator.processors:
+  [service-graphs, span-metrics, local-blocks]`, and a `remoteWriteUrl` pointing
+  at the Prometheus service (`...:9090/api/v1/write`). Missing
+  `processors`/`local-blocks` produces `localblocks processor not found` or
+  "No data" in Drilldown.
+- Metrics-generator WAL must NOT share the trace WAL: use
+  `/var/tempo/generator/wal`.
 - Image and resources MUST be under `tempo.*`
   (`tempo.repository`, `tempo.tag`, `tempo.resources`). Top-level `image:` or
   `resources:` are silently ignored by grafana/tempo.
 - `tempo.memBallastSizeMbs: 0` is mandatory. Tempo 2.x defaults to 1024 MB,
-  which is larger than the 512Mi container limit -> OOMKill loop.
-- `GOMEMLIMIT=400MiB` via `tempo.extraEnv` keeps the Go heap in bounds.
-- Service ports are auto-derived from the container; do not hand-maintain a
-  `service.ports` block.
+  which is larger than the container limit -> OOMKill loop.
+- `GOMEMLIMIT` via `tempo.extraEnv` keeps the Go heap in bounds (800MiB with a
+  1Gi limit; local-blocks holds traces in RAM before cutting blocks).
+- Service ports (3200 + OTLP 4317/4318) are auto-derived from the container; do
+  not hand-maintain a `service.ports` block.
 
 ## 4. Prometheus scrape rules
 
@@ -163,6 +184,23 @@ logging:
 - Unknown `management.*` keys are dropped silently, so a typo stops trace
   export without any startup error. All six services must declare the SAME
   management block; diff them before shipping (`grep -A30 '^management:'`).
+- **There is no `management.tracing.web.exclude-patterns` in Boot 4.1.** It is
+  absent from `META-INF/spring-configuration-metadata.json` in every Boot /
+  Micrometer jar, so declaring it is a silent no-op and `/actuator/*` keeps
+  producing spans. Exclude actuator at observation level instead: register an
+  `ObservationPredicate` bean that returns `false` for
+  `ServerRequestObservationContext` whose carrier path starts with `/actuator`
+  (use the reactive context in api-gateway, the servlet context in the other
+  five services). `ObservationPredicate` runs before the span is created, so
+  the trace never reaches Tempo.
+- **Gateway span names are set by conventions, not by `ObservationHandler`.**
+  At stop, `SimpleObservation` calls `convention.getContextualName(context)`
+  again and overwrites any contextual name set in `onStart`. To rename the
+  gateway client span, replace the `GatewayObservationConvention` bean; to
+  rename the root server span (`http get` when no path pattern is resolved),
+  replace the `ServerRequestObservationConvention` bean. Build names from the
+  route's `Path` predicate patterns (bounded cardinality), never from the raw
+  path that contains ids.
 - Micrometer MDC keys are `traceId`/`spanId` (camelCase, written by
   `Slf4JEventListener` in `micrometer-tracing-bridge-otel`); `trace_id`/`span_id`
   render as empty fields. Logs are plain stdout, nothing parses the MDC.
@@ -182,6 +220,13 @@ curl -s "http://localhost:3200/api/search?limit=5"
 ```
 
 Symptom map:
+- Grafana Tempo "frame too large / HTTP/1.1 header" -> `streamOverHttpEnabled`
+  missing (chart 2.x rejects gRPC on port 3200 while the plugin always dials the
+  datasource URL). Do not add `grpc.address`.
+- Drilldown "Span rate: No data" or `localblocks processor not found` ->
+  metrics-generator processors (needs `local-blocks`) or remote-write URL.
+- api-gateway spans named `http get` / `HTTP GET` -> custom
+  `ServerRequestObservationConvention` + `GatewayObservationConvention`, see §5.
 - Tempo restarting -> ballast not 0, or resources at wrong YAML level.
 - `up{service="api-gateway"} == 0` with 401 -> bearer token in scrape config.
 - Grafana redirect/login loop -> `server.domain`/`root_url` mismatch or

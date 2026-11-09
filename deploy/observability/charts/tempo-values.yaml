@@ -1,103 +1,112 @@
 # =============================================================================
 # Tempo Helm Values
-# Chart: grafana-community/tempo v2.4.0 (stable intermediate version)
-# Trace storage only. Services push OTLP/HTTP straight to :4318.
+# Chart: grafana-community/tempo 2.4.0 (app: Tempo 2.10.8)
+# Nguồn: oci://ghcr.io/grafana-community/helm-charts/tempo
+#
+# NGUYÊN TẮC: KHÔNG override `config:` ở cấp gốc.
+# Chart render tempo.yaml từ các khóa dưới `tempo.*`. Nếu đặt `config: |` ở
+# gốc, toàn bộ nhánh `tempo.*` (probe, service, metricsGenerator...) bị bỏ qua
+# im lặng — đó chính là lỗi của lần chỉnh trước.
 # =============================================================================
 
-# Cấu hình pod/container (image, resources, env) — nằm trong nhánh `tempo.*`.
 tempo:
   repository: grafana/tempo
   pullPolicy: IfNotPresent
 
-  # Tempo 2.x allocates 1 GiB ballast by default → OOMKill trên box 8 GB.
+  # Tempo 2.x mặc định cấp 1 GiB ballast → OOMKill trên node nhỏ.
   memBallastSizeMbs: 0
   extraEnv:
     - name: GOMEMLIMIT
-      value: 400MiB
+      value: 800MiB
 
   reportingEnabled: false
   retention: 24h
 
-  # Bật metrics generator để dùng TraceQL |rate(), |histogram(), ...
-  # Chi phí: ~100-200MB RAM, chấp nhận được trên box 8 GB.
+  # BẮT BUỘC cho Grafana ↔ Tempo streaming (Traces Drilldown, TraceQL search).
+  # Thiếu cờ này Tempo trả lời HTTP/1.1 trên port 3200 và Grafana báo:
+  #   "http2: frame too large ... looked like an HTTP/1.1 header".
+  streamOverHttpEnabled: true
+
+  # Sinh RED metrics (traces_spanmetrics_*) + service graph rồi remote-write
+  # sang Prometheus. Đây là nguồn dữ liệu cho ô "Span rate" của Traces Drilldown.
+  # ~150-250 MB RAM.
   metricsGenerator:
     enabled: true
+    remoteWriteUrl: "http://monitoring-kube-prometheus-prometheus.observability.svc.cluster.local:9090/api/v1/write"
+
+    registry:
+      external_labels:
+        source: "tempo"
+
+    # WAL riêng cho metrics generator. KHÔNG dùng /var/tempo/wal — đó là WAL
+    # của trace storage, dùng chung sẽ hỏng cả hai. /var/tempo nằm trên PVC
+    # nên counter không bị reset sau mỗi lần restart pod.
+    storage:
+      path: "/var/tempo/generator/wal"
+
+    traces_storage:
+      path: "/var/tempo/generator/traces"
+
+    processor:
+      span_metrics:
+        # Thêm target_info để Grafana map service → pod/instance.
+        enable_target_info: true
+      service_graphs:
+        wait: 10s
+      # BẮT BUỘC cho Grafana Traces Drilldown: app chạy TraceQL metrics
+      # (| rate(), | quantile_over_time()) và cần processor local-blocks.
+      # Thiếu nó Drilldown báo "localblocks processor not found".
+      local_blocks:
+        # Đẩy block đã hoàn tất xuống backend để query được cửa sổ > 1h và
+        # không mất dữ liệu khi pod restart.
+        flush_to_storage: true
+
+  # Kích hoạt processor cho tenant mặc định. Thiếu block này Tempo vẫn chạy
+  # metrics-generator nhưng KHÔNG sinh metric nào (config cũ chỉ có registry/
+  # storage/ring → Prometheus rỗng → "Span rate: No data").
+  overrides:
+    defaults:
+      metrics_generator:
+        processors:
+          - service-graphs
+          - span-metrics
+          - local-blocks
+
+  # HTTP API (query + streaming) ở 3200, nên probe phải trỏ 3200.
+  # Chart mặc định đã đúng; khai báo tường minh để không bị đổi âm thầm.
+  livenessProbe:
+    httpGet:
+      path: /ready
+      port: 3200
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+
+  readinessProbe:
+    httpGet:
+      path: /ready
+      port: 3200
+    initialDelaySeconds: 20
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
 
   resources:
     requests: { cpu: 100m, memory: 256Mi }
-    limits: { cpu: 500m, memory: 512Mi }
+    # local-blocks giữ trace trong RAM trước khi cắt block; 1Gi an toàn cho
+    # box hiện tại (node ~16 GB, Tempo idle ~80 MB).
+    limits: { cpu: 500m, memory: 1Gi }
 
-# =============================================================================
-# CẤU HÌNH LÕI TEMPO (BẮT BUỘC PHẢI Ở CẤP GỐC — ROOT LEVEL)
-# Helm chart `grafana/tempo` đọc toàn bộ config YAML từ các khóa ở cấp gốc,
-# KHÔNG phải bên trong `config:`. Nếu để sai cấp, chart bỏ qua im lặng.
-# =============================================================================
-server:
-  http_listen_port: 3200
-  grpc_listen_port: 9095
-
-distributor:
-  receivers:
-    otlp:
-      protocols:
-        grpc:
-          endpoint: "0.0.0.0:4317"
-        http:
-          endpoint: "0.0.0.0:4318"
-
-memberlist:
-  abort_if_cluster_join_fails: false
-  bind_port: 7946
-  join_members:
-    - 127.0.0.1:7946
-
-metrics_generator:
-  storage:
-    path: /var/tempo/wal
-  registry:
-    external_labels:
-      source: "tempo"
-  ring:
-    kvstore:
-      store: memberlist
-
-ingester:
-  lifecycler:
-    ring:
-      kvstore:
-        store: memberlist
-      replication_factor: 1
-
-storage:
-  trace:
-    backend: local
-    local:
-      path: /var/tempo/traces
-    wal:
-      path: /var/tempo/wal
-
-# =============================================================================
-# Kubernetes Native Resource Configurations (cấp gốc, không nằm trong `config:`)
-# =============================================================================
+# PVC 2Gi, dùng lại PVC "storage-tempo-0" đang có (cùng tên volumeClaimTemplate).
 persistence:
   enabled: true
   storageClassName: local-path
   size: 2Gi
 
-service:
-  enabled: true
-  type: ClusterIP
-  ports:
-    - name: http
-      port: 3200
-      targetPort: 3200
-    - name: otlp-grpc
-      port: 4317
-      targetPort: 4317
-    - name: otlp-http
-      port: 4318
-      targetPort: 4318
-
-# Prometheus đã scrape service; self-metrics Tempo không cần.
+# Service (3200 + OTLP 4317/4318) do chart tự render từ container ports.
+# Prometheus scrape self-metrics của Tempo không cần cho Lite stack.
 serviceMonitor:
   enabled: false
