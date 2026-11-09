@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 # =============================================================================
 # Observability Stack — Install Script (clean rebuild)
-# Stack: kube-prometheus-stack (Prometheus + Grafana + Node Exporter +
-#        kube-state-metrics) + Loki (logs, via promtail) + Tempo (traces) +
-#        Alloy (OTLP collector) + Pyroscope (profiling).
+# Stack: kube-prometheus-stack (Prometheus + Grafana UI) + Tempo (traces).
 # All in the `observability` namespace.
 # =============================================================================
 set -euo pipefail
@@ -12,7 +10,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BASE_DIR="$SCRIPT_DIR"
 CHARTS_DIR="$BASE_DIR/charts"
 MANIFESTS_DIR="$BASE_DIR/manifests"
-DASHBOARDS_DIR="$BASE_DIR/dashboards"
 ENV_FILE="$BASE_DIR/.env.observability"
 
 # ---- Load env ----
@@ -25,98 +22,172 @@ set -a
 source "$ENV_FILE"
 set +a
 
-# GRAFANA_ADMIN_PASSWORD is set via .env.observability (do not override here).
+: "${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD must be set in .env.observability}"
+GRAFANA_DOMAIN="${GRAFANA_DOMAIN:-web-dev1-grafana.vucongtuanduong.dpdns.org}"
+
+# Helm --set treats commas and backslashes as syntax; escape them once.
+ADMIN_PASSWORD_ESCAPED="${GRAFANA_ADMIN_PASSWORD//\\/\\\\}"
+ADMIN_PASSWORD_ESCAPED="${ADMIN_PASSWORD_ESCAPED//,/\\,}"
 
 echo "========================================"
-echo " Observability Stack Installer"
+echo " Observability Stack Installer (Lite)"
 echo " Namespace: observability"
+echo " Components: Prometheus + Grafana + Tempo"
 echo "========================================"
 
-# ---- Step 1: Add Helm repositories ----
+# ---- Step 0: preflight leftovers ----
 echo ""
-echo "[1/8] Adding Helm repositories..."
-helm repo add grafana https://grafana.github.io/helm-charts
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm repo add pyrox https://grafana.github.io/helm-charts
-helm repo update
+echo "[0/5] Checking for leftover observability releases..."
+if kubectl get namespace observability >/dev/null 2>&1; then
+  leftovers="$(helm list -n observability -q 2>/dev/null | grep -vxE 'monitoring|tempo' || true)"
+  if [[ -n "$leftovers" ]]; then
+    echo "[WARN] Other Helm releases still exist in observability and keep using RAM:"
+    echo "$leftovers" | sed 's/^/  - /'
+    echo "       Remove them before installing: helm uninstall <release> -n observability"
+  fi
+fi
+
+# ---- Step 1: Verify Helm ----
+echo ""
+echo "[1/5] Checking Helm CLI..."
+if ! command -v helm >/dev/null 2>&1; then
+  echo "[ERROR] helm not found in PATH. Install Helm 3.16+ first."
+  exit 1
+fi
+helm version --short
+
+# Charts are pulled straight from GHCR as OCI artifacts instead of via
+# `helm repo add`. The classic path resolves to
+# github.com/<org>/helm-charts/releases/download/... whose CDN intermittently
+# answers 504 Gateway Timeout (seen 2026-11-08) and aborts the whole install.
+# GHCR is a separate backend and also removes the repo add/update round-trip.
+#
+# Retry the download, not the install: a failed fetch never creates a Helm
+# release, whereas retrying a half-finished release fails with
+# "another operation in progress" and leaves it pending. 3 attempts, 10s/20s.
+CHARTS_TMP="$(mktemp -d)"
+trap 'rm -rf "$CHARTS_TMP"' EXIT
+
+helm_pull() {
+  local url="$1" version="$2" attempt
+  for attempt in 1 2 3; do
+    if helm pull "$url" --version "$version" -d "$CHARTS_TMP"; then
+      return 0
+    fi
+    echo "[WARN] helm pull ${url}:${version} failed (attempt ${attempt}/3)"
+    [[ "$attempt" -lt 3 ]] && sleep $(( attempt * 10 ))
+  done
+  return 1
+}
 
 # ---- Step 2: Create namespace ----
 echo ""
-echo "[2/8] Creating namespace..."
+echo "[2/5] Creating namespace..."
 kubectl create namespace observability 2>/dev/null || true
 
-# ---- Step 3: Install Loki (log aggregation + promtail) ----
+# ---- Step 3: Install Tempo (trace storage) ----
 echo ""
-echo "[3/8] Installing Loki (+ promtail log shipping)..."
-helm upgrade --install loki grafana/loki \
-  --version 7.0.0 \
-  --namespace observability \
-  -f "$CHARTS_DIR/loki-values.yaml" \
-  --wait --timeout 5m
-
-# ---- Step 4: Install Tempo (trace storage) ----
-echo ""
-echo "[4/8] Installing Tempo..."
-helm upgrade --install tempo grafana/tempo \
-  --version 1.21.1 \
+echo "[3/5] Installing Tempo (distributed tracing storage)..."
+if ! helm_pull oci://ghcr.io/grafana-community/helm-charts/tempo 2.4.0; then
+  echo "[ERROR] Could not download the Tempo chart from GHCR after 3 attempts."
+  exit 1
+fi
+helm upgrade --install tempo "$CHARTS_TMP/tempo-2.4.0.tgz" \
   --namespace observability \
   -f "$CHARTS_DIR/tempo-values.yaml" \
-  --wait --timeout 5m
+  --wait --timeout 10m
 
-# ---- Step 4b: Install Pyroscope (continuous profiling) ----
+# ---- Step 4: Install kube-prometheus-stack (Prometheus + Grafana) ----
 echo ""
-echo "[4b/8] Installing Pyroscope..."
-helm upgrade --install pyroscope grafana/pyroscope \
-  --version 2.2.1 \
-  --namespace observability \
-  -f "$CHARTS_DIR/pyroscope-values.yaml" \
-  --wait --timeout 5m
-
-# ---- Step 5: Install Alloy (OTLP trace collector: backend services -> Tempo) ----
-echo ""
-echo "[5/8] Installing Alloy (OTLP collector)..."
-helm upgrade --install alloy grafana/alloy \
-  --version 1.0.3 \
-  --namespace observability \
-  -f "$CHARTS_DIR/alloy-values.yaml" \
-  --wait --timeout 5m
-
-# ---- Step 6: Install kube-prometheus-stack (Prometheus + Grafana + Node Exporter) ----
-echo ""
-echo "[6/8] Installing Prometheus + Grafana + Node Exporter (kube-prometheus-stack)..."
-helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
-  --version 72.6.2 \
+echo "[4/5] Installing Prometheus + Grafana (kube-prometheus-stack)..."
+if ! helm_pull oci://ghcr.io/prometheus-community/charts/kube-prometheus-stack 92.11.0; then
+  echo "[ERROR] Could not download the kube-prometheus-stack chart from GHCR after 3 attempts."
+  exit 1
+fi
+helm upgrade --install monitoring "$CHARTS_TMP/kube-prometheus-stack-92.11.0.tgz" \
   --namespace observability \
   -f "$CHARTS_DIR/kube-prometheus-stack-values.yaml" \
-  --set grafana.adminPassword="$GRAFANA_ADMIN_PASSWORD" \
-  --wait --timeout 8m
+  --set-string "grafana.adminPassword=${ADMIN_PASSWORD_ESCAPED}" \
+  --wait --timeout 10m
 
-# ---- Step 7: Import dashboard + ingress ----
+# ---- Step 5: Apply ingress ----
 echo ""
-echo "[7/8] Importing dashboard and ingress..."
-# Label the dashboard ConfigMap so Grafana's sidecar imports it.
-kubectl create configmap grafana-dashboards \
-  --from-file=k8s-general.json="$DASHBOARDS_DIR/k8s-general.json" \
-  -n observability --dry-run=client -o yaml | \
-  kubectl apply -f -
-
+echo "[5/5] Applying ingress..."
 kubectl apply -f "$MANIFESTS_DIR/ingress/grafana.yaml"
-kubectl apply -f "$MANIFESTS_DIR/ingress/otlp.yaml"
-kubectl apply -f "$MANIFESTS_DIR/ingress/pyroscope.yaml"
 
-echo "[8/8] Finalizing setup..."
+# ---- Verify datasources ----
+# Provisioning is a file mount inside the Grafana pod, so the check is done from
+# inside that pod: it proves the file Grafana actually reads, not just the values
+# file. A pod that survived a ConfigMap-only change keeps the old file, hence the
+# explicit restart hint on failure.
+echo ""
+echo "[verify] Grafana datasources..."
+DS_FILE="$(kubectl -n observability exec deploy/monitoring-grafana -c grafana -- \
+  cat /etc/grafana/provisioning/datasources/datasource.yaml 2>/dev/null || true)"
+if grep -q 'name: Prometheus' <<<"$DS_FILE" && grep -q 'name: Tempo' <<<"$DS_FILE"; then
+  echo "  OK: Prometheus + Tempo are provisioned in the Grafana pod"
+else
+  echo "[ERROR] Grafana does not see the provisioned datasources."
+  echo "  Try: kubectl -n observability rollout restart deploy/monitoring-grafana"
+  echo "  Then: kubectl -n observability logs deploy/monitoring-grafana -c grafana | grep -i datasource"
+  exit 1
+fi
+
+# ---- CRITICAL: Verify Tempo HTTP port 3200 ----
+# Chart default is port 3100 (legacy Loki port), but Grafana datasource expects
+# 3200 (Tempo v2.x standard). If tempo-values.yaml has the fix but the pod config
+# still shows 3100, Grafana queries will timeout (dial tcp ...3200: i/o timeout).
+# Review: 2026-11-08, port mismatch root cause analysis.
+echo ""
+echo "[verify] Tempo HTTP port..."
+if kubectl wait --for=condition=ready pod/tempo-0 -n observability --timeout=60s >/dev/null 2>&1; then
+  TEMPO_HTTP_PORT=$(kubectl exec -n observability tempo-0 -- cat /conf/tempo.yaml 2>/dev/null \
+    | grep -A1 "^server:" | grep http_listen_port | awk '{print $2}' || echo "UNKNOWN")
+  
+  if [ "$TEMPO_HTTP_PORT" = "3200" ]; then
+    echo "  OK: Tempo HTTP server on port 3200 (expected by Grafana)"
+  else
+    echo "[ERROR] Tempo HTTP port is ${TEMPO_HTTP_PORT}, should be 3200!"
+    echo "  Grafana datasource URL: http://tempo.observability.svc.cluster.local:3200"
+    echo "  Config in pod shows: http_listen_port: ${TEMPO_HTTP_PORT}"
+    echo "  → Grafana queries will timeout (dial tcp ...3200: i/o timeout)"
+    echo ""
+    echo "  Check charts/tempo-values.yaml has:"
+    echo "    server:"
+    echo "      http_listen_port: 3200"
+    echo ""
+    echo "  If values file is correct, the Helm release may be stale. Re-run ./install.sh"
+    exit 1
+  fi
+else
+  echo "[WARN] tempo-0 pod not ready after 60s, skipping port check"
+fi
+
+# The Lite stack must contain zero DaemonSets and no kube-state-metrics pod.
+# Chart 72.x gates those subcharts with camelCase keys (nodeExporter.enabled /
+# kubeStateMetrics.enabled); with the old kebab-case keys the values file looks
+# right while both workloads still deploy, which is exactly how this box ended
+# up OOM-restarting pods on an 8 GB node. Warn only: during an upgrade the old
+# pods are still terminating, so a hard failure here would be a false alarm.
+echo ""
+echo "[verify] Lite stack composition..."
+STRAY="$(kubectl -n observability get pods -o name 2>/dev/null \
+  | grep -E 'node-exporter|kube-state-metrics' || true)"
+if [[ -n "$STRAY" ]]; then
+  echo "[WARN] node-exporter / kube-state-metrics pods should not be part of the Lite stack:"
+  echo "$STRAY" | sed 's/^/  - /'
+  echo "       If they persist, the release values are stale: check the gating keys"
+  echo "       nodeExporter.enabled / kubeStateMetrics.enabled in charts/."
+fi
+
 echo ""
 echo "========================================"
-echo " Observability Stack deployed!"
+echo " Observability Stack (Lite) deployed!"
 echo ""
-echo " Grafana:  https://web-dev2-grafana.vucongtuanduong.dpdns.org (admin/$GRAFANA_ADMIN_PASSWORD)"
-echo " Prometheus: prometheus-operated.observability.svc.cluster.local:9090"
-echo " Loki:     loki.observability.svc.cluster.local:3100  (logs, via promtail)"
-echo " Tempo:    tempo.observability.svc.cluster.local:3200  (traces)"
-echo " Alloy:    alloy.observability.svc.cluster.local:4317  (OTLP collector)"
-echo " Pyroscope: pyroscope.observability.svc.cluster.local:4100  (continuous profiling)"
-echo " Nodes:    node-exporter DaemonSet (host metrics) + kube-state-metrics"
-echo ""
+echo " Grafana:    https://${GRAFANA_DOMAIN} (user: admin; password from .env.observability)"
+echo " Prometheus: monitoring-kube-prometheus-prometheus.observability.svc.cluster.local:9090"
+echo " Tempo:      tempo.observability.svc.cluster.local:3200 (query), :4318 (OTLP HTTP)"
+echo "========================================"
 echo " Pods:"
 kubectl get pods -n observability
 echo "========================================"

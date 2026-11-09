@@ -108,6 +108,12 @@ Sinh viên được import vào lớp bằng CSV (username mặc định = mã s
 | updated_at | TIMESTAMPTZ | NOT NULL | |
 | deleted_at | TIMESTAMPTZ | | |
 
+> **Consumer:** linked via `assignment_docker_images` → surfaced to the executor
+> as `AssignmentGradingConfigDto.dockerImageUrls` → pre-pulled by the
+> `@Scheduled` `ImageScanner` (UC-13 Step 1) and guaranteed before compose boot
+> (UC-13 Step 2). Deleting an image still referenced by a live assignment is
+> blocked with `409`.
+
 #### assignment_docker_images
 
 | Column | Type | Constraint |
@@ -193,6 +199,7 @@ DB_QUERY (và DB_SCHEMA_CHECK, DB_MIGRATION) — block `connection`:
 ```json
 {
   "connection": {
+    "db_type": "postgres",
     "db_service": "db",
     "db_port": 5432,
     "database": "bookstore",
@@ -209,8 +216,9 @@ DB_QUERY (và DB_SCHEMA_CHECK, DB_MIGRATION) — block `connection`:
 
 | Field trong `connection` | Ý nghĩa |
 |---|---|
+| `db_type` | Engine của DB (`postgres` \| `mysql` \| `mariadb`, không phân biệt hoa thường, mặc định `postgres`) — ánh xạ sang JDBC dialect tương ứng trong executor (`DbDialectRegistry`). `mariadb` dùng chung dialect với `mysql` (wire-compatible) |
 | `db_service` | Tên service DB trong docker-compose của SV (mặc định `db`) — executor sẽ expose port của service này ra host |
-| `db_port` | Port DB trong container (mặc định 5432) |
+| `db_port` | Port DB trong container — mặc định theo engine: 5432 (postgres) / 3306 (mysql, mariadb) |
 | `database`, `username`, `password` | Thông tin kết nối |
 
 DB_SCHEMA_CHECK:
@@ -447,7 +455,7 @@ Executor Service là Kafka consumer — nhận job, chấm, ghi log và kết qu
 | student_id | UUID | NOT NULL | |
 | plan_id | UUID | | null = chạy tất cả plans |
 | status | VARCHAR(20) | NOT NULL DEFAULT 'PENDING' | `PENDING`, `FETCHING`, `BUILDING`, `RUNNING`, `DONE`, `FAILED` |
-| retry_count | INT | NOT NULL DEFAULT 0 | |
+| retry_count | INT | NOT NULL DEFAULT 0 | Attempt counter — `StaleJobReaper` tăng mỗi lần re-enqueue, bỏ qua khi quá max |
 | error_message | TEXT | | |
 | started_at | TIMESTAMPTZ | | |
 | completed_at | TIMESTAMPTZ | | |
@@ -495,10 +503,64 @@ Kết quả từng step — lưu đủ request/response (cả expected và actua
 | level | VARCHAR(10) | NOT NULL DEFAULT 'INFO' | `INFO`, `WARN`, `ERROR` |
 | created_at | TIMESTAMPTZ | NOT NULL | |
 
+#### grading_sagas
+
+Một row mỗi lần `grade()` chạy (retry/re-enqueue tạo row mới). Xem `execute-plan-v1.0.md` §6.2.
+
+| Column | Type | Constraint | Ghi chú |
+|---|---|---|---|
+| id | UUID | PK | |
+| job_id | UUID | NOT NULL FK → grading_jobs | |
+| saga_type | VARCHAR(50) | NOT NULL DEFAULT 'GRADE_SUBMISSION' | |
+| status | VARCHAR(20) | NOT NULL DEFAULT 'STARTED' | `STARTED`, `DONE`, `FAILED` |
+| current_step | VARCHAR(100) | | Phase đang chạy |
+| started_at | TIMESTAMPTZ | NOT NULL | |
+| completed_at | TIMESTAMPTZ | | |
+
+#### docker_image_state
+
+One row per `(image_url, pod_id)` — the per-pod warmth persisted by the
+`ImageScanner` (UC-13 Step 1). Updated by upsert on each scanner cycle; rows
+age out via `updated_at` prune.
+
+| Column | Type | Constraint | Ghi chú |
+|---|---|---|---|
+| id | UUID | PK | |
+| image_url | VARCHAR(500) | NOT NULL | Docker image tag |
+| pod_id | VARCHAR(255) | NOT NULL | K8s pod name (no downward-API change) |
+| status | VARCHAR(20) | NOT NULL | `PULLED`, `FAILED` |
+| last_checked_at | TIMESTAMPTZ | | |
+| last_pulled_at | TIMESTAMPTZ | | |
+| error_message | TEXT | | |
+| created_at | TIMESTAMPTZ | NOT NULL | |
+| updated_at | TIMESTAMPTZ | NOT NULL | |
+| deleted_at | TIMESTAMPTZ | | soft-delete (`@SQLRestriction`) |
+
+#### grading_saga_steps
+
+Phase rows (`plan_id`/`step_id` NULL) + per-step rows (`STEP:<name>`, kèm `plan_id` + `step_id`) — trả lời "step nào của plan nào đang chạy" bằng `WHERE status='STARTED'`.
+
+| Column | Type | Constraint | Ghi chú |
+|---|---|---|---|
+| id | UUID | PK | |
+| saga_id | UUID | NOT NULL FK → grading_sagas | |
+| step_name | VARCHAR(100) | NOT NULL | `FETCH_CONFIG`, `DOWNLOAD_ARTIFACT`, `BOOT_COMPOSE`, `RUN_STEPS`, `SCORE_REPORT`, `STEP:<name>` |
+| plan_id | UUID | | NULL với phase rows |
+| step_id | UUID | | NULL với phase rows |
+| status | VARCHAR(20) | NOT NULL DEFAULT 'STARTED' | `STARTED`, `DONE`, `FAILED`, `SKIPPED` |
+| error_message | TEXT | | |
+| started_at | TIMESTAMPTZ | NOT NULL | |
+| completed_at | TIMESTAMPTZ | | |
+
+> **Note** — `grading_sagas`/`grading_saga_steps` không có `deleted_at` (best-effort tracking, terminal states không cần soft delete) và không có `attempt` column (SagaTracker không tăng counter).
+
 ### 4.3 SQL script
 
 ```sql
 -- V1__init_executor_service.sql
+-- ... existing executor_db tables ...
+-- V7__2026-09-27__docker_image_state.sql
+```
 
 -- ============================================================
 -- grading_jobs
@@ -797,5 +859,7 @@ CREATE INDEX idx_http_log_created ON http_log(created_at);
 
 | Version | Ngày | Thay đổi |
 |---|---|---|
+| v1.2 | 2026-09-27 | Thêm `docker_image_state` (executor_db, V7): một row mỗi `(image_url, pod_id)`, soft-delete qua `@SQLRestriction`, partial unique index `uq_docker_image_state_url_pod` trên `(image_url, pod_id) WHERE deleted_at IS NULL`; prune theo `updated_at`. Mục đích: scanner `ImageScanner` lưu warmth per-pod giữa các lần scan |
+| v1.1 | 2026-09-26 | Thêm `db_type` vào `connection` block (multi-DBMS: `postgres` \| `mysql` \| `mariadb`, mặc định `postgres`); `db_port` mặc định theo engine (5432/3306) thay vì cố định 5432 |
 | v1.0 | 2026-08-16 | Bản đầu tiên. Kế thừa `docs/db/README.md`; thêm `classes`, `class_students`, `manual_scores`; đổi `grading_db` → `executor_db`, `scenario_results` → `step_results`; thêm `connection` block cho DB steps; bỏ step type `SCRIPT` ra khỏi v1 |
 | v1.0 | 2026-08-16 | Thêm bảng `http_log` cho cả 4 DB — log HTTP inbound (filter) + outbound (Feign client) với request/response body, headers, thời gian, cổng; bỏ header nhạy cảm, cắt body 20KB |

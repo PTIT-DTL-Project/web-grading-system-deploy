@@ -1,0 +1,507 @@
+# API Test Guide — Web Grading System
+
+Per-endpoint reference for every API currently implemented. Each entry: method, full URL,
+headers, params, request body, expected response, and the negative checks that matter.
+
+> Flow-level (chained) testing: `docs/design/usecase-flows.md` (UC-01/02/03) and
+> `docs/api/scenarios/*.sh`. This guide is endpoint-level.
+
+**Prerequisites**
+
+| What | Where |
+|---|---|
+| course-service on `http://localhost:8081` | `src-services/course-service` (`mvnw spring-boot:run` with Neon env vars, e.g. `SERVER_PORT=18081` if another instance is already on 8081) |
+| submission-service on `http://localhost:8082` | `src-services/submission-service` |
+| result-service on `http://localhost:8084` | `src-services/result-service` |
+| executor-service on `http://localhost:8083` | `src-services/executor-service` (Kafka-demo: see `wgs-events` flow at the end) |
+
+**Local boot recipe** (verified 2026-09-30 against the Neon project in the repo `.env`;
+run from `src-services/<service>`):
+
+```bash
+set -a; . ../../.env; set +a
+unset JDBC_URL DB_NAME          # let each service use its own default schema
+                                # (assignment_db / submission_db / result_db)
+export GATEWAY_TRUSTED_SECRET=<pick-a-local-value>   # .env ships it EMPTY → every request 401
+export RESULT_SERVICE_URI=http://localhost:8084 \
+       SUBMISSION_SERVICE_URI=http://localhost:8082   # yaml defaults are in-cluster DNS
+./mvnw -DskipTests package && java -jar target/<service>-1.0.0.jar
+```
+
+`./mvnw test` needs the same `DB_*` vars: without them the `*ApplicationTests.contextLoads`
+tests try `localhost:5432` and fail on a connection refusal (the rest of the suite is DB-less).
+
+**Envelope contract (public endpoints)** — every non-excluded response is wrapped:
+
+```json
+{
+  "status": 200,
+  "message": "Success or @ApiMessage value",
+  "data": { "…": "…" },        // or {"meta":{…},"result":[…]} for paged endpoints
+  "error": "only when failed"
+}
+```
+
+Paged lists: `data.meta = { page, pageSize, pages, total }`, `data.result = […]`.
+Excluded from wrapping: `/api/v1/internal/**`, `*/webhook*`, `/health`, `/version`,
+`/v3/api-docs*`, `/swagger-ui*`.
+
+**Identity:** reaching a service directly requires `X-User-Id: <uuid>` **and**
+`X-Gateway-Secret: <GATEWAY_TRUSTED_SECRET>` — without the secret the request is rejected
+with `401` before the controller. Missing `X-User-Id` → `anonymous` → 400 (invalid UUID);
+wrong owner's UUID → indistinguishable 404. Through the api-gateway send
+`Authorization: Bearer <token>` instead: the gateway injects `X-User-Id` from the token
+subject and strips anything you send (both modes detailed in
+`docs/api/postman/FULL_FLOW_TESTING_GUIDE.md` §0).
+
+Instead of running the services locally you can use the dev ingresses as the base URL —
+`https://web-dev1-course…`, `https://web-dev1-submission…`,
+`https://web-dev1-result…` (same `X-User-Id` + `X-Gateway-Secret` rules apply).
+
+**Role (since 2026-09-30):** endpoints that write grading data — classes & students, score
+components, scores, transcripts, assignments, plans & steps, docker images — plus the
+lecturer grading views `GET /api/v1/assignments/{assignmentId}/results`,
+`GET /api/v1/assignments/{assignmentId}/submissions`, and the single-submission deep-link
+`GET /api/v1/results/{submissionId}` additionally require `X-User-Roles: LECTURER`
+(`403` without it; through the gateway it comes from the token's allowlisted
+`realm_access.roles`, exact-matched against `ROLE_LECTURER` via SecurityContext — NOT
+a substring match, so a future `LECTURER_ASSISTANT` role will not inherit access).
+Ownership still rules `GET /api/v1/submissions/{id}` (`404`) for all callers.
+The deep-link read on `/api/v1/results/{id}` was re-enabled in a focused fix
+(Review: 2026-10-21): any lecturer may read any submission's results here for
+grading; batch reads remain owner-scoped on the class-service endpoints (§1.6).
+
+---
+
+## 1. course-service — `http://localhost:8081`
+
+### 1.1 Classes
+
+**POST `/api/v1/classes` — create class**
+
+Headers: `X-User-Id: <uuid>`, `Content-Type: application/json`
+
+```json
+{ "name": "PTIT CNTT-K68", "semester": "20261" }
+```
+
+→ `201` Posted; `data.id` is the new classId. `name` trimmed.
+
+Negative: same `name`+`semester` same owner → `400` "Class '…' already exists in semester …".
+
+**GET `/api/v1/classes?page=0&size=20` — list mine (paged)**
+
+Query params:
+- `search` (optional): structured filter expression. Format is `field:value` pairs
+  concatenated with `;`. Supported fields: `name`, `semester`.
+  Examples: `search=name:PTIT;semester:20261`, `search=semester:20261`.
+  Malformed expressions (missing `:`, unknown field, blank value) → `400`.
+- `status` (optional): `ACTIVE` or `ARCHIVED`; filters to that status only.
+- Both params can be combined. Blank/null values are ignored.
+
+Negative:
+- `?search=status:ACTIVE` → 400 "Unknown filter field: 'status'. Allowed fields: name, semester"
+- `?search=name:` → 400 "Filter value for 'name' must not be blank"
+- `?search=bareword` → 400 "Malformed filter 'bareword': expected 'field:value'. Allowed fields: name, semester"
+
+**GET `/api/v1/classes/{{classId}}` — detail** → 200 envelope or 404 if not your class.
+
+**PUT `/api/v1/classes/{{classId}}/archive`** (no body) → 200, flips `status` to `ARCHIVED`.
+
+**POST `/api/v1/classes/{{classId}}/students/import`** — CSV import.
+
+Headers: `X-User-Id: <uuid>`. Body: `multipart/form-data`, part name **`file`**, a `.csv`.
+
+CSV format (header optional): `studentCode,studentName,email[,studentUserId]`.
+→ 200 with `data: { imported: N, skipped: M }`. Negative: empty file → 400 "CSV file is empty";
+wrong extension → 400; malformed multipart → 400; oversized → 413.
+
+**GET `/api/v1/classes/{{classId}}/students?page=0&size=20`** — paged roster.
+
+DB check: `select * from class_students where class_id='<id>'`.
+
+### 1.2 Scores (components + per-student + transcript)
+
+**PUT `/api/v1/classes/{{classId}}/score-components`** — configure scoring weights.
+
+```json
+[
+  { "type": "ATTENDANCE",  "weight": 0.10 },
+  { "type": "EXERCISE",    "weight": 0.20 },
+  { "type": "FINAL_EXAM",  "weight": 0.70 }
+]
+```
+
+Rules (all → 400 with descriptive message): types must be unique · `FINAL_EXAM` mandatory
+with `weight >= 0.40` · weights must sum to `1.000` (±0.001).
+
+**GET `/api/v1/classes/{{classId}}/score-components`** — current config array.
+
+**PUT `/api/v1/classes/{{classId}}/students/{{studentCode}}/scores`** — write manual scores.
+
+```json
+[
+  { "componentType": "ATTENDANCE",  "score": 9.0 },
+  { "componentType": "FINAL_EXAM",  "score": 8.5 }
+]
+```
+
+Rules: `EXERCISE` entries rejected → 400 (auto-graded only); score range 0–10;
+unknown student → 404 ("Student 'X' not found in class …"); unknown component → 400.
+
+**GET `/api/v1/classes/{{classId}}/students/{{studentCode}}/scores`** — per-student view:
+
+```json
+{ "data": { "studentCode": "B22DCCN001", "entries": [ { "type": "ATTENDANCE",
+  "score": 9.0, "weight": 0.1 } ], "total": 9.25, "letterGrade": "A", "gpa": 3.7 } }
+```
+
+`total = Σ(score × weight)`; `letterGrade`/`gpa` per PTIT table (`total<4` or any
+`score ≤ 0` → instant `F`/`0.0` — **entering 0 is valid input** that fails the course).
+
+**GET `/api/v1/classes/{{classId}}/transcript`** — all roster entries with totals.
+
+### 1.3 Assignments (exercises)
+
+**POST `/api/v1/assignments`** — create an assignment in a class you own.
+
+```json
+{
+  "title": "Lab 01 - Book API",
+  "classId": "{{classId}}",
+  "gradingStrategy": "STUDENT_DOCKER_COMPOSE",
+  "description": "REST basics",
+  "dockerComposePort": 8080,
+  "startupTimeoutMs": 60000,
+  "executionTimeoutMs": 300000,
+  "maxMemoryMb": 256,
+  "maxCpu": 0.5
+}
+```
+
+Only `title`, `classId`, `gradingStrategy` are required — the rest have the defaults above.
+For `LECTURER_DOCKER_COMPOSE` also send `dockerComposeTemplate` (required → 400 otherwise).
+Duplicate title in same class+owner → 400 "Assignment 'X' already exists in this class".
+Class owned by another lecturer → 404.
+
+**GET `/api/v1/assignments?classId=&published=&search=&page=0&size=20`**
+Filters composable; `search` is case-insensitive title-substring. Page beyond last →
+empty `result`, correct `meta.total`.
+
+**GET `/api/v1/assignments/{{id}}`** · **PUT `/api/v1/assignments/{{id}}`** (partial;
+sending a different `classId` → 400 "class_id cannot be changed after creation") ·
+**POST `/api/v1/assignments/{{id}}/publish`** (idempotent; `published: true`) ·
+**DELETE `/api/v1/assignments/{{id}}`** → 200; GET afterwards → 404 (row kept, soft delete).
+
+### 1.4 Test plans & steps
+
+**POST `/api/v1/assignments/{{id}}/plans`**
+
+```json
+{ "name": "CRUD Book API — Basic", "description": "basic flow",
+  "sequenceOrder": 1, "weight": 10 }
+```
+
+Duplicate `sequenceOrder` in same assignment → 400 "A plan with sequence_order N already exists
+in this assignment".
+
+**GET `/api/v1/assignments/{{id}}/plans`** — plans sorted by `sequenceOrder`, each with steps
+nested and sorted by `stepOrder`.
+
+**PUT `/api/v1/assignments/{{id}}/plans/{{planId}}`** — `{ "name": "…", "sequenceOrder": 2 }`.
+Moving onto an occupied sequence → 400 (free the slot first).
+
+**DELETE `/api/v1/assignments/{{id}}/plans/{{planId}}`** — soft-deletes plan AND its steps.
+
+**POST `/api/v1/assignments/{{id}}/plans/{{planId}}/steps`**
+
+All fields:
+
+```json
+{
+  "stepOrder": 1,
+  "name": "Create a book",
+  "stepType": "HTTP_REQUEST",
+  "weight": 2,
+  "timeoutMs": 30000,
+  "required": true,
+  "config": { "…type-specific object…" },
+  "expectedResult": { "row_count": 1 }
+}
+```
+
+`stepOrder` clash within the plan → 400 ("step_order N already exists").
+`config` must be a JSON object (`[]` or string → 400) and is validated structurally per type
+(unknown `method`, `path` without `/`, missing `statements[]`/`checks[]`/`variables[]`,
+missing `extract.expression`, non-positive `duration_ms` … all → 400 naming the key).
+
+**Config per stepType** (put into `config` above):
+
+`HTTP_REQUEST`:
+
+```json
+{
+  "method": "POST",
+  "path": "/api/v1/books",
+  "headers": { "Content-Type": "application/json", "Authorization": "Bearer ${token}" },
+  "query_params": { "title": "De Men" },
+  "body": { "title": "De Men", "author": "To Hoai" },
+  "expected_status": 201,
+  "assertions": [
+    { "kind": "status",        "equals": 201 },
+    { "kind": "contains",      "text": "De Men" },
+    { "kind": "json_path",     "path": "$.id", "exists": true },
+    { "kind": "body_structure","json": "{\"id\":\"\",\"title\":\"\"}" },
+    { "kind": "body_equals",   "json": "{\"id\":\"b1\"}" }
+  ],
+  "extract": [ { "name": "bookId", "from": "response_body", "expression": "$.id" } ]
+}
+```
+
+`DB_QUERY` / `DB_SCHEMA_CHECK` / `DB_MIGRATION` — see `docs/db/README.md` for exact
+JSON examples (note the `connection` block with `db_service`/`database`/`username`/`password`).
+
+`EXTRACT`: `{ "variables": [ {"name":"pageSize","value":"10"},
+{"name":"bookId","from":"step_1","expression":"$.id"} ] }` (each variable: `value` XOR
+`from`+`expression`).
+
+`DELAY`: `{ "duration_ms": 5000 }`.
+
+**PUT `/api/v1/assignments/{{id}}/plans/{{planId}}/steps/{{stepId}}`** — partial update.
+Changing `stepType` requires a valid new `config` in the same request, else 400
+"config is required when changing stepType".
+
+**DELETE** the same path → soft-delete the step.
+
+### 1.5 Internal contracts (raw, no envelope)
+
+Behind `/api/v1/internal/**`; gateway never routes these externally.
+
+- `GET /api/v1/internal/assignments/{{id}}` → grading config (404 if deleted)
+- `GET /api/v1/internal/assignments/{{id}}/plans` → plans+steps both levels sorted,
+  `config` as raw JSON string
+- `GET /api/v1/internal/assignments/{{id}}/exists` → `{"exists": bool}` (`not deleted && published`)
+
+### 1.6 Grading view (lecturer)
+
+Both routes need `X-User-Roles: LECTURER`, and the assignment must belong to a class the
+`X-User-Id` owns — otherwise `404`, same as a missing id. The owner check runs before
+course-service calls result-service / submission-service.
+
+**GET `/api/v1/assignments/{{assignmentId}}/results?studentCode=&includeSteps=&page=&size=`**
+
+`studentCode` omitted ⇒ whole class (incl. non-submitters, synthesised as `exerciseScore=0`
+with an empty `results` list — temporary 0, not a graded zero); given ⇒ that roster code only
+(unknown code → `[]`). `includeSteps=true` adds each plan's `steps[]`.
+`page`/`size` (both optional): server-side paging applied **in course-service** over the
+synthesised list; omitted ⇒ full class in one `PageImpl` (backward compatible).
+
+→ `200` `data` = `{ meta, result: [{ studentUserId, studentCode, studentName, exerciseScore,
+results: [{ submissionId, planId, planWeight, score, maxScore, status, summaryLog,
+latest, startedAt, completedAt, steps }] }] }` — `exerciseScore` comes from result-service's
+weighted formula, so it matches `GET /api/v1/classes/{id}/transcript`; `results` holds the
+graded attempts (the best attempt per plan), not the latest ones.
+
+**GET `/api/v1/assignments/{{assignmentId}}/submissions?studentCode=&page=&size=`**
+
+`studentCode` omitted ⇒ every submission of the class (course-service enriches each row
+with `studentCode`/`studentName` from the roster); given ⇒ only that student's submissions
+(unknown code → `[]`). `page`/`size` forwarded to submission-service for true server-side
+paging; omitted ⇒ full set in one `PageImpl` (backward compatible).
+
+→ `200` `data` = `{ meta, result: [{ id, assignmentId, studentId, studentCode, studentName,
+zipFileName, status, latest, createdAt }] }` (replaces the removed public route
+`GET /api/v1/submissions/assignment/{assignmentId}`).
+
+Negative: `STUDENT` or no role → `403` · another lecturer's assignment → `404` ·
+no `X-Gateway-Secret` → `401`.
+
+> Both endpoints now return a real Spring `Page<T>` envelope (`{meta, result}`) from
+> course-service. `/results` paginates the synthesised whole-class list in course-service
+> (result-service still scores per-class in memory); `/submissions` forwards `page`/`size`
+> to submission-service for true server-side paging. The FE `useList` + `ListPage` shell
+> consume the `{meta, result}` shape directly — no client-side `pageOf()` wrapper needed
+> since v1.1. The displayed rows are the graded attempts (best per plan), so a `10`-then-`5`
+> resubmission reads `10` next to its own row — the B22DCCN002 mismatch is fixed server-side.
+
+
+---
+
+## 2. submission-service — `http://localhost:8082`
+
+### 2.1 Upload flow
+
+**POST `/api/v1/submissions/presigned-url?assignmentId=<uuid>&zipFileName=lab01.zip`**
+`X-User-Id: <student-uuid>` (required)
+
+→ 201 with
+
+```json
+{ "data": { "submissionId": "…", "uploadUrl": "https://<rustfs-host>/submission-files/…zip?X-Amz-…",
+  "objectName": "submissions/…zip", "expiresInMinutes": 15 } }
+```
+
+Then **PUT `{uploadUrl}`** with the zip as raw binary `Body → form-data` NOT needed here —
+use `curl -T lab01.zip "$uploadUrl"` or Postman `Body → binary`.
+
+**POST `/api/v1/submissions/webhook/upload-complete`** — webhook confirms
+via RustFS; publishing `GRADE_SUBMISSION` onto `wgs-events` happens here
+(idempotent — previously GRADING/DONE/FAILED → no duplicate Kafka message).
+
+### 2.2 Queries
+
+- `GET /api/v1/submissions` — `X-User-Id: <student-uuid>`, paged; optional `?search=`
+  filters the zip file name (assignment titles live in `assignment_db`, so they aren't
+  matched here). Param is `?search=` (not `?q=`) to match the repo-wide paged-list convention.
+- `GET /api/v1/submissions/{{id}}` — detail; the caller must own it, otherwise `404`
+  indistinguishable from a missing id (no role bypass — a lecturer uses
+  `GET /api/v1/assignments/{assignmentId}/submissions` in course-service, §1.6)
+
+The per-assignment list `GET /api/v1/submissions/assignment/{assignmentId}` was removed from
+this public API; it now lives at `GET /api/v1/internal/submissions/assignment/{assignmentId}`
+(raw, no envelope, not routed by the gateway) and is called only by course-service.
+
+### 2.3 Status update (used by executor)
+
+**PUT `/api/v1/internal/submissions/{{id}}/status`** with body `{ "status": "GRADING" }` —
+values: `PENDING | GRADING | DONE | FAILED`. Executor-only: not routed by the
+api-gateway, call the service directly. Missing/invalid → 400. 404 if not found.
+
+**GET `/api/v1/internal/submissions/assignment/{{assignmentId}}`** — every submission of
+one assignment, raw `List<SubmissionResponse>`. Only caller: course-service (§1.6).
+
+### 2.4 Webhook + health
+
+- `POST /api/v1/submissions/webhook/upload-complete` — called by RustFS only (raw, no envelope)
+- `GET /api/v1/submissions/health` · `GET /api/v1/submissions/version` — raw, no envelope
+
+---
+
+## 3. result-service — `http://localhost:8084` and executor internal contracts
+
+**GET `/api/v1/results/{{submissionId}}`** — `X-User-Id: <student-uuid>`; the student's
+poll from UC-04 Step 4.
+
+→ `200` `data` = `[{ id, submissionId, assignmentId, studentId, planId, planWeight,
+score, maxScore, status, summaryLog, latest, startedAt, completedAt, steps: [{ stepOrder,
+stepName, stepType, passed, weight, score, actualValue, expectedValue, errorMessage,
+durationMs }] }]`. `[]` while the submission is queued or grading — poll.
+- Student reading another student's result → `403`;
+- Lecturer reading any submission (deep-link from §1.6) → `200` via exact
+  `ROLE_LECTURER` authority check (Review: 2026-10-21); see §1.6 + FULL_FLOW_TESTING_GUIDE §5.5.
+
+**POST `/api/v1/internal/results/weighted`** (raw, Feign-targeted by course-service)
+
+```json
+{ "assignmentIds": ["<uuid>", "…"], "studentId": "<uuid>" }
+```
+
+→ `{ "average": 8.50 }` (or `null` when no results exist — null-safe by design review).
+This is the single weight-weighted exercise-score formula: both the transcript
+(UC-01 Step 6) and the lecturer's grading view (§1.6) read it.
+
+**GET `/api/v1/internal/results/assignment/{{assignmentId}}?studentUserId=&includeSteps=`**
+(raw) → `[{ studentUserId, exerciseScore, results: [...] }]` — graded rows of one
+assignment grouped per student (the best attempt per plan, i.e. the attempts
+`exerciseScore` is made of; latest rows only when nothing is scorable),
+`exerciseScore` pre-computed by the same formula.
+Only caller: course-service (§1.6), which has already verified ownership.
+
+### executor-service
+
+No public HTTP API. It only consumes the `wgs-events` Kafka topic. To trigger:
+
+```json
+{ "action": "GRADE_SUBMISSION", "version": 1, "timestamp": "…", "traceId": "…",
+  "payload": { "submissionId": "…", "assignmentId": "…", "studentId": "…",
+               "planId": null, "rustfsPath": "submissions/…zip" } }
+```
+
+via Kafka producer tooling (e.g. Kafka UI at `https://web-dev1-kafka-ui.vucongtuanduong.dpdns.org`
+once deployed on the cluster).
+
+---
+
+## 4. Negative-check matrix (applies everywhere)
+
+| Mistake | Code | Message hint |
+|---|---|---|
+| wrong HTTP verb (PATCH on our PUT endpoints, GET on POST-only, …) | 405 | "Method not allowed on this endpoint" |
+| unknown path | 404 | "No handler for this path" |
+| broken JSON body | 400 | "Malformed request body" |
+| wrong Content-Type on JSON POST/PUT | 415 | "Unsupported Content-Type" |
+| missing required query param | 400 | "Missing required parameter: <name>" |
+| missing `X-User-Id` | 400 | `Missing required header: X-User-Id` (course-service paths still say `invalid UUID "anonymous"`) |
+| wrong-owner access everywhere | 404 | indistinguishable (no leak) |
+| missing/wrong role on a lecturer-only endpoint (classes, scores, assignments, plans & steps, docker images, assignment grading view §1.6) | 403 | method security — a request carrying **no** `X-User-Roles` fails the same way |
+| role header sent without `X-Gateway-Secret` | 401 | roles are only read after the secret matches, so a roleless caller never reaches a `@PreAuthorize` |
+| duplicate unique (class name+semester, assignment title, plan seq, step order) | 400 | descriptive message |
+| deleted resource referenced | 404 | (soft-delete filter) |
+| oversized CSV | 413 | "Uploaded file is too large" |
+| constraint race (concurrent duplicate) | 409 | "Resource already exists or violates a constraint" |
+| `DELETE` twice on same id | 404 | idempotent from client perspective |
+
+Webhook/internal endpoints deliberately NOT enveloped; every other error path returns
+`{ status, message, error }` with `data` absent or null.
+
+---
+
+## 5. api-gateway — `POST /api/v1/account/change-password` (public, since 2026-10-03)
+
+**No `Authorization` header is needed — and none must be sent for this endpoint.** It is
+served by a dedicated gateway filter chain **without** resource-server processing, so it
+never answers `401` — not even when a stale `Authorization` header rides along (a `401`
+would trigger the FE silent-refresh loop in the forced-change flow). Same envelope as
+everywhere else.
+
+**Gate (since 2026-10-04):** the controller only exists when `RATE_LIMIT_ENABLED=true`
+(base default `false`; the local profile sets it). With the gate off the path answers
+**404** — fail-closed on purpose, not a routing bug. **There is no rate limiter yet**:
+the switch only exposes/hides the endpoint (Pullfrog review 2026-10-04); the earlier
+`429 rate_limited` example that documented a Valkey limiter was removed because that code
+path never existed.
+
+Base URL examples: local gateway `http://localhost:8080`, deployed
+`https://web-dev1-api.vucongtuanduong.dpdns.org`.
+
+**Success → 204** (no body):
+
+```bash
+curl -i -X POST http://localhost:8080/api/v1/account/change-password \
+  -H "Content-Type: application/json" \
+  -d '{"username":"lecturer_test","currentPassword":"Dev2026!","newPassword":"Dev2026!!"}'
+# HTTP/1.1 204
+```
+
+**Wrong current password → 400:**
+
+```bash
+curl -i -X POST http://localhost:8080/api/v1/account/change-password \
+  -H "Content-Type: application/json" \
+  -d '{"username":"lecturer_test","currentPassword":"wrong-pass","newPassword":"Dev2026!!"}'
+# 400  {"status":400,"message":"current_password_invalid","data":null}
+```
+
+**Unknown user → 400, the SAME code** (deliberate — proves the endpoint does not
+enumerate users; do not "fix" this into a 404):
+
+```bash
+curl -i -X POST http://localhost:8080/api/v1/account/change-password \
+  -H "Content-Type: application/json" \
+  -d '{"username":"no_such_user","currentPassword":"whatever","newPassword":"Dev2026!!"}'
+# 400  {"status":400,"message":"current_password_invalid","data":null}
+```
+
+**404 when the gate is off** (`RATE_LIMIT_ENABLED` unset/false — expected fail-closed):
+
+```bash
+curl -i -X POST http://localhost:8080/api/v1/account/change-password \
+  -H "Content-Type: application/json" \
+  -d '{"username":"lecturer_test","currentPassword":"x","newPassword":"y"}'
+# HTTP/1.1 404  (no controller bean registered — NOT a route-predicate problem)
+```
+
+Other answers on the same endpoint: `400 weak_password` (Keycloak password policy),
+`400 validation_failed` (missing/blank field), `502 identity_provider_unavailable`
+(Keycloak unreachable; the envelope `status` is `502` as well). Flow-level walkthrough
+of both entry points: `docs/design/usecase-flows.md` UC-14.

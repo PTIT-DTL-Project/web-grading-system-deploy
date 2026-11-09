@@ -1,0 +1,349 @@
+# Plan: Address Pullfrog review on structured class filter
+
+Review reference: Pullfrog PR review on commit `bbb7545` against `edf1ab7`.
+
+The structured-search behaviour is correct and verified against Hibernate/H2.  
+The remaining work is structural cleanup, one validation-order fix, and tests.
+
+---
+
+## 1. Single-source the searchable-field allow-list
+
+**Files:** `Constant.java`, `ClassFilter.java`
+
+- `Constant.CourseClassAttr.SEARCHABLE` is the canonical set.  
+- `ClassFilter.SEARCHABLE` currently duplicates it as string literals and is the only set the parser actually consults.  
+- Change `ClassFilter.SEARCHABLE` to reference `CourseClassAttr.SEARCHABLE` directly.  
+- Update `ClassFilter` Javadoc (`:9-10`) to point at `CourseClassAttr.SEARCHABLE` instead of the now-removed private set.
+
+---
+
+## 2. Make `ClassFilter.parse` delegate to `FilterParser`
+
+**Files:** `ClassFilter.java`, `FilterParser.java`
+
+- `FilterParser.parse(String, Set<String>)` is the verified generic implementation.  
+- `ClassFilter.parse` contains a hand-inlined copy of the same algorithm (same 500-char cap, same `MAX_TERMS = 10`, same 200-char value cap, near-verbatim messages). The two already diverge (`missingColon` hardcodes `name, semester`).  
+- Replace `ClassFilter.parse`'s body with a single call to `FilterParser.parse(search, CourseClassAttr.SEARCHABLE)`, then extract `name` / `semester` from the returned map and construct the record.  
+- Delete the duplicated limit checks, tokenizer loop, and `sorted()` helper from `ClassFilter`.
+
+---
+
+## 3. Fix validation order in the parser
+
+**File:** `FilterParser.java`
+
+- `FilterParser.parse` already checks `searchable.contains(field)` before blank/length in the generic version, so this is fixed by step 2.  
+- Verify `ClassFilter.parse` no longer has its own checks that could run in the wrong order.
+
+---
+
+## 4. Fix `FilterSpecifications`
+
+**File:** `FilterSpecifications.java`
+
+- Remove the dead bean-getter fallback (`else` branch `:72-92`, `isGetter`, `fieldNameFromGetter`). The only caller always passes a record; the fallback is unreachable and contains the `getURL()` → `"uRL"` bug.  
+- Narrow the `catch (Exception e)` at `:68-70` and `:88-90` to `ReflectiveOperationException` so a `BadRequestException` thrown by a builder propagates as 400 instead of being wrapped in 500.  
+- Fix Javadoc (`:36`) — remove the "Reflection is avoided" claim; reflection (`getRecordComponents`, `getAccessor().invoke`) is used.
+
+---
+
+## 5. Clean up dead imports
+
+**Files:** `ClassFilter.java`, `FilterSpecifications.java`, `CourseClassSpecifications.java`
+
+- `ClassFilter.java:3` — remove `import java.util.Locale;` (only used in the now-deleted inline parse body).  
+- `FilterSpecifications.java:3-5` — remove `CriteriaBuilder`, `CriteriaQuery`, `Root` imports (unused after the dead bean branch is deleted; lambdas infer all three).  
+- `CourseClassSpecifications.java:3-5` — remove the same three unused imports.
+
+---
+
+## 6. Fix Javadoc and comments
+
+**Files:** `ClassFilter.java`, `CourseClassSpecifications.java`
+
+- `ClassFilter.java:7` — the `{@link CourseClass}` link does not resolve (no import, not in `spec.filter`). Replace with plain text `CourseClass` or add the import.  
+- `CourseClassSpecifications.java:26-29` — the comment narrates removing `SEARCH_PATTERN_FORMAT` from a file this PR creates from scratch, and sits above methods that never used it. Delete the comment block.
+
+---
+
+## 7. Remove unused `ClassFilter` contract methods
+
+**File:** `ClassFilter.java`
+
+- `hasName()`, `hasSemester()`, `isEmpty()` have zero call sites. `FilterSpecifications.compose` handles null/blank via reflection.  
+- Delete all three methods.
+
+---
+
+## 8. Document `;` as reserved in the filter grammar
+
+**File:** `ClassFilter.java` Javadoc (or `FilterParser.java` Javadoc)
+
+- Add a note: `;` is the token separator and has no escape; values containing `;` cannot be searched.  
+- This is a deliberate decision, not a bug — class names containing `;` are unlikely, and adding escape syntax would complicate the grammar.
+
+---
+
+## 9. Document the intentional grammar divergence
+
+**Files:** `docs/design/usecase-flows.md`, `AssignmentController` / `AssignmentService` (optional)
+
+- `/api/v1/classes?search=lab` returns 400 (requires `field:value`).  
+- `/api/v1/assignments?search=lab` and `/api/v1/student/assignments?search=lab` still accept plain text.  
+- This is intentional: structured search on classes fails loudly rather than silently ignoring the param.  
+- Add a note in `usecase-flows.md` under UC-01 Step 0 and UC-02 Step 2 stating the two conventions differ and why.  
+- If a future listing endpoint is added, it should adopt one convention explicitly.
+
+---
+
+## 10. Add `ClassFilterTest`
+
+**File:** `src/test/.../spec/filter/ClassFilterTest.java`
+
+Plain JUnit 5, no Spring context needed. Mirror the patterns in `DockerImageRepositoryTest`.
+
+Test cases:
+- `null` / blank → empty filter (both fields null)
+- `name:PTIT` → name set, semester null
+- `semester:20261` → semester set, name null
+- `name:PTIT;semester:20261` → both set
+- Case-insensitive field name: `NAME:PTIT` → name set
+- LIKE escaping round-trip: `name:back\slash` → value contains `back\slash`
+- LIKE wildcard literal: `name:50%` → value contains `50%`, LIKE pattern escapes it
+- Missing colon: `bareword` → `InvalidFilterException`
+- Blank value: `name:` → `InvalidFilterException`
+- Oversize value (>200 chars) → `InvalidFilterException`
+- Oversize total (>500 chars) → `InvalidFilterException`
+- Too many tokens (>10) → `InvalidFilterException`
+- Unknown field: `badfield:x` → `InvalidFilterException`
+- Duplicate field: `name:a;name:b` → `InvalidFilterException`
+- Verify error message for unknown field lists allowed fields in sorted order
+
+---
+
+## 11. Verify
+
+- Run `./mvnw test` in `src-services/course-service/` and confirm all existing tests pass plus the new `ClassFilterTest` is green.  
+- Run `./mvnw compile` to confirm no unused-import or compilation issues after cleanup.
+
+---
+
+## Out of scope
+
+- Converging the assignments `search` grammar with the classes grammar — that is a separate endpoint-design decision.  
+- Frontend changes — frontend lives outside this repo.  
+- Adding a second searchable entity — the generic `FilterParser` is kept so this is possible later without further parser work.
+
+---
+
+## Remaining Pullfrog review items (round 2)
+
+These are small, mostly one-line fixes. None change filter behaviour.
+
+### 1. Parameterise `missingColon` in FilterParser
+
+**File:** `spec/filter/FilterParser.java`
+
+- `missingColon(String)` at line 84-87 hardcodes `"Allowed fields: name, semester"` inside a class whose Javadoc promises it is reusable across entities.  
+- Change signature to `missingColon(String token, Set<String> searchable)` and build the message from `sorted(searchable)` like `unknownField` does at line 89-92.  
+- Update the single call site at line 59 to pass `searchable`.
+
+### 2. Use `CourseClassAttr` constants in ClassFilter lookups
+
+**File:** `spec/filter/ClassFilter.java`
+
+- Lines 44-45: `map.getOrDefault("name", null)` and `map.getOrDefault("semester", null)` spell field names as bare literals.  
+- Replace with `CourseClassAttr.NAME` and `CourseClassAttr.SEMESTER`. The file already imports `CourseClassAttr` for `SEARCHABLE` on line 3.  
+- This ties the lookup to the same source of truth; a field added to `SEARCHABLE` and the record would currently be silently dropped here.
+
+### 3. Reword FilterSpecifications Javadoc
+
+**File:** `spec/filter/FilterSpecifications.java`
+
+- Line 36: change `"the field to be skipped with an IllegalStateException"` to `"the field causes compose to throw IllegalStateException"`. The code throws; it does not skip.
+
+### 4. Document or enforce record-only contract for non-record filters
+
+**File:** `spec/filter/FilterSpecifications.java`
+
+- Design decision: the class is new and its only caller passes a record. Two options:
+  - **A (recommended): throw for non-record filters.** A non-record filter currently falls through `isRecord()` to a bare `conjunction()`, silently ignoring every field — the exact failure mode this commit set out to close. Throwing makes the contract fail loudly.  
+  - **B: document record-only in Javadoc.** Smaller change, but a future caller hitting the silent path gets no warning.
+- Add `else { throw new IllegalStateException("FilterSpecifications.compose only supports record filters, got " + clazz.getName()); }` after the `isRecord()` block.
+
+### 5. Delete deprecated `qMatches` from CourseClassSpecifications
+
+**File:** `spec/CourseClassSpecifications.java`
+
+- `qMatches` at line 69-95 is `@Deprecated` with zero call sites anywhere in the tree.  
+- It inlines its own second copy of the `\%/_` escaping chain that `LikePatterns.escapeContains` owns — same drift the commit just removed on the parsing side.  
+- Delete the entire method.
+
+### 6. Add `LikePatternsTest`
+
+**File:** `src/test/.../spec/filter/LikePatternsTest.java`
+
+- Plain JUnit 5, no Spring context needed.  
+- Three cases pinning the three transformations:
+  - `"back\\slash"` → `"%back\\slash%"`
+  - `"50%"` → `"%50\\%%"`
+  - `"a_b"` → `"%a\\_b%"`
+- These are the transformations an earlier iteration got wrong while looking fixed, and they are still untested.
+
+### 7. ClassFilterTest polish
+
+**File:** `src/test/.../spec/filter/ClassFilterTest.java`
+
+- Line 6: remove unused `import java.util.Arrays;`.
+- Lines 24, 27, 42: replace `assertEquals(null, f.semester())` and `assertEquals(null, f.name())` with `assertNull(f.semester())` / `assertNull(f.name())`.
+- Add `import static org.junit.jupiter.api.Assertions.assertNull;`.
+
+### 8. Verify
+
+- Run `./mvnw test -Dtest='!*ApplicationTests'` in `src-services/course-service/`.  
+- Run `./mvnw compile` to confirm no unused-import or compilation issues.  
+- Expected: 134+ tests, 0 failures, including all 14 `ClassFilterTest` cases plus the new `LikePatternsTest`.
+
+---
+
+## Remaining Pullfrog review items (round 3)
+
+One minor suggestion inline on the new `LikePatternsTest` inputs. No behaviour change.
+
+### 1. Strengthen `LikePatternsTest` inputs
+
+**File:** `src/test/.../spec/filter/LikePatternsTest.java`
+
+Two gaps in the current three-case file:
+- Lowercasing is unpinned: all inputs are already lowercase, so removing `toLowerCase` from `LikePatterns.java:32` leaves the file fully green while `search=name:PTIT` silently returns nothing against `lower(name)`.
+- `escapeContains_backslashIsEscapedFirst` does not verify that the backslash is escaped *first*: its input holds no `%` or `_`, so the three `replace` calls are order-independent for it.
+
+Fix both with one mixed input change plus one new case:
+- Change the backslash case input from `"back\\slash"` to `"back\\slash%off"`, expected `"%back\\\\slash\\%off%"`. This input contains both a backslash and `%`, so the two orders produce different strings: correct order gives `%back\\slash\%off%`, backslash-pass-last gives `%back\\slash\\%off%`.
+- Add one mixed-case case: input `"PTIT"`, expected `"%ptit%"`, so `toLowerCase` is load-bearing to the suite.
+
+The three cases after edit:
+- `escapeContains_backslashIsEscapedFirst` → input `"back\\slash%off"`, expected `"%back\\\\slash\\%off%"`
+- `escapeContains_percentIsEscaped` → input `"50%"`, expected `"%50\\%%"`
+- `escapeContains_underscoreIsEscaped` → input `"a_b"`, expected `"%a\\_b%"`
+- `escapeContains_lowercasesInput` → input `"PTIT"`, expected `"%ptit%"`
+
+No source-code changes required for this item; it is test-only.
+
+---
+
+## Security fix: Redact X-Gateway-Secret from http_log
+
+**Blocker:** `X-Gateway-Secret` is attached to every forwarded request by `api-gateway` (`AuthenticationContextFilter.java:98`) and is currently persisted in cleartext in `http_log.request_headers` by the `HttpLoggingFilter` in course-service, submission-service, and result-service. Anyone with read access to that table can call the services directly and forge `X-User-Id` + `X-User-Roles`.
+
+The `headersToJson` method in each service's `HttpLogService` redacts headers listed in `SENSITIVE_HEADERS`, but `"x-gateway-secret"` is absent from all three lists.
+
+### 1. Add `x-gateway-secret` to SENSITIVE_HEADERS in all four services
+
+**Files:**
+- `course-service/.../service/HttpLogService.java:26-27`
+- `submission-service/.../service/HttpLogService.java:26-27`
+- `result-service/.../service/HttpLogService.java:25-26`
+- `executor-service/.../service/infra/HttpLogService.java:27-28`
+
+Add `"x-gateway-secret"` to each `SENSITIVE_HEADERS` set. The executor-service does not currently receive the gateway secret (no `gateway.trusted-secret` config), but adding it there is defense-in-depth and keeps the four lists symmetric.
+
+### 2. Add test asserting redaction in each service
+
+**Files:**
+- `course-service/src/test/.../service/HttpLogServiceTest.java`
+- `submission-service/src/test/.../service/HttpLogServiceTest.java`
+- `result-service/src/test/.../service/HttpLogServiceTest.java`
+- `executor-service/src/test/.../service/infra/HttpLogServiceTest.java`
+
+Add a test method `headersToJson_redactsXGatewaySecret` following the existing `headersToJson_dropsSensitiveHeaders` pattern. Input: a headers map containing `X-Gateway-Secret` with a dummy value plus one non-sensitive header. Assert the parsed JSON contains the non-sensitive header and does not contain `X-Gateway-Secret`.
+
+### 3. Historical data note
+
+Existing `http_log` rows keep the old value. After this fix lands, rotate `GATEWAY_TRUSTED_SECRET` in the deploy config so any previously leaked value is useless. This is a deployment/repo outside this codebase; flag it in the MR description.
+
+### 4. Verify
+
+- Run `./mvnw test -Dtest='HttpLogServiceTest'` in each of the four service modules.
+- Expected: all four services pass, including the new redaction test.
+
+---
+
+## Remaining Pullfrog review items (role-split slice, round 4)
+
+Three correctness/cleanup items from the latest review. The first is a blocker.
+
+### 1. Fix studentCode null widening in AssignmentGradingService (BLOCKER)
+
+**File:** `course-service/src/main/java/.../service/AssignmentGradingService.java:86`
+
+`ClassStudent.studentUserId` is nullable (`@Column(name = "student_user_id")`, no `nullable = false`). After the code match at line 78-85, line 86 assigns `studentUserId = match.getStudentUserId()` without a null check. When null, it's passed to `resultServiceClient.assignmentResults(assignmentId, null, includeSteps)` at line 93. Feign drops null query parameters, so the call returns **every student's results** — the filter silently widens to the whole class.
+
+Fix: after line 86, add `if (studentUserId == null) { return List.of(); }`. This folds the null case into the same branch as "unknown code returns empty list", which is the documented contract.
+
+Add a test: `results_studentWithNullUserIdReturnsEmptyWithoutCallingResultService` — stub a roster row where `studentUserId = null`, call with that student's code, assert `List.of()` and `verifyNoInteractions(resultServiceClient)`.
+
+### 2. Add trust-boundary test: valid secret, absent/empty X-User-Id
+
+**Files:**
+- `result-service/src/test/.../controller/ResultControllerAuthorizationTest.java`
+- `course-service/src/test/.../controller/AssignmentGradingAuthorizationTest.java`
+
+Current `asCaller` always stamps `X-User-Id: CALLER`. The 401 tests omit the secret entirely, which exercises `shouldNotFilter` (public-path bypass), not the `hasText` gate that runs after authentication. The gap: a request carrying a correct `X-Gateway-Secret` but no `X-User-Id` (or `X-User-Id: ""`, which `AuthenticationContextFilter` emits when JWT `sub` is null).
+
+Add one test per service:
+- `requestWithValidSecretButNoUserIdIsRejected` — `asCaller` variant that omits `X-User-Id` entirely; assert 401.
+- (Optional, if Keycloak can emit tokens without `sub`) `requestWithValidSecretButEmptyUserIdIsRejected` — send `X-User-Id: ""`; assert 401.
+
+The existing `asCaller` helpers should gain a private variant that skips the id header so the new tests don't duplicate setup.
+
+### 3. Delete dead SecurityUtils.hasRole from three services
+
+**Files:**
+- `course-service/src/main/java/.../security/SecurityUtils.java`
+- `result-service/src/main/java/.../security/SecurityUtils.java`
+- `submission-service/src/main/java/.../security/SecurityUtils.java`
+
+After the role-split, `hasRole("LECTURER")` has zero production callers and zero test callers in all three services. The method and its Javadoc (~30 lines of comments explaining a bypass that no longer exists) should be deleted. `getCurrentUserId()` and `getCurrentUserRoles()` remain in use.
+
+Before deleting, confirm no other call sites exist:
+```
+grep -rn "hasRole" src-services/course-service/src/main/java
+grep -rn "hasRole" src-services/result-service/src/main/java
+grep -rn "hasRole" src-services/submission-service/src/main/java
+```
+If any `hasRole(...)` call remains, list it here; otherwise delete the method.
+
+### 4. Fix ResultController ownership comment and dead guard
+
+**File:** `result-service/src/main/java/.../controller/ResultController.java:36-48`
+
+The comment claims "this route answers strictly for its owner", but:
+- Line 42: `xUserId != null` is dead — `HeaderAuthenticationFilter` only builds a SecurityContext for non-blank UUIDs, so authenticated requests always have a non-null id. The anonymous token is rejected by `anyRequest().authenticated()` before the controller.
+- Line 42: `!results.isEmpty()` skips ownership when results are empty, so a non-owner gets 200 `[]` instead of 403.
+
+Two options:
+- **A (recommended, preserves 403-vs-404 semantics):** Delete `xUserId != null &&` from line 42, leaving only `!results.isEmpty()`. Update the comment to say ownership is enforced when results are non-empty; empty results return 200 regardless (acceptable given UUIDv4 submission ids).
+- **B:** Make ownership unconditional — always check, return 403 for non-owner even when empty. This changes the documented empty-list response and needs a decision on the API contract.
+
+Go with option A unless the API contract review says otherwise.
+
+### 5. Correct exerciseScore wording in docs/Postman
+
+The claim that the grading view's exercise score "matches the class transcript" is inaccurate:
+- `ScoreService.computeExercise` (line 176-199) averages across **all assignments in the class** for the transcript.
+- `ResultService.getByAssignment` scores **one assignment** for the grading view.
+
+The formula (weight-weighted average of per-plan scores) is the same, but the scope differs. Update any docs/Postman descriptions that say "matches the transcript" to: "uses the same weight-weighted formula as the transcript, scoped to this assignment".
+
+### 6. Credential in testing guide (out of scope if file absent)
+
+Pullfrog flagged `docs/api/postman/FULL_FLOW_TESTING_GUIDE.md:370` containing a Neon connection string. This file does not exist in the current tree (`glob` returned no match). If it appears in a later commit, replace the credential with `postgresql://<user>:<password>@<host>/<db>` and point readers to `.env`. Not a blocker for the current code state.
+
+### Verification
+
+- `./mvnw test -Dtest='AssignmentGradingAuthorizationTest'` in course-service — green, including new null-userId test.
+- `./mvnw test -Dtest='ResultControllerAuthorizationTest'` in result-service — green, including new absent-id test.
+- `grep -rn "hasRole"` in main/java of all three services — zero hits after deletion.
+- `./mvnw compile` in all four services — clean.

@@ -68,6 +68,18 @@ print_step "5. Install ArgoCD + deploy applications"
 bash "$SCRIPT_DIR/deploy/install-argocd.sh"
 print_success "ArgoCD installed and applications deployed"
 
+print_step "6. Deploy Kafka UI"
+kubectl apply -f "$SCRIPT_DIR/deploy/kafka-ui/service.yaml" \
+  -f "$SCRIPT_DIR/deploy/kafka-ui/deployment.yaml" \
+  -f "$SCRIPT_DIR/deploy/kafka-ui/ingress.yaml"
+print_success "Kafka UI deployed"
+
+print_step "7. Deploy Keycloak"
+kubectl apply -n "$NAMESPACE" -f "$SCRIPT_DIR/deploy/keycloak/deployment.yaml"
+kubectl apply -n "$NAMESPACE" -f "$SCRIPT_DIR/deploy/keycloak/service.yaml"
+kubectl wait -n "$NAMESPACE" --for=condition=ready pod -l app=keycloak --timeout=120s || true
+print_success "Keycloak deployed"
+
 echo ""
 echo -e "${BLUE}============================================================${NC}"
 echo -e "${BLUE}  SETUP COMPLETE!${NC}"
@@ -77,17 +89,20 @@ echo -e "${YELLOW}🌐 Local Access (no Cloudflare tunnel):${NC}"
 LB_IP=$(kubectl get svc traefik -n kube-system -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
 if [ -n "${LB_IP}" ]; then
   echo "  Traefik LB IP: ${LB_IP}"
-  echo "  Example:       curl -k -H 'Host: web-dev2-rustfs.vucongtuanduong.dpdns.org' https://${LB_IP}"
-  echo "  Tip:           add '${LB_IP}  web-dev2-api.vucongtuanduong.dpdns.org web-dev2-rustfs.vucongtuanduong.dpdns.org ...' to /etc/hosts"
+  echo "  Example:       curl -k -H 'Host: web-dev1-rustfs.vucongtuanduong.dpdns.org' https://${LB_IP}"
+  echo "  Tip:           add '${LB_IP}  web-dev1-api.vucongtuanduong.dpdns.org web-dev1-rustfs.vucongtuanduong.dpdns.org web-dev1-ai.vucongtuanduong.dpdns.org ...' to /etc/hosts"
 else
   echo "  Traefik LB IP not found; check: kubectl get svc traefik -n kube-system"
 fi
 echo ""
 echo -e "${YELLOW}🚀 Services (via kubectl port-forward):${NC}"
-echo "  API Gateway:  kubectl port-forward -n web-grading svc/gateway ${GATEWAY_PORT}:8080"
+echo "  API Gateway:  kubectl port-forward -n web-grading svc/grading-api-gateway ${GATEWAY_PORT}:8080"
+echo "  AI Assistant: kubectl port-forward -n web-grading svc/grading-ai-assistant-service 8086:8086"
 echo "  RustFS API:   kubectl port-forward -n web-grading svc/rustfs 9000:9000"
 echo "  RustFS Web:   kubectl port-forward -n web-grading svc/rustfs 9001:9001"
 echo "  ArgoCD:       kubectl port-forward -n argocd svc/argocd-server 8080:80"
+echo "  Kafka UI:     kubectl port-forward -n web-grading svc/kafka-ui 8080:8080"
+echo "  Keycloak:     kubectl port-forward -n web-grading svc/keycloak 8080:8080"
 echo ""
 echo -e "${YELLOW}💡 Quick Commands:${NC}"
 echo "  Check status:     kubectl get pods -n web-grading"

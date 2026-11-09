@@ -1,0 +1,938 @@
+\documentclass[../BTL.tex]{subfiles}
+\begin{document}
+\section{Phân tích hệ thống}
+\subsection{Xác định các tác nhân trong hệ thống}
+
+Hệ thống chấm bài tự động có bốn tác nhân, trong đó User là tác nhân trừu tượng còn Quản trị viên, Giảng viên và Sinh viên là các tác nhân cụ thể kế thừa từ User:
+\begin{itemize}
+    \item Người dùng (User): tác nhân trừu tượng đại diện cho mọi tài khoản truy cập hệ thống; các tác nhân còn lại đều kế thừa User nên đều thực hiện được hai usecase chung là đăng nhập và đổi mật khẩu.
+    \item Quản trị viên (Admin): quản trị tài khoản ở mức hệ thống; là tác nhân duy nhất được phép nhập danh sách tài khoản người dùng từ tệp CSV để cấp tài khoản ban đầu cho giảng viên và sinh viên.
+    \item Giảng viên (Lecturer): quản lý lớp học của mình gồm tạo lớp, nhập danh sách sinh viên, cấu hình thành phần điểm và xem bảng điểm; quản lý bài tập kèm các bước chấm tự động; xem kết quả chấm bài của cả lớp; trò chuyện với trợ lý AI để được hỗ trợ giải đáp các thắc mắc liên quan đến lớp học, bài tập và chấm điểm.
+    \item Sinh viên (Student): tham gia các lớp đã được ghi danh, nộp bài thực hành để hệ thống chấm điểm tự động và xem điểm, kết quả chấm của bản thân; trò chuyện với trợ lý AI để được hỗ trợ giải đáp các thắc mắc liên quan đến lớp học, bài tập và chấm điểm.
+\end{itemize}
+
+\subsection{Biểu đồ ca chức năng (usecase) tổng quan của hệ thống}
+
+Hình \ref{fig:usecase-tong-quan} mô tả các ca chức năng tổng quan của hệ thống và các tác nhân tương tác với chúng.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_6_usecase_tong_quan}
+\caption{Biểu đồ usecase tổng quan của hệ thống.}
+\label{fig:usecase-tong-quan}
+\end{figure}
+
+Mô tả các usecase của hệ thống:
+\begin{itemize}
+    \item Đăng nhập: Usecase này cho phép người dùng (quản trị viên, giảng viên và sinh viên) truy cập vào hệ thống bằng tài khoản đã có để thực hiện được các chức năng theo đúng quyền quy định của mình.
+    \item Đổi mật khẩu: Usecase này cho phép người dùng đã đăng nhập thay đổi mật khẩu tài khoản của mình để tiếp tục sử dụng hệ thống một cách an toàn với thông tin đăng nhập mới.
+    \item Nhập danh sách tài khoản: Usecase này cho phép quản trị viên tạo hàng loạt tài khoản cho giảng viên và sinh viên từ tệp CSV để cấp tài khoản ban đầu mà không phải tạo thủ công từng tài khoản. Mỗi tài khoản mới nhận một mật khẩu tạm và bắt buộc đổi mật khẩu ở lần đăng nhập đầu tiên.
+    \item Quản lý lớp học: Usecase này cho phép giảng viên tạo và lưu trữ lớp học của mình, nhập danh sách sinh viên vào lớp, cấu hình các thành phần điểm và xem bảng điểm của lớp để quản lý toàn bộ hoạt động của một lớp học trong một học kỳ.
+    \item Quản lý bài tập: Usecase này cho phép giảng viên tạo, sửa, công bố và xoá bài tập thực hành trong lớp của mình, kèm theo các bước chấm tự động để hệ thống chấm bài nộp của sinh viên theo đúng yêu cầu đề ra.
+    \item Xem kết quả chấm của cả lớp: Usecase này cho phép giảng viên xem kết quả chấm bài tập của toàn bộ sinh viên trong lớp, bao gồm điểm tổng hợp của từng sinh viên, điểm từng bài nộp và chi tiết từng bước chấm, để theo dõi và đánh giá tình hình học tập của lớp.
+    \item Xem chi tiết kết quả chấm một bài tập: Usecase này là bước chung khi xem chi tiết kết quả chấm của một bài tập: giảng viên đi tới usecase này từ Xem kết quả chấm của cả lớp, còn sinh viên đi tới từ Xem kết quả chấm bài tập của bản thân; phạm vi kết quả nhìn thấy phụ thuộc vào tác nhân gọi nó.
+    \item Nộp bài tập: Usecase này cho phép sinh viên nộp bài thực hành của mình dưới dạng tệp nén để hệ thống tải lên và chấm điểm tự động, đồng thời theo dõi trạng thái chấm và xem lại kết quả của các lần nộp.
+    \item Xem điểm và kết quả cá nhân: Usecase này cho phép sinh viên xem điểm thành phần, điểm tổng kết, điểm chữ và điểm hệ 4 của mình trong mỗi lớp đã ghi danh để tự đánh giá kết quả học tập của bản thân.
+    \item Xem kết quả chấm bài tập của bản thân: Usecase này cho phép sinh viên xem điểm và chi tiết từng bước chấm của các bài tập mình đã nộp, giúp hiểu rõ vì sao bài làm đạt hay chưa đạt yêu cầu của đề bài.
+    \item Giảng viên trò chuyện với trợ lý AI: Usecase này cho phép giảng viên tương tác với trợ lý AI để được hỗ trợ giải đáp các thắc mắc liên quan đến lớp học, bài tập, hệ thống chấm điểm và các vấn đề khác trong quá trình sử dụng hệ thống. Usecase này kế thừa từ usecase trừu tượng Trò chuyện với trợ lý AI.
+    \item Sinh viên trò chuyện với trợ lý AI: Usecase này cho phép sinh viên tương tác với trợ lý AI để được hỗ trợ giải đáp các thắc mắc liên quan đến lớp học, bài tập, điểm số và các vấn đề khác trong quá trình học tập và sử dụng hệ thống. Usecase này kế thừa từ usecase trừu tượng Trò chuyện với trợ lý AI.
+\end{itemize}
+
+\subsection{Kịch bản các chức năng}
+
+
+\subsubsection{Kịch bản các chức năng chung}
+
+Bảng \ref{tab:uc-dang-nhap} mô tả kịch bản của usecase Đăng nhập.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+\hline
+Tên mục & Nội dung mô tả \\ \hline
+Tên kịch bản & Đăng nhập \\ \hline
+Tác nhân & Người dùng (quản trị viên, giảng viên và sinh viên) \\ \hline
+Tiền điều kiện & Người dùng đã được cấp tài khoản trên hệ thống (do quản trị viên tạo hoặc nhập từ tệp CSV). \\ \hline
+Hậu điều kiện & Người dùng có phiên làm việc hợp lệ; các chức năng tiếp theo được phân quyền theo vai trò. \\ \hline
+Kịch bản chính &
+\begin{enumerate}[leftmargin=*, nosep]
+    \item Người dùng truy cập hệ thống và chọn chức năng đăng nhập
+    \item Hệ thống hiển thị trang đăng nhập.
+    \item Người dùng nhập tên đăng nhập và mật khẩu và nhấn đăng nhập
+    \item Nếu tài khoản còn yêu cầu đổi mật khẩu bắt buộc (tài khoản cấp mới bằng mật khẩu tạm), hệ thống yêu cầu người dùng đổi mật khẩu trước khi tiếp tục.
+    \item Người dùng nhập mật khẩu mới và xác nhận mật khẩu mới và nhấn vào nút xác nhận
+    \item Hệ thống xác nhận đăng nhập thành công và thiết lập phiên làm việc cho người dùng, mở giao diện tương ứng với vai trò của người dùng (quản trị viên, giảng viên hoặc sinh viên).
+\end{enumerate} \\ \hline
+Kịch bản ngoại lệ &
+\begin{itemize}[leftmargin=*, nosep]
+    \item Tên đăng nhập hoặc mật khẩu không đúng: trang đăng nhập báo lỗi và cho phép nhập lại.
+    \item Nhập sai mật khẩu quá số lần quy định: tài khoản bị tạm khoá để chống dò mật khẩu.
+    \item Phiên làm việc hết hạn: hệ thống yêu cầu người dùng đăng nhập lại.
+\end{itemize} \\ \hline
+\end{tabularx}
+\caption{Kịch bản chức năng Đăng nhập.}
+\label{tab:uc-dang-nhap}
+\end{table}
+
+Bảng \ref{tab:uc-doi-mat-khau} mô tả kịch bản của usecase Đổi mật khẩu.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+\hline
+Tên mục & Nội dung mô tả \\ \hline
+Tên kịch bản & Đổi mật khẩu \\ \hline
+Tác nhân & Người dùng đã đăng nhập (quản trị viên, giảng viên và sinh viên) \\ \hline
+Tiền điều kiện & Người dùng đang có phiên làm việc hợp lệ. \\ \hline
+Hậu điều kiện & Mật khẩu mới được áp dụng cho lần đăng nhập sau; phiên làm việc hiện tại không bị kết thúc nên người dùng tiếp tục làm việc bình thường. \\ \hline
+Kịch bản chính &
+\begin{enumerate}[leftmargin=*, nosep]
+    \item Người dùng mở menu tài khoản và chọn chức năng Đổi mật khẩu.
+    \item Hệ thống hiển thị hộp thoại gồm ba trường: mật khẩu hiện tại, mật khẩu mới và xác nhận mật khẩu mới.
+    \item Người dùng nhập thông tin; giao diện kiểm tra ngay độ dài tối thiểu và sự trùng khớp giữa mật khẩu mới với phần xác nhận trước khi gửi yêu cầu.
+    \item Hệ thống xác minh mật khẩu hiện tại, sau đó đặt mật khẩu mới cho tài khoản và thông báo đổi mật khẩu thành công và đóng hộp thoại.
+\end{enumerate} \\ \hline
+Kịch bản ngoại lệ &
+\begin{itemize}[leftmargin=*, nosep]
+    \item Mật khẩu hiện tại không đúng: hệ thống báo lỗi và yêu cầu nhập lại.
+    \item Mật khẩu mới quá ngắn hoặc xác nhận không khớp: giao diện chặn và không gửi yêu cầu.
+    \item Hệ thống tạm thời không xử lý được yêu cầu: báo lỗi và yêu cầu người dùng thử lại sau.
+\end{itemize} \\ \hline
+\end{tabularx}
+\caption{Kịch bản chức năng Đổi mật khẩu.}
+\label{tab:uc-doi-mat-khau}
+\end{table}
+
+\subsubsection{Kịch bản các chức năng của quản trị viên}
+
+Bảng \ref{tab:uc-import-users} mô tả kịch bản của usecase Nhập danh sách tài khoản.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+\hline
+Tên mục & Nội dung mô tả \\ \hline
+Tên kịch bản & Nhập danh sách tài khoản \\ \hline
+Tác nhân & Quản trị viên \\ \hline
+Tiền điều kiện & Quản trị viên đã đăng nhập bằng tài khoản có vai trò quản trị cũng như có một file CSV theo mẫu với các thông tin người dùng đã có từ trước \\ \hline
+Hậu điều kiện & Các tài khoản mới sẵn sàng đăng nhập bằng mật khẩu tạm; người dùng bắt buộc đổi mật khẩu ở lần đăng nhập đầu tiên. \\ \hline
+Kịch bản chính &
+\begin{enumerate}[leftmargin=*, nosep]
+    \item Tại giao diện trang chủ dành cho quản trị viên, quản trị viên chọn chức năng nhập tài khoản
+    \item Hệ thống hiển thị giao diện nhập danh sách tài khoản gồm nút nhập tài khoản
+    \item Quản trị viên nhấn nút nhập tài khoản và chọn tệp CSV gồm các cột: tên đăng nhập, họ tên, email và vai trò (giảng viên hoặc sinh viên) và nhấn nút gửi
+    \item Hệ thống trả về kết quả nhập tài khoản gồm số tài khoản đã tạo theo từng vai trò, số dòng bị bỏ qua và danh sách dòng lỗi kèm lý do.
+\end{enumerate} \\ \hline
+Kịch bản ngoại lệ &
+\begin{itemize}[leftmargin=*, nosep]
+    \item Tệp vượt quá giới hạn kích thước hoặc số dòng: hệ thống từ chối cả tệp và báo lỗi.
+    \item Dòng thiếu tên đăng nhập hoặc email, hoặc vai trò không hợp lệ: dòng đó bị bỏ qua và được ghi vào báo cáo kèm lý do, các dòng khác vẫn được xử lý.
+    \item Tên đăng nhập hoặc email đã tồn tại: dòng đó bị bỏ qua; nhập lại cùng tệp vẫn an toàn.
+\end{itemize} \\ \hline
+\end{tabularx}
+\caption{Kịch bản chức năng Nhập danh sách tài khoản.}
+\label{tab:uc-import-users}
+\end{table}
+
+\subsubsection{Kịch bản các chức năng của giảng viên}
+
+
+Hình \ref{fig:uc-classes-management} mô tả chi tiết usecase Quản lý lớp học của giảng viên.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_7_usecase_quan_ly_lop_hoc}
+\caption{Biểu đồ usecase chi tiết Quản lý lớp học của giảng viên.}
+\label{fig:uc-classes-management}
+\end{figure}
+
+Kịch bản của chức năng được trình bày trong Bảng \ref{tab:uc-classes-management} và Bảng \ref{tab:uc-classes-management-2}.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+\hline
+Tên mục & Nội dung mô tả \\ \hline
+Tên kịch bản & Quản lý lớp học \\ \hline
+Tác nhân & Giảng viên \\ \hline
+Tiền điều kiện & Giảng viên đã đăng nhập bằng tài khoản có vai trò giảng viên. \\ \hline
+Hậu điều kiện & Lớp học, danh sách sinh viên, cấu trúc điểm và điểm số được lưu trong hệ thống; lớp đã lưu trữ chỉ còn xem và không thể mở lại. \\ \hline
+Kịch bản chính &
+\begin{enumerate}[leftmargin=*, nosep]
+    \item Tại giao diện trang chủ dành cho giảng viên, giảng viên nhấn vào nút Vào lớp của tôi.
+    \item Hệ thống hiển thị giao diện quản lý lớp học gồm danh sách lớp của giảng viên kèm trạng thái, có tìm kiếm theo tên lớp, học kỳ và bộ lọc theo trạng thái.
+    \item Giảng viên nhấn vào nút tạo lớp mới.
+    \item Hệ thống hiển thị giao diện tạo lớp mới với các trường thông tin như tên lớp và học kỳ.
+    \item Giảng viên nhập thông tin lớp và nhấn nút tạo.
+    \item Hệ thống tạo lớp ở trạng thái đang hoạt động.
+    \item Tại dòng có hiển thị thông tin lớp, giảng viên nhấn nút Mở.
+    \item Hệ thống hiển thị giao diện quản lý lớp chi tiết của giảng viên gồm các phần danh sách lớp, nhập danh sách sinh viên, thành phần điểm và bảng điểm của lớp.
+\end{enumerate} \\ \hline
+\end{tabularx}
+\caption{Kịch bản chức năng Quản lý lớp học.}
+\label{tab:uc-classes-management}
+\end{table}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+\hline
+Tên mục & Nội dung mô tả \\ \hline
+Kịch bản chính (tiếp) &
+\begin{enumerate}[leftmargin=*, nosep, start=9]
+    \item Giảng viên nhấn vào phần nhập danh sách sinh viên lớp.
+    \item Hệ thống hiển thị giao diện nhập danh sách sinh viên lớp gồm bảng kết quả nhập và nút nhập danh sách sinh viên.
+    \item Giảng viên nhấn nút nhập danh sách sinh viên và chọn tệp CSV tương ứng.
+    \item Hệ thống báo số sinh viên được thêm và số dòng bị bỏ qua.
+    \item Giảng viên nhấn vào phần thành phần điểm trên giao diện quản lý chi tiết lớp học
+    \item Hệ thống hiển thị giao diện thành phần điểm của lớp với danh sách các thành phần điểm và nút thêm thành phần điểm
+    \item Giảng viên nhấn nút thêm thành phần điểm của lớp
+    \item Hệ thống hiển thị hộp thoại thêm thành phần điểm, với danh sách các loại điểm thành phần để chọn và trọng số để giảng viên nhập
+    \item Giảng viên cấu hình các thành phần điểm của lớp (chuyên cần, bài tập, thi cuối kỳ) cùng trọng số tương ứng và nhấn tạo
+    \item Hệ thống kiểm tra các ràng buộc về trọng số và lưu cấu trúc điểm.
+    \item Giảng viên nhấn sang màn bảng điểm để xem bảng điểm của lớp.
+    \item Hệ thống hiển thị màn bảng điểm của cả lớp là một bảng với các cột thông tin sinh viên và điểm thành phần cũng như xếp loại và GPA của sinh viên, kèm thêm thao tác nhập điểm thủ công cho từng sinh viên
+    \item Giảng viên nhấn vào nút nhập điểm
+    \item Hệ thống hiển thị giao diện nhập điểm thủ công cho từng sinh viên, gồm các thành phần điểm có thể nhập được
+    \item Giảng viên nhập điểm và nhấn nút lưu
+    \item Hệ thống thông báo nhập điểm thành công và lấy điểm thành phần bài tập từ kết quả chấm bài nộp và tính điểm tổng kết, điểm chữ, điểm hệ 4.
+\end{enumerate} \\ \hline
+Kịch bản ngoại lệ &
+\begin{itemize}[leftmargin=*, nosep]
+    \item Tên lớp trùng trong cùng học kỳ: hệ thống báo lỗi và không tạo lớp.
+    \item Tệp CSV sai định dạng: hệ thống báo lỗi.
+    \item Cấu trúc điểm thiếu thành phần thi cuối kỳ, trọng số thành phần này thấp hơn mức tối thiểu hoặc tổng trọng số không bằng 1: hệ thống từ chối lưu.
+    \item Sinh viên không thuộc danh sách lớp: hệ thống báo lỗi khi nhập điểm.
+    \item Một thành phần điểm chưa có điểm: điểm tổng kết, điểm chữ và điểm hệ 4 để trống trên bảng điểm.
+\end{itemize} \\ \hline
+\end{tabularx}
+\caption{Kịch bản chức năng Quản lý lớp học (tiếp).}
+\label{tab:uc-classes-management-2}
+\end{table}
+
+
+Hình \ref{fig:uc-assignment-management} mô tả chi tiết usecase Quản lý bài tập của giảng viên.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_8_usecase_quan_ly_bai_tap}
+\caption{Biểu đồ usecase chi tiết Quản lý bài tập của giảng viên.}
+\label{fig:uc-assignment-management}
+\end{figure}
+
+Kịch bản của chức năng được trình bày trong Bảng \ref{tab:uc-assignment-management} và Bảng \ref{tab:uc-assignment-management-2}.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+\hline
+Tên mục & Nội dung mô tả \\ \hline
+Tên kịch bản & Quản lý bài tập \\ \hline
+Tác nhân & Giảng viên \\ \hline
+Tiền điều kiện & Giảng viên đã đăng nhập; lớp được chọn thuộc giảng viên. \\ \hline
+Hậu điều kiện & Bài tập cùng các bước chấm được lưu; bài tập đã công bố xuất hiện trong danh sách bài tập của sinh viên đã ghi danh. \\ \hline
+Kịch bản chính &
+\begin{enumerate}[leftmargin=*, nosep]
+    \item Giảng viên mở danh sách bài tập của lớp cần quản lý.
+    \item Hệ thống hiển thị danh sách bài tập kèm bộ lọc theo trạng thái công bố và ô tìm kiếm theo tiêu đề.
+    \item Giảng viên nhấn nút tạo bài tập mới.
+    \item Hệ thống hiển thị biểu mẫu gồm tiêu đề và cấu hình chấm (chiến lược chấm, thời gian chờ và giới hạn tài nguyên khi chấm).
+    \item Giảng viên nhập tiêu đề và cấu hình chấm cho bài tập.
+    \item Hệ thống lưu bài tập ở trạng thái chưa công bố.
+    \item Giảng viên soạn các bước chấm tự động cho bài tập: gửi yêu cầu kiểm thử tới ứng dụng của sinh viên, kiểm tra dữ liệu và trích xuất biến để dùng cho các bước sau; mỗi bộ bước như vậy tương ứng với một câu của bài tập.
+    \item Hệ thống thông báo tạo bài tập thành công
+\end{enumerate} \\ \hline
+\end{tabularx}
+\caption{Kịch bản chức năng Quản lý bài tập.}
+\label{tab:uc-assignment-management}
+\end{table}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+\hline
+Tên mục & Nội dung mô tả \\ \hline
+Kịch bản chính (tiếp) &
+\begin{enumerate}[leftmargin=*, nosep, start=9]
+    \item Giảng viên nhấn vào nút thêm câu kiểm tra
+    \item Hệ thống hiển thị hộp thoại thêm câu kiểm tra với những thông tin như: tên câu kiểm tra và mô tả, và nút lưu
+    \item Giảng viên nhập thông tin câu kiểm tra, mô tả và nhấn nút lưu
+    \item Hệ thống thông báo lưu thành công
+    \item Tiếp tục tại câu đó, giảng viên tiến hành tạo bước cho câu đó bằng cách nhấn vào nút thêm bước
+    \item Hệ thống hiển thị chi tiết giao diện cấu hình bước chấm để giảng viên có thể cấu hình theo ý của mình và nhấn nút lưu sau khi cấu hình xong.
+    \item Hệ thống kiểm tra tính hợp lệ của các bước chấm và thông báo thành công.
+    \item Sau khi tạo xong các bước chấm, giảng viên nhấn công bố bài tập.
+    \item Hệ thống chuyển bài tập sang trạng thái đã công bố và hiển thị bài tập cho sinh viên đã ghi danh.
+\end{enumerate} \\ \hline
+Kịch bản ngoại lệ &
+\begin{itemize}[leftmargin=*, nosep]
+    \item Tiêu đề bài tập trùng trong cùng lớp: hệ thống báo lỗi và không tạo bài tập.
+    \item Lớp không thuộc giảng viên: hệ thống báo không tìm thấy.
+    \item Cấu hình chấm thiếu thông tin bắt buộc hoặc bước chấm trùng thứ tự: hệ thống báo lỗi kèm vị trí vi phạm.
+    \item Bài tập đã xoá: không còn xuất hiện với cả giảng viên và sinh viên.
+\end{itemize} \\ \hline
+\end{tabularx}
+\caption{Kịch bản chức năng Quản lý bài tập (tiếp).}
+\label{tab:uc-assignment-management-2}
+\end{table}
+
+
+Hình \ref{fig:uc-review-class-results} mô tả chi tiết usecase Xem kết quả chấm của cả lớp dành cho giảng viên.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_9_usecase_xem_ket_qua_lop}
+\caption{Biểu đồ usecase chi tiết Xem kết quả chấm của cả lớp dành cho giảng viên.}
+\label{fig:uc-review-class-results}
+\end{figure}
+
+Kịch bản của chức năng được trình bày trong Bảng \ref{tab:uc-review-class-results}.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+\hline
+Tên mục & Nội dung mô tả \\ \hline
+Tên kịch bản & Xem kết quả chấm của cả lớp \\ \hline
+Tác nhân & Giảng viên \\ \hline
+Tiền điều kiện & Giảng viên sở hữu lớp; bài tập đã có ít nhất một bài nộp được chấm. \\ \hline
+Hậu điều kiện & Không thay đổi dữ liệu; kết quả chỉ dùng để theo dõi và đánh giá tình hình học tập của lớp. \\ \hline
+Kịch bản chính &
+\begin{enumerate}[leftmargin=*, nosep]
+    \item Giảng viên chọn lớp và bài tập cần xem kết quả.
+    \item Hệ thống hiển thị điểm tổng hợp của từng sinh viên trong lớp cùng điểm từng bài nộp theo từng câu.
+    \item Giảng viên lọc theo mã sinh viên.
+    \item Hệ thống thu hẹp danh sách kết quả theo mã sinh viên đã chọn.
+    \item Giảng viên mở chi tiết một bài nộp.
+    \item Hệ thống hiển thị kết quả từng bước chấm gồm yêu cầu đã gửi, kết quả nhận về và nhận xét của từng bước.
+    \item Giảng viên chọn xem danh sách toàn bộ bài nộp của bài tập.
+    \item Hệ thống hiển thị danh sách bài nộp kèm trạng thái chấm của từng bài.
+\end{enumerate} \\ \hline
+Kịch bản ngoại lệ &
+\begin{itemize}[leftmargin=*, nosep]
+    \item Bài tập không thuộc giảng viên: hệ thống báo không tìm thấy.
+    \item Mã sinh viên không có trong lớp: hệ thống trả về danh sách rỗng.
+    \item Bài tập chưa có bài nộp nào: danh sách kết quả rỗng.
+\end{itemize} \\ \hline
+\end{tabularx}
+\caption{Kịch bản chức năng Xem kết quả chấm của cả lớp.}
+\label{tab:uc-review-class-results}
+\end{table}
+
+\subsubsection{Kịch bản các chức năng của sinh viên}
+
+
+Hình \ref{fig:uc-submit-assignment} mô tả chi tiết usecase Nộp bài tập của sinh viên.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_10_usecase_nop_bai}
+\caption{Biểu đồ usecase chi tiết Nộp bài tập của sinh viên.}
+\label{fig:uc-submit-assignment}
+\end{figure}
+
+Kịch bản của chức năng được trình bày trong Bảng \ref{tab:uc-submit-assignments}.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+\hline
+Tên mục & Nội dung mô tả \\ \hline
+Tên kịch bản & Nộp bài tập \\ \hline
+Tác nhân & Sinh viên \\ \hline
+Tiền điều kiện & Sinh viên đã đăng nhập; đã được ghi danh vào lớp; bài tập đã được công bố. \\ \hline
+Hậu điều kiện & Bài nộp được lưu cùng kết quả chấm cho câu đã nộp; nếu chấm thất bại, bài nộp giữ trạng thái thất bại kèm nhật ký để sinh viên xem lại và nộp lại. \\ \hline
+Kịch bản chính &
+\begin{enumerate}[leftmargin=*, nosep]
+    \item Sinh viên chọn lớp và bài tập cần nộp.
+    \item Hệ thống hiển thị đề bài dưới dạng các bước yêu cầu, ẩn phần cấu hình chấm nội bộ của giảng viên.
+    \item Sinh viên chọn câu cần nộp hoặc nộp cho toàn bộ bài tập.
+    \item Hệ thống hiển thị yêu cầu nộp tệp nén bài làm.
+    \item Sinh viên tải tệp nén bài làm lên hệ thống.
+    \item Hệ thống tiếp nhận tệp, tự động chấm bài trong môi trường cách ly theo các bước đã soạn và tổng hợp điểm.
+    \item Sinh viên theo dõi trạng thái chấm.
+    \item Hệ thống hiển thị điểm và chi tiết từng bước chấm khi quá trình chấm hoàn tất.
+\end{enumerate} \\ \hline
+Kịch bản ngoại lệ &
+\begin{itemize}[leftmargin=*, nosep]
+    \item Sinh viên chưa ghi danh hoặc bài tập chưa công bố: hệ thống báo không tìm thấy.
+    \item Tệp nộp sai định dạng hoặc tải lên thất bại: hệ thống báo lỗi và sinh viên thực hiện lại.
+    \item Quá trình chấm lỗi (ứng dụng không khởi động được, hết thời gian chạy hoặc bước chấm sai cấu hình): bài nộp chuyển trạng thái thất bại kèm nhật ký lỗi.
+\end{itemize} \\ \hline
+\end{tabularx}
+\caption{Kịch bản chức năng Nộp bài tập.}
+\label{tab:uc-submit-assignments}
+\end{table}
+
+
+Hình \ref{fig:uc-view-scores} mô tả chi tiết usecase Xem điểm và kết quả cá nhân của sinh viên.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_11_usecase_xem_diem_ca_nhan}
+\caption{Biểu đồ usecase chi tiết Xem điểm và kết quả cá nhân của sinh viên.}
+\label{fig:uc-view-scores}
+\end{figure}
+
+Kịch bản của chức năng được trình bày trong Bảng \ref{tab:uc-view-scores}.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+\hline
+Tên mục & Nội dung mô tả \\ \hline
+Tên kịch bản & Xem điểm và kết quả cá nhân \\ \hline
+Tác nhân & Sinh viên \\ \hline
+Tiền điều kiện & Sinh viên đã đăng nhập và được ghi danh trong lớp. \\ \hline
+Hậu điều kiện & Không thay đổi dữ liệu. \\ \hline
+Kịch bản chính &
+\begin{enumerate}[leftmargin=*, nosep]
+    \item Sinh viên chọn lớp đã ghi danh.
+    \item Hệ thống hiển thị điểm từng thành phần kèm trọng số và, khi đã đủ điểm các thành phần, điểm tổng kết, điểm chữ và điểm hệ 4.
+    \item Sinh viên chọn xem danh sách sinh viên cùng lớp.
+    \item Hệ thống hiển thị danh sách sinh viên cùng lớp, chỉ gồm mã sinh viên và họ tên.
+\end{enumerate} \\ \hline
+Kịch bản ngoại lệ &
+\begin{itemize}[leftmargin=*, nosep]
+    \item Sinh viên không ghi danh trong lớp: hệ thống báo không tìm thấy lớp.
+    \item Còn thiếu điểm thành phần: điểm tổng kết, điểm chữ và điểm hệ 4 để trống; sinh viên xem lại sau khi giảng viên nhập đủ điểm.
+    \item Một thành phần điểm bị điểm 0: điểm chữ xếp F bất kể điểm tổng kết.
+\end{itemize} \\ \hline
+\end{tabularx}
+\caption{Kịch bản chức năng Xem điểm và kết quả cá nhân.}
+\label{tab:uc-view-scores}
+\end{table}
+
+
+Hình \ref{fig:uc-review-own-results} mô tả chi tiết usecase Xem kết quả chấm bài tập của bản thân dành cho sinh viên.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_12_usecase_xem_ket_qua_bai_nop}
+\caption{Biểu đồ usecase chi tiết Xem kết quả chấm bài tập của bản thân dành cho sinh viên.}
+\label{fig:uc-review-own-results}
+\end{figure}
+
+Kịch bản của chức năng được trình bày trong Bảng \ref{tab:uc-review-own-results}.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+\hline
+Tên mục & Nội dung mô tả \\ \hline
+Tên kịch bản & Xem kết quả chấm bài tập của bản thân \\ \hline
+Tác nhân & Sinh viên \\ \hline
+Tiền điều kiện & Sinh viên đã đăng nhập; sinh viên đã nộp bài và bài tập đã được chấm \\ \hline
+Hậu điều kiện & Sinh viên xem được kết quả chấm bài thành công \\ \hline
+Kịch bản chính &
+\begin{enumerate}[leftmargin=*, nosep]
+    \item Sinh viên chọn lớp và bài tập.
+    \item Hệ thống hiển thị danh sách bài nộp của sinh viên trong bài tập.
+    \item Sinh viên chọn bài nộp của mình.
+    \item Hệ thống hiển thị điểm, trạng thái chấm, nhật ký chấm và kết quả từng bước.
+    \item Sinh viên mở chi tiết một bước chấm.
+    \item Hệ thống hiển thị yêu cầu đã gửi, kết quả nhận về và nhận xét của bước đó, với thông tin nội bộ nhạy cảm được ẩn.
+\end{enumerate} \\ \hline
+Kịch bản ngoại lệ &
+\begin{itemize}[leftmargin=*, nosep]
+    \item Bài nộp không thuộc sinh viên: hệ thống báo không tìm thấy.
+    \item Bài nộp chưa chấm xong: hệ thống hiển thị trạng thái đang chấm; sinh viên xem lại sau.
+\end{itemize} \\ \hline
+\end{tabularx}
+\caption{Kịch bản chức năng Xem kết quả chấm bài tập của bản thân.}
+\label{tab:uc-review-own-results}
+\end{table}
+
+
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+\hline
+Tên mục & Nội dung mô tả \\ \hline
+Tên kịch bản & Giảng viên trò chuyện với trợ lý AI \\ \hline
+Tác nhân & Giảng viên \\ \hline
+Tiền điều kiện & Giảng viên đã đăng nhập vào hệ thống. \\ \hline
+Hậu điều kiện & Hệ thống lưu lại lịch sử trò chuyện giữa giảng viên và trợ lý AI. \\ \hline
+Kịch bản chính &
+\begin{enumerate}[leftmargin=*, nosep]
+    \item Giảng viên mở giao diện trò chuyện với trợ lý AI.
+    \item Hệ thống hiển thị giao diện chat trống, sẵn sàng nhận câu hỏi.
+    \item Giảng viên nhập câu hỏi liên quan đến bài tập, hệ thống chấm điểm hoặc hệ thống.
+    \item Hệ thống hiển thị câu trả lời của trợ lý AI cho giảng viên xem.
+    \item Giảng viên có thể tiếp tục đặt câu hỏi bổ sung hoặc kết thúc cuộc trò chuyện.
+\end{enumerate} \\ \hline
+Kịch bản ngoại lệ &
+\begin{itemize}[leftmargin=*, nosep]
+    \item Hệ thống không phản hồi: trợ lý AI không phản hồi trong thời gian quy định; hệ thống thông báo lỗi và gợi ý giảng viên thử lại sau.
+    \item Câu hỏi không liên quan: trợ lý AI trả lời rằng không thể hỗ trợ câu hỏi này và gợi ý các chủ đề liên quan đến hệ thống chấm bài.
+\end{itemize} \\ \hline
+\end{tabularx}
+\caption{Kịch bản chức năng Giảng viên trò chuyện với trợ lý AI.}
+\label{tab:uc-lecturer-chat-ai}
+\end{table}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+\hline
+Tên mục & Nội dung mô tả \\ \hline
+Tên kịch bản & Sinh viên trò chuyện với trợ lý AI \\ \hline
+Tác nhân & Sinh viên \\ \hline
+Tiền điều kiện & Sinh viên đã đăng nhập vào hệ thống. \\ \hline
+Hậu điều kiện & Hệ thống lưu lại lịch sử trò chuyện giữa sinh viên và trợ lý AI. \\ \hline
+Kịch bản chính &
+\begin{enumerate}[leftmargin=*, nosep]
+    \item Sinh viên mở giao diện trò chuyện với trợ lý AI.
+    \item Hệ thống hiển thị giao diện chat trống, sẵn sàng nhận câu hỏi.
+    \item Sinh viên nhập câu hỏi liên quan đến bài tập, điểm số hoặc quy trình chấm điểm.
+    \item Hệ thống hiển thị câu trả lời của trợ lý AI cho sinh viên xem.
+    \item Sinh viên có thể tiếp tục đặt câu hỏi bổ sung hoặc kết thúc cuộc trò chuyện.
+\end{enumerate} \\ \hline
+Kịch bản ngoại lệ &
+\begin{itemize}[leftmargin=*, nosep]
+    \item Hệ thống không phản hồi: trợ lý AI không phản hồi trong thời gian quy định; hệ thống thông báo lỗi và gợi ý sinh viên thử lại sau.
+    \item Câu hỏi không liên quan: trợ lý AI trả lời rằng không thể hỗ trợ câu hỏi này và gợi ý các chủ đề liên quan đến bài tập và chấm điểm.
+\end{itemize} \\ \hline
+\end{tabularx}
+\caption{Kịch bản chức năng Sinh viên trò chuyện với trợ lý AI.}
+\label{tab:uc-student-chat-ai}
+\end{table}
+
+\subsection{Biểu đồ lớp toàn hệ thống}
+
+\subsubsection{Xác định các lớp của hệ thống}
+
+Áp dụng kỹ thuật trích danh từ trên các use case và kịch bản đã mô tả ở các mục trước, các danh từ thu được gồm: tài khoản, người dùng, vai trò, quản trị viên, giảng viên, sinh viên, lớp học, học kỳ, danh sách sinh viên, mã sinh viên, họ tên, email, bài tập, câu, bước chấm, cấu hình chấm, môi trường chạy, thành phần điểm, trọng số, điểm thành phần, điểm tổng kết, điểm chữ, điểm hệ 4, bảng điểm, bài nộp, tệp nén, trạng thái chấm, kết quả chấm, kết quả từng bước, nhật ký chấm, giải thích của trợ lý AI, gợi ý và từ khoá học tập.
+
+Loại bỏ các danh từ nằm ngoài phạm vi mục đích của hệ thống, các danh từ trùng lặp và các danh từ chỉ là thuộc tính của lớp khác (trọng số, trạng thái, mã sinh viên, họ tên, email, thời gian chờ, giới hạn tài nguyên), ta thu được các lớp thực thể sau:
+
+Người dùng (User), Vai trò (Role), Liên kết người dùng - vai trò (UserRole), Lớp học (CourseClass), Sinh viên thuộc lớp (ClassStudent), Bài tập (Assignment), Câu (TestPlan), Bước chấm (TestStep), Thành phần điểm (ScoreComponent), Điểm thành phần (StudentScore), Bài nộp (Submission), Công việc chấm (GradingJob), Phiên chấm (GradingSaga), Bước của phiên chấm (GradingSagaStep), Nhật ký chấm (GradingLog), Kết quả chấm (Result), Kết quả từng bước (StepResult), Giải thích của trợ lý AI (AiExplanation).
+
+Hai lớp Người dùng (User) và Vai trò (Role) biểu diễn tác nhân và quyền truy cập của hệ thống; lớp UserRole biểu diễn liên kết nhiều-nhiều giữa hai lớp này.
+
+Trong mô hình toàn hệ thống, kết quả thực thi từng bước và kết quả chấm từng bước được mô hình hóa chung thành lớp StepResult; bản ghi thực thi riêng của dịch vụ thực thi được trình bày ở mục \ref{sec:class-design-services}.
+
+\subsubsection{Xét quan hệ số lượng giữa các lớp}
+
+Xác định quan hệ số lượng giữa các lớp dựa trên số lượng đối tượng có thể tham gia quan hệ ở mỗi phía. Với quan hệ 1 - n, một đối tượng ở phía 1 có thể liên kết với nhiều đối tượng ở phía n, nhưng mỗi đối tượng ở phía n chỉ liên kết với đúng một đối tượng ở phía 1. Các quan hệ 1 - n trong hệ thống được xác định như sau:
+
+\begin{itemize}[leftmargin=*, nosep]
+    \item Một giảng viên có thể sở hữu nhiều lớp học, nhưng mỗi lớp học chỉ thuộc về đúng một giảng viên. Vì vậy quan hệ giữa User và CourseClass là 1 - n.
+    \item Một lớp học có nhiều sinh viên, nhưng mỗi bản ghi sinh viên trong lớp chỉ thuộc về đúng một lớp. Vì vậy quan hệ giữa CourseClass và ClassStudent là 1 - n.
+    \item Một lớp học có nhiều bài tập, nhưng mỗi bài tập chỉ thuộc về đúng một lớp. Vì vậy quan hệ giữa CourseClass và Assignment là 1 - n.
+    \item Một lớp học có nhiều thành phần điểm, nhưng mỗi thành phần điểm chỉ thuộc về đúng một lớp. Vì vậy quan hệ giữa CourseClass và ScoreComponent là 1 - n.
+    \item Một bài tập có nhiều câu, nhưng mỗi câu chỉ thuộc về đúng một bài tập. Vì vậy quan hệ giữa Assignment và TestPlan là 1 - n.
+    \item Một câu có nhiều bước chấm, nhưng mỗi bước chấm chỉ thuộc về đúng một câu. Vì vậy quan hệ giữa TestPlan và TestStep là 1 - n.
+    \item Một bài tập có thể nhận nhiều bài nộp từ nhiều sinh viên và nhiều lần nộp, nhưng mỗi bài nộp chỉ thuộc về đúng một bài tập. Vì vậy quan hệ giữa Assignment và Submission là 1 - n.
+    \item Một sinh viên trong lớp có thể nộp nhiều bài tập và có thể nộp lại cùng một bài tập nhiều lần, nhưng mỗi bài nộp chỉ thuộc về đúng một sinh viên trong lớp. Vì vậy quan hệ giữa ClassStudent và Submission là 1 - n.
+    \item Mỗi bài nộp chỉ sinh ra đúng một công việc chấm, và mỗi công việc chấm chỉ gắn với đúng một bài nộp. Vì vậy quan hệ giữa Submission và GradingJob là 1 - 1.
+    \item Một công việc chấm có thể có nhiều phiên chấm do mỗi lần chấm lại tạo một phiên mới, nhưng mỗi phiên chấm chỉ thuộc về đúng một công việc chấm. Vì vậy quan hệ giữa GradingJob và GradingSaga là 1 - n.
+    \item Một phiên chấm có nhiều bước, nhưng mỗi bước chỉ thuộc về đúng một phiên chấm. Vì vậy quan hệ giữa GradingSaga và GradingSagaStep là 1 - n.
+    \item Một công việc chấm có nhiều nhật ký, nhưng mỗi nhật ký chỉ thuộc về đúng một công việc chấm. Vì vậy quan hệ giữa GradingJob và GradingLog là 1 - n.
+    \item Một bài nộp có thể sinh ra nhiều kết quả chấm, bao gồm kết quả theo từng câu và kết quả toàn bài, nhưng mỗi kết quả chỉ thuộc về đúng một bài nộp. Vì vậy quan hệ giữa Submission và Result là 1 - n.
+    \item Một kết quả chấm có nhiều kết quả bước, nhưng mỗi kết quả bước chỉ thuộc về đúng một kết quả chấm. Vì vậy quan hệ giữa Result và StepResult là 1 - n.
+    \item Một bài nộp có thể có nhiều giải thích của trợ lý AI theo các danh mục khác nhau, nhưng trong mỗi danh mục chỉ có tối đa một giải thích đang hiệu lực. Vì vậy quan hệ tổng quát giữa Submission và AiExplanation là 1 - n, còn theo từng danh mục là 1 - 0..1.
+\end{itemize}
+
+Bên cạnh các quan hệ 1 - n, hệ thống còn có các quan hệ n - n cần được tách thành các quan hệ 1 - n thông qua lớp trung gian. Các quan hệ n - n được xác định như sau:
+
+\begin{itemize}[leftmargin=*, nosep]
+    \item Một người dùng có thể giữ nhiều vai trò và một vai trò có thể được gán cho nhiều người dùng, do đó quan hệ giữa User và Role là n - n.
+    \item Một sinh viên trong lớp có điểm ở nhiều thành phần điểm và một thành phần điểm áp dụng cho nhiều sinh viên, do đó quan hệ giữa ClassStudent và ScoreComponent là n - n.
+    \item Một bài tập được giao cho nhiều sinh viên và một sinh viên nhận nhiều bài tập, do đó quan hệ giữa Assignment và ClassStudent là n - n. Quan hệ này được biểu diễn thông qua lớp Submission.
+\end{itemize}
+
+Việc tách các quan hệ n - n được thực hiện bằng cách xác định một lớp trung gian sao cho mỗi phía của quan hệ ban đầu có quan hệ 1 - n với lớp trung gian. Sau đó, cần kiểm tra xem lớp trung gian có thỏa mãn điều kiện của lớp kết hợp hay không.
+
+\begin{itemize}[leftmargin=*, nosep]
+    \item Với quan hệ giữa User và Role, ta thêm lớp UserRole. Một người dùng có nhiều bản ghi UserRole và một vai trò cũng có nhiều bản ghi UserRole, nhưng mỗi cặp User-Role chỉ có duy nhất một bản ghi UserRole. Do đó UserRole là lớp kết hợp.
+    \item Với quan hệ giữa ClassStudent và ScoreComponent, ta thêm lớp StudentScore. Một sinh viên có nhiều bản ghi StudentScore và một thành phần điểm cũng có nhiều bản ghi StudentScore, nhưng mỗi cặp ClassStudent-ScoreComponent chỉ có duy nhất một bản ghi StudentScore. Do đó StudentScore là lớp kết hợp, và mỗi bản ghi giữ điểm của sinh viên ở thành phần điểm tương ứng.
+    \item Với quan hệ giữa Assignment và ClassStudent, ta xét lớp Submission làm lớp trung gian. Một bài tập có nhiều bài nộp và một sinh viên cũng có nhiều bài nộp, nhưng mỗi bài nộp chỉ thuộc về đúng một bài tập và đúng một sinh viên. Để kiểm tra Submission có phải lớp kết hợp hay không, ta xét câu hỏi: một cặp Assignment-ClassStudent có duy nhất một Submission không? Câu trả lời là không, vì sinh viên có thể nộp lại cùng một bài tập nhiều lần. Mỗi lần nộp tạo ra một bản ghi Submission mới, và chỉ một bản ghi được đánh dấu latest để biểu diễn bài nộp hiện tại. Vì không duy nhất trên mỗi cặp Assignment-ClassStudent, Submission không phải là lớp kết hợp. Submission là lớp thường đóng vai trò lớp trung gian, có định danh riêng và có các thuộc tính như tên tệp, đường dẫn tệp, trạng thái chấm và cờ latest.
+\end{itemize}
+
+Như vậy, chỉ UserRole và StudentScore là hai lớp kết hợp trong mô hình. Submission không phải lớp kết hợp vì một cặp Assignment-ClassStudent có thể có nhiều lần nộp.
+
+\subsubsection{Bổ sung quan hệ đối tượng giữa các lớp}
+
+Sau khi xác định quan hệ số lượng cần bổ sung quan hệ đối tượng giữa các lớp. Với mỗi quan hệ 1 - n, ta xét xem đối tượng ở phía n có phải là thành phần của đối tượng ở phía 1 hay không. Nếu có, quan hệ được biểu diễn bằng composition; nếu đối tượng ở phía n tồn tại độc lập, quan hệ được biểu diễn bằng aggregation hoặc association.
+
+Các quan hệ thành phần trong hệ thống gồm:
+
+\begin{itemize}[leftmargin=*, nosep]
+    \item CourseClass và Assignment là quan hệ thành phần vì bài tập chỉ tồn tại trong phạm vi một lớp học và không còn ý nghĩa nếu lớp học bị xóa.
+    \item CourseClass và ScoreComponent là quan hệ thành phần vì thành phần điểm chỉ có ý nghĩa trong một lớp học cụ thể.
+    \item Assignment và TestPlan là quan hệ thành phần vì câu chỉ tồn tại trong một bài tập.
+    \item TestPlan và TestStep là quan hệ thành phần vì bước chấm chỉ tồn tại trong một câu.
+    \item Assignment và Submission là quan hệ thành phần vì bài nộp chỉ tồn tại trong phạm vi một bài tập.
+    \item Submission và Result là quan hệ thành phần vì kết quả chấm chỉ tồn tại khi có bài nộp tương ứng.
+    \item Submission và AiExplanation là quan hệ thành phần vì giải thích của trợ lý AI gắn với một bài nộp cụ thể.
+    \item GradingJob và GradingSaga là quan hệ thành phần vì phiên chấm thuộc một công việc chấm.
+    \item GradingSaga và GradingSagaStep là quan hệ thành phần vì bước chấm thuộc một phiên chấm.
+    \item GradingJob và GradingLog là quan hệ thành phần vì nhật ký chấm thuộc một công việc chấm.
+    \item Result và StepResult là quan hệ thành phần vì kết quả bước thuộc một kết quả chấm.
+\end{itemize}
+
+Quan hệ aggregation trong hệ thống gồm:
+
+\begin{itemize}[leftmargin=*, nosep]
+    \item CourseClass và ClassStudent là quan hệ aggregation vì sinh viên thuộc một lớp học nhưng không phải là thành phần bị xóa theo lớp. Thông tin sinh viên vẫn có ý nghĩa độc lập với lớp học.
+\end{itemize}
+
+Các quan hệ liên kết trong hệ thống gồm:
+
+\begin{itemize}[leftmargin=*, nosep]
+    \item User và CourseClass là quan hệ liên kết vì giảng viên sở hữu lớp học nhưng không phải là thành phần của lớp.
+    \item ClassStudent và Submission là quan hệ liên kết vì bài nộp gắn với sinh viên nhưng không phải là thành phần của sinh viên.
+    \item Submission và GradingJob là quan hệ liên kết 1 - 1 vì công việc chấm là bản ghi xử lý riêng, không phải thành phần của bài nộp.
+\end{itemize}
+
+Hai lớp kết hợp trong mô hình gồm:
+
+\begin{itemize}[leftmargin=*, nosep]
+    \item UserRole là lớp kết hợp giữa User và Role, dùng để biểu diễn quan hệ n - n kèm khóa userId và roleId.
+    \item StudentScore là lớp kết hợp giữa ClassStudent và ScoreComponent, dùng để biểu diễn quan hệ n - n kèm điểm của sinh viên.
+\end{itemize}
+
+Như vậy, mô hình chỉ còn hai lớp kết hợp là UserRole và StudentScore. ClassStudent là lớp thường vì có định danh riêng và các thuộc tính studentCode, studentName, email. Submission cũng là lớp thường vì có định danh riêng, có nhiều bản ghi trên một cặp Assignment-ClassStudent và có thuộc tính tệp nộp, trạng thái chấm, cờ latest.
+
+\subsubsection{Biểu đồ lớp thực thể pha phân tích toàn hệ thống }
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_13_bieu_do_lop}
+\caption{Biểu đồ lớp thực thể pha phân tích toàn hệ thống.}
+\label{fig:class-diagram}
+\end{figure}
+
+\subsection{Phân rã hệ thống theo miền chức năng}
+
+Dựa trên kết quả phân tích nghiệp vụ ở các mục trước, hệ thống được chia thành các miền chức năng nhằm xác định ranh giới nghiệp vụ và phạm vi xử lý của từng nhóm chức năng. Việc phân rã này giúp làm rõ cấu trúc logic của hệ thống, đồng thời tạo tiền đề để chuyển đổi các miền chức năng thành các dịch vụ độc lập trong kiến trúc vi dịch vụ ở giai đoạn thiết kế.
+
+Quá trình phân rã được thực hiện dựa trên các tiêu chí:
+\begin{itemize}[leftmargin=*, nosep]
+    \item Tính độc lập nghiệp vụ.
+    \item Khả năng triển khai và mở rộng riêng biệt.
+    \item Mức độ liên kết giữa các chức năng và mức độ phụ thuộc dữ liệu.
+    \item Ranh giới tự nhiên của các thực thể trong mô hình domain.
+\end{itemize}
+
+Hệ thống được phân rã thành các miền chức năng sau:
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|p{0.8cm}|p{3.6cm}|X|}
+\hline
+STT & Miền chức năng & Mô tả \\ \hline
+1 & Xác thực và phân quyền & Quản lý tài khoản, đăng nhập, đổi mật khẩu, cấp và kiểm tra vai trò. \\ \hline
+2 & Quản lý lớp học và điểm & Quản lý lớp học, nhập danh sách sinh viên, cấu hình thành phần điểm, nhập điểm thủ công và tính điểm tổng kết. \\ \hline
+3 & Nộp bài & Nhận tệp bài nộp của sinh viên, lưu trữ tệp và chuyển yêu cầu chấm. \\ \hline
+4 & Thực thi chấm & Tải bài nộp, thực thi các bước chấm tự động và tổng hợp kết quả. \\ \hline
+5 & Kết quả chấm & Lưu kết quả chấm theo câu và kết quả từng bước; cung cấp dữ liệu cho bảng điểm. \\ \hline
+6 & Trợ lý AI & Sinh giải thích và gợi ý học tập cho bài nộp dựa trên kết quả chấm. \\ \hline
+\end{tabularx}
+\caption{Phân rã hệ thống thành các miền chức năng.}
+\label{tab:functional-domains}
+\end{table}
+
+
+\subsection{Biểu đồ lớp pha phân tích chi tiết từng dịch vụ}
+\label{sec:class-design-services}
+
+Sau khi phân rã, mỗi miền chức năng được thiết kế thành một dịch vụ độc lập với cơ sở dữ liệu riêng. Các mục dưới đây trình bày biểu đồ lớp chi tiết của từng dịch vụ.
+
+Ở mức dịch vụ, kết quả bước chấm được lưu ở hai dạng: GradingStepResult là bản ghi thực thi của dịch vụ thực thi chấm, còn StepResult là bản đã chấm do dịch vụ kết quả chấm lưu; cả hai tương ứng với lớp StepResult trong mô hình toàn hệ thống ở mục 2.1.4.
+
+\subsubsection{Biểu đồ lớp pha phân tích miền Xác thực và phân quyền}
+
+Miền Xác thực và phân quyền gồm Người dùng (User), Vai trò (Role) và lớp kết hợp Liên kết người dùng - vai trò (UserRole). Lớp UserRole biểu diễn quan hệ nhiều-nhiều giữa người dùng và vai trò.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{Hinhve/Hinh2_14_class_auth}
+\caption{Biểu đồ lớp pha phân tích miền Xác thực và phân quyền.}
+\label{fig:class-auth}
+\end{figure}
+
+\subsubsection{Biểu đồ lớp pha phân tích dịch vụ quản lý lớp học và điểm}
+
+Các lớp thuộc dịch vụ quản lý lớp học và điểm gồm Lớp học (CourseClass), Sinh viên thuộc lớp (ClassStudent), Bài tập (Assignment), Câu (TestPlan), Bước chấm (TestStep), Thành phần điểm (ScoreComponent) và Điểm thành phần (StudentScore).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.55\textwidth]{Hinhve/Hinh2_15_class_course}
+\caption{Biểu đồ lớp pha phân tích dịch vụ quản lý lớp học và điểm.}
+\label{fig:class-course}
+\end{figure}
+
+\subsubsection{Biểu đồ lớp pha phân tích dịch vụ nộp bài}
+
+Các lớp thuộc dịch vụ nộp bài gồm Bài nộp (Submission) và thông tin tệp nộp, trạng thái chấm của bài nộp.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.35\textwidth]{Hinhve/Hinh2_16_class_submission}
+\caption{Biểu đồ lớp pha phân tích dịch vụ nộp bài.}
+\label{fig:class-submission}
+\end{figure}
+
+\subsubsection{Biểu đồ lớp pha phân tích dịch vụ thực thi chấm}
+
+Các lớp thuộc dịch vụ thực thi chấm gồm Công việc chấm (GradingJob), Phiên chấm (GradingSaga), Bước của phiên chấm (GradingSagaStep), Kết quả bước chấm (GradingStepResult) và Nhật ký chấm (GradingLog).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{Hinhve/Hinh2_17_class_executor}
+\caption{Biểu đồ lớp pha phân tích dịch vụ thực thi chấm.}
+\label{fig:class-executor}
+\end{figure}
+
+\subsubsection{Biểu đồ lớp pha phân tích dịch vụ kết quả chấm}
+
+Các lớp thuộc dịch vụ kết quả chấm gồm Kết quả chấm (Result) và Kết quả từng bước (StepResult).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.70\textwidth]{Hinhve/Hinh2_18_class_result}
+\caption{Biểu đồ lớp pha phân tích dịch vụ kết quả chấm.}
+\label{fig:class-result}
+\end{figure}
+
+\subsubsection{Biểu đồ lớp pha phân tích dịch vụ trợ lý AI}
+
+Các lớp thuộc dịch vụ trợ lý AI gồm Giải thích của trợ lý AI (AiExplanation) cùng thông tin bài nộp và danh mục được giải thích.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.30\textwidth]{Hinhve/Hinh2_19_class_ai}
+\caption{Biểu đồ lớp pha phân tích dịch vụ trợ lý AI.}
+\label{fig:class-ai}
+\end{figure}
+
+
+
+\section{Thiết kế hệ thống}
+\subsection{Biểu đồ lớp thiết kế toàn hệ thống}
+
+Biểu đồ dưới đây mô tả toàn bộ các lớp thực thể được thiết kế của hệ thống
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_29_class_diagram_system}
+\caption{Biểu đồ lớp thiết kế toàn hệ thống.}
+\label{fig:class-system}
+\end{figure}
+
+\subsection{Biểu đồ lớp thiết kế chi tiết từng dịch vụ}
+
+Sau khi phân rã hệ thống thành các miền chức năng, mỗi miền được thiết kế thành một dịch vụ độc lập với cơ sở dữ liệu riêng. Dưới đây là biểu đồ lớp thiết kế chi tiết của từng dịch vụ.
+
+
+
+\subsubsection{Dịch vụ Xác thực và phân quyền}
+
+Dịch vụ xác thực và phân quyền quản lý tài khoản, đăng nhập, đổi mật khẩu, cấp và kiểm tra vai trò của người dùng trong hệ thống.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_30_class_auth_service}
+\caption{Biểu đồ lớp thiết kế dịch vụ Xác thực và phân quyền.}
+\label{fig:class-auth-service}
+\end{figure}
+
+\subsubsection{Dịch vụ Quản lý lớp học và điểm}
+
+Dịch vụ quản lý lớp học và điểm quản lý lớp học, danh sách sinh viên, cấu hình thành phần điểm và điểm số của từng sinh viên.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_31_class_course_service}
+\caption{Biểu đồ lớp thiết kế dịch vụ Quản lý lớp học và điểm.}
+\label{fig:class-course-service}
+\end{figure}
+
+\subsubsection{Dịch vụ Nộp bài}
+
+Dịch vụ nộp bài quản lý bài nộp của sinh viên và điểm chấm thủ công.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_32_class_submission_service}
+\caption{Biểu đồ lớp thiết kế dịch vụ Nộp bài.}
+\label{fig:class-submission-service}
+\end{figure}
+
+\subsubsection{Dịch vụ Thực thi chấm}
+
+Dịch vụ thực thi chấm quản lý công việc chấm, phiên chấm, bước chấm và nhật ký thực thi.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_33_class_executor_service}
+\caption{Biểu đồ lớp thiết kế dịch vụ Thực thi chấm.}
+\label{fig:class-executor-service}
+\end{figure}
+
+\subsubsection{Dịch vụ Kết quả chấm}
+
+Dịch vụ kết quả chấm lưu kết quả chấm theo từng bài nộp và kết quả từng bước chấm.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_34_class_result_service}
+\caption{Biểu đồ lớp thiết kế dịch vụ Kết quả chấm.}
+\label{fig:class-result-service}
+\end{figure}
+
+\subsubsection{Dịch vụ Trợ lý AI}
+
+Dịch vụ trợ lý AI quản lý hội thoại, giải thích và gợi ý học tập cho bài nộp.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_35_class_ai_service}
+\caption{Biểu đồ lớp thiết kế dịch vụ Trợ lý AI.}
+\label{fig:class-ai-service}
+\end{figure}
+
+\subsection{Thiết kế cơ sở dữ liệu theo dịch vụ}
+
+Sau khi phân rã hệ thống thành các miền chức năng, mỗi miền được thiết kế thành một dịch vụ độc lập với cơ sở dữ liệu riêng. Mỗi dịch vụ quản lý độc lập các bảng thuộc miền nghiệp vụ của mình, không truy cập trực tiếp cơ sở dữ liệu của dịch vụ khác.
+
+\begin{itemize}[leftmargin=*, nosep]
+    \item Dịch vụ xác thực và phân quyền: quản lý tài khoản, đăng nhập, đổi mật khẩu, cấp và kiểm tra vai trò của người dùng trong hệ thống.
+    \item Dịch vụ quản lý lớp học và điểm: bao gồm các bảng classes, class\_students, score\_components, student\_scores, để quản lý lớp học, danh sách sinh viên, cấu hình thành phần điểm và điểm số của từng sinh viên.
+    \item Dịch vụ nộp bài: bao gồm các bảng submissions, manual\_scores, để quản lý bài nộp của sinh viên và điểm chấm thủ công.
+    \item Dịch vụ thực thi chấm: bao gồm các bảng grading\_jobs, grading\_logs, grading\_sagas, grading\_saga\_steps, grading\_step\_results, để quản lý công việc chấm, phiên chấm, bước chấm và nhật ký thực thi.
+    \item Dịch vụ kết quả chấm: bao gồm các bảng results, step\_results, để lưu kết quả chấm theo từng bài nộp và kết quả từng bước chấm.
+    \item Dịch vụ trợ lý AI: bao gồm các bảng ai\_conversation, ai\_message, ai\_explanations, ai\_task, ai\_run, để quản lý hội thoại, giải thích và gợi ý học tập cho bài nộp.
+\end{itemize}
+
+Biểu đồ \ref{fig:erd} minh họa quan hệ giữa các thực thể chính của hệ thống.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_28_erd}
+\caption{Biểu đồ quan hệ thực thể (ERD) của hệ thống.}
+\label{fig:erd}
+\end{figure}
+
+\subsection{Sơ đồ tuần tự các chức năng}
+
+Dưới đây là sơ đồ tuần tự mô tả luồng xử lý nghiệp vụ của từng chức năng chính trong hệ thống.
+
+\subsubsection{Đăng nhập}
+
+Hình \ref{fig:seq-dang-nhap} mô tả luồng xử lý khi người dùng đăng nhập vào hệ thống.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_20_seq_dang_nhap}
+\caption{Sơ đồ tuần tự chức năng Đăng nhập.}
+\label{fig:seq-dang-nhap}
+\end{figure}
+
+\subsubsection{Quản lý lớp học}
+
+Hình \ref{fig:seq-quan-ly-lop} mô tả luồng xử lý khi giảng viên xem danh sách lớp học của mình.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_21_seq_quan_ly_lop}
+\caption{Sơ đồ tuần tự chức năng Xem lớp.}
+\label{fig:seq-quan-ly-lop}
+\end{figure}
+
+Hình \ref{fig:seq-quan-ly-lop-chitiet} mô tả luồng xử lý khi giảng viên xem chi tiết một lớp học.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_22_seq_quan_ly_lop_chitiet}
+\caption{Sơ đồ tuần tự chức năng Xem chi tiết lớp.}
+\label{fig:seq-quan-ly-lop-chitiet}
+\end{figure}
+
+\subsubsection{Quản lý bài tập}
+
+Hình \ref{fig:seq-quan-ly-bai-tap} mô tả luồng xử lý khi giảng viên quản lý bài tập trong lớp.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_23_seq_quan_ly_bai_tap}
+\caption{Sơ đồ tuần tự chức năng Quản lý bài tập.}
+\label{fig:seq-quan-ly-bai-tap}
+\end{figure}
+
+\subsubsection{Xem kết quả chấm của cả lớp}
+
+Hình \ref{fig:seq-xem-ket-qua-lop} mô tả luồng xử lý khi giảng viên xem kết quả chấm bài tập của toàn bộ sinh viên trong lớp.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_24_seq_xem_ket_qua_lop}
+\caption{Sơ đồ tuần tự chức năng Xem kết quả chấm của cả lớp.}
+\label{fig:seq-xem-ket-qua-lop}
+\end{figure}
+
+\subsubsection{Nộp bài tập}
+
+Hình \ref{fig:seq-nop-bai} mô tả luồng xử lý khi sinh viên nộp bài tập thực hành.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_25_seq_nop_bai}
+\caption{Sơ đồ tuần tự chức năng Nộp bài tập.}
+\label{fig:seq-nop-bai}
+\end{figure}
+
+\subsubsection{Xem kết quả chấm bài tập của bản thân}
+
+Hình \ref{fig:seq-xem-ket-qua-cua-than} mô tả luồng xử lý khi sinh viên xem kết quả chấm của bài nộp mình đã gửi.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_26_seq_xem_ket_qua_cua_than}
+\caption{Sơ đồ tuần tự chức năng Xem kết quả chấm bài tập của bản thân.}
+\label{fig:seq-xem-ket-qua-cua-than}
+\end{figure}
+
+\subsubsection{Xem điểm và kết quả cá nhân}
+
+Hình \ref{fig:seq-xem-diem-ca-nhan} mô tả luồng xử lý khi sinh viên xem điểm thành phần, điểm tổng kết và bảng điểm của mình trong lớp.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_27_seq_xem_diem_ca_nhan}
+\caption{Sơ đồ tuần tự chức năng Xem điểm và kết quả cá nhân.}
+\label{fig:seq-xem-diem-ca-nhan}
+\end{figure}
+
+\subsection{Kiến trúc hệ thống}
+
+Hình \ref{fig:architecture} mô tả kiến trúc tổng thể của hệ thống. Hệ thống được tổ chức theo mô hình Client - Server: phía client đảm nhiệm tương tác với người dùng, phía server xử lý nghiệp vụ, quản lý dữ liệu và cung cấp dịch vụ. Cách tổ chức này tách biệt giao diện khỏi xử lý nghiệp vụ, thuận lợi cho phát triển, triển khai và mở rộng từng phần độc lập.
+
+\begin{figure}[H]
+\centering
+% Bỏ comment dòng dưới sau khi có ảnh:
+% \includegraphics[width=\textwidth]{Hinhve/Hinh2_31_kien_truc_tong_the}
+\caption{Kiến trúc tổng thể của hệ thống.}
+\label{fig:architecture}
+\end{figure}
+
+Phía client, giao diện được xây dựng bằng React và TypeScript, dùng Vite và bộ thành phần Ant Design, chạy trên trình duyệt của người dùng. Client gửi các yêu cầu HTTPS đến API Gateway - điểm vào duy nhất của backend. Gateway xác thực JWT do Keycloak cấp, kiểm tra vai trò rồi chuyển tiếp yêu cầu đến dịch vụ đích.
+
+Phía backend, ngoài API Gateway, hệ thống gồm năm dịch vụ nghiệp vụ độc lập là Quản lý lớp học và điểm, Nộp bài, Thực thi chấm, Kết quả chấm và Trợ lý AI; miền Xác thực và phân quyền do Keycloak đảm nhiệm. Mỗi dịch vụ quản lý một cơ sở dữ liệu riêng và không truy cập trực tiếp dữ liệu của dịch vụ khác. Cách phân rã này giới hạn phạm vi ảnh hưởng khi một dịch vụ gặp sự cố, đồng thời cho phép build, triển khai và mở rộng từng dịch vụ mà không ảnh hưởng đến phần còn lại.
+
+Các dịch vụ giao tiếp với nhau qua hai cơ chế. Giao tiếp đồng bộ dùng REST thông qua OpenFeign cho các yêu cầu cần phản hồi ngay, chẳng hạn dịch vụ Thực thi chấm lấy cấu hình bài tập từ dịch vụ Quản lý lớp học và điểm, cập nhật trạng thái bài nộp hoặc ghi kết quả sang dịch vụ Kết quả chấm. Giao tiếp bất đồng bộ dùng Kafka với một topic dùng chung \texttt{wgs-events}: mỗi message mang envelope gồm action, traceId và payload, được khóa theo submissionId để giữ thứ tự xử lý trên từng bài nộp. Khi bài nộp hoàn tất, dịch vụ Nộp bài phát sự kiện \texttt{GRADE\_SUBMISSION}; dịch vụ Thực thi chấm tiêu thụ sự kiện, thực thi các bước chấm rồi ghi kết quả. Nhờ đó, quá trình chấm không chặn thao tác của người dùng và vẫn tiếp tục được khi một dịch vụ tạm thời quá tải.
+
+Tệp bài nộp được lưu trong RustFS - hệ thống lưu trữ đối tượng tương thích S3 - thay vì lưu trong cơ sở dữ liệu. Client tải tệp trực tiếp lên RustFS bằng presigned URL do dịch vụ Nộp bài cấp; sau khi tải xong, RustFS gọi webhook báo hoàn tất để dịch vụ Nộp bài cập nhật trạng thái và phát sự kiện chấm. Cách này giảm tải cho dịch vụ và tránh truyền tệp lớn qua gateway.
+
+Dịch vụ Trợ lý AI gọi mô hình ngôn ngữ lớn qua giao diện tương thích OpenAI; địa chỉ và tên mô hình được cấu hình bằng biến môi trường nên có thể thay nhà cung cấp mà không sửa mã nguồn. Hội thoại, giải thích và gợi ý học tập được lưu trong cơ sở dữ liệu riêng của dịch vụ.
+
+Về xác thực, Keycloak đóng vai trò Authorization Server. Người dùng đăng nhập trên giao diện do Keycloak quản lý theo luồng Authorization Code kèm PKCE; access token dạng JWT được gửi kèm mỗi yêu cầu. API Gateway kiểm tra chữ ký và thời hạn token, trích xuất danh tính và vai trò rồi chuyển tiếp trong các header nội bộ. Các dịch vụ phía sau không được giao diện gọi trực tiếp; ngoài JWT, gateway còn gửi kèm một mã bí mật dùng chung để dịch vụ nội bộ từ chối các yêu cầu không đi qua gateway.
+
+Đối với tính nhất quán, mỗi bài nộp có một bản ghi công việc trong bảng \texttt{grading\_jobs}; tiến trình chấm nhiều bước được ghi nhận trong \texttt{grading\_sagas} và \texttt{grading\_saga\_steps} để có thể theo dõi, chạy lại hoặc đặt lại khi một bước thất bại. Cơ chế này không thay thế giao dịch phân tán, nhưng bảo đảm mỗi bài nộp đều có trạng thái cuối cùng rõ ràng và không bị kẹt khi một bước chấm gặp lỗi.
+
+Toàn bộ dịch vụ backend được đóng gói thành container và triển khai trên cụm Kubernetes (k3s) theo mô hình GitOps; phần này được trình bày ở chương 3.
+
+\end{document}

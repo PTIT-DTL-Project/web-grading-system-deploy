@@ -68,18 +68,21 @@ bash "$SCRIPT_DIR/deploy/install-argocd.sh"
 print_success "ArgoCD installed and applications deployed"
 
 print_step "6. Install Observability Stack"
-echo "  (Grafana + Loki + Mimir + Tempo + Alloy)"
+echo "  (Prometheus + Grafana UI + Tempo traces)"
 bash "$SCRIPT_DIR/deploy/observability/install.sh"
 print_success "Observability stack installed"
 
-print_step "7. Setup Cloudflare Tunnel"
-bash "$SCRIPT_DIR/deploy/cloudflared/setup-tunnel.sh" \
-  "vucongtuanduong.dpdns.org" \
-  "web-dev2-web-grading" \
-  "${GATEWAY_PORT}" \
-  || echo "  Tunnel may already exist, skipping"
-docker compose -f "$SCRIPT_DIR/deploy/cloudflared/docker-compose.yml" up -d
-print_success "Cloudflare Tunnel running"
+print_step "7. Deploy Keycloak"
+kubectl apply -n "$NAMESPACE" -f "$SCRIPT_DIR/deploy/keycloak/deployment.yaml"
+kubectl apply -n "$NAMESPACE" -f "$SCRIPT_DIR/deploy/keycloak/service.yaml"
+kubectl wait -n "$NAMESPACE" --for=condition=ready pod -l app=keycloak --timeout=120s || true
+print_success "Keycloak deployed"
+
+print_step "8. Cloudflare Tunnel"
+# deploy/cloudflared/ was removed when the tunnel migrated to Cloudflare Zero
+# Trust — running the old compose here aborted setup on a fresh cluster
+# (Review: 2026-10-15). The tunnel is now started manually, after setup.
+echo "  Zero Trust tunnel is started manually: bash cloudflare_tunnel_run.sh"
 
 echo ""
 echo -e "${BLUE}============================================================${NC}"
@@ -87,20 +90,19 @@ echo -e "${BLUE}  SETUP COMPLETE!${NC}"
 echo -e "${BLUE}============================================================${NC}"
 echo ""
 echo -e "${YELLOW}📊 Management Interfaces:${NC}"
-echo "  ArgoCD:     https://web-dev2-argocd.vucongtuanduong.dpdns.org"
-echo "  Grafana:    https://web-dev2-grafana.vucongtuanduong.dpdns.org"
-echo "  RustFS:     https://web-dev2-rustfs.vucongtuanduong.dpdns.org"
-echo "  RustFS API: https://web-dev2-rustfs-api.vucongtuanduong.dpdns.org"
+echo "  ArgoCD:     https://web-dev1-argocd.vucongtuanduong.dpdns.org"
+echo "  Grafana:    https://web-dev1-grafana.vucongtuanduong.dpdns.org"
+echo "  RustFS:     https://web-dev1-rustfs.vucongtuanduong.dpdns.org"
+echo "  RustFS API: https://web-dev1-rustfs-api.vucongtuanduong.dpdns.org"
 echo ""
 echo -e "${YELLOW}🚀 Microservices:${NC}"
-echo "  API Gateway:      https://web-dev2-api.vucongtuanduong.dpdns.org"
-echo "  Submission:       https://web-dev2-submission.vucongtuanduong.dpdns.org"
-echo "  Executor:         https://web-dev2-executor.vucongtuanduong.dpdns.org"
-echo "  Assignment:       https://web-dev2-assignment.vucongtuanduong.dpdns.org"
-echo "  Result:           https://web-dev2-result.vucongtuanduong.dpdns.org"
-echo "  Grading:          https://web-dev2-grading.vucongtuanduong.dpdns.org"
-echo "  Notification:     https://web-dev2-notification.vucongtuanduong.dpdns.org"
-echo "  Keycloak:         https://web-dev2-keycloak.vucongtuanduong.dpdns.org"
+echo "  API Gateway:   https://web-dev1-api.vucongtuanduong.dpdns.org"
+echo "  Course:        https://web-dev1-course.vucongtuanduong.dpdns.org"
+echo "  Submission:    https://web-dev1-submission.vucongtuanduong.dpdns.org"
+echo "  Result:        https://web-dev1-result.vucongtuanduong.dpdns.org"
+echo "  Executor:      https://web-dev1-grading.vucongtuanduong.dpdns.org"
+echo "  AI Assistant:  https://web-dev1-ai.vucongtuanduong.dpdns.org"
+echo "  Keycloak:      https://web-dev1-keycloak.vucongtuanduong.dpdns.org"
 echo ""
 echo -e "${YELLOW}💡 Quick Commands:${NC}"
 echo "  Check status:     kubectl get pods -n web-grading"

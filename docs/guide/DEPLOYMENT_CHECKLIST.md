@@ -32,8 +32,8 @@ Checklist để đảm bảo setup mono-repo thành công.
 - [ ] No errors in output
 
 ### Step 2: Create GitHub Repositories
-- [ ] Created `web-grading-system-services` on GitHub
-- [ ] Created `web-grading-system-config` on GitHub
+- [ ] Created `web-grading-system-backend-services` on GitHub
+- [ ] Created `web-grading-system-services-config` on GitHub
 - [ ] Both repos are empty (no README yet)
 - [ ] Correct organization/user
 
@@ -71,13 +71,14 @@ kubectl get applications -n argocd
 - [ ] grading-executor-service exists
 - [ ] grading-api-gateway exists
 - [ ] grading-result-service exists
-- [ ] grading-assignment-service exists
+- [ ] grading-course-service exists
+- [ ] grading-ai-assistant-service exists
 - [ ] All apps show "Healthy" status
 - [ ] All apps show "Synced" status
 
 ### Verify GitHub Actions
 ```bash
-gh run list --repo PTIT-DTL-Project/web-grading-system-services
+gh run list --repo PTIT-DTL-Project/web-grading-system-backend-services
 ```
 - [ ] Workflow file detected
 - [ ] No syntax errors
@@ -87,7 +88,7 @@ gh run list --repo PTIT-DTL-Project/web-grading-system-services
 
 **Make a test change:**
 ```bash
-cd web-grading-system-services
+cd web-grading-system-backend-services
 echo "# Test" >> submission-service/README.md
 git add .
 git commit -m "test: trigger CI/CD"

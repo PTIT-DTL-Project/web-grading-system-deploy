@@ -1,0 +1,45 @@
+%% Executor grading pipeline (executor-service)
+%% Paste into https://mermaid.live to preview and export SVG/PNG/PDF
+flowchart LR
+    subgraph Events["Kafka wgs-events"]
+        EV["GRADE_SUBMISSION event"]
+    end
+
+    subgraph Handler["GradeSubmissionHandler"]
+        CLAIM["Claim PENDING job"]
+        DUP{"Duplicate?"}
+        RST["Reset FAILED job"]
+    end
+
+    subgraph Orch["GradingOrchestrator - single-job pool"]
+        FETCH["FETCHING - fetch config and plans"]
+        DL["BUILDING - download artifact"]
+        BOOT["BOOT_COMPOSE - patch and boot compose on DinD"]
+        RUN["RUNNING - execute HTTP steps"]
+        SCORE["SCORE_REPORT - score and report"]
+    end
+
+    subgraph Stores["Writes"]
+        RESULT["result-service"]
+        SUBST["submission status"]
+    end
+
+    subgraph Recovery["Recovery"]
+        REAPER["StaleJobReaper - every 5 min"]
+        RESETAPI["POST internal grading-jobs reset"]
+    end
+
+    EV --> CLAIM
+    CLAIM --> DUP
+    DUP -- new --> Orch
+    DUP -- duplicate FAILED --> RST
+    RST --> Orch
+    CLAIM --> FETCH
+    FETCH --> DL
+    DL --> BOOT
+    BOOT --> RUN
+    RUN --> SCORE
+    SCORE --> RESULT
+    SCORE --> SUBST
+    REAPER -. re-enqueues stale PENDING/FETCHING/BUILDING .-> Orch
+    RESETAPI -. operator reset to PENDING .-> Orch

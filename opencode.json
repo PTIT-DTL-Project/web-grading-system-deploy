@@ -1,0 +1,11 @@
+{
+  "$schema": "https://app.kilo.ai/config.json",
+  "mcp": {
+    "servers": {
+      "flovia": {
+        "type": "remote",
+        "url": "https://api.flovia.dev/mcp"
+      }
+    }
+  }
+}

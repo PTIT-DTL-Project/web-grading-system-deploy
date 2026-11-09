@@ -1,16 +1,15 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Observability Stack — Uninstall Script (clean rebuild)
+# Observability Stack (Lite) — Uninstall Script
+# Removes: kube-prometheus-stack (Prometheus + Grafana), Tempo.
 # =============================================================================
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
 echo "========================================"
-echo " Observability Stack Uninstaller"
+echo " Observability Stack (Lite) Uninstaller"
 echo "========================================"
 echo ""
-echo "This will remove: kube-prometheus-stack (Prometheus/Grafana/Node Exporter), Alloy, Tempo, Loki, grafana-dashboards"
+echo "This will remove: kube-prometheus-stack (Prometheus + Grafana), Tempo."
 echo "PVCs will NOT be deleted (data preserved)."
 echo ""
 
@@ -21,32 +20,16 @@ if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
 fi
 
 echo ""
-echo "[1/8] Removing kube-prometheus-stack (Prometheus + Grafana + Node Exporter)..."
+echo "[1/3] Removing kube-prometheus-stack..."
 helm uninstall monitoring -n observability 2>/dev/null || true
 
 echo ""
-echo "[2/8] Removing Alloy (OTLP collector)..."
-helm uninstall alloy -n observability 2>/dev/null || true
-
-echo ""
-echo "[3/8] Removing Tempo..."
+echo "[2/3] Removing Tempo..."
 helm uninstall tempo -n observability 2>/dev/null || true
 
 echo ""
-echo "[4/8] Removing Loki..."
-helm uninstall loki -n observability 2>/dev/null || true
-
-echo ""
-echo "[5/8] Removing Grafana dashboard configmap..."
-kubectl delete configmap grafana-dashboards -n observability 2>/dev/null || true
-
-echo ""
-echo "[6/8] Removing ingress..."
+echo "[3/3] Removing ingress..."
 kubectl delete ingress grafana -n observability 2>/dev/null || true
-
-echo ""
-echo "[7/8] Removing namespace..."
-kubectl delete namespace observability 2>/dev/null || true
 
 echo ""
 echo "========================================"

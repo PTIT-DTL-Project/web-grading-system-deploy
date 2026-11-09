@@ -14,9 +14,10 @@ echo -e "${BLUE}  Web Grading System - Stop${NC}"
 echo -e "${BLUE}============================================================${NC}"
 echo ""
 
-echo -e "${YELLOW}➜ Stopping Cloudflare Tunnel...${NC}"
-docker compose -f "$SCRIPT_DIR/deploy/cloudflared/docker-compose.yml" down 2>/dev/null || true
-echo -e "${GREEN}✓ Cloudflare Tunnel stopped${NC}"
+echo -e "${YELLOW}➜ Cloudflare Zero Trust tunnel:${NC}"
+# Tunnel no longer runs via deploy/cloudflared docker-compose (removed with the
+# Zero Trust migration). It runs as a foreground process when started manually.
+echo "  If running (cloudflare_tunnel_run.sh), stop it with: pkill -f 'cloudflared tunnel run'"
 
 echo ""
 echo -e "${YELLOW}➜ Stopping k3s...${NC}"

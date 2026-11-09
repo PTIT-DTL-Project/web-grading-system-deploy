@@ -21,7 +21,7 @@ kubectl apply -f generated/
 
 ### Build & Test Locally
 ```bash
-cd web-grading-system-services
+cd web-grading-system-backend-services
 
 # Build core library
 cd core && mvn clean install && cd ..
@@ -54,7 +54,7 @@ git push origin feat/my-feature
 
 ### Generate New Chart
 ```bash
-cd web-grading-system-config
+cd web-grading-system-services-config
 ./generate-charts.sh
 ```
 
@@ -128,7 +128,7 @@ docker pull vucongtuanduong/web-grading-system-submission-service:v1.2.0
 
 ### Build Locally
 ```bash
-cd web-grading-system-services/submission-service
+cd web-grading-system-backend-services/submission-service
 docker build -t submission-service:test .
 docker run -p 8082:8082 submission-service:test
 ```
@@ -207,7 +207,7 @@ kubectl get secret -n monitoring grafana -o jsonpath="{.data.admin-password}" | 
 ### Check Workflow Status
 ```bash
 # View GitHub Actions runs
-gh run list --repo PTIT-DTL-Project/web-grading-system-services
+gh run list --repo PTIT-DTL-Project/web-grading-system-backend-services
 
 # View specific run
 gh run view <run-id> --log
@@ -259,10 +259,11 @@ kubectl get pods -n web-grading -o jsonpath='{range .items[*]}{.metadata.name}{"
 
 ### Check Health
 ```bash
-# Health check all services
-for service in submission-service executor-service api-gateway result-service assignment-service; do
-  echo "=== $service ==="
-  kubectl exec -n web-grading $(kubectl get pod -n web-grading -l app=$service -o jsonpath='{.items[0].metadata.name}') -- curl -s http://localhost:8080/actuator/health || echo "Failed"
+# Health check all services (each service exposes its own port)
+for svc in api-gateway:8080 course-service:8081 submission-service:8082 executor-service:8083 result-service:8084 ai-assistant-service:8086; do
+  name=${svc%%:*}; port=${svc##*:}
+  echo "=== $name ==="
+  kubectl exec -n web-grading deploy/grading-$name -- curl -s http://localhost:$port/actuator/health || echo "Failed"
 done
 ```
 
@@ -271,13 +272,13 @@ done
 ### Manage Secrets
 ```bash
 # List secrets
-gh secret list --repo PTIT-DTL-Project/web-grading-system-services
+gh secret list --repo PTIT-DTL-Project/web-grading-system-backend-services
 
 # Set secret
-gh secret set DOCKERHUB_TOKEN --repo PTIT-DTL-Project/web-grading-system-services
+gh secret set DOCKERHUB_TOKEN --repo PTIT-DTL-Project/web-grading-system-backend-services
 
 # Delete secret
-gh secret delete SECRET_NAME --repo PTIT-DTL-Project/web-grading-system-services
+gh secret delete SECRET_NAME --repo PTIT-DTL-Project/web-grading-system-backend-services
 ```
 
 ## 📦 Cleanup Commands
@@ -305,7 +306,7 @@ docker rmi vucongtuanduong/web-grading-system-submission-service:v1.0.0
 ### Complete Update Flow
 ```bash
 # 1. Make code changes
-cd web-grading-system-services
+cd web-grading-system-backend-services
 git checkout -b feat/new-feature
 vim submission-service/src/...
 
@@ -320,7 +321,7 @@ git push origin feat/new-feature
 gh run watch
 
 # 5. Check config repo updated
-cd ../web-grading-system-config
+cd ../web-grading-system-services-config
 git pull
 cat submission-service/values-stg.yaml | grep tag
 

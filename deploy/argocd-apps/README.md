@@ -23,6 +23,7 @@ Script sẽ tạo các file manifest trong thư mục `generated/`:
 - `api-gateway.yaml`
 - `result-service.yaml`
 - `course-service.yaml`
+- `ai-assistant-service.yaml`
 
 ### Apply to Cluster
 
@@ -39,7 +40,11 @@ kubectl apply -f generated/submission-service.yaml
 ```bash
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 ```
+### Gateway secret
 
+```bash
+kubectl get secret gateway-trust -n web-grading -o jsonpath='{.data.GATEWAY_TRUSTED_SECRET}' | base64 -d
+```
 ### Verify Applications
 
 ```bash
@@ -104,9 +109,9 @@ Ví dụ:
 ## 🔄 GitOps Flow
 
 ```
-1. Code changes → Source Repo (web-grading-system-services)
+1. Code changes → Source Repo (web-grading-system-backend-services)
 2. CI/CD build → Docker Image
-3. CI/CD update → Config Repo (web-grading-system-config)
+3. CI/CD update → Config Repo (web-grading-system-services-config)
 4. ArgoCD detect → Config changes
 5. ArgoCD sync → Deploy to K8s
 ```
@@ -123,7 +128,7 @@ metadata:
   namespace: argocd
 spec:
   source:
-    repoURL: https://github.com/Duong-Vu-practice-workspace/web-grading-system-config-test
+    repoURL: https://github.com/PTIT-DTL-Project/web-grading-system-services-config.git
     path: <service-name>  # Path to Helm chart in mono-repo
     helm:
       valueFiles:
@@ -138,5 +143,5 @@ spec:
 
 ## 🔗 Related
 
-- Config Repo: https://github.com/PTIT-DTL-Project/web-grading-system-config
-- Source Repo: https://github.com/PTIT-DTL-Project/web-grading-system-services
+- Config Repo: https://github.com/PTIT-DTL-Project/web-grading-system-services-config
+- Source Repo: https://github.com/PTIT-DTL-Project/web-grading-system-backend-services

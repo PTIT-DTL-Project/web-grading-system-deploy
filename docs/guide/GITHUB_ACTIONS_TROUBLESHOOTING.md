@@ -107,7 +107,8 @@ Các images cần có:
 - `web-grading-system-executor-service`
 - `web-grading-system-api-gateway`
 - `web-grading-system-result-service`
-- `web-grading-system-assignment-service`
+- `web-grading-system-course-service`
+- `web-grading-system-ai-assistant-service`
 
 Mỗi image cần có tags:
 - `latest` (luôn update)

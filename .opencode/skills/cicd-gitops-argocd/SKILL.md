@@ -71,10 +71,30 @@ Template facts (`argocd-app-template.yaml`, single var `${SERVICE_NAME}`):
 - Destination: `https://kubernetes.default.svc`, namespace `web-grading`.
 - SyncPolicy: `automated: {prune: true, selfHeal: true}`.
 
-Add-a-service checklist:
-1. Append name to `deploy/argocd-apps/services.env`.
-2. Chart must exist in config repo: `<service>/Chart.yaml` + `values-stg.yaml`.
-3. Regenerate + apply. ArgoCD creates the app; chart owns the rest.
+Add-a-service checklist (full onboarding surface, distilled 2026-10-15 from
+the ai-assistant-service onboarding):
+1. CI: add the dir to `build-services.yml` in BOTH places — `on.push.paths`
+   AND the `dorny/paths-filter` block (same defect class as the rename fix).
+   `publish.yml` needs no change (generic loop over changed-services.json).
+2. Add the service's Dockerfile if missing (context = service dir, so it MUST
+   be at the service root) + mvnw/.mvn wrapper (sibling Dockerfile copies them).
+3. Append name to `deploy/argocd-apps/services.env`.
+4. Chart must exist in config repo: `<service>/Chart.yaml` + `values-stg.yaml`
+   with exactly one `tag:` line (sed rewrites the first); seed `tag: "v1.0.0"`
+   — publish.yml only warns and skips when the chart dir is absent, it never
+   creates one.
+5. New secrets → `deploy/setup-namespace.sh` + chart env; chart env names must
+   match the service's own placeholders (no auto-mapping).
+6. Ingress debug host → `deploy/ingress/<service>.yaml` (install-ingress.sh
+   globs the folder, nothing else to register).
+7. DB must ALREADY exist on the target server — no script provisions databases.
+8. Cloudflare public hostname → manual, dashboard-only (see cloudflare-tunnel
+   skill).
+9. Regenerate + apply: `./generate-argocd-apps.sh && kubectl apply -f generated/`.
+   ArgoCD creates the app; chart owns the rest.
+Note: `set-log-level.sh` and `dev-scale.sh` read `services.env` dynamically —
+no edit needed there. Fresh-install scripts need no per-service edit either
+(install-ingress globs, install-argocd regenerates, setup-namespace owns secrets).
 
 PAST FIX — wrong manifest config repo: repoURL/targetRevision in the template
 must match the real config repo branch ArgoCD can reach. If apps show
@@ -99,3 +119,55 @@ Symptom map:
   check rollout (`kubectl rollout status deployment/<svc> -n web-grading`).
 - publish.yml red at clone step → `CONFIG_REPO_TOKEN` missing/expired or repo renamed.
 - App Missing → chart path doesn't exist on that branch in the config repo.
+
+Render a chart locally before pushing (charts in `config-services/` ship **no** default
+`values.yaml`, only `values-stg.yaml`, so plain `helm template` dies on
+`nil pointer evaluating interface {}.type`):
+
+```bash
+helm template <name> config-services/<name> -f config-services/<name>/values-stg.yaml
+```
+
+## 5. setup-namespace.sh secret rules
+
+`deploy/setup-namespace.sh` runs on every `setup*.sh` (setup.sh step 2), so each
+secret write MUST be idempotent: a changed Secret does NOT restart pods (all
+services read `gateway-trust` via `secretKeyRef`), so a rotated value leaves the
+running pods stale and forces `clean.sh` + a full redeploy to realign.
+
+- Config secrets (db-secret, rustfs-secret, ai-credentials, app-config, …):
+  `--from-literal=VALUE="${VAR:-default}"` — stable across re-runs; the same
+  blank `.env` var always falls back to the same default.
+- `gateway-trust`: NEVER auto-rotate on re-run. Read the value already in the
+  cluster and generate (`openssl rand -hex 32`) only when it is absent.
+  Precedence: explicit non-empty `.env` value (deliberate rotation) → existing
+  cluster value → fresh random. The `kubectl get … -o jsonpath=… | base64 -d`
+  probe is `|| true`-guarded (the secret is absent on a fresh cluster; `set -e`
+  + `pipefail` would otherwise abort the script).
+- Fail-loud secrets (`keycloak-admin-client`): values come from Keycloak, not
+  from us, so a missing pair exits 1 instead of pushing blank credentials.
+
+## 6. Probes target health groups, never `/actuator/health`
+
+Every chart ships the same generated probe block. Point readiness at
+`/actuator/health/readiness`, liveness at `/actuator/health/liveness`, and give
+each JVM pod a `startupProbe` on the liveness path.
+
+WHY: the root `/actuator/health` endpoint also runs the `db` indicator. These
+services use a Neon serverless Postgres that suspends when idle, so the first
+health check after suspension blocks ~14s waking the compute. k8s
+`timeoutSeconds` defaults to 1s, so the probe times out, fails
+`failureThreshold` (default 3) times in a row, and kubelet restarts the pod:
+graceful SIGTERM, NOT OOMKill. Observed 2026-10-17 on ai-assistant-service:
+liveness fired at +60s (JVM needs ~80s), +90s and +120s (db indicator hung),
+kill at +130s. ai-assistant flapped first only because it is the idle service;
+the others hold a hot DB connection. Pod memory is NOT the cause: don't raise
+`resources.limits.memory` for this symptom.
+
+The `livenessState`/`readinessState` groups are enabled automatically in k8s
+(`GET /actuator/health` returns `{"groups":["liveness","readiness"]}`) and
+answer in ms without touching the DB, so no `application.yaml` change is
+needed (adding `management.endpoint.health.probes.enabled: true` only makes it
+explicit). The `startupProbe` (periodSeconds 10, `failureThreshold: 30` ≈ 5 min)
+gives the cold JVM its own budget, so the old guessed `initialDelaySeconds:
+30/60` are unnecessary.

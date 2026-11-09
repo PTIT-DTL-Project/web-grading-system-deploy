@@ -1,91 +1,98 @@
-# Observability Stack
+# Observability Stack (Lite)
 
-Grafana + Prometheus + Node Exporter + kube-state-metrics + Loki (promtail) +
-Tempo + Alloy (OTLP collector) + Pyroscope (continuous profiling) + k6 trace generator, for a k3s cluster.
-Optimized for an 8 GB RAM box.
+Prometheus + Grafana UI + Tempo (distributed tracing), for a single-node k3s
+cluster. Sized for an 8 GB RAM box.
 
 ## Architecture
 
 ```
-                ┌──────────────────────────────────────────────┐
-                │                    Grafana                     │  ← UI for traces, logs, metrics
-                └─┬────────────────────────────────────────────┘
-                  │ datasources: Prometheus, Loki, Tempo
-         ┌────────┼───────────┬──────────┐
-         ▼        │           │          │
-   ┌───────┐  ┌───────┐  ┌───────┐  ┌─────────┐
-   │Prom+NE│  │ Loki  │  │Tempo  │  │ Alloy   │ ← OTLP collector (deploy)
-   │(scrape)│  │+promt.│  │(traces│  │(4317/   │
-   └───┬───┘  └───▲───┘  └───▲───┘  └──┬──────┘
-       │          │          │  ▲    ▲│
-  node │          │          │  │    │└ OTLP from backend pods + trace gen
-  -exporter      │          │  │    │
-  +kube-st-m     │          │  │    │
-       │   ▲     │          │  │    │
-       │   │     │          │  │    │
-   ┌────▼──┴─────▼──┐   ┌───▼──▼────▼──────┐
-   │ Backend pods   │   │ k6-trace-gen     │  ← synthetic traces (dev)
-   │ (web-grading)  │   └──────────────────┘
-   └────────────────┘         (alloy:4317)
-          /actuator ───────────► OTel ──► Tempo
-          /prometheus ────────► Prom
-          JSON logs ──────────► promtail ──► Loki
+                 ┌─────────────────────────────────────────────┐
+                 │                  Grafana                    │  ← UI (metrics + traces)
+                 └───┬─────────────────────────────────────┬───┘
+                     │ Prometheus datasource               │ Tempo datasource
+                     ▼                                     ▼
+              ┌─────────────┐                        ┌─────────────┐
+              │ Prometheus  │                        │   Tempo     │
+              │  (scrape)   │                        │  (traces)   │
+              └──────▲──────┘                        └──────▲──────┘
+                     │ pull /actuator/prometheus            │ OTLP/HTTP :4318
+                     │                                      │
+              ┌──────┴──────────────────────────────────────┴──────┐
+              │             Backend pods (web-grading)            │
+              └───────────────────────────────────────────────────┘
 ```
 
-- **Prometheus** scrapes backend `/actuator/prometheus` + `node_exporter` + `kube-state-metrics`.
-- **Alloy** is an OTLP collector: backend services + the k6 trace generator send traces `→ Alloy → Tempo`.
-- **promtail** tails pod logs into **Loki** (logs carry `trace_id`/`span_id` for correlation).
-- **Grafana** (bundled by kube-prometheus-stack) is the single pane.
+- **Prometheus** pulls `/actuator/prometheus` from the six Spring Boot services
+  every 30 s using Kubernetes pod service discovery.
+- **Tempo** receives OTLP/HTTP traces directly from each service
+  (`tempo.observability.svc.cluster.local:4318/v1/traces`); there is no
+  collector in between.
+- **Grafana** is the single pane. Both datasources (Prometheus and Tempo) are
+  declared explicitly under `grafana.additionalDataSources` in
+  `charts/kube-prometheus-stack-values.yaml`. The generated ConfigMap is mounted
+  **directly** into the Grafana pod at
+  `/etc/grafana/provisioning/datasources/datasource.yaml`
+  (`grafana.extraConfigmapMounts`), with the datasource sidecar off and
+  `forceDeployDatasources: true`. The chart's own provisioning is disabled
+  (`defaultDatasourceEnabled: false`) because it also injects an Alertmanager
+  datasource even though Alertmanager is not deployed.
+
+  Why not the sidecar: it writes the provisioning file after Grafana has read
+  the directory, so a fresh install can show an empty datasource list; it also
+  needs an extra image from quay.io and RBAC to watch ConfigMaps. Because the
+  mount uses `subPath`, changing `additionalDataSources` requires
+  `kubectl -n observability rollout restart deploy/monitoring-grafana`.
+  `install.sh` verifies the file from inside the pod at the end of the run.
+
+There is **no Loki, Mimir, Alloy, Pyroscope, node-exporter, kube-state-metrics,
+or Alertmanager** in this deployment. Do not re-add them on the 8 GB box.
+
+node-exporter and kube-state-metrics are switched off with the **camelCase
+condition keys** `nodeExporter.enabled` / `kubeStateMetrics.enabled`. On chart
+72.x the kebab-case `prometheus-node-exporter` / `kube-state-metrics` blocks are
+only the subcharts' own value namespaces: `enabled: false` there is silently
+ignored and both workloads still render (seen 2026-11-08 — the pods were running
+next to this supposedly Lite stack and the node kept restarting pods).
+`install.sh` warns if either pod is still present after the upgrade.
 
 ## Components
 
 | Component | Mode | Memory | Purpose |
 |-----------|------|--------|---------|
-| **Grafana** | Helm (kube-prometheus-stack) | 256Mi-512Mi | Dashboard UI |
-| **Prometheus** | Helm (kube-prom-stack) | 512Mi-1Gi | Metrics store + scraping |
-| **kube-state-metrics** | Helm | 64Mi-128Mi | k8s object metrics |
-| **Node Exporter** | Helm (DaemonSet) | 32Mi/node | Host metrics (CPU/mem/disk/net) |
-| **Loki** | Helm (SingleBinary) + promtail DaemonSet | 256Mi-512Mi | Log aggregation |
-| **Tempo** | Helm | 256Mi-512Mi | Trace storage |
-| **Alloy** | Helm (Deployment) | 100m/128Mi → 300m/256Mi | OTLP trace collector → Tempo |
-| **Pyroscope** | Helm (single-process) | 256Mi-512Mi | Continuous profiling |
-| **k6 Trace Generator** | Manifest | 100m/128Mi | Synthetic OTLP traces (dev) |
+| **Grafana** | Helm (kube-prometheus-stack) | 256Mi–512Mi | UI for Prometheus + Tempo |
+| **Prometheus** | Helm (kube-prometheus-stack) | 256Mi–768Mi | Metrics store, scrapes `/actuator/prometheus` |
+| **Tempo** | Helm | 256Mi–512Mi | Trace storage (OTLP 4317/4318) |
 
 ## Quick Start
 
 ```bash
 # 1. Create env file
 cp .env.observability.example .env.observability
-vim .env.observability  # edit GRAFANA_DOMAIN, passwords, etc.
+vim .env.observability  # set GRAFANA_ADMIN_PASSWORD
 
 # 2. Install (needs: kubectl + helm, cluster running)
 ./install.sh
 
 # 3. Check
 kubectl get pods -n observability
+
+# 4. CRITICAL: Verify Tempo is on port 3200 (not 3100)
+kubectl exec -n observability tempo-0 -- cat /conf/tempo.yaml | grep http_listen_port
+# Must output: http_listen_port: 3200
+# If 3100 → re-run ./install.sh to apply latest config
 ```
+
+`install.sh` prints a warning if other Helm releases still exist in the
+`observability` namespace (for example `loki`, `mimir`, `alloy`, `pyroscope`
+from the old full stack). Those keep consuming RAM even after the Lite stack is
+installed; remove them with `helm uninstall <release> -n observability`.
 
 ## Spring Boot Service Integration
 
-### Local development: push telemetry to the deployed stack
-
-Run a service on your localhost but still send metrics/traces/profiles to the
-deployed observability stack via the Cloudflare tunnel:
-
-```bash
-export OTLP_TRACES_ENDPOINT=https://web-dev2-otlp.vucongtuanduong.dpdns.org/v1/traces
-export OTLP_METRICS_ENDPOINT=https://web-dev2-otlp.vucongtuanduong.dpdns.org/v1/metrics
-export PYROSCOPE_ENDPOINT=https://web-dev2-pyroscope.vucongtuanduong.dpdns.org
-./gradlew bootRun   # or however you start the local service
-```
-
-Both hostnames are routed by the Cloudflare tunnel → Traefik → the in-cluster
-Alloy (:4318) and Pyroscope (:4100) receivers. ArgoCD CI/CD keeps deploying the
-real services normally; the local instance is just an extra telemetry source.
-
 ### Dependencies (pom.xml)
 
-Spring Boot 4.x — needs `actuator` (Prometheus + health) and `opentelemetry` (OTLP tracing), both already present:
+Spring Boot 4.x needs `actuator` (Prometheus + health) and `opentelemetry`
+(OTLP tracing):
 
 ```xml
 <dependency>
@@ -98,7 +105,7 @@ Spring Boot 4.x — needs `actuator` (Prometheus + health) and `opentelemetry` (
 </dependency>
 ```
 
-### application.yaml (merge the block under `management`)
+### application.yaml (merge under `management`)
 
 ```yaml
 management:
@@ -107,92 +114,169 @@ management:
       exposure:
         include: health,info,prometheus
   tracing:
-    enabled: true
     sampling:
-      probability: 1.0  # 1.0 = dev (100%), 0.1-0.3 for prod
-  otlp:
+      probability: ${OTEL_TRACES_SAMPLING_PROBABILITY:1.0}
+    export:
+      enabled: true   # Boot 4.1 default; declared so all six match
+  # Spring Boot 4.x names. management.otlp.tracing.* and
+  # management.tracing.enabled are deprecated at error level.
+  # Verified against spring-boot-micrometer-tracing-opentelemetry-4.1.0.
+  opentelemetry:
     tracing:
-      endpoint: http://alloy.observability.svc.cluster.local:4318/v1/traces
-      transport: http
-# No OTLP metrics export — Prometheus scrapes /actuator/prometheus directly.
-spring:
-  application:
-    name: my-service  # appears as service name in Grafana traces
+      export:
+        otlp:
+          endpoint: ${OTLP_TRACES_ENDPOINT:http://tempo.observability.svc.cluster.local:4318/v1/traces}
+  otlp:
+    metrics:
+      # Prometheus pulls the metrics; do not also push them to Tempo.
+      export:
+        enabled: false
 logging:
   pattern:
     level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
 ```
 
-### Log shipping (Loki)
+Micrometer's MDC keys are `traceId` and `spanId` (`Slf4JEventListener` in
+`micrometer-tracing-bridge-otel`). `trace_id`/`span_id` are wrong and produce
+empty log fields. Logs are plain stdout — no aggregator parses them, so nothing
+else needs configuring.
 
-promtail ships logs from pods that carry the `app.kubernetes.io/name` label, so
-each backend service Deployment/Service should set it (most do by default). Drop
-`templates/logback-spring.xml` into each Spring Boot service's
-`src/main/resources` so JSON logs include `trace_id`/`span_id`.
+OTLP **metrics** keep the `management.otlp.metrics.export.*` namespace in Boot
+4.1 (`enabled` defaults to `true`). There is no
+`management.opentelemetry.metrics.*` equivalent; writing one is silently ignored
+and metrics export turns back on.
 
 ### What you get
 
-- **Traces**: every HTTP/DB/outbound call is auto-traced (`alloy → Tempo`).
-- **Metrics**: RED metrics from traces + Prometheus scrapes of `actuator/prometheus` and node-exporter.
-- **Logs**: JSON logs correlated with traces via `trace_id`/`span_id`.
-- **Service map**: dependency graph of backend services in Grafana.
-
-## Dashboard
-
-The shared `k8s-general.json` dashboard is imported by `install.sh` and includes:
-
-| Section | Panels |
-|---------|--------|
-| Cluster Overview | Pods, Deployments, CPU%, Memory%, Not Ready |
-| CPU & Memory by Service | Time series per pod |
-| Node Metrics (Node Exporter) | Cluster CPU%, Memory%, node count, per-node CPU usage |
-| Logs | Log volume by service/container, live log stream |
-| Traces & Service Map | Service graph, request rate, error rate, duration P99 |
-| Trace Search | Search traces by service, operation, duration |
-
-Access at: `http://<GRAFANA_DOMAIN>` (admin / `GRAFANA_ADMIN_PASSWORD`).
+- **Traces**: every HTTP/DB/outbound call is auto-traced and pushed to Tempo.
+- **Metrics**: Prometheus scrapes `http_server_requests_*` and the other
+  Actuator metrics from each backend pod.
+- **Grafana**: query both datasources from one UI. No dashboards are
+  provisioned by default; use Explore, or add ConfigMaps labelled
+  `grafana_dashboard=1` (the dashboards sidecar is disabled in this Lite
+  deployment, so re-enable it first if you add any).
 
 ## File Structure
 
 ```
 deploy/observability/
 ├── .env.observability.example  # Template (copy to .env.observability)
-├── install.sh                  # Install all
-├── uninstall.sh                # Remove all
+├── install.sh                  # Preflight + Prometheus + Grafana + Tempo + ingress
+├── uninstall.sh                # Remove releases, keep PVCs
 ├── README.md
 ├── charts/
-│          ├── kube-prometheus-stack-values.yaml  # Prometheus + Grafana + Node Exporter + kube-st-m
-│   ├── loki-values.yaml                   # Loki + promtail (logs)
-│   ├── tempo-values.yaml                  # Tempo (traces)
-│   ├── alloy-values.yaml                  # Alloy (OTLP collector → Tempo)
-│   └── pyroscope-values.yaml              # Pyroscope (continuous profiling)
+│   ├── kube-prometheus-stack-values.yaml  # Prometheus + Grafana (all extras off)
+│   └── tempo-values.yaml                  # Tempo (traces)
 ├── manifests/
-│   ├── monitoring/
-│   │   └── trace-generator.yaml           # k6 synthetic trace generator
 │   └── ingress/
-│       ├── grafana.yaml
-│       ├── otlp.yaml                        # web-dev2-otlp → alloy:4318 (local dev)
-│       └── pyroscope.yaml                   # web-dev2-pyroscope → pyroscope:4100 (local dev)
-├── templates/
-│   ├── application-observability.yaml     # merge-block for Spring Boot services
-│   └── logback-spring.xml                 # JSON logging with trace IDs
-└── dashboards/
-    └── k8s-general.json                  # Shared Grafana dashboard
+│       └── grafana.yaml                   # web-dev1-grafana → monitoring-grafana:80
+└── templates/
+    └── application-observability.yaml     # merge-block for Spring Boot services
 ```
 
 ## Resource Usage
 
-Estimated total (full stack with traces/metrics/logs): **~4-5Gi RAM**
+Estimated total: **~0.8 GiB requests, ~1.8 GiB limits**.
 
 | Component | CPU Req | Mem Req | CPU Limit | Mem Limit |
 |-----------|---------|---------|-----------|-----------|
-| Prometheus | 200m | 512Mi | 1000m | 1Gi |
-| kube-state-metrics | 100m | 64Mi | 200m | 128Mi |
-| Node Exporter (per node) | 10m | 16Mi | 100m | 64Mi |
-| Loki (single + promtail) | 100m | 256Mi | 500m | 512Mi |
-| Tempo | 100m | 256Mi | 500m | 512Mi |
-| Alloy (OTLP collector) | 100m | 128Mi | 300m | 256Mi |
-| Pyroscope | 100m | 256Mi | 300m | 512Mi |
+| Prometheus | 100m | 256Mi | 500m | 768Mi |
 | Grafana | 100m | 256Mi | 500m | 512Mi |
+| Tempo | 100m | 256Mi | 500m | 512Mi |
+| **Total** | **310m** | **800Mi** | **1550m** | **1.81Gi** |
 
-> Tip: set `prometheus-node-exporter.enabled: false` and `kube-state-metrics.enabled: false` if you only need service-level metrics, to trim ~200Mi.
+## 8 GB tuning notes
+
+- **Tempo ballast is disabled** (`tempo.memBallastSizeMbs: 0`). Tempo 2.x
+  defaults to a 1 GiB ballast, which is twice the container limit and causes
+  constant OOMKills/node pressure. `GOMEMLIMIT=400MiB` keeps the Go heap below
+  the 512Mi limit.
+- Image and resources live under `tempo.*` in the chart schema. A top-level
+  `image:`/`resources:` block is silently ignored by this chart.
+- Prometheus retains 3 days and stops at 1500 MB so the 2 GiB PVC cannot fill.
+- cAdvisor is scraped every 30 s instead of the default 10 s.
+- k3s control-plane components (`kubeControllerManager`, `kubeScheduler`,
+  `kubeProxy`, `kubeEtcd`) are disabled: k3s runs them inside one process, so
+  they only produced permanently-down targets.
+- Prometheus does **not** send the ServiceAccount token to backend pods. That
+  token made `api-gateway` return 401 before `permitAll()` on
+  `/actuator/prometheus` could apply.
+- Only pods labelled with one of the six service names and only ports
+  `8080-8084,8086` are scraped. The executor's `dind` sidecar (2375),
+  Keycloak, RustFS and Kafka UI are excluded.
+
+## Access
+
+- Grafana: `https://web-dev1-grafana.vucongtuanduong.dpdns.org` (admin / password from `.env.observability`)
+- Prometheus (in-cluster): `monitoring-kube-prometheus-prometheus.observability.svc.cluster.local:9090`
+- Tempo query (in-cluster): `tempo.observability.svc.cluster.local:3200`
+- Tempo OTLP (in-cluster): `tempo.observability.svc.cluster.local:4318`
+
+## Troubleshooting
+
+**Grafana shows "dial tcp ...3200: i/o timeout" when querying Tempo**
+
+**Cause:** Tempo is listening on port 3100 (chart default) instead of 3200 (expected by Grafana datasource).
+
+**Diagnosis:**
+```bash
+kubectl exec -n observability tempo-0 -- cat /conf/tempo.yaml | grep http_listen_port
+```
+If output is `http_listen_port: 3100` → config not applied.
+
+**Fix:**
+```bash
+cd deploy/observability
+./install.sh  # Re-deploy with correct config (already in tempo-values.yaml)
+```
+
+**Verify:**
+```bash
+# 1. Check config
+kubectl exec -n observability tempo-0 -- cat /conf/tempo.yaml | grep http_listen_port
+# Output: http_listen_port: 3200 ✓
+
+# 2. Test connectivity
+kubectl exec -n observability deployment/monitoring-grafana -- \
+  wget -O- --timeout=5 http://tempo.observability.svc.cluster.local:3200/ready
+# Should respond within <5s, NOT timeout
+```
+
+See: `.opencode/plan/deploy-observability-stack/tempo-port-mismatch-fix.md` for full root cause analysis.
+
+---
+
+**`helm` fails with `504 Gateway Timeout` while installing Tempo**
+The classic `grafana/tempo` repo path resolves to
+`github.com/grafana/helm-charts/releases/download/...`, whose CDN intermittently
+answers 504. `install.sh` therefore pulls both charts from GHCR as OCI
+artifacts (`oci://ghcr.io/grafana/helm-charts/tempo`,
+`oci://ghcr.io/prometheus-community/charts/kube-prometheus-stack`) and retries
+each release 3 times. No `helm repo add` is needed; if you install by hand, use
+the `oci://` reference instead of `grafana/tempo`.
+
+**Grafana redirects to the wrong host / login loop**
+Check `grafana.ini.server.domain`, `root_url` and `serve_from_sub_path` in
+`charts/kube-prometheus-stack-values.yaml`. They must match the ingress host and
+the ingress must route `/` (not a sub-path).
+
+**`grafana.ini` has `anonymous = map[enabled:false]`**
+Sections in `grafana.ini` must be flat key/value maps. A nested block
+(`auth: { anonymous: { enabled: false } }`) is rendered by the chart as an
+unknown option. Use `auth.anonymous: { enabled: false }`.
+
+**Tempo keeps restarting (OOMKilled)**
+`kubectl describe pod -n observability tempo-0` → look at `Last State`.
+Confirm `tempo.memBallastSizeMbs: 0` and that resources are under `tempo:`.
+
+**Prometheus target for api-gateway returns 401**
+Remove `bearer_token_file`/`tls_config` from `additionalScrapeConfigs`. Those
+settings authenticate the scrape to the target pod, not to the Kubernetes API.
+
+**Metrics missing for one service**
+Grafana → Explore → Prometheus → check `up{service="<name>"}`. If 0, verify the
+pod label `app` is one of the six names and that the pod is Ready.
+
+**No traces**
+Check `kubectl logs -n web-grading deploy/<service> | grep -i otlp`. Then query
+Tempo from Grafana (Explore → Tempo → Search).

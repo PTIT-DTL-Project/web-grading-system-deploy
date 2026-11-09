@@ -1,0 +1,36 @@
+fix(observability): upgrade Tempo chart to v3.1.0 for native port 3200
+
+Root cause: Chart grafana/tempo v1.21.1 (app 2.7.1) defaults to port 3100
+(legacy), requiring manual override to 3200. If override is missed, Grafana
+queries timeout with "dial tcp ...3200: i/o timeout".
+
+Solution: Upgrade to grafana-community/tempo v3.1.0 (app 2.8+), which
+defaults to port 3200 natively. This eliminates the need for manual override
+and prevents port mismatch in future deployments.
+
+Changes:
+- charts/tempo-values.yaml: Update chart version 1.21.1 → 3.1.0, rewrite
+  server.http_listen_port comment to reflect 3200 is now default
+- install.sh: Change chart URL to grafana-community, pull v3.1.0
+- docs/observability/README.md: Update Tempo version reference and add
+  port 3200 note
+
+Benefits:
+- Port 3200 is default (no risk of config drift)
+- 50% memory reduction (removed large trace pooling)
+- TraceQL improvements: topk(), bottomk(), sum_over_time(), most_recent=true
+- Security fixes: distroless images, Go 1.24+
+- Zero breaking changes for our single-binary setup
+
+Deployment: Run ./install.sh on cluster with Helm access.
+
+Verification:
+  kubectl exec tempo-0 -n observability -- cat /conf/tempo.yaml | grep http_listen_port
+  # Expected: http_listen_port: 3200
+
+Review: 2026-11-08, Tempo port mismatch investigation and permanent fix.
+
+Related docs:
+- UPGRADE-TEMPO-CHART-v3.md: Full upgrade plan with risk assessment
+- SOLUTION-UPGRADE-CHART-V3.md: Summary and comparison of all solutions
+- RUNBOOK-TEMPO-PORT-FIX.md: Quick fix runbook (superseded by this upgrade)

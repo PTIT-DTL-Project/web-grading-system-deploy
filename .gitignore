@@ -33,3 +33,18 @@ replay_pid*
 
 **/frontend-src/**
 **/cloudflare_tunnel_run.sh
+
+# Aiven secrets
+**/test.txt
+**/docker/kafka-ca.pem
+
+**/mock/**
+.dev-scale-state/
+
+# Local rolling log files (per-service .log/ dirs, WAL-style)
+**/.log/
+
+**/ptit-wgs-realm.json
+**/realm-export.json
+/src-services/keycloak/realm-export.json
+.opencode/plan/generate-data-api/students-import.csv
