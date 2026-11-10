@@ -44,8 +44,13 @@ grafana:
     storageClassName: local-path
 
   resources:
-    limits: { cpu: 500m, memory: 512Mi }
-    requests: { cpu: 100m, memory: 256Mi }
+    # Review: 2026-11-10 — tăng từ từ từ 512Mi/500m lên 768Mi/750m vì Grafana
+    # hay OOMKilled (CrashLoopRestart) khi query nhiều series từ Prometheus trên
+    # box 8 GB đang khít RAM (~6.7–7.1GB/7.6GB). Không nhảy thẳng 1Gi để tránh
+    # bó nút nhớ node làm các pod Java khác bị Kill. Sẽ theo dõi rồi cân nhắc
+    # tăng thêm sau nếu cần.
+    limits: { cpu: 750m, memory: 768Mi }
+    requests: { cpu: 200m, memory: 384Mi }
 
   adminUser: admin
   # adminPassword is injected at install time via --set (see install.sh).
