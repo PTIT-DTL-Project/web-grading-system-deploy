@@ -124,6 +124,15 @@ grafana:
     users:
       allow_sign_up: false
 
+# --- prometheus-operator ---
+# The chart leaves the operator unbounded by default. It only reconciles a
+# handful of CRs here (one Prometheus, one Grafana), so a small ceiling is
+# enough and keeps the "every workload on this node declares limits" rule.
+prometheusOperator:
+  resources:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits: { cpu: 200m, memory: 256Mi }
+
 # --- Prometheus ---
 prometheus:
   enabled: true

@@ -17,7 +17,12 @@ spec:
     spec:
       containers:
         - name: kafka-ui
-          image: ghcr.io/kafbat/kafka-ui:latest
+          # Pin 2026-11-11: `latest` = v1.5.0 (index digest
+          # sha256:7cda86a33344160309fdb65146332e4da65db81a945614f2fe32e210803f6fd1,
+          # release 2026-04-20). With `latest` + IfNotPresent a node keeps
+          # whatever build it pulled first, so the running version was
+          # undefined. Bump deliberately, never with `latest`.
+          image: ghcr.io/kafbat/kafka-ui:v1.5.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
@@ -52,8 +57,13 @@ spec:
               mountPath: /etc/kafka/secrets
               readOnly: true
           resources:
+            # Request hạ từ 256Mi xuống 128Mi: request không làm giảm RAM thực
+            # nhưng đang giữ chỗ vô ích, khiến scheduler coi node 8 GB đã đầy
+            # và các pod Java khác khó được xếp lịch sau khi restart. Heap vẫn
+            # do limit 512Mi quyết định (25% ≈ 128Mi), không cần thêm JAVA_OPTS.
+            # Khi không cần xem topic: kubectl -n web-grading scale deploy/kafka-ui --replicas=0
             requests:
-              memory: 256Mi
+              memory: 128Mi
               cpu: 50m
             limits:
               memory: 512Mi

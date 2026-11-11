@@ -243,8 +243,38 @@ Symptom map:
 
 ## 7. 8 GB budget
 
-Observability requests ~0.8Gi, limits ~1.8Gi. Remaining RAM is shared with
-k3s (~1.5Gi), ArgoCD (~1Gi), Keycloak, RustFS, six services, and executor
-(2 replicas + dind if enabled). Prefer cutting non-observability usage
-(executor replicas, Keycloak/RustFS limits, ArgoCD extras) over raising these
-limits.
+Observability requests ~0.95Gi, limits ~2.75Gi (Prometheus 256Mi/768Mi, Grafana
+384Mi/768Mi, Tempo 256Mi/1Gi, prometheus-operator 64Mi/256Mi). Remaining RAM is
+shared with k3s (~1.4Gi), ArgoCD (~0.55Gi request after tuning), Keycloak
+(384Mi/768Mi), RustFS (128Mi/512Mi), Kafka UI (128Mi/512Mi), six services
+(~1.75Gi request for 7 pods), and the executor's TWO dind sidecars (512Mi
+request / 2Gi limit). Measured baseline before tuning: ~6.7Gi of 7.6Gi usable;
+target after tuning: ~6.1-6.3Gi (~1.3-1.5Gi headroom).
+
+Hard rule: every workload on this node declares requests/limits. An unbounded
+container is the one kubelet cannot evict in the right order, and a JVM without
+a memory limit sizes its heap against the whole 7.6Gi host — Keycloak sat at
+~0.8-1.2Gi for exactly that reason until it got `limits.memory: 768Mi` plus
+`JAVA_OPTS_APPEND=-XX:MaxRAMPercentage=60 -XX:InitialRAMPercentage=20`.
+
+Where the savings are (do not raise these three observability limits):
+
+1. `config-services/executor-service/values-stg.yaml`: `replicaCount: 2` is
+   REQUIRED (parallel grading; one pod restarting must not remove grading
+   capacity). Each replica costs app 512Mi + dind 1Gi limit, and that cost is
+   not cuttable. Instead the chart sets
+   `strategy.rollingUpdate: {maxSurge: 0, maxUnavailable: 1}` so an image bump
+   never schedules a THIRD executor pod (~500Mi of real RAM) on the tight node.
+   `dev-scale.sh executor-service on 1` exists only as a temporary local-dev
+   move, never as the committed default.
+2. `deploy/install-argocd.sh`: scales `argocd-notifications-controller` and
+   `argocd-applicationset-controller` to 0 (unused: apps are static manifests,
+   no notification templates) and sets limits on controller / repo-server /
+   server / redis / dex, because upstream `install.yaml` ships none.
+3. Keycloak + RustFS + Kafka UI now have bounded limits; Kafka UI request was
+   lowered to 128Mi (a request reserves scheduling space, it does not cap RSS).
+
+Optional, when still short: disable k3s metrics-server (`--disable=metrics-server`
+in `/etc/rancher/k3s/config.yaml`, ~40Mi), scale `kafka-ui` to 0 between demos
+(~250Mi), lower `OTEL_TRACES_SAMPLING_PROBABILITY` to 0.1-0.2, or run
+`setup_without_observability.sh` when only business flows are needed.

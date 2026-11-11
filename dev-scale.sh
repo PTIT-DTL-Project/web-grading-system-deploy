@@ -3,7 +3,7 @@
 # ArgoCD runs automated prune+selfHeal, so a plain `kubectl scale` would be
 # reverted within minutes. This script suspends the app's automated sync
 # before scaling to 0 or any N>1, and restores it when scaling back to 2
-# (the default).
+# (the default: executor must keep 2 pods).
 #
 # Usage:
 #   bash dev-scale.sh                    # interactive menu

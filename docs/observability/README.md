@@ -73,12 +73,14 @@ k3s cluster
 | Thành phần | Cài đặt | CPU request/limit | RAM request/limit | Ghi chú |
 |---|---|---|---|---|
 | Prometheus | kube-prometheus-stack | 100m / 500m | 256Mi / 768Mi | TSDB 2Gi, retention 3 ngày, cắt ở 1500MB |
-| Grafana | kube-prometheus-stack | 100m / 500m | 256Mi / 512Mi | PVC 2Gi |
-| Tempo | grafana-community/tempo 3.1.0 | 100m / 500m | 256Mi / 512Mi | PVC 2Gi, retention 24h, port 3200 |
+| Grafana | kube-prometheus-stack | 200m / 750m | 384Mi / 768Mi | PVC 2Gi |
+| Tempo | grafana-community/tempo 2.4.0 | 100m / 500m | 256Mi / 1Gi | PVC 2Gi, retention 24h, port 3200, `GOMEMLIMIT=800MiB` |
 
-Tổng request khoảng **0.8Gi**, tổng limit khoảng **1.8Gi**. Đây là mức tối đa
+Tổng request khoảng **0.9Gi**, tổng limit khoảng **2.5Gi**. Đây là mức tối đa
 nên dành cho observability trên máy 8 GB; phần còn lại phải chia cho k3s,
-ArgoCD, Keycloak, RustFS và sáu service nghiệp vụ.
+ArgoCD, Keycloak, RustFS và sáu service nghiệp vụ. Limit của Grafana và Tempo
+đã được nâng sau các lần OOMKill (Grafana 768Mi, Tempo 1Gi cho `local-blocks`),
+nên phần RAM cần cắt phải đến từ các thành phần khác — xem mục 10.
 
 Các thành phần **không triển khai**:
 
@@ -284,25 +286,63 @@ môi trường trong file values, Grafana sẽ nhận nguyên chuỗi đó làm 
 
 ## 10. Ngân sách RAM cho máy 8 GB
 
+Số đo trước khi tối ưu: **~6.7 GB / 7.6 GB khả dụng** (node 8 GB), tức gần như
+không còn chỗ cho page cache và cho một pod Java khởi động lại. Sau khi áp
+dụng các thay đổi dưới đây, mục tiêu là **~6.1-6.3 GB**, dư ~1.3-1.5 GB.
+
 ```
-Tổng RAM: 8192 MiB
-├── k3s system (apiserver, etcd, kubelet, containerd): ~1.5Gi
-├── ArgoCD: ~1Gi
-├── Keycloak: ~0.8-1.2Gi (chưa đặt limit)
-├── Sáu service Spring Boot: ~2-2.5Gi
-├── executor-service: 2 replica + 2 dind (nếu bật) ~2-3Gi limit
-└── Observability Lite: ~0.8Gi request / ~1.8Gi limit
+Tổng RAM: 8192 MiB (khả dụng ~7.6Gi)
+├── k3s system (apiserver, etcd, kubelet, containerd):        ~1.4Gi
+├── Sáu service nghiệp vụ (7 pod: 5 × 256Mi + 2 × 256Mi):  1.75Gi request / 3.5Gi limit
+├── dind sidecar của executor (2 × 256Mi):                   512Mi request / 2Gi limit
+├── Keycloak (đã có limit 768Mi):                            384Mi request / 768Mi limit
+├── Kafka UI + RustFS:                                       256Mi request / 1Gi limit
+├── ArgoCD (đã tắt 2 controller thừa):                       ~0.55Gi request / ~1.6Gi limit
+└── Observability Lite:                                     ~0.95Gi request / ~2.75Gi limit
+---------------------------------------------------------------
+Tổng request ~4.4Gi; tổng limit ~11.6Gi (overcommit bình thường,
+limit chỉ có tác dụng khi một pod thực sự phình lên).
 ```
 
-Ở mức limit hiện tại, cluster **overcommit** ngay cả khi request còn thấp.
-Muốn giảm áp lực:
+### 10.1 Đã áp dụng
 
-1. Giảm `replicaCount` của executor từ 2 xuống 1 trong `config-services`
-   (tiết kiệm ~0.6-1 GB cùng với dind).
-2. Đặt resource limit cho Keycloak và RustFS.
-3. Tắt Dex/Notifications/ApplicationSet của ArgoCD nếu không dùng.
-4. Cân nhắc tắt metrics-server của k3s nếu không dùng HPA.
-5. Giảm trace sampling xuống 0.1-0.2 khi không debug.
+1. **executor-service GIỮ 2 replica** (yêu cầu nghiệp vụ: chấm song song và
+   không mất năng lực chấm khi một pod restart/rollout). Mỗi replica gồm app
+   512Mi + dind 1Gi limit, tức ~512Mi request / ~1.5Gi limit — đây là khoản tốn
+   RAM lớn nhất trong namespace và **không** cắt được. Bù lại, chart đặt
+   `strategy.rollingUpdate.maxSurge: 0` để lúc cập nhật image không sinh pod
+   thứ ba (pod thứ ba = thêm ~500 MB thực khi node đang khít RAM). Tạm thời
+   chạy 1 pod khi code local: `bash dev-scale.sh executor-service on 1`.
+2. **Keycloak có requests/limits** (384Mi/768Mi) kèm `JAVA_OPTS_APPEND`
+   `-XX:MaxRAMPercentage=60 -XX:InitialRAMPercentage=20 -Xss512k` và
+   `KC_METRICS_ENABLED=false`. Không có limit thì JVM định cỡ heap theo RAM
+   node, đây là lý do Keycloak từng chiếm ~0.8-1.2 GB.
+3. **ArgoCD**: `install-argocd.sh` scale `argocd-notifications-controller` và
+   `argocd-applicationset-controller` về 0 (không dùng ApplicationSet, không có
+   notification template) và đặt requests/limits cho controller, repo-server,
+   server, redis, dex. Trước đó các pod này không có limit nào.
+4. **RustFS có trần 512Mi** (request 128Mi) — trước đây không giới hạn nên có
+   thể phình theo kích thước upload.
+5. **Kafka UI**: request 256Mi → 128Mi (limit giữ 512Mi) để scheduler không
+   giữ chỗ vô ích trên node 8 GB.
+6. **Image trong `deploy/` đã pin version thay `:latest`**: RustFS `1.0.5`,
+   Kafka UI `v1.5.0` (tra ngày 2026-11-11: digest của `latest` trùng đúng tag
+   version, xem comment trong manifest). Lý do: `latest` cộng pullPolicy mặc
+   định khiến mỗi lần pod restart hoặc kéo một build S3 server khác, hoặc
+   đóng băng node ở bản pull đầu tiên — trong khi limit RAM 512Mi được chỉnh
+   theo hành vi của đúng bản đang chạy. Khi cần nâng: sửa tag + comment digest
+   mới, không quay lại `latest`.
+
+### 10.2 Tuỳ chọn khi vẫn thiếu RAM
+
+1. Tắt metrics-server của k3s nếu không dùng HPA: thêm `--disable=metrics-server`
+   vào `/etc/rancher/k3s/config.yaml` rồi `sudo systemctl restart k3s` (~40 MB).
+2. Scale `kafka-ui` về 0 khi không cần xem topic:
+   `kubectl -n web-grading scale deploy/kafka-ui --replicas=0` (~250 MB).
+3. Giảm trace sampling xuống 0.1-0.2 khi không debug
+   (`OTEL_TRACES_SAMPLING_PROBABILITY`) — giảm tải Tempo.
+4. Chạy chế độ không observability (`setup_without_observability.sh`) khi chỉ
+   cần demo nghiệp vụ: tiết kiệm toàn bộ ~0.9 GB request của mục 2.5.
 
 Không tăng limit của Prometheus/Tempo/Grafana trên máy này; nguyên nhân quá
 tải thường là thành phần ngoài observability hoặc release cũ còn sót lại.

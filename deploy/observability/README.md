@@ -59,9 +59,9 @@ next to this supposedly Lite stack and the node kept restarting pods).
 
 | Component | Mode | Memory | Purpose |
 |-----------|------|--------|---------|
-| **Grafana** | Helm (kube-prometheus-stack) | 256Mi–512Mi | UI for Prometheus + Tempo |
+| **Grafana** | Helm (kube-prometheus-stack) | 384Mi–768Mi | UI for Prometheus + Tempo |
 | **Prometheus** | Helm (kube-prometheus-stack) | 256Mi–768Mi | Metrics store, scrapes `/actuator/prometheus` |
-| **Tempo** | Helm | 256Mi–512Mi | Trace storage (OTLP 4317/4318) |
+| **Tempo** | Helm | 256Mi–1Gi | Trace storage (OTLP 4317/4318) |
 
 ## Quick Start
 
@@ -176,21 +176,22 @@ deploy/observability/
 
 ## Resource Usage
 
-Estimated total: **~0.8 GiB requests, ~1.8 GiB limits**.
+Estimated total: **~0.9 GiB requests, ~2.5 GiB limits** (Grafana and Tempo were
+raised after OOMKills; the numbers below mirror the values files, not guesses).
 
 | Component | CPU Req | Mem Req | CPU Limit | Mem Limit |
 |-----------|---------|---------|-----------|-----------|
 | Prometheus | 100m | 256Mi | 500m | 768Mi |
-| Grafana | 100m | 256Mi | 500m | 512Mi |
-| Tempo | 100m | 256Mi | 500m | 512Mi |
-| **Total** | **310m** | **800Mi** | **1550m** | **1.81Gi** |
+| Grafana | 200m | 384Mi | 750m | 768Mi |
+| Tempo | 100m | 256Mi | 500m | 1Gi |
+| **Total** | **400m** | **896Mi** | **1750m** | **2.5Gi** |
 
 ## 8 GB tuning notes
 
 - **Tempo ballast is disabled** (`tempo.memBallastSizeMbs: 0`). Tempo 2.x
   defaults to a 1 GiB ballast, which is twice the container limit and causes
-  constant OOMKills/node pressure. `GOMEMLIMIT=400MiB` keeps the Go heap below
-  the 512Mi limit.
+  constant OOMKills/node pressure. `GOMEMLIMIT=800MiB` keeps the Go heap below
+  the 1Gi limit that `local-blocks` needs for its in-RAM trace buffers.
 - Image and resources live under `tempo.*` in the chart schema. A top-level
   `image:`/`resources:` block is silently ignored by this chart.
 - Prometheus retains 3 days and stops at 1500 MB so the 2 GiB PVC cannot fill.

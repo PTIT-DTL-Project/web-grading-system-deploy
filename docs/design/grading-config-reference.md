@@ -692,7 +692,8 @@ Score = (passedWeight / ranWeight) × 10.00
 | Trường | Giá trị | Mô tả |
 |--------|---------|--------|
 | `replicas` | `{{ .Values.replicaCount \| default 2 }}` | Số pod (mặc định 2) |
-| `replicaCount` (values-stg) | `2` | Số replica ở stg |
+| `replicaCount` (values-stg) | `2` | Số replica ở stg; bắt buộc 2 để chấm song song |
+| `strategy.rollingUpdate` | `maxSurge: 0, maxUnavailable: 1` | Chặn pod thứ 3 khi rollout (node 8 GB) |
 
 ### 11.2 dev-scale.sh Commands
 

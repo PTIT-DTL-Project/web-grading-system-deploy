@@ -17,7 +17,13 @@ spec:
     spec:
       containers:
         - name: rustfs
-          image: rustfs/rustfs:latest
+          # Pin 2026-11-11: `latest` = 1.0.5 (index digest
+          # sha256:b81d16a90ee25bd9511280127ca1471788c6e874cf0f0da759645f46b2dc1d74,
+          # amd64+arm64). Never go back to `latest`: with an implicit
+          # pullPolicy=Always every pod restart could silently swap the S3
+          # server build (and its memory behaviour) mid-semester.
+          image: rustfs/rustfs:1.0.5
+          imagePullPolicy: IfNotPresent
           args:
             - server
             - /data
@@ -27,10 +33,22 @@ spec:
             - containerPort: 9000
             - containerPort: 9001
           env:
+            # Root credentials come from the SAME Secret the clients read
+            # (submission-service / executor-service take RUSTFS_ACCESS_KEY and
+            # RUSTFS_SECRET_KEY from `rustfs-secret`), so server and clients
+            # cannot drift. `optional` is deliberately NOT set: a missing
+            # Secret must fail the pod at start (CreateContainerConfigError),
+            # not silently boot the S3 server with empty credentials.
             - name: RUSTFS_ROOT_USER
-              value: minioadmin
+              valueFrom:
+                secretKeyRef:
+                  name: rustfs-secret
+                  key: RUSTFS_ACCESS_KEY
             - name: RUSTFS_ROOT_PASSWORD
-              value: minioadmin
+              valueFrom:
+                secretKeyRef:
+                  name: rustfs-secret
+                  key: RUSTFS_SECRET_KEY
             - name: RUSTFS_NOTIFY_ENABLE
               value: "on"
             - name: RUSTFS_NOTIFY_WEBHOOK_ENABLE_PRIMARY
@@ -48,6 +66,17 @@ spec:
             # Never "*" (disables credentials + flagged by RustFS advisory).
             - name: RUSTFS_CORS_ALLOWED_ORIGINS
               value: "http://localhost:5173,https://web-dev1-fe.vucongtuanduong.dpdns.org,http://localhost:5174"
+          # RustFS là Rust/tokio nên không có knobs heap như JVM; đặt trần để
+          # nó không thể chiếm RAM của các pod Java khi có upload lớn. 512Mi là
+          # mức khởi điểm; nếu upload nhiều tệp đồng thời bị OOMKilled thì nâng
+          # limit lên 768Mi thay vì bỏ limit.
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
           volumeMounts:
             - name: data
               mountPath: /data

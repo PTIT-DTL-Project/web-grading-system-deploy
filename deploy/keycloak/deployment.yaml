@@ -66,3 +66,26 @@ spec:
               value: "https://web-dev1-keycloak.vucongtuanduong.dpdns.org"
             - name: KC_HOSTNAME_ADMIN
               value: "https://web-dev1-keycloak.vucongtuanduong.dpdns.org"
+            # Trước đây container không có memory limit, nên JVM định cỡ heap
+            # theo toàn bộ RAM node (7.6 GB) thay vì theo một trần container và
+            # Keycloak chiếm ~0.8-1.2 GB. Đặt limit 768Mi bên dưới + ép
+            # MaxRAMPercentage tường minh để heap có trần xác định (~460Mi)
+            # bất kể node còn bao nhiêu RAM; InitialRAMPercentage=20 giữ heap
+            # khởi tạo ~154Mi. Phần còn lại dành cho metaspace/thread stack/
+            # code cache. -Xss512k giảm stack mỗi thread HTTP; UseSerialGC phù
+            # hợp container nhỏ (GC song song chỉ tốn thêm thread).
+            - name: JAVA_OPTS_APPEND
+              value: "-XX:MaxRAMPercentage=60 -XX:InitialRAMPercentage=20 -XX:+UseSerialGC -Xss512k"
+            # Không scrape Keycloak metrics; tắt endpoint Micrometer cho gọn.
+            - name: KC_METRICS_ENABLED
+              value: "false"
+          # Trước đây container không có requests/limits nên là pod "không
+          # giới hạn" duy nhất trong namespace: nó có thể phình tới hết RAM node
+          # và kubelet không có căn cứ để evict nó trước các pod khác.
+          resources:
+            requests:
+              cpu: 100m
+              memory: 384Mi
+            limits:
+              cpu: 500m
+              memory: 768Mi

@@ -100,6 +100,63 @@ PAST FIX — wrong manifest config repo: repoURL/targetRevision in the template
 must match the real config repo branch ArgoCD can reach. If apps show
 Unknown/OutOfSync forever with no diff, suspect repoURL or credentials first.
 
+### 3.1 ArgoCD RAM footprint (8 GB node)
+
+The upstream `argo-cd/stable/install.yaml` ships NO requests/limits, so every
+ArgoCD pod is unbounded and the kernel OOM-kills whichever has the largest RSS
+(usually repo-server) mid-sync. `deploy/install-argocd.sh` therefore applies,
+right after `kubectl apply -f generated/`:
+
+```bash
+# controller: try StatefulSet (ArgoCD 2.x) and Deployment (3.x), `|| true` on
+# both so either version works
+kubectl -n argocd set resources statefulset/argocd-application-controller \
+  --requests=cpu=100m,memory=192Mi --limits=cpu=500m,memory=512Mi
+kubectl -n argocd set resources deployment/argocd-application-controller ...same...
+kubectl -n argocd set resources deployment/argocd-repo-server  --limits=cpu=500m,memory=384Mi
+kubectl -n argocd set resources deployment/argocd-server       --limits=cpu=500m,memory=384Mi
+kubectl -n argocd set resources deployment/argocd-redis        --limits=cpu=200m,memory=192Mi
+kubectl -n argocd set resources deployment/argocd-dex-server   --limits=cpu=200m,memory=192Mi
+```
+
+Two controllers are scaled to 0 because this project never uses them:
+`argocd-notifications-controller` (no notification templates/subscriptions) and
+`argocd-applicationset-controller` (apps are static manifests rendered by
+`generate-argocd-apps.sh`, no generators). Each idles at ~60-80Mi. Scale, do not
+delete: a re-install re-applies install.yaml and recreates them.
+
+Keep dex and redis. Local `admin` login works without dex, but scaling dex to 0
+is a separate decision (SSO would break) — only limits are applied here.
+
+### 3.2 Images in `deploy/` are pinned, never `:latest`
+
+`rustfs/rustfs:1.0.5` and `ghcr.io/kafbat/kafka-ui:v1.5.0` (pinned
+2026-11-11; both were `:latest` before). Why it matters here: with tag `latest`
+Kubernetes defaults to `imagePullPolicy: Always`, so every pod restart can land
+a different build — and the RustFS 512Mi limit in that same file is tuned against
+one build's memory behaviour. (Kafka UI had the opposite bug: `latest` +
+`IfNotPresent` pins each node to whatever it pulled first, i.e. an undefined
+version.) `quay.io/keycloak/keycloak:26.0` and `docker:27-dind` are floating
+minor tags, not `latest`; bump them deliberately.
+
+Resolve `latest` to a version by digest, not by reading release notes:
+
+```bash
+# Docker Hub (single-arch digest from the tag endpoint)
+curl -s "https://hub.docker.com/v2/repositories/rustfs/rustfs/tags/latest" | jq -r .digest
+curl -s "https://hub.docker.com/v2/repositories/rustfs/rustfs/tags/1.0.5"  | jq -r .digest  # must match
+
+# GHCR - compare the MANIFEST INDEX digest, never a platform digest
+TOKEN=$(curl -s "https://ghcr.io/token?scope=repository:kafbat/kafka-ui:pull&service=ghcr.io" | jq -r .token)
+curl -sI -H "Authorization: Bearer $TOKEN" \
+  -H "Accept: application/vnd.oci.image.index.v1+json,application/vnd.docker.distribution.manifest.list.v2+json" \
+  "https://ghcr.io/v2/kafbat/kafka-ui/manifests/v1.5.0" | grep -i docker-content-digest
+```
+
+Equal index digests prove the tag and `latest` are the same artifact. Write the
+resolved tag plus the digest and date as a comment above `image:` so the next
+bump has a reference point.
+
 ## 4. Verify & debug
 
 ```bash
@@ -146,6 +203,15 @@ running pods stale and forces `clean.sh` + a full redeploy to realign.
   + `pipefail` would otherwise abort the script).
 - Fail-loud secrets (`keycloak-admin-client`): values come from Keycloak, not
   from us, so a missing pair exits 1 instead of pushing blank credentials.
+- `rustfs-secret` carries the RustFS ROOT credentials (`RUSTFS_ACCESS_KEY` /
+  `RUSTFS_SECRET_KEY`), and `deploy/rustfs/deployment.yaml` reads those same keys
+  as `RUSTFS_ROOT_USER` / `RUSTFS_ROOT_PASSWORD` (no `optional: true`, so a
+  missing Secret stops the pod at `CreateContainerConfigError`). Because
+  submission-service/executor-service read the same Secret to sign requests,
+  server and clients cannot drift — and a rotated password only takes effect
+  after `kubectl rollout restart deploy/rustfs deploy/submission-service
+  deploy/executor-service` (env is read at container start). `install-rustfs.sh`
+  preflights the Secret so a raw `kubectl apply` cannot half-deploy it.
 
 ## 6. Probes target health groups, never `/actuator/health`
 

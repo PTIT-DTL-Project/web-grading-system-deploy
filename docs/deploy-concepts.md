@@ -84,7 +84,10 @@ spec:
             - containerPort: 9000   # Cổng container lắng nghe
           env:
             - name: RUSTFS_ROOT_USER
-              value: minioadmin
+              valueFrom:            # Lấy từ Secret, không hardcode
+                secretKeyRef:
+                  name: rustfs-secret
+                  key: RUSTFS_ACCESS_KEY
           volumeMounts:
             - name: data
               mountPath: /data     # Mount PVC vào /data
@@ -259,10 +262,10 @@ spring:
   profilesActive: stg
   dbName: submission_db
 
+# Không có accessKey/secretKey: credentials đọc từ Secret `rustfs-secret`
+# (cùng Secret mà RustFS server dùng làm root credentials).
 rustfs:
   endpoint: http://rustfs:9000
-  accessKey: minioadmin
-  secretKey: minioadmin
   bucketName: submission-files
 
 service:
@@ -555,8 +558,8 @@ Trong `deploy/rustfs/deployment.yaml`:
 
 | Env var | Giá trị | Mục đích |
 |---------|---------|----------|
-| `RUSTFS_ROOT_USER` | minioadmin | User admin |
-| `RUSTFS_ROOT_PASSWORD` | minioadmin | Password admin |
+| `RUSTFS_ROOT_USER` | `secretKeyRef: rustfs-secret/RUSTFS_ACCESS_KEY` | User admin |
+| `RUSTFS_ROOT_PASSWORD` | `secretKeyRef: rustfs-secret/RUSTFS_SECRET_KEY` | Password admin |
 | `RUSTFS_NOTIFY_ENABLE` | on | Bật notification |
 | `RUSTFS_NOTIFY_WEBHOOK_ENDPOINT_PRIMARY` | `http://submission-service:8082/api/v1/submissions/webhook/upload-complete` | Gọi submission-service khi có file mới |
 | `RUSTFS_NOTIFY_WEBHOOK_QUEUE_DIR_PRIMARY` | `/tmp/rustfs-events` | Thư mục tạm chứa event queue |
