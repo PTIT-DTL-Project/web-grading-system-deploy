@@ -50,8 +50,6 @@ Hệ thống dùng hai namespace chính: web-grading chứa ứng dụng và arg
 
 Giao diện web được triển khai trên Vercel~\cite{verceldocs}. Tệp vercel.json khai báo rewrite mọi yêu cầu /api/:path* sang API Gateway, nhờ đó trình duyệt chỉ gọi cùng một origin và không phát sinh yêu cầu CORS cho các API nghiệp vụ. Giao diện cũng dùng rewrite toàn bộ đường dẫn còn lại về index.html để React Router xử lý điều hướng phía client. Keycloak được cấu hình tên miền công khai và danh sách redirect URI tương ứng với miền của giao diện.
 
-Phạm vi báo cáo không trình bày hệ thống giám sát tập trung; nội dung này được nêu ở mục \ref{section:3.3} như một hướng phát triển.
-
 \subsection{Đóng gói và cấu hình triển khai}
 \label{section:3.1.2}
 
@@ -144,8 +142,21 @@ app-config & Mức log của ứng dụng & Điều chỉnh mức ghi log khi v�
 
 Khóa gateway-trust được sinh một lần và tái sử dụng giữa các lần triển khai. Việc tạo khóa mới mà không khởi động lại toàn bộ dịch vụ sẽ khiến các Pod đang chạy giữ khóa cũ và từ chối yêu cầu, nên script tạo Secret ưu tiên đọc giá trị đang có trong cụm thay vì sinh lại.
 
-\subsection{Nhất quán dữ liệu trong quy trình chấm bài với Grading Saga}
+\subsection{Hệ thống quan sát và giám sát (Observability)}
 \label{section:3.1.6}
+
+Hệ thống triển khai hệ thống quan sát và giám sát tập trung trên cụm k3s để theo dõi độ trễ, tỷ lệ lỗi, mức sử dụng tài nguyên và hành vi của từng job chấm. Hệ thống gồm ba thành phần chính:
+
+\begin{itemize}
+    \item \textbf{Prometheus}: hệ thống lưu trữ và truy vấn số liệu (metrics) dạng time-series. Prometheus thu thập metrics từ endpoint \texttt{/actuator/prometheus} của mỗi dịch vụ Spring Boot (api-gateway, course-service, submission-service, executor-service, result-service, ai-assistant-service) mỗi 30 giây, lưu giữ trong 3 ngày.
+    \item \textbf{Grafana}: nền tảng trực quan hóa, cung cấp dashboard cho metrics, logs và traces. Grafana kết nối với hai nguồn dữ liệu: Prometheus (số liệu) và Tempo (truy vết), truy cập qua tên miền \url{web-dev1-grafana.vucongtuanduong.dpdns.org}.
+    \item \textbf{Tempo}: hệ thống lưu trữ và truy vấn traces (tracing). Tempo nhận dữ liệu theo giao thức OTLP qua cổng 4318 từ các dịch vụ Spring Boot, lưu trữ truy vết trong 24 giờ. Tempo cũng sinh RED metrics (tần suất span, thời gian phản hồi) và gửi về Prometheus để hiển thị trên Grafana.
+\end{itemize}
+
+Hệ thống không triển khai: Loki (nhật ký tập trung), Node Exporter (metrics máy chủ), kube-state-metrics (metrics cụm), Alertmanager (cảnh báo), hay Alloy (thu thập telemetry) nếu chưa triển khai.
+
+\subsection{Nhất quán dữ liệu trong quy trình chấm bài với Grading Saga}
+\label{section:3.1.6a}
 
 Chấm bài không phải là một giao dịch ngắn. Một bài nộp phải trải qua nhiều bước: lấy cấu hình bài tập, tải tệp từ RustFS, dựng môi trường Docker, chạy từng bước kiểm thử, tính điểm và ghi kết quả sang dịch vụ kết quả. Các tài nguyên này nằm ở nhiều hệ thống khác nhau, gồm cơ sở dữ liệu của dịch vụ thực thi, RustFS, Docker daemon và ba dịch vụ khác. Không thể bọc toàn bộ quy trình trong một giao dịch ACID. Khi một bước lỗi, hệ thống cần biết bài nộp đang ở bước nào, đã làm gì, có thể chấm lại hay không và làm sao tránh chấm trùng khi Kafka giao lại sự kiện. Đồ án áp dụng mẫu Saga~\cite{newman2021building} để theo dõi tiến trình chấm, gọi là Grading Saga, nhằm giải quyết các yêu cầu này.
 
@@ -282,7 +293,7 @@ Thứ năm, hệ thống chỉ dùng một topic Kafka cho toàn bộ sự kiệ
 
 Thứ sáu, RustFS chạy một bản sao với PVC ReadWriteOnce và cặp khóa mặc định đang đặt trực tiếp trong manifest. Một Pod RustFS gặp sự cố sẽ làm gián đoạn việc tải và đọc tệp bài nộp; dữ liệu cũng chưa có phương án sao lưu tự động. Cần chuyển khóa sang Secret, bật sao lưu và cân nhắc chạy nhiều bản sao hoặc dùng lưu trữ đối tượng bên ngoài.
 
-Thứ bảy, cụm k3s hiện tại chưa có cấu hình sẵn sàng cao và chưa có autoscaling. Số bản sao của dịch vụ thực thi cố định là hai, nên không tự tăng khi hàng đợi dài. Hệ thống giám sát tập trung chưa được trình bày trong phạm vi báo cáo; việc thiếu metrics, log tập trung và cảnh báo trong phạm vi đánh giá này làm chậm quá trình phát hiện sự cố. Đây là nội dung được đặt trong hướng phát triển.
+Thứ bảy, cụm k3s hiện tại chưa có cấu hình sẵn sàng cao và chưa có autoscaling. Số bản sao của dịch vụ thực thi cố định là hai, nên không tự tăng khi hàng đợi dài. Hệ thống đã triển khai quan sát và giám sát tập trung (mục \ref{section:3.1.6}) giúp theo dõi độ trễ, tỷ lệ lỗi, mức sử dụng tài nguyên và hành vi của từng job chấm.
 
 Thứ tám, quy trình CI/CD chưa có bước quét lỗ hổng image, tạo danh mục thành phần phần mềm (SBOM) hoặc ký image; kiểm thử chỉ chạy cho các dịch vụ thay đổi và loại trừ các lớp ApplicationTests. Những khoảng trống này không ảnh hưởng đến chức năng nhưng làm giảm mức độ bảo đảm chất lượng khi số lượng thay đổi tăng.
 

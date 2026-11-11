@@ -25,6 +25,17 @@ or prose sequences like `Thứ nhất / Thứ hai / Thứ ba` inside a
 paragraph. Split the lead-in sentence from the items; strip the markers
 and joining words (`và`, `Thứ nhất,`), end each `\item` with a period.
 
+## URLs and long host names use `\url{}`, never `\texttt{}`
+
+`BTL.tex` loads `xurl`, so `\url{...}` may break the string at any
+character and stay inside `\textwidth`. `\texttt{...}` typesets the
+text as one unbreakable box: a long host name such as
+`web-dev1-grafana.vucongtuanduong.dpdns.org` overflows the right
+margin (measured 93pt overfull). Rule: any URL/host name longer than
+~30 characters goes in `\url{}` (no `_` escaping needed inside it);
+reserve `\texttt{}` for short technical tokens, file names, and
+endpoint paths.
+
 ## Escape underscores in text, never in code (mandatory)
 
 LaTeX treats a bare `_` in running text as math subscript and fails
@@ -259,6 +270,15 @@ Trong văn bản LaTeX của báo cáo, dịch các từ tiếng Anh có đươn
 | `license`/`licence` | `giấy phép` | |
 | `interception attack` | `tấn công chặn bắt` | |
 | `attacker` | `kẻ tấn công` | |
+
+## Viết phần Observability vào Chương 3 (Triển khai hệ thống)
+
+Khi viết phần quan sát hệ thống trong Chương 3, viết đúng những thành phần đã triển khai thực tế trong `deploy/observability/`:
+- **Prometheus**: thu thập metrics từ `/actuator/prometheus` của các dịch vụ Spring Boot, lưu giữ 3 ngày.
+- **Grafana**: trực quan hóa, datasource Prometheus + Tempo.
+- **Tempo**: lưu trữ traces qua OTLP port 4318, retention 24 giờ, sinh RED metrics về Prometheus.
+
+Không viết về thành phần chưa triển khai thực tế (Loki, Node Exporter, kube-state-metrics, Alertmanager, Alloy...).
 
 ## Usecase kế thừa từ usecase trừu tượng
 

@@ -254,7 +254,7 @@ Hình \ref{fig:pkce-flow} minh họa luồng PKCE.
 \end{figure}
 
 \section{Giao diện người dùng phía trước}
-\label{section:1.10}
+\label{section:1.10-gui}
 
 \subsection{React và TypeScript}
 \label{section:1.10.1}
@@ -272,6 +272,25 @@ React là thư viện JavaScript mã nguồn mở do Meta phát triển, dùng �
     \item keycloak-js: thư viện JavaScript chính thức của Keycloak, tích hợp luồng đăng nhập OIDC vào frontend~\cite{keycloakdocs}.
     \item i18next: thư viện quốc tế hóa, cho phép ứng dụng hỗ trợ nhiều ngôn ngữ (tiếng Việt, tiếng Anh)~\cite{i18nextdocs}.
 \end{itemize}
+
+\subsection{Hệ thống quan sát và giám sát (Observability)}
+\label{section:1.10}
+
+Observability là khả năng hiểu được trạng thái nội bộ của hệ thống thông qua việc quan sát các đầu ra bên ngoài. Trong kiến trúc vi dịch vụ, các dịch vụ chạy độc lập trên nhiều pod, nên việc theo dõi trạng thái tổng thể không thể dựa vào một điểm kiểm duy nhất. Hệ thống quan sát được xây dựng trên ba trụ cột:
+\begin{itemize}
+    \item \textbf{Metrics (số liệu)}: các giá trị định lượng theo thời gian (ví dụ: CPU, bộ nhớ, số yêu cầu, độ trễ).
+    \item \textbf{Logs (nhật ký)}: các bản ghi sự kiện do ứng dụng và hệ thống ghi lại.
+    \item \textbf{Traces (theo dõi)}: hồ sơ ghi lại đường đi của một yêu cầu xuyên qua các dịch vụ, giúp xác định nút nghẽn và lỗi.
+\end{itemize}
+
+\subsubsection{Prometheus}
+Prometheus là hệ thống lưu trữ và truy vấn số liệu dạng time-series. Prometheus thu thập số liệu từ các điểm cuối mà dịch vụ cung cấp, lưu trữ theo thời gian và hỗ trợ truy vấn ngôn ngữ PromQL.
+
+\subsubsection{Grafana}
+Grafana là nền tảng trực quan hóa, cung cấp dashboard cho các chỉ số số liệu, nhật ký và truy vết. Grafana kết nối với các nguồn dữ liệu như Prometheus và Tempo, giúp người quản trị hệ thống theo dõi trạng thái vận hành thông qua biểu đồ và bảng số liệu.
+
+\subsubsection{Tempo}
+Tempo là hệ thống lưu trữ và truy vấn traces (tracing). Tempo nhận dữ liệu theo giao thức OTLP từ các dịch vụ, lưu trữ truy vết trong một thời gian nhất định. Tempo giúp theo dõi luồng xử lý của một yêu cầu từ khi gửi đến khi nhận kết quả, đi qua nhiều dịch vụ khác nhau.
 
 \section{Kết luận chương}
 \label{section:1.11}
