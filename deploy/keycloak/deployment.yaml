@@ -72,10 +72,12 @@ spec:
             # MaxRAMPercentage tường minh để heap có trần xác định (~460Mi)
             # bất kể node còn bao nhiêu RAM; InitialRAMPercentage=20 giữ heap
             # khởi tạo ~154Mi. Phần còn lại dành cho metaspace/thread stack/
-            # code cache. -Xss512k giảm stack mỗi thread HTTP; UseSerialGC phù
-            # hợp container nhỏ (GC song song chỉ tốn thêm thread).
+            # code cache. Không chỉ định GC: Keycloak/JVM đã chọn collector mặc
+            # định, thêm một collector thứ hai khiến VM thoát với
+            # "Multiple garbage collectors selected". -Xss512k giảm stack mỗi
+            # thread HTTP.
             - name: JAVA_OPTS_APPEND
-              value: "-XX:MaxRAMPercentage=60 -XX:InitialRAMPercentage=20 -XX:+UseSerialGC -Xss512k"
+              value: "-XX:MaxRAMPercentage=60 -XX:InitialRAMPercentage=20 -Xss512k"
             # Không scrape Keycloak metrics; tắt endpoint Micrometer cho gọn.
             - name: KC_METRICS_ENABLED
               value: "false"

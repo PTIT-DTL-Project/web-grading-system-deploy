@@ -315,8 +315,10 @@ limit chỉ có tác dụng khi một pod thực sự phình lên).
    chạy 1 pod khi code local: `bash dev-scale.sh executor-service on 1`.
 2. **Keycloak có requests/limits** (384Mi/768Mi) kèm `JAVA_OPTS_APPEND`
    `-XX:MaxRAMPercentage=60 -XX:InitialRAMPercentage=20 -Xss512k` và
-   `KC_METRICS_ENABLED=false`. Không có limit thì JVM định cỡ heap theo RAM
-   node, đây là lý do Keycloak từng chiếm ~0.8-1.2 GB.
+   `KC_METRICS_ENABLED=false`. Không thêm `-XX:+UseSerialGC`: Keycloak/JVM đã
+   chọn GC mặc định; ép thêm collector thứ hai làm JVM thoát với
+   `Multiple garbage collectors selected`. Không có limit thì JVM định cỡ heap
+   theo RAM node, đây là lý do Keycloak từng chiếm ~0.8-1.2 GB.
 3. **ArgoCD**: `install-argocd.sh` scale `argocd-notifications-controller` và
    `argocd-applicationset-controller` về 0 (không dùng ApplicationSet, không có
    notification template) và đặt requests/limits cho controller, repo-server,

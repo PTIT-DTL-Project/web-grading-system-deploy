@@ -255,7 +255,9 @@ Hard rule: every workload on this node declares requests/limits. An unbounded
 container is the one kubelet cannot evict in the right order, and a JVM without
 a memory limit sizes its heap against the whole 7.6Gi host — Keycloak sat at
 ~0.8-1.2Gi for exactly that reason until it got `limits.memory: 768Mi` plus
-`JAVA_OPTS_APPEND=-XX:MaxRAMPercentage=60 -XX:InitialRAMPercentage=20`.
+`JAVA_OPTS_APPEND="-XX:MaxRAMPercentage=60 -XX:InitialRAMPercentage=20 -Xss512k"`.
+Do NOT add `-XX:+UseSerialGC`: Keycloak/JVM already selects a collector, and
+forcing another causes startup failure `Multiple garbage collectors selected`.
 
 Where the savings are (do not raise these three observability limits):
 
