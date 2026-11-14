@@ -226,7 +226,7 @@ Hình \ref{fig:auth-flow} vẽ lại luồng xác thực JWT qua API Gateway.
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=\textwidth]{Hinhve/Hinh2_2_lua_ng_xac_thuc}
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_2_lua_ng_xac_thuc.png}
 \caption{Luồng xác thực JWT qua API Gateway.}
 \label{fig:auth-flow}
 \end{figure}
@@ -248,7 +248,7 @@ Hình \ref{fig:pkce-flow} minh họa luồng PKCE.
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=\textwidth]{Hinhve/Hinh2_5_lua_ng_pkce}
+\includegraphics[width=\textwidth]{Hinhve/Hinh2_5_lua_ng_pkce.png}
 \caption{Luồng xác thực trên trình duyệt với Authorization Code Flow và PKCE.}
 \label{fig:pkce-flow}
 \end{figure}
@@ -284,10 +284,10 @@ Observability là khả năng hiểu được trạng thái nội bộ của h�
 \end{itemize}
 
 \subsubsection{Prometheus}
-Prometheus là hệ thống lưu trữ và truy vấn số liệu dạng time-series. Prometheus thu thập số liệu từ các điểm cuối mà dịch vụ cung cấp, lưu trữ theo thời gian và hỗ trợ truy vấn ngôn ngữ PromQL.
+Prometheus là hệ thống lưu trữ và truy vấn số liệu dạng chuỗi thời gian. Prometheus thu thập số liệu từ các điểm cuối mà dịch vụ cung cấp, lưu trữ theo thời gian và hỗ trợ truy vấn ngôn ngữ PromQL.
 
 \subsubsection{Grafana}
-Grafana là nền tảng trực quan hóa, cung cấp dashboard cho các chỉ số số liệu, nhật ký và truy vết. Grafana kết nối với các nguồn dữ liệu như Prometheus và Tempo, giúp người quản trị hệ thống theo dõi trạng thái vận hành thông qua biểu đồ và bảng số liệu.
+Grafana là nền tảng trực quan hóa, cung cấp bảng điều khiển cho các chỉ số số liệu, nhật ký và truy vết. Grafana kết nối với các nguồn dữ liệu như Prometheus và Tempo, giúp người quản trị hệ thống theo dõi trạng thái vận hành thông qua biểu đồ và bảng số liệu.
 
 \subsubsection{Tempo}
 Tempo là hệ thống lưu trữ và truy vấn traces (tracing). Tempo nhận dữ liệu theo giao thức OTLP từ các dịch vụ, lưu trữ truy vết trong một thời gian nhất định. Tempo giúp theo dõi luồng xử lý của một yêu cầu từ khi gửi đến khi nhận kết quả, đi qua nhiều dịch vụ khác nhau.

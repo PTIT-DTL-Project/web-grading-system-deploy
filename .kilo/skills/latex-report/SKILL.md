@@ -280,6 +280,16 @@ Khi viết phần quan sát hệ thống trong Chương 3, viết đúng những
 
 Không viết về thành phần chưa triển khai thực tế (Loki, Node Exporter, kube-state-metrics, Alertmanager, Alloy...).
 
+## Viết phần Hướng phát triển (Chương 3)
+
+Khi viết phần Hướng phát triển (Chương 3), chỉ ghi những gì cần cải thiện, bổ sung. Không ghi lại những gì đã triển khai trong các mục trước (ví dụ: đã triển khai Prometheus, Grafana, Tempo thì không viết "cần bổ sung hệ thống giám sát tập trung").
+
+Ví dụ đúng:
+- Về khả năng quan sát, hệ thống đã triển khai Prometheus, Grafana và Tempo (xem mục \ref{section:3.1.6}). Hiện tại hệ thống chưa có hệ thống cảnh báo tự động và lưu trữ nhật ký tập trung, cần bổ sung Alertmanager và hệ thống thu thập nhật ký tập trung trong tương lai.
+
+Ví dụ sai (đã sửa):
+- Về khả năng quan sát, cần bổ sung hệ thống giám sát tập trung gồm Prometheus và Grafana cho số liệu, Loki cho nhật ký, Tempo cho trace và Pyroscope cho profiling. Các thành phần này sẽ giúp theo dõi độ trễ, tỷ lệ lỗi, mức sử dụng tài nguyên và hành vi của từng job chấm; trên cơ sở đó đặt ra chỉ tiêu dịch vụ và cảnh báo khi có bất thường. Đây là phần chưa được trình bày trong phạm vi báo cáo.
+
 ## Usecase kế thừa từ usecase trừu tượng
 
 Khi một usecase kế thừa từ một usecase trừu tượng (ví dụ: "Giảng viên trò chuyện với trợ lý AI" kế thừa từ "Trò chuyện với trợ lý AI"), cần ghi rõ trong mô tả: "Usecase này kế thừa từ usecase trừu tượng <Tên usecase cha>." Điều này giúp độc lập rõ ràng quan hệ giữa các usecase trong phần mô tả văn bản, bên cạnh quan hệ được vẽ trong biểu đồ usecase chi tiết.

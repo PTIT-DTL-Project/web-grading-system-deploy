@@ -94,25 +94,25 @@
 \contentsline {subsubsection}{\numberline {f}Xem kết quả chấm bài tập của bản thân}{52}{subsubsection.2.2.4.6}%
 \contentsline {subsubsection}{\numberline {g}Xem điểm và kết quả cá nhân}{52}{subsubsection.2.2.4.7}%
 \contentsline {subsection}{\numberline {2.2.5}Kiến trúc hệ thống}{53}{subsection.2.2.5}%
-\contentsline {chapter}{\numberline {3}TRIỂN KHAI VÀ ĐÁNH GIÁ HỆ THỐNG}{55}{chapter.3}%
-\contentsline {section}{\numberline {3.1}Triển khai hệ thống}{55}{section.3.1}%
-\contentsline {subsection}{\numberline {3.1.1}Môi trường và kiến trúc triển khai}{55}{subsection.3.1.1}%
-\contentsline {subsection}{\numberline {3.1.2}Đóng gói và cấu hình triển khai}{56}{subsection.3.1.2}%
-\contentsline {subsection}{\numberline {3.1.3}Tích hợp liên tục với GitHub Actions}{57}{subsection.3.1.3}%
-\contentsline {subsection}{\numberline {3.1.4}Triển khai liên tục với ArgoCD}{58}{subsection.3.1.4}%
-\contentsline {subsection}{\numberline {3.1.5}Hạ tầng dùng chung}{59}{subsection.3.1.5}%
-\contentsline {subsection}{\numberline {3.1.6}Hệ thống quan sát và giám sát (Observability)}{61}{subsection.3.1.6}%
-\contentsline {subsection}{\numberline {3.1.7}Nhất quán dữ liệu trong quy trình chấm bài với Grading Saga}{61}{subsection.3.1.7}%
-\contentsline {subsection}{\numberline {3.1.8}Tổng hợp kết quả triển khai}{63}{subsection.3.1.8}%
-\contentsline {section}{\numberline {3.2}Đánh giá hệ thống}{64}{section.3.2}%
-\contentsline {subsection}{\numberline {3.2.1}Tiêu chí và phương pháp đánh giá}{64}{subsection.3.2.1}%
-\contentsline {subsection}{\numberline {3.2.2}Kịch bản kiểm thử chức năng}{65}{subsection.3.2.2}%
-\contentsline {subsection}{\numberline {3.2.3}Kịch bản kiểm thử hiệu năng và độ tin cậy}{66}{subsection.3.2.3}%
-\contentsline {subsection}{\numberline {3.2.4}Ưu điểm của kiến trúc triển khai}{67}{subsection.3.2.4}%
-\contentsline {subsection}{\numberline {3.2.5}Hạn chế và rủi ro}{68}{subsection.3.2.5}%
-\contentsline {section}{\numberline {3.3}Hướng phát triển}{69}{section.3.3}%
-\contentsline {section}{\numberline {3.4}Kết luận chương}{70}{section.3.4}%
-\contentsline {chapter}{TÀI LIỆU THAM KHẢO}{73}{section*.65}%
+\contentsline {chapter}{\numberline {3}TRIỂN KHAI VÀ ĐÁNH GIÁ HỆ THỐNG}{56}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Triển khai hệ thống}{56}{section.3.1}%
+\contentsline {subsection}{\numberline {3.1.1}Môi trường và kiến trúc triển khai}{56}{subsection.3.1.1}%
+\contentsline {subsection}{\numberline {3.1.2}Đóng gói và cấu hình triển khai}{58}{subsection.3.1.2}%
+\contentsline {subsection}{\numberline {3.1.3}Tích hợp liên tục với GitHub Actions}{59}{subsection.3.1.3}%
+\contentsline {subsection}{\numberline {3.1.4}Triển khai liên tục với ArgoCD}{60}{subsection.3.1.4}%
+\contentsline {subsection}{\numberline {3.1.5}Hạ tầng dùng chung}{61}{subsection.3.1.5}%
+\contentsline {subsection}{\numberline {3.1.6}Hệ thống quan sát và giám sát (Observability)}{62}{subsection.3.1.6}%
+\contentsline {subsection}{\numberline {3.1.7}Nhất quán dữ liệu trong quy trình chấm bài với Grading Saga}{63}{subsection.3.1.7}%
+\contentsline {subsection}{\numberline {3.1.8}Tổng hợp kết quả triển khai}{65}{subsection.3.1.8}%
+\contentsline {section}{\numberline {3.2}Đánh giá hệ thống}{66}{section.3.2}%
+\contentsline {subsection}{\numberline {3.2.1}Tiêu chí và phương pháp đánh giá}{66}{subsection.3.2.1}%
+\contentsline {subsection}{\numberline {3.2.2}Kịch bản kiểm thử chức năng}{67}{subsection.3.2.2}%
+\contentsline {subsection}{\numberline {3.2.3}Kịch bản kiểm thử hiệu năng và độ tin cậy}{68}{subsection.3.2.3}%
+\contentsline {subsection}{\numberline {3.2.4}Ưu điểm của kiến trúc triển khai}{69}{subsection.3.2.4}%
+\contentsline {subsection}{\numberline {3.2.5}Hạn chế và rủi ro}{70}{subsection.3.2.5}%
+\contentsline {section}{\numberline {3.3}Hướng phát triển}{71}{section.3.3}%
+\contentsline {section}{\numberline {3.4}Kết luận chương}{72}{section.3.4}%
+\contentsline {chapter}{TÀI LIỆU THAM KHẢO}{75}{section*.66}%
 \ttl@change@i {\@ne }{chapter}{0.0cm}{\bfseries \vspace {0.3cm}}{{\bfseries {\scshape } \thecontentslabel .\ }}{}{\titlerule *[0.3pc]{.}\contentspage }\relax 
 \ttl@change@v {chapter}{}{}{}\relax 
 \contentsfinish 

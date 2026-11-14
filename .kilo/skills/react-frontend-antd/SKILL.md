@@ -222,6 +222,12 @@ with a **0-based `page`** (antd `Table.pagination.current` is 1-based → `meta.
 - antd is ~930 kB in the bundle today (single vendor chunk) — known, in the plan backlog;
   do not "fix" it by adding a bundler plugin mid-feature.
 
+### 7.1 Tables with long text and action columns
+
+- For list tables that combine long descriptions/topics with status or action columns, assign explicit widths to every column and use `tableLayout="fixed"`; do not let one unconstrained text column consume space or force adjacent columns to collapse.
+- Set the horizontal scroll width to at least the sum of the intended column widths. On narrow screens, scrolling is preferable to unreadably narrow columns or vertically stretched rows.
+- Clamp long descriptive cells to a small number of lines (`Typography.Paragraph` ellipsis) and wrap the full value in an antd `Tooltip` so the complete text remains available. Keep action cells unwrapped and give them enough width for their controls.
+
 ## 8. Sidebar collapse controls
 
 - **Placement**: a circular chevron button at the bottom‑right edge of the Sider, only the brand header compacts to show a short name (`app.shortName`).

@@ -17,8 +17,7 @@ Luồng truy cập từ Internet đi qua Cloudflare Zero Trust Tunnel~\cite{clou
 
 \begin{figure}[H]
 \centering
-% Bỏ comment dòng dưới sau khi có ảnh:
-% \includegraphics[width=\textwidth]{Hinhve/Hinh3_1_kien_truc_trien_khai}
+\includegraphics[width=\textwidth]{Hinhve/Hinh3_1_kien_truc_toan_he_thong.png}
 \caption{Kiến trúc triển khai của hệ thống trên cụm k3s.}
 \label{fig:deployment}
 \end{figure}
@@ -75,7 +74,7 @@ Workflow phát hành chạy sau khi workflow build hoàn tất trên nhánh main
 \begin{figure}[H]
 \centering
 % Bỏ comment dòng dưới sau khi có ảnh:
-% \includegraphics[width=\textwidth]{Hinhve/Hinh3_2_quy_trinh_cicd}
+% \includegraphics[width=\textwidth]{Hinhve/Hinh3_2_quy_trinh_cicd.png}
 \caption{Quy trình CI/CD từ mã nguồn đến cụm triển khai.}
 \label{fig:cicd}
 \end{figure}
@@ -154,6 +153,13 @@ Hệ thống triển khai hệ thống quan sát và giám sát tập trung trê
 \end{itemize}
 
 Hệ thống không triển khai: Loki (nhật ký tập trung), Node Exporter (metrics máy chủ), kube-state-metrics (metrics cụm), Alertmanager (cảnh báo), hay Alloy (thu thập telemetry) nếu chưa triển khai.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/Hinh3_2_he-thong-quan-sat.png}
+\caption{Hệ thống quan sát và giám sát (Observability).}
+\label{fig:he-thong-quan-sat}
+\end{figure}
 
 \subsection{Nhất quán dữ liệu trong quy trình chấm bài với Grading Saga}
 \label{section:3.1.6a}
@@ -302,7 +308,7 @@ Thứ tám, quy trình CI/CD chưa có bước quét lỗ hổng image, tạo da
 
 Từ các hạn chế trên, hướng phát triển của hệ thống được chia thành các nhóm sau.
 
-Về khả năng quan sát, cần bổ sung hệ thống giám sát tập trung gồm Prometheus và Grafana cho số liệu, Loki cho nhật ký, Tempo cho trace và Pyroscope cho profiling. Các thành phần này sẽ giúp theo dõi độ trễ, tỷ lệ lỗi, mức sử dụng tài nguyên và hành vi của từng job chấm; trên cơ sở đó đặt ra chỉ tiêu dịch vụ và cảnh báo khi có bất thường. Đây là phần chưa được trình bày trong phạm vi báo cáo.
+Về khả năng quan sát, hệ thống đã triển khai Prometheus, Grafana và Tempo (xem mục \ref{section:3.1.6}). Hiện tại hệ thống chưa có hệ thống cảnh báo tự động, lưu trữ nhật ký tập trung và profil hóa, cần bổ sung Alertmanager, Loki (nhật ký tập trung), Alloy (thu thập telemetry) và Pyroscope (profiling) trong tương lai.
 
 Về độ tin cậy và khả năng mở rộng, cần chuyển cụm k3s lên cấu hình nhiều node hoặc dùng dịch vụ Kubernetes quản lý, bổ sung anti-affinity và ngân sách gián đoạn cho các dịch vụ quan trọng, đồng thời dùng Horizontal Pod Autoscaler hoặc KEDA để tăng số bản sao dịch vụ thực thi theo độ dài hàng đợi. Với dịch vụ thực thi, cần thay cơ chế Docker-in-Docker privileged bằng một môi trường cách ly an toàn hơn, hoặc tách việc chạy bài nộp sang một cụm worker riêng.
 
