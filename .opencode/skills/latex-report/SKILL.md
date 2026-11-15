@@ -36,6 +36,18 @@ margin (measured 93pt overfull). Rule: any URL/host name longer than
 reserve `\texttt{}` for short technical tokens, file names, and
 endpoint paths.
 
+## Use monospace sparingly and semantically
+
+Use `\texttt{}` only when monospace marks an exact technical literal, such as
+an identifier, configuration key/value, status, command, endpoint, or short
+code fragment. Do not use it to emphasize technology names, borrowed English
+terms, or ordinary prose; those stay in the report's normal text face. When a
+technical name follows its Vietnamese meaning in parentheses (for example,
+`một phiên chấm (grading_sagas)`), keep both in the normal text face; reserve
+monospace for places where the exact syntax itself matters. In reference tables
+and syntax examples, retain monospace for literal keys and values when it helps
+distinguish them from descriptions.
+
 ## Escape underscores in text, never in code (mandatory)
 
 LaTeX treats a bare `_` in running text as math subscript and fails
@@ -436,6 +448,22 @@ reduced widths to avoid blur at A4: auth 0.75, course 0.55, submission
 Visual Paradigm Community watermark: it is acceptable evidence that
 the diagrams were drawn by the author. Do not crop or cover it here,
 because it overlaps class attributes in several exports.
+
+## Technology version appendix
+
+When documenting technology versions in appendices, derive versions from
+project manifests, lockfiles, Maven BOMs, and deployment image tags. Distinguish
+application image release tags from framework versions; do not infer patch
+versions from floating tags (`latest`, major-only tags) or report an environment
+version unless the repository records it. Label unpinned tooling as unpinned.
+
+## Appendix configuration references stay concise
+
+Appendices that document test/grading configuration are quick references for
+instructors: list supported assertion and step kinds, show short examples,
+and briefly describe the fields needed to use them. Avoid reproducing long
+implementation flows, executor internals, deployment settings, or operational
+configuration unless explicitly requested.
 
 ## One hyphen in prose; `--` only where syntax requires (mandatory)
 

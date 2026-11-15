@@ -1,0 +1,113 @@
+\documentclass[../BTL.tex]{subfiles}
+\begin{document}
+\chapter{Phiên bản công nghệ sử dụng}
+\label{phu-luc:versions}
+
+Phụ lục này tổng hợp phiên bản được khai báo trong mã nguồn, tệp khóa phụ thuộc và cấu hình triển khai của hệ thống. Với thư viện được quản lý qua BOM, bảng ghi phiên bản BOM thay vì tự suy ra phiên bản riêng của từng thư viện. Phiên bản container được ghi đúng theo image tag trong cấu hình; tag không chỉ rõ bản vá thì không suy diễn thêm.
+
+\section{Ngôn ngữ và công nghệ backend}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{|p{4.0cm}|p{2.0cm}|X|}
+\hline
+Công nghệ & Phiên bản & Phạm vi / nguồn khai báo \\ \hline
+Java & 21 & Thuộc tính \textnormal{java.version} trong các tệp \textnormal{pom.xml}; image xây dựng và chạy dùng Eclipse Temurin 21. \\ \hline
+Spring Boot & 4.1.0 & Phiên bản parent Maven dùng chung cho sáu dịch vụ backend. \\ \hline
+Spring Cloud & 2025.1.2 & BOM quản lý các thư viện Spring Cloud trong sáu dịch vụ. \\ \hline
+Spring AI & 2.0.2 & BOM của \textnormal{ai-assistant-service}. \\ \hline
+Apache Maven & 3.9.16 & Maven Wrapper trong sáu dịch vụ backend. \\ \hline
+MapStruct & 1.6.3 & Khai báo trong \textnormal{course-service}, \textnormal{executor-service}, \textnormal{result-service} và \textnormal{submission-service}. \\ \hline
+Springdoc OpenAPI & 3.1.0 & Khai báo trong \textnormal{course-service}, \textnormal{executor-service}, \textnormal{result-service} và \textnormal{submission-service}. \\ \hline
+Spring AI OpenAI starter & 2.0.2 & Phiên bản do BOM Spring AI quản lý trong \textnormal{ai-assistant-service}. \\ \hline
+Testcontainers & Theo BOM Spring Boot & Thư viện kiểm thử tích hợp; phiên bản do quản lý phụ thuộc Spring Boot cung cấp. \\ \hline
+AWS SDK for Java S3 & 2.25.15 & Thư viện tương thích giao thức S3 trong \textnormal{submission-service}. \\ \hline
+MinIO Java SDK & 8.5.14 & Thư viện truy cập kho đối tượng trong \textnormal{submission-service} và \textnormal{executor-service}. \\ \hline
+JsonPath & 2.9.0 & Thư viện đọc đường dẫn JSON trong \textnormal{executor-service}. \\ \hline
+Micrometer datasource observation & 2.3.0 & Thư viện quan sát lệnh cơ sở dữ liệu được khai báo trong các dịch vụ. \\ \hline
+\end{tabularx}
+\caption{Phiên bản ngôn ngữ và công nghệ backend.}
+\label{tab:versions-backend}
+\end{table}
+
+Các thư viện Spring Boot và Spring Cloud không ghi phiên bản riêng trong từng dependency được quản lý theo BOM tương ứng; vì vậy phiên bản BOM là mốc khai báo có thể xác minh trực tiếp trong cấu hình dự án.
+
+\section{Giao diện web}
+
+Các phiên bản đã khóa trong \textnormal{package-lock.json} được dùng khi có khác biệt với khoảng phiên bản cho phép trong \textnormal{package.json}.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{|p{3.5cm}|p{2.4cm}|X|}
+\hline
+Công nghệ & Phiên bản & Ghi chú \\ \hline
+React & 19.2.8 & Thư viện giao diện và kết xuất. \\ \hline
+TypeScript & 6.0.3 & Ngôn ngữ và bộ kiểm tra kiểu khi xây dựng giao diện. \\ \hline
+Vite & 8.2.1 & Công cụ phát triển và đóng gói giao diện. \\ \hline
+Ant Design & 6.6.5 & Bộ thành phần giao diện. \\ \hline
+React Router & 8.4.0 & Thư viện định tuyến phía trình duyệt. \\ \hline
+TanStack Query & 5.104.1 & Quản lý và lưu đệm trạng thái dữ liệu từ API. \\ \hline
+Keycloak JavaScript adapter & 26.2.4 & Thư viện tích hợp đăng nhập trên giao diện. \\ \hline
+Vitest & 5.1.0 & Phiên bản khóa trong \textnormal{package-lock.json}; \textnormal{package.json} khai báo khoảng \textnormal{\textasciicircum 5.0.5}. \\ \hline
+Axios & 1.20.0 & Gửi yêu cầu tới API; phiên bản khóa trong tệp khóa. \\ \hline
+i18next & 26.4.2 & Thư viện đa ngôn ngữ; phiên bản khóa trong tệp khóa. \\ \hline
+React i18next & 17.0.15 & Tích hợp đa ngôn ngữ với React; phiên bản khóa trong tệp khóa. \\ \hline
+React Markdown & 10.1.0 & Hiển thị nội dung Markdown; phiên bản khóa trong tệp khóa. \\ \hline
+Monaco Editor React & 4.7.0 & Tích hợp trình soạn thảo Monaco; phiên bản khóa trong tệp khóa. \\ \hline
+Ant Design Icons & 6.3.4 & Bộ biểu tượng giao diện; phiên bản khóa trong tệp khóa. \\ \hline
+\end{tabularx}
+\caption{Phiên bản các công nghệ chính của giao diện web.}
+\label{tab:versions-frontend}
+\end{table}
+
+\section{Cơ sở dữ liệu và hạ tầng chạy}
+
+Bảng sau ghi các image tag được khai báo trong cấu hình phụ thuộc và triển khai. Đây là tag cấu hình, không nhất thiết thể hiện đầy đủ số hiệu bản vá của phần mềm bên trong image.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{|p{3.4cm}|p{3.2cm}|X|}
+\hline
+Thành phần & Image tag & Nguồn / phạm vi \\ \hline
+PostgreSQL & \textnormal{16-alpine} & Cấu hình phụ thuộc cục bộ tại \textnormal{src-services/docker-compose.deps.yml}. \\ \hline
+Apache Kafka & \textnormal{7.4.0} & Image Confluent Platform trong cấu hình phụ thuộc cục bộ. \\ \hline
+Apache ZooKeeper & \textnormal{7.4.0} & Image Confluent Platform trong cấu hình phụ thuộc cục bộ. \\ \hline
+Keycloak & \textnormal{26.0} & Image tag khai báo trong cấu hình triển khai; không ghim số hiệu bản vá. \\ \hline
+RustFS & \textnormal{1.0.5} & Image tag trong cấu hình triển khai tại \textnormal{deploy/rustfs}. \\ \hline
+Docker-in-Docker & \textnormal{27-dind} & Image tag dùng cho executor trong Helm chart. \\ \hline
+Kafka UI & \textnormal{v1.5.0} & Image tag trong cấu hình triển khai tại \textnormal{deploy/kafka-ui}. \\ \hline
+MinIO & \textnormal{latest} & Image dùng trong cấu hình phụ thuộc cục bộ; tag thay đổi theo lần tải image và không ghim phiên bản cố định. \\ \hline
+\end{tabularx}
+\caption{Phiên bản image của cơ sở dữ liệu và hạ tầng chạy.}
+\label{tab:versions-infrastructure}
+\end{table}
+
+\section{Phiên bản image dịch vụ trên môi trường staging}
+
+Các tag sau là phiên bản image ứng dụng được khai báo trong Helm values của môi trường staging. Đây là phiên bản phát hành của từng dịch vụ, không phải phiên bản của Java hoặc Spring Boot.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{|p{5cm}|p{2.5cm}|X|}
+\hline
+Dịch vụ & Tag image & Tệp cấu hình \\ \hline
+\textnormal{api-gateway} & \textnormal{v1.0.23} & \textnormal{config-services/api-gateway/values-stg.yaml} \\ \hline
+\textnormal{course-service} & \textnormal{v1.0.42} & \textnormal{config-services/course-service/values-stg.yaml} \\ \hline
+\textnormal{submission-service} & \textnormal{v1.0.35} & \textnormal{config-services/submission-service/values-stg.yaml} \\ \hline
+\textnormal{executor-service} & \textnormal{v1.0.40} & \textnormal{config-services/executor-service/values-stg.yaml} \\ \hline
+\textnormal{result-service} & \textnormal{v1.0.39} & \textnormal{config-services/result-service/values-stg.yaml} \\ \hline
+\textnormal{ai-assistant-service} & \textnormal{v1.0.22} & \textnormal{config-services/ai-assistant-service/values-stg.yaml} \\ \hline
+\end{tabularx}
+\caption{Tag image các dịch vụ backend được khai báo cho staging.}
+\label{tab:versions-service-images}
+\end{table}
+
+\section{Thành phần chưa ghim phiên bản cụ thể}
+
+Node.js, Docker Compose, k3s, Helm CLI, Argo CD và Cloudflare Tunnel chưa có phiên bản cố định trong kho mã nguồn nên không được gán số hiệu phiên bản tại đây.
+
+\end{document}

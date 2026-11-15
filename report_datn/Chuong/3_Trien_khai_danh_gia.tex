@@ -161,49 +161,6 @@ Hệ thống không triển khai: Loki (nhật ký tập trung), Node Exporter (
 \label{fig:he-thong-quan-sat}
 \end{figure}
 
-\subsection{Nhất quán dữ liệu trong quy trình chấm bài với Grading Saga}
-\label{section:3.1.6a}
-
-Chấm bài không phải là một giao dịch ngắn. Một bài nộp phải trải qua nhiều bước: lấy cấu hình bài tập, tải tệp từ RustFS, dựng môi trường Docker, chạy từng bước kiểm thử, tính điểm và ghi kết quả sang dịch vụ kết quả. Các tài nguyên này nằm ở nhiều hệ thống khác nhau, gồm cơ sở dữ liệu của dịch vụ thực thi, RustFS, Docker daemon và ba dịch vụ khác. Không thể bọc toàn bộ quy trình trong một giao dịch ACID. Khi một bước lỗi, hệ thống cần biết bài nộp đang ở bước nào, đã làm gì, có thể chấm lại hay không và làm sao tránh chấm trùng khi Kafka giao lại sự kiện. Đồ án áp dụng mẫu Saga~\cite{newman2021building} để theo dõi tiến trình chấm, gọi là Grading Saga, nhằm giải quyết các yêu cầu này.
-
-Mỗi bài nộp có một bản ghi trong bảng grading\_jobs. Bảng này lưu mã bài nộp, mã bài tập, mã sinh viên, mã kế hoạch chấm, đường dẫn tệp trong RustFS, trạng thái, số lần chạy lại, thông báo lỗi và các mốc thời gian. Trên cột mã bài nộp có một chỉ mục duy nhất, bảo đảm một bài nộp chỉ có một công việc chấm. Mỗi lần chạy chấm được ghi thành một bản ghi trong bảng saga và nhiều bản ghi bước; mỗi bước lưu tên bước, mã plan, mã bước, trạng thái, lỗi và thời điểm kết thúc. Một job có thể có nhiều lần chạy, nên có thể có nhiều bản ghi saga tương ứng. Kết quả từng bước được lưu trong grading\_step\_results, còn nhật ký dạng văn bản được lưu trong grading\_logs.
-
-Bảng~\ref{tab:grading-job-status} mô tả các trạng thái của một công việc chấm. Trạng thái của job là nguồn thông tin chính về tiến độ; trạng thái của saga và từng bước là dấu vết chi tiết để điều tra khi có lỗi.
-
-\begin{table}[H]
-\centering
-\small
-\begin{tabularx}{\textwidth}{|p{2.8cm}|X|}
-\hline
-Trạng thái & Ý nghĩa \\ \hline
-PENDING & Sự kiện đã được tiếp nhận, công việc đang chờ worker chấm. \\ \hline
-FETCHING & Đang lấy cấu hình bài tập và kế hoạch chấm từ dịch vụ quản lý lớp học và điểm. \\ \hline
-BUILDING & Đang tải tệp bài nộp, chuẩn bị thư mục làm việc và dựng môi trường Docker. \\ \hline
-RUNNING & Môi trường đã chạy, đang thực thi các bước chấm và tính điểm. \\ \hline
-DONE & Chấm xong, kết quả đã được ghi nhận. \\ \hline
-FAILED & Quá trình chấm dừng do lỗi; thông báo lỗi được lưu lại. \\ \hline
-\end{tabularx}
-\caption{Các trạng thái của một công việc chấm bài.}
-\label{tab:grading-job-status}
-\end{table}
-
-Các bước chính của một phiên chấm gồm:
-\begin{itemize}
-    \item FETCH\_CONFIG: gọi dịch vụ quản lý lớp học và điểm để lấy thông tin bài tập, kế hoạch chấm và các bước cần thực thi.
-    \item DOWNLOAD\_ARTIFACT: tải tệp nộp từ RustFS, giải nén và chuẩn bị thư mục làm việc.
-    \item BOOT\_COMPOSE: vá tệp Docker Compose với cổng, tài nguyên và thông tin cơ sở dữ liệu cần thiết, sau đó dựng môi trường bằng Docker daemon trong Pod.
-    \item RUN\_STEPS: chạy các plan và từng bước theo thứ tự. Mỗi bước được ghi thành một bản ghi STEP: kèm tên bước. Nếu một bước bắt buộc thất bại, các bước còn lại của plan được đánh dấu SKIPPED thay vì tiếp tục chạy.
-    \item SCORE\_REPORT: tính điểm từ kết quả các bước, lưu trạng thái DONE, gửi kết quả sang dịch vụ kết quả và cập nhật trạng thái bài nộp.
-\end{itemize}
-
-Mỗi bước có thể ở một trong bốn trạng thái STARTED, DONE, FAILED hoặc SKIPPED. Saga tổng hợp có ba trạng thái STARTED, DONE và FAILED. Khi một bước không bắt buộc thất bại, quá trình chấm vẫn tiếp tục và điểm của bước đó được tính là không đạt; khi bước bắt buộc thất bại, plan hiện tại dừng lại nhưng các plan khác vẫn tiếp tục được xử lý.
-
-Tính nhất quán được bảo vệ ở ba điểm. Thứ nhất, chỉ mục duy nhất trên cột mã bài nộp biến việc chấm trùng thành một lỗi ràng buộc cơ sở dữ liệu thay vì tạo thêm công việc. Khi nhận một sự kiện trùng, dịch vụ thực thi tìm công việc cũ; nếu công việc cũ đang ở trạng thái FAILED, dịch vụ đặt lại công việc và chấm lại, còn nếu không thì bỏ qua sự kiện. Thứ hai, khi hàng đợi xử lý bị đầy, công việc vẫn ở trạng thái PENDING thay vì bị mất; cơ chế quét công việc tồn đọng sẽ nhặt lại sau. Thứ ba, kết quả được gửi sang dịch vụ kết quả tối đa ba lần với thời gian chờ tăng dần; lỗi xác thực từ phía dịch vụ kết quả không được thử lại vì đó là lỗi dữ liệu, không phải lỗi tạm thời.
-
-Cơ chế đặt lại công việc từ chối các công việc đã DONE. Với công việc chưa hoàn tất, hệ thống xóa kết quả từng bước, xóa các bước của saga, đưa saga về STARTED, đưa job về PENDING, xóa thông báo lỗi và tăng số lần chạy lại. Cơ chế quét công việc tồn đọng chạy định kỳ mỗi 5 phút, tìm các công việc ở trạng thái PENDING, FETCHING hoặc BUILDING đã quá 30 phút và chưa vượt quá ba lần chạy lại, rồi đưa chúng trở lại hàng đợi. Các công việc đang RUNNING không bị quét tự động vì một công việc đang chạy thật và một công việc bị treo do Pod chết có thể trông giống nhau nếu chỉ dựa vào thời gian; việc chấm lại một công việc đang chạy sẽ gây chấm trùng. Vì vậy, trường hợp Pod chết giữa lúc RUNNING cần được xử lý thủ công.
-
-Cần phân biệt Grading Saga với một giao dịch phân tán có bù trừ tự động. Ở đây, saga chủ yếu đóng vai trò theo dõi và hỗ trợ phục hồi; các tài nguyên tạm như container, cổng và thư mục làm việc được dọn trong khối finally khi tiến trình còn sống, nhưng không có hành động bù trừ tự động nếu Pod chết đột ngột. Việc ghi saga được thực hiện theo hướng best-effort: nếu ghi saga thất bại, quá trình chấm vẫn tiếp tục và lỗi chỉ được ghi log. Do đó, bảng job mới là nguồn sự thật về trạng thái chấm, còn saga là dấu vết phục vụ điều tra. Nếu việc gửi kết quả thất bại sau ba lần thử, job vẫn có thể ở trạng thái DONE trong khi kết quả chưa có ở dịch vụ kết quả; trường hợp này cần được đối soát và là một hạn chế được nêu ở mục \ref{section:3.2}.
-
 \subsection{Tổng hợp kết quả triển khai}
 \label{section:3.1.7}
 
