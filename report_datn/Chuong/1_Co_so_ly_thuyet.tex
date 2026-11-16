@@ -83,6 +83,13 @@ Spring Security là module bảo mật của Spring, cung cấp cơ chế xác t
 
 REST (Representational State Transfer) là một kiểu kiến trúc cho các hệ thống phân tán, dựa trên các nguyên tắc: tài nguyên (resource) được xác định bằng URI, các thao tác thực hiện qua các phương thức HTTP (GET, POST, PUT, DELETE), và truyền thông không trạng thái (stateless)~\cite{fielding2000rest}. Toàn bộ giao diện của hệ thống đều được xây dựng theo REST, giúp client dễ dàng tương tác và tích hợp.
 
+\subsection{Mô hình ngôn ngữ lớn và tích hợp công cụ}
+\label{section:1.3.6}
+
+Mô hình ngôn ngữ lớn (Large Language Model - LLM) được huấn luyện trên tập dữ liệu văn bản lớn để dự đoán và tạo chuỗi ngôn ngữ. Các mô hình tự hồi quy có thể tạo văn bản bằng cách dự đoán token tiếp theo dựa trên ngữ cảnh đã nhận; nghiên cứu GPT-3 cho thấy cùng một mô hình có thể thực hiện nhiều nhiệm vụ thông qua chỉ dẫn và ví dụ được đưa vào prompt mà không cần tinh chỉnh tham số cho từng nhiệm vụ~\cite{brown2020gpt3}. Trong ứng dụng hội thoại, prompt thường gồm chỉ dẫn hệ thống, nội dung người dùng và phần lịch sử cần thiết để mô hình tạo câu trả lời phù hợp.
+
+Để mô hình truy cập dữ liệu nghiệp vụ, ứng dụng có thể cung cấp các công cụ với tên, mô tả và cấu trúc tham số. Mô hình chỉ đề xuất tên công cụ và tham số; ứng dụng phía máy chủ mới kiểm tra quyền, gọi hàm nghiệp vụ, rồi đưa kết quả về mô hình để hoàn tất phản hồi. Spring AI cung cấp cơ chế đăng ký và gọi công cụ theo vòng lặp này, đồng thời hỗ trợ xử lý phản hồi theo luồng~\cite{springaidocs}. Trong hệ thống, danh sách công cụ được lọc theo vai trò; các thao tác ghi được đưa qua bước xác nhận trước khi thực thi.
+
 \section{Cơ sở dữ liệu và công nghệ ORM}
 \label{section:1.4}
 

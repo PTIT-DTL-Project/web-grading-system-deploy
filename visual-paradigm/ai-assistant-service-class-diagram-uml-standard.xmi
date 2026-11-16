@@ -1,0 +1,292 @@
+<?xml version='1.0' encoding='utf-8'?>
+<xmi:XMI xmlns:uml="http://schema.omg.org/spec/UML/2.0" xmlns:xmi="http://schema.omg.org/spec/XMI/2.1" xmi:version="2.1">
+  <xmi:Documentation exporter="DATN AI Assistant class model" exporterVersion="1.0" />
+  <uml:Model xmi:id="_aad152eb3c5b5a7fbb77b07c59da046b" name="AI Assistant Service">
+    <packagedElement xmi:type="uml:PrimitiveType" xmi:id="_958ab7458b4c56ab957cd2ac81c8f1d9" name="UUID" />
+    <packagedElement xmi:type="uml:PrimitiveType" xmi:id="_8e7435de702254a691540a4f69220076" name="Long" />
+    <packagedElement xmi:type="uml:PrimitiveType" xmi:id="_f69838914df55d6881409e91fd084808" name="String" />
+    <packagedElement xmi:type="uml:PrimitiveType" xmi:id="_9cfdd51766385a42b14fcb3fe8ce9257" name="Integer" />
+    <packagedElement xmi:type="uml:PrimitiveType" xmi:id="_ea139b17bc865012b09f0229a0beb858" name="Short" />
+    <packagedElement xmi:type="uml:PrimitiveType" xmi:id="_a3609b1cc30f55eb8a72c40696f1d030" name="Instant" />
+    <packagedElement xmi:type="uml:PrimitiveType" xmi:id="_a94d1cc22d0b559b863c21866db21a2f" name="OffsetDateTime" />
+    <packagedElement xmi:type="uml:Enumeration" xmi:id="_04fcf6645049510588613dddcbe2921f" name="RunStatus">
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_f82364cfc82456449c099370c7f72732" name="QUEUED" />
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_88c5c7c092fb5e27bcce620a853df839" name="RUNNING" />
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_bd48dd1be93a5f508da1b8845db81ad2" name="WAITING_USER" />
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_20a9c55918575b018734ffec5d90be84" name="WAITING_APPROVAL" />
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_152231edb8f8557faf1df3e1a42fe6b7" name="SUCCEEDED" />
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_675f980051cc53a1a141a4ca2ed381c2" name="FAILED" />
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_6882f5f8d8ff5663b3826ae12e8a93a7" name="CANCELLED" />
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_904fe63bcea6510aa58e5ef0cc9b4012" name="LIMIT_REACHED" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Enumeration" xmi:id="_e733251914b05c648e80243ef9ad8d4b" name="OperationStatus">
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_9ba256ce9cb45317ac9285cbf744366b" name="PENDING" />
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_a7af0c3b1f6150d0a470775fef77c10c" name="IN_PROGRESS" />
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_3c16d5a0ea2e5dd182333ca06bdb8d3f" name="SUCCEEDED" />
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_0372d6c3508956eaa3e910818b7243f5" name="FAILED" />
+      <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_dbb71ee40d0c5c218b1571214fa750f1" name="RECONCILING" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="_b5c8f95fc4ac5dfabdd78f8c4bdbd62d" name="Conversation">
+      <ownedComment xmi:type="uml:Comment" xmi:id="_d26b292074eb57e6a494bb0a31e5b8f2" body="JPA entity; table: ai_conversation; source: domain/conversation/Conversation.java" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_30d9833de1c15d3db2aa89bf77e0777c" name="id" visibility="private" type="_958ab7458b4c56ab957cd2ac81c8f1d9" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_fa2ce67e9ec959aca662e49f1875200e" name="ownerId" visibility="private" type="_958ab7458b4c56ab957cd2ac81c8f1d9" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_f61cf930f04f501c89fa358857398f56" name="title" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_c17d5c4088e15132906ad64a399fb1ff" name="activeTaskId" visibility="private" type="_958ab7458b4c56ab957cd2ac81c8f1d9" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_1feec99861155170a64ec4063663b9d7" name="createdAt" visibility="private" type="_a3609b1cc30f55eb8a72c40696f1d030" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_9e2a42162c9b55f2b502a10ac035a8c9" name="updatedAt" visibility="private" type="_a3609b1cc30f55eb8a72c40696f1d030" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="_6ef1d1dd5a6a588db64e4ad241d4edf4" name="ConversationSummary">
+      <ownedComment xmi:type="uml:Comment" xmi:id="_022057f8bae25566aa63ab52f0e5080f" body="JPA entity; table: ai_conversation_summary; source: domain/conversation/ConversationSummary.java" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_0f684b44f71d5eafb89abe17437f27d9" name="id" visibility="private" type="_958ab7458b4c56ab957cd2ac81c8f1d9" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_40f25f0a0f3f59a5aef3f807ae200c12" name="conversationId" visibility="private" type="_958ab7458b4c56ab957cd2ac81c8f1d9" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_1eaf53be40125cca809fdc111482f023" name="throughMessageId" visibility="private" type="_958ab7458b4c56ab957cd2ac81c8f1d9" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_b6e2ee4e121b5ced986b09283a2d0c42" name="roleScope" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_4622daec38935bb986a33901932e6171" name="summary" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_545063a0bcce500d91777c5800d1daa5" name="version" visibility="private" type="_9cfdd51766385a42b14fcb3fe8ce9257" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_716f6cd2a3d954c586036d3f88a6bdfb" name="createdAt" visibility="private" type="_a3609b1cc30f55eb8a72c40696f1d030" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="_107e438ed2f55f30b9e577a029c514ce" name="Message">
+      <ownedComment xmi:type="uml:Comment" xmi:id="_295b04a4fe1d582b8dbeb89c36021f38" body="JPA entity; table: ai_message; source: domain/conversation/Message.java" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_7f13564547d1514aa51656e75f494128" name="id" visibility="private" type="_958ab7458b4c56ab957cd2ac81c8f1d9" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_f27be3024d2b5bfb8ac0c9dd878fafb4" name="conversationId" visibility="private" type="_958ab7458b4c56ab957cd2ac81c8f1d9" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_38be9c30e9185b2690146f2db04a8c89" name="runId" visibility="private" type="_958ab7458b4c56ab957cd2ac81c8f1d9" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_68d766a36a4956f78719d54b2b63a1fd" name="role" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_84177b7ae7eb5507ab6c833521f1bf12" name="content" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_ef0f4348e8e850a9bd1b96f31ff2960c" name="toolCallId" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_528f46e70edb51a6af683172dd5b6fdd" name="toolName" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_9c87eb5600135a74aaa960de2b30c490" name="toolArguments" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_91e10533c14f5386bd2691951235163b" name="toolResult" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_b244b712bbf75c13aa7ed39b1e75ac51" name="clientMessageId" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_f0686a31b16a5fd3b8bd90ea93c1b52a" name="sequenceNo" visibility="private" type="_9cfdd51766385a42b14fcb3fe8ce9257" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_b302a6f2ee2854dd8f5201d832f69fa6" name="createdAt" visibility="private" type="_a3609b1cc30f55eb8a72c40696f1d030" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="_3ad50475ae2f5a4590d734a51f8cdc6e" name="Operation">
+      <ownedComment xmi:type="uml:Comment" xmi:id="_31253c8bd0c05c41b5fb34b0d23ada21" body="JPA entity; table: ai_operation; source: domain/operation/Operation.java" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_468367b49edd57e79e35a9352456dc5c" name="id" visibility="private" type="_958ab7458b4c56ab957cd2ac81c8f1d9" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_b59eff6171f55711be1d5612020262ec" name="taskId" visibility="private" type="_958ab7458b4c56ab957cd2ac81c8f1d9" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_9bd887eb374b51fbac2903dd21e849d0" name="idempotencyKey" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_fd46be41d99d535f8ba1ee6bf66af320" name="commandType" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_1efb7d7554f75249a08fe614b7d2f70b" name="requestHash" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_ef85c70697865a0aa10091e419dd7557" name="payloadJson" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_8c9ce03c4e8a58aeb6b4952acb1da991" name="status" visibility="private" type="_e733251914b05c648e80243ef9ad8d4b" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_020f9bbf1a255491a8c3e31705f26b8a" name="resultRef" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_52eaa1ba22d45f55aef944f4d3144714" name="attempts" visibility="private" type="_9cfdd51766385a42b14fcb3fe8ce9257" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_bf482956822f5cefa1ccc82c570ba848" name="nextCheckAt" visibility="private" type="_a3609b1cc30f55eb8a72c40696f1d030" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_54bcba51e39d53c481422caa2c7d698f" name="createdAt" visibility="private" type="_a3609b1cc30f55eb8a72c40696f1d030" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_33fa63ab60b8555d87ae74c9bc00bd2d" name="updatedAt" visibility="private" type="_a3609b1cc30f55eb8a72c40696f1d030" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="_7a63093e80645c38a3b4ad1fd7c9e695" name="Run">
+      <ownedComment xmi:type="uml:Comment" xmi:id="_72792b648dfa52bd9c77418e84b92e0c" body="JPA entity; table: ai_run; source: domain/run/Run.java; ai_run.next_event_sequence is a DB-only column updated by RunTimelineService via JDBC" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_d410e7a1a11f544a8570c3674b408c83" name="id" visibility="private" type="_958ab7458b4c56ab957cd2ac81c8f1d9" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_f16d4e0a7917577ea39dfab53986c35d" name="conversationId" visibility="private" type="_958ab7458b4c56ab957cd2ac81c8f1d9" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_f80712c9b0485604a3d91ef60c3ba2ee" name="callerEmail" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_7490b08e66905b378e1f46b480677b24" name="callerRoles" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_79be8a3f5b2f519aa5b42d95634a8548" name="status" visibility="private" type="_04fcf6645049510588613dddcbe2921f" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_4f3d0c0b99c75ede92564519e225813f" name="parentRunId" visibility="private" type="_958ab7458b4c56ab957cd2ac81c8f1d9" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_f14d57ae9d6959fab9f3e994a7c550ab" name="checkpointJson" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_317898766d065263beae00b5dd2974bd" name="version" visibility="private" type="_9cfdd51766385a42b14fcb3fe8ce9257" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_57a690c02628548e83622078937ac0f5" name="limitsJson" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_882a0cc0f3375cc3ac6428727b7e21ca" name="usageJson" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_e5abcfedf7295f459f4f457f7cd06a5e" name="errorCode" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_c328248d5daf5665872c0b19f3def64b" name="errorMessage" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_dede6b07450959858527dd50faab7b6f" name="startedAt" visibility="private" type="_a3609b1cc30f55eb8a72c40696f1d030" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_1e5c0c51c27552a0b1281f05641f1a54" name="finishedAt" visibility="private" type="_a3609b1cc30f55eb8a72c40696f1d030" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_d40bdfb8bdd457a4bf300836f6bead45" name="createdAt" visibility="private" type="_a3609b1cc30f55eb8a72c40696f1d030" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="_3dc854fce46d5af18b63c762fbdc6c23" name="RunEvent">
+      <ownedComment xmi:type="uml:Comment" xmi:id="_296857d105ce5ac8b54c9fb1a90bc2e1" body="JPA entity; table: ai_run_event; source: domain/run/RunEvent.java" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_0a1e996a093854c7b9ad40b362709f9f" name="id" visibility="private" type="_8e7435de702254a691540a4f69220076" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_7622eee9dd43567e8fbeb36480566526" name="runId" visibility="private" type="_958ab7458b4c56ab957cd2ac81c8f1d9" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_1ee298fb081c5032becba6904bc7ec0f" name="sequence" visibility="private" type="_9cfdd51766385a42b14fcb3fe8ce9257" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_fcc63c7fe6ec59d1b053cdb82a54ff5c" name="type" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_445c3c9d8e1a5b029a18948263277c6f" name="payloadJson" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_bb0238c7c1ca536ca991be365ae8130e" name="createdAt" visibility="private" type="_a3609b1cc30f55eb8a72c40696f1d030" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="_def4f86c11385d79960543dc00e8b2a0" name="StoredToolResult">
+      <ownedComment xmi:type="uml:Comment" xmi:id="_b73ca1ca6de55f90b0de656810d5a9c5" body="JPA entity; table: ai_stored_tool_result; source: domain/run/StoredToolResult.java" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_16c7eed1e85b5853bc53d268c2b8d6f5" name="id" visibility="private" type="_958ab7458b4c56ab957cd2ac81c8f1d9" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_1960c69304745e5b9916038e21183275" name="runId" visibility="private" type="_958ab7458b4c56ab957cd2ac81c8f1d9" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_f9221b4a4545571b8d66deef53aef5ef" name="conversationId" visibility="private" type="_958ab7458b4c56ab957cd2ac81c8f1d9" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_a4da0adcfda85ef0bf84e202624e482b" name="ownerId" visibility="private" type="_958ab7458b4c56ab957cd2ac81c8f1d9" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_bf44a09cbc54524692ac80147ff8f221" name="roleScope" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_99f688acac4a58c29e2a0186708a74e2" name="fullResult" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_357b5dc7a29753cfbb9f49867bb809eb" name="expiresAt" visibility="private" type="_a3609b1cc30f55eb8a72c40696f1d030" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="_a2769e7779dd5bd0bc8e995c5edd1f62" name="ToolExecution">
+      <ownedComment xmi:type="uml:Comment" xmi:id="_104f3e6ed1fc588da8baca52039d8126" body="JPA entity; table: ai_tool_execution; source: domain/run/ToolExecution.java" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_10e7b3f67af15b6bac8134f5c56f1c5c" name="id" visibility="private" type="_958ab7458b4c56ab957cd2ac81c8f1d9" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_33f90007204d5fd0a5d53f1cff395e55" name="runId" visibility="private" type="_958ab7458b4c56ab957cd2ac81c8f1d9" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_96a04575ca89580ca85107722acc7614" name="toolCallId" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_e2afa1c4a038569188c648980f97a8e5" name="toolName" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_65ae86efdf0b544d9b8b39e8d0fd0e21" name="argumentsRedacted" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_79ff2c320a355236b6d1512177bcb512" name="resultRedacted" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_0bddffeb1c7f5bfbb8529dcbe34e2274" name="status" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_78dd9a92ab5b5780a42d6da0cf0ed6b7" name="latencyMs" visibility="private" type="_9cfdd51766385a42b14fcb3fe8ce9257" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_c6c1add488395598bf3696899dcf23df" name="createdAt" visibility="private" type="_a3609b1cc30f55eb8a72c40696f1d030" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="_722df910a8915d5eb02a3ae029f32e86" name="PendingAction">
+      <ownedComment xmi:type="uml:Comment" xmi:id="_eba187d5b88557db882c2225cc46027e" body="JPA entity; table: ai_pending_action; source: domain/task/PendingAction.java" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_b9e62889b29357799d860cad0b60ed8f" name="id" visibility="private" type="_958ab7458b4c56ab957cd2ac81c8f1d9" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_3e4b32f11ad35d5c97851e5a8705f6ed" name="taskId" visibility="private" type="_958ab7458b4c56ab957cd2ac81c8f1d9" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_1e7f6954098258edb637a39398dade60" name="runId" visibility="private" type="_958ab7458b4c56ab957cd2ac81c8f1d9" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_e662b7fe4552518788807d457d5a360a" name="type" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_e4aaded77d035ab9ba479231d3a36bb0" name="questionJson" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_dbdab5a2c70c539f8f29e1a043f56907" name="optionsJson" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_f59f0389dfb250db82b1f40ce399d015" name="resultJson" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_56f4a06a2dd95a1284e0a3b43fee11c1" name="status" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_43be92fbd271593bad08957480198be6" name="expiresAt" visibility="private" type="_a3609b1cc30f55eb8a72c40696f1d030" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_1e6d7519ff4f54f49faf8047115df89a" name="createdAt" visibility="private" type="_a3609b1cc30f55eb8a72c40696f1d030" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="_34467b27866f52b1a3f44cae63917726" name="Task">
+      <ownedComment xmi:type="uml:Comment" xmi:id="_262dfabc3d18579a9121de96a357c5fb" body="JPA entity; table: ai_task; source: domain/task/Task.java" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_6a89fcf92615504ba741aea59b25b95e" name="id" visibility="private" type="_958ab7458b4c56ab957cd2ac81c8f1d9" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_61def30e7f0e5bf6bb20682f02a42270" name="conversationId" visibility="private" type="_958ab7458b4c56ab957cd2ac81c8f1d9" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_dc3de650e4e954bfa0d0e0fa342cb4bb" name="ownerId" visibility="private" type="_958ab7458b4c56ab957cd2ac81c8f1d9" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_7966acdb65e45dc887aff118ece51c43" name="type" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_37e0c29acb9e5581904b24e5fde22d58" name="goalJson" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_68155c874b305c4cb1cc5da1babbb8d0" name="status" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_e061ea65d65d507494dd8a115290155c" name="stateJson" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_596ea358cdb75a2596a0d320fb2a9563" name="version" visibility="private" type="_9cfdd51766385a42b14fcb3fe8ce9257" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_641fb2f17f085da9bc7c8b346f53c85a" name="createdAt" visibility="private" type="_a3609b1cc30f55eb8a72c40696f1d030" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_659a0640ec6f52dd86cf896b610f7d0e" name="updatedAt" visibility="private" type="_a3609b1cc30f55eb8a72c40696f1d030" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Class" xmi:id="_dcfba67214e15dc2965cad2951447ab6" name="AiExplanation">
+      <ownedComment xmi:type="uml:Comment" xmi:id="_56ffb2b280ac511288ad4aec00a7c7bf" body="JPA entity; table: ai_explanations; source: entity/AiExplanation.java" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_2d23f24b9e435aed8dbeb4f75cdda1aa" name="id" visibility="private" type="_958ab7458b4c56ab957cd2ac81c8f1d9" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_76a9e75e450058779063bc69fc6083d6" name="submissionId" visibility="private" type="_958ab7458b4c56ab957cd2ac81c8f1d9" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_9b396de75a4a54c588e3ee3e34b6194a" name="studentId" visibility="private" type="_958ab7458b4c56ab957cd2ac81c8f1d9" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_52415683633955ed9511d8af0851c394" name="category" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_8d4467b21f62596c8019e942e03d0f75" name="diagnosis" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_4a9d13cd55415d6796d0fe10c3cdc81a" name="suspectedLocation" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_fdb55fdaee7d57009300fc20e386a908" name="actionableHints" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_bba19947132e5b1b9db5733f93b641aa" name="learningKeywords" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_efaf65ba0fdd5c869eda4c3fe1265e4e" name="telemetryAudit" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_e5ab88df4e6c5e3ca484b5f9fc507313" name="overallSummary" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_45e4bedcf2505afc90e1cfbd8b97829f" name="modelName" visibility="private" type="_f69838914df55d6881409e91fd084808" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_2b6928e0e4ca51f3ad33927e11549dc4" name="promptTokens" visibility="private" type="_9cfdd51766385a42b14fcb3fe8ce9257" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_a6bdcec95b8a5674916d5110c4c2e3f9" name="completionTokens" visibility="private" type="_9cfdd51766385a42b14fcb3fe8ce9257" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_f022885690bd572aa18ce780faaf470b" name="feedbackRating" visibility="private" type="_ea139b17bc865012b09f0229a0beb858" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_0db74930c8d5566b822475dc28b1b628" name="createdAt" visibility="private" type="_a94d1cc22d0b559b863c21866db21a2f" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_8228b6ba4b6a56aea41908a316c05811" name="updatedAt" visibility="private" type="_a94d1cc22d0b559b863c21866db21a2f" />
+      <ownedAttribute xmi:type="uml:Property" xmi:id="_61361c691e655eee895d12abcd012df3" name="deletedAt" visibility="private" type="_a94d1cc22d0b559b863c21866db21a2f" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="_f20fef64017a5462bd34014591105eef" memberEnd="_158076e2f4a258c688fb813cee6b9b79 _7edd469a700e58f283461198f767dfef">
+      <ownedEnd xmi:type="uml:Property" xmi:id="_158076e2f4a258c688fb813cee6b9b79" type="_b5c8f95fc4ac5dfabdd78f8c4bdbd62d" association="_f20fef64017a5462bd34014591105eef" aggregation="composite">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_d3227508f7fe5aa691f18ca60730d14f" value="1" />
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_eb981a1297cb5da28f1027543766ca7d" value="1" />
+      </ownedEnd>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_7edd469a700e58f283461198f767dfef" type="_107e438ed2f55f30b9e577a029c514ce" association="_f20fef64017a5462bd34014591105eef">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_584bf7437f6050a68b5211b4e33b4e8d" value="0" />
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_f65ff897a3665a2490cad76af3bf8bea" value="*" />
+      </ownedEnd>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="_e30f1d6961a6504483889d18c2ab4559" memberEnd="_6b4143a2bf56563db1f3511ec262a4cd _7b46adb24724564f874a542fae006ddc">
+      <ownedEnd xmi:type="uml:Property" xmi:id="_6b4143a2bf56563db1f3511ec262a4cd" type="_b5c8f95fc4ac5dfabdd78f8c4bdbd62d" association="_e30f1d6961a6504483889d18c2ab4559" aggregation="composite">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_1e0b7e926d5756f8a0ba6103fad3027a" value="1" />
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_d494ee2efb9a5145bfef321d7e951a05" value="1" />
+      </ownedEnd>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_7b46adb24724564f874a542fae006ddc" type="_7a63093e80645c38a3b4ad1fd7c9e695" association="_e30f1d6961a6504483889d18c2ab4559">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_7c9c6731f6365a92823d9ce948cde8c5" value="0" />
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_c6dc79c6286f5042953dea7cdb2bd5bd" value="*" />
+      </ownedEnd>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="_669cb9f4da6b5f0eaf36027509dde88b" memberEnd="_c1cddbb190155f1aa0a88fe5a4e63db8 _0e0e48cc5da750698da65a54b076d75d">
+      <ownedEnd xmi:type="uml:Property" xmi:id="_c1cddbb190155f1aa0a88fe5a4e63db8" type="_b5c8f95fc4ac5dfabdd78f8c4bdbd62d" association="_669cb9f4da6b5f0eaf36027509dde88b" aggregation="composite">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_237054d3adcc566ba2b2c061406caedf" value="1" />
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_29561345aa56539f98ef4c2f9bcf3504" value="1" />
+      </ownedEnd>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_0e0e48cc5da750698da65a54b076d75d" type="_34467b27866f52b1a3f44cae63917726" association="_669cb9f4da6b5f0eaf36027509dde88b">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_35400e36e568550a86ac60f9dee9781e" value="0" />
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_778b57e641ef54f3adac860b4c7fd184" value="*" />
+      </ownedEnd>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="_45cf72319de754e89efe45b64d58fd4f" memberEnd="_7159a52a037f5176a676769b1b38e047 _079a43e571d45f0b8cd3dca61380b184">
+      <ownedEnd xmi:type="uml:Property" xmi:id="_7159a52a037f5176a676769b1b38e047" type="_b5c8f95fc4ac5dfabdd78f8c4bdbd62d" association="_45cf72319de754e89efe45b64d58fd4f" aggregation="composite">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_a2bed32c27e35a51b95819e7435f5b96" value="1" />
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_8ca3912fa9bb520294436e47b03f28e4" value="1" />
+      </ownedEnd>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_079a43e571d45f0b8cd3dca61380b184" type="_6ef1d1dd5a6a588db64e4ad241d4edf4" association="_45cf72319de754e89efe45b64d58fd4f">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_fe8b24e4e3ef594d918dde3db4bb0f00" value="0" />
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_999bd2b882f0594fb285d520130d9ea5" value="*" />
+      </ownedEnd>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="_4929fb68fdf659f7b573e27b038292b8" memberEnd="_cf51929dda0c5e419c1e475adb4369bd _0ce23911cdf25e17ba92bfb6701b050d">
+      <ownedEnd xmi:type="uml:Property" xmi:id="_cf51929dda0c5e419c1e475adb4369bd" type="_b5c8f95fc4ac5dfabdd78f8c4bdbd62d" association="_4929fb68fdf659f7b573e27b038292b8">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_8cf4a3efce5559f9bfaa921ab37b893b" value="1" />
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_bb97db7f0efe5d5ba2c203f03184f4c9" value="1" />
+      </ownedEnd>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_0ce23911cdf25e17ba92bfb6701b050d" type="_def4f86c11385d79960543dc00e8b2a0" association="_4929fb68fdf659f7b573e27b038292b8">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_8a4bc55d77ec54c88d3cbda5b4f8ccf2" value="0" />
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_abcf84c69a5c5084b9d826804b54e164" value="*" />
+      </ownedEnd>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="_8ef6b278d4b15195bea6dd2e6b63c596" memberEnd="_236470bbe955547a903a94fcab41e4a9 _3cb7c0ad52a15b658d988cc7c5c8aae6">
+      <ownedEnd xmi:type="uml:Property" xmi:id="_236470bbe955547a903a94fcab41e4a9" type="_34467b27866f52b1a3f44cae63917726" association="_8ef6b278d4b15195bea6dd2e6b63c596" aggregation="shared">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_769ba872258b5bccafbfa87f1f208552" value="1" />
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_dc63a3f331b4533d8a41da172ce4b24a" value="1" />
+      </ownedEnd>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_3cb7c0ad52a15b658d988cc7c5c8aae6" type="_3ad50475ae2f5a4590d734a51f8cdc6e" association="_8ef6b278d4b15195bea6dd2e6b63c596">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_03c92b26a8fd560cba521782beee6060" value="0" />
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_ecf62a7e2d0f5166ad22dba766cb3819" value="*" />
+      </ownedEnd>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="_cb6c3547947f5b66a0885c8562cfd65c" memberEnd="_b99e6ca35f015048b32ef3100ea8ce28 _0fe42de7ec405f5c8f4d9bd12ce6255b">
+      <ownedEnd xmi:type="uml:Property" xmi:id="_b99e6ca35f015048b32ef3100ea8ce28" type="_34467b27866f52b1a3f44cae63917726" association="_cb6c3547947f5b66a0885c8562cfd65c">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_caaa19cc0e075791b5425c3221af7f8d" value="1" />
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_3e319cab7f1a5d2eb40580460dc55bb2" value="1" />
+      </ownedEnd>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_0fe42de7ec405f5c8f4d9bd12ce6255b" type="_722df910a8915d5eb02a3ae029f32e86" association="_cb6c3547947f5b66a0885c8562cfd65c">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_e496372ce5e75e398052c132fa98a69c" value="0" />
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_aa99988319975ec8a234507130d1b60a" value="*" />
+      </ownedEnd>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="_3cd247d09bdc5141b9baccde4ebcdba7" memberEnd="_17b6a83f335e5230ad29e63ecec7052e _532f95f2b5bd51ce9b417e09dba91e7c">
+      <ownedEnd xmi:type="uml:Property" xmi:id="_17b6a83f335e5230ad29e63ecec7052e" type="_7a63093e80645c38a3b4ad1fd7c9e695" association="_3cd247d09bdc5141b9baccde4ebcdba7" aggregation="composite">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_5f9e306022225e37be1e685c6b929b83" value="1" />
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_cb94de02412d52e1833593de89d402c3" value="1" />
+      </ownedEnd>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_532f95f2b5bd51ce9b417e09dba91e7c" type="_a2769e7779dd5bd0bc8e995c5edd1f62" association="_3cd247d09bdc5141b9baccde4ebcdba7">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_af0f467b0a435e5f9910ec8ea5dc5328" value="0" />
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_06416080814458bab823a34c6efbe5a1" value="*" />
+      </ownedEnd>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="_6c036af943475c568b66e348fb6ab9f9" memberEnd="_c34b7852aa165280b7781266c776d1a2 _f5c7a5d6bfc6571198e9230d0312efac">
+      <ownedEnd xmi:type="uml:Property" xmi:id="_c34b7852aa165280b7781266c776d1a2" type="_7a63093e80645c38a3b4ad1fd7c9e695" association="_6c036af943475c568b66e348fb6ab9f9">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_08423a15958d5379a46dfda83e1de3bb" value="1" />
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_ad1380b9478e57ca8592ba044ed308be" value="1" />
+      </ownedEnd>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_f5c7a5d6bfc6571198e9230d0312efac" type="_722df910a8915d5eb02a3ae029f32e86" association="_6c036af943475c568b66e348fb6ab9f9">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_5ab6b99bb2f25f5e918dcb840e6fe116" value="0" />
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_ccaad7aaabd15c0fbcbf0600850956ff" value="*" />
+      </ownedEnd>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="_10b5098e34155639a3c6c643b7b07de2" memberEnd="_c8c701ff31dd5bc0855c345796f7cba0 _1abf31297b295daeb987f0b78717e32a">
+      <ownedEnd xmi:type="uml:Property" xmi:id="_c8c701ff31dd5bc0855c345796f7cba0" type="_7a63093e80645c38a3b4ad1fd7c9e695" association="_10b5098e34155639a3c6c643b7b07de2" aggregation="composite">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_37d01e75a4f654ee86896a0db746ceca" value="1" />
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_07c6af8c752350729a97e3b2feeb89b3" value="1" />
+      </ownedEnd>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_1abf31297b295daeb987f0b78717e32a" type="_3dc854fce46d5af18b63c762fbdc6c23" association="_10b5098e34155639a3c6c643b7b07de2">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_87cf704329435dad8db3ec0ef96804b7" value="0" />
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_e345dbcb58d15eb2add948708be021dc" value="*" />
+      </ownedEnd>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="_70e2c442cbe8510e88b5d9f9df481b75" memberEnd="_bad4272f6056501099c778c3b5edddd6 _81d77fc6a55350b5a573653b21dc7b3d">
+      <ownedEnd xmi:type="uml:Property" xmi:id="_bad4272f6056501099c778c3b5edddd6" type="_7a63093e80645c38a3b4ad1fd7c9e695" association="_70e2c442cbe8510e88b5d9f9df481b75" aggregation="composite">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_7712cd76515159cfb6353ccad7ebc54f" value="1" />
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_830c3dcaad6f5f68b6141f1d90a06fd6" value="1" />
+      </ownedEnd>
+      <ownedEnd xmi:type="uml:Property" xmi:id="_81d77fc6a55350b5a573653b21dc7b3d" type="_def4f86c11385d79960543dc00e8b2a0" association="_70e2c442cbe8510e88b5d9f9df481b75">
+        <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_3128eb8938d75b74b45b9de82f2b2e22" value="0" />
+        <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_6796e46fdf5d5b6b825c3428767f5616" value="*" />
+      </ownedEnd>
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="_50cfb7b5fddb5c50bfc2f8c1d109ead0" memberEnd="_0071bd3a747057d5ab622283447d5303 _297490b1288156be8cc25f33690761dd">
+      <ownedEnd xmi:type="uml:Property" xmi:id="_0071bd3a747057d5ab622283447d5303" type="_7a63093e80645c38a3b4ad1fd7c9e695" association="_50cfb7b5fddb5c50bfc2f8c1d109ead0" />
+      <ownedEnd xmi:type="uml:Property" xmi:id="_297490b1288156be8cc25f33690761dd" type="_04fcf6645049510588613dddcbe2921f" association="_50cfb7b5fddb5c50bfc2f8c1d109ead0" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Association" xmi:id="_0db6c83cb1f15f30a7522ad939e037e5" memberEnd="_255c90ba71c25c1389cd6f7fcdd859cd _eb355b62729a56079424d8fc6ad1fc6c">
+      <ownedEnd xmi:type="uml:Property" xmi:id="_255c90ba71c25c1389cd6f7fcdd859cd" type="_3ad50475ae2f5a4590d734a51f8cdc6e" association="_0db6c83cb1f15f30a7522ad939e037e5" />
+      <ownedEnd xmi:type="uml:Property" xmi:id="_eb355b62729a56079424d8fc6ad1fc6c" type="_e733251914b05c648e80243ef9ad8d4b" association="_0db6c83cb1f15f30a7522ad939e037e5" />
+    </packagedElement>
+  </uml:Model>
+</xmi:XMI>

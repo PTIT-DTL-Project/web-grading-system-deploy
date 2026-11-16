@@ -319,6 +319,44 @@ Kịch bản ngoại lệ &
 \label{tab:uc-review-class-results}
 \end{table}
 
+\subsubsection{Trò chuyện với trợ lý AI dành cho giảng viên}
+
+Use case của giảng viên gồm tạo hội thoại, gửi câu hỏi, xem lịch sử, quản lý hội thoại và hủy phản hồi đang chạy. Khi agent đề xuất thao tác ghi, giảng viên có thể xem nội dung chờ duyệt rồi xác nhận hoặc từ chối. Hình~\ref{fig:uc-lecturer-ai} khái quát các chức năng này; kịch bản sử dụng được trình bày trong Bảng~\ref{tab:uc-lecturer-chat-ai}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/ai_usecase_lecturer}
+\caption{Biểu đồ use case trò chuyện với trợ lý AI của giảng viên.}
+\label{fig:uc-lecturer-ai}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+\hline
+Tên mục & Nội dung mô tả \\ \hline
+Tên kịch bản & Giảng viên trò chuyện với trợ lý AI \\ \hline
+Tác nhân & Giảng viên \\ \hline
+Tiền điều kiện & Giảng viên đã đăng nhập vào hệ thống. \\ \hline
+Hậu điều kiện & Hệ thống lưu lại lịch sử trò chuyện giữa giảng viên và trợ lý AI. \\ \hline
+Kịch bản chính &
+\begin{enumerate}[leftmargin=*, nosep]
+    \item Giảng viên mở giao diện trò chuyện với trợ lý AI.
+    \item Hệ thống hiển thị giao diện chat trống, sẵn sàng nhận câu hỏi.
+    \item Giảng viên nhập câu hỏi liên quan đến bài tập, hệ thống chấm điểm hoặc hệ thống.
+    \item Hệ thống hiển thị câu trả lời của trợ lý AI cho giảng viên xem.
+    \item Giảng viên có thể tiếp tục đặt câu hỏi bổ sung hoặc kết thúc cuộc trò chuyện.
+\end{enumerate} \\ \hline
+Kịch bản ngoại lệ &
+\begin{itemize}[leftmargin=*, nosep]
+    \item Hệ thống không phản hồi: trợ lý AI không phản hồi trong thời gian quy định; hệ thống thông báo lỗi và gợi ý giảng viên thử lại sau.
+    \item Câu hỏi không liên quan: trợ lý AI trả lời rằng không thể hỗ trợ câu hỏi này và gợi ý các chủ đề liên quan đến hệ thống chấm bài.
+\end{itemize} \\ \hline
+\end{tabularx}
+\caption{Kịch bản chức năng Giảng viên trò chuyện với trợ lý AI.}
+\label{tab:uc-lecturer-chat-ai}
+\end{table}
+
 \subsubsection{Kịch bản các chức năng của sinh viên}
 
 
@@ -445,32 +483,18 @@ Kịch bản ngoại lệ &
 
 
 
-\begin{table}[H]
+
+
+\subsubsection{Trò chuyện với trợ lý AI dành cho sinh viên}
+
+Sinh viên dùng trợ lý AI để đặt câu hỏi về bài tập, điểm số và quy trình chấm, xem lại lịch sử hội thoại hoặc dừng phản hồi đang chạy. Sơ đồ use case tại Hình~\ref{fig:uc-student-ai} thể hiện các thao tác hội thoại và bước xem xét thao tác AI đang chờ xác nhận. Kịch bản tương tác được trình bày trong Bảng~\ref{tab:uc-student-chat-ai}.
+
+\begin{figure}[H]
 \centering
-\begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
-\hline
-Tên mục & Nội dung mô tả \\ \hline
-Tên kịch bản & Giảng viên trò chuyện với trợ lý AI \\ \hline
-Tác nhân & Giảng viên \\ \hline
-Tiền điều kiện & Giảng viên đã đăng nhập vào hệ thống. \\ \hline
-Hậu điều kiện & Hệ thống lưu lại lịch sử trò chuyện giữa giảng viên và trợ lý AI. \\ \hline
-Kịch bản chính &
-\begin{enumerate}[leftmargin=*, nosep]
-    \item Giảng viên mở giao diện trò chuyện với trợ lý AI.
-    \item Hệ thống hiển thị giao diện chat trống, sẵn sàng nhận câu hỏi.
-    \item Giảng viên nhập câu hỏi liên quan đến bài tập, hệ thống chấm điểm hoặc hệ thống.
-    \item Hệ thống hiển thị câu trả lời của trợ lý AI cho giảng viên xem.
-    \item Giảng viên có thể tiếp tục đặt câu hỏi bổ sung hoặc kết thúc cuộc trò chuyện.
-\end{enumerate} \\ \hline
-Kịch bản ngoại lệ &
-\begin{itemize}[leftmargin=*, nosep]
-    \item Hệ thống không phản hồi: trợ lý AI không phản hồi trong thời gian quy định; hệ thống thông báo lỗi và gợi ý giảng viên thử lại sau.
-    \item Câu hỏi không liên quan: trợ lý AI trả lời rằng không thể hỗ trợ câu hỏi này và gợi ý các chủ đề liên quan đến hệ thống chấm bài.
-\end{itemize} \\ \hline
-\end{tabularx}
-\caption{Kịch bản chức năng Giảng viên trò chuyện với trợ lý AI.}
-\label{tab:uc-lecturer-chat-ai}
-\end{table}
+\includegraphics[width=\textwidth]{Hinhve/ai_usecase_student}
+\caption{Biểu đồ use case trò chuyện với trợ lý AI của sinh viên.}
+\label{fig:uc-student-ai}
+\end{figure}
 
 \begin{table}[H]
 \centering
@@ -643,7 +667,7 @@ Biểu đồ dưới đây mô tả toàn bộ các lớp thực thể của h�
 \centering
 \includegraphics[width=\textwidth]{Hinhve/Hinh2_36_class_diagram_toan_he_thong}
 \caption{Biểu đồ lớp thiết kế toàn hệ thống.}
-\label{fig:class-system}
+\label{fig:analysis-class-system}
 \end{figure}
 
 \subsection{Biểu đồ lớp chi tiết từng dịch vụ}
@@ -709,13 +733,22 @@ Các lớp thuộc dịch vụ kết quả chấm gồm Kết quả chấm (Resu
 
 \subsubsection{Biểu đồ lớp pha phân tích dịch vụ trợ lý AI}
 
-Các lớp thuộc dịch vụ trợ lý AI gồm Giải thích của trợ lý AI (AiExplanation) cùng thông tin bài nộp và danh mục được giải thích.
+Biểu đồ lớp phân tích ban đầu tập trung vào kết quả giải thích bài nộp: lớp \texttt{AiExplanation} lưu chẩn đoán, vị trí nghi ngờ, gợi ý và từ khóa học tập. Hình~\ref{fig:class-ai} giữ lại góc nhìn lớp nghiệp vụ này.
+
+Để mô tả đầy đủ hơn phạm vi hiện tại của dịch vụ, Hình~\ref{fig:class-ai-analysis} bổ sung mô hình miền hội thoại và quá trình chạy agent. Mô hình gồm \texttt{Conversation}, \texttt{Message}, \texttt{Run} và \texttt{Task}, cùng dữ liệu tóm tắt hội thoại, sự kiện run, kết quả tool đã lưu và thao tác đang chờ xác nhận. Hai hình lần lượt thể hiện dữ liệu giải thích bài nộp và các thực thể phục vụ hội thoại.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.30\textwidth]{Hinhve/Hinh2_19_class_ai}
-\caption{Biểu đồ lớp pha phân tích dịch vụ trợ lý AI.}
+\caption{Biểu đồ lớp pha phân tích lớp giải thích kết quả bài nộp bằng AI.}
 \label{fig:class-ai}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.92\textwidth]{Hinhve/ai_class_analysis}
+\caption{Biểu đồ lớp pha phân tích dữ liệu của dịch vụ trợ lý AI.}
+\label{fig:class-ai-analysis}
 \end{figure}
 
 
@@ -790,12 +823,12 @@ Dịch vụ kết quả chấm lưu kết quả chấm theo từng bài nộp v�
 
 \subsubsection{Dịch vụ Trợ lý AI}
 
-Dịch vụ trợ lý AI quản lý hội thoại, giải thích và gợi ý học tập cho bài nộp.
+Dịch vụ trợ lý AI quản lý hội thoại, các lần chạy agent, thao tác tool và giải thích kết quả bài nộp. Biểu đồ lớp chi tiết tại Hình~\ref{fig:class-ai-service} mở rộng từ lớp giải thích kết quả sang các thực thể lưu trong cơ sở dữ liệu hội thoại: một hội thoại gồm nhiều message và run; run phát sinh sự kiện theo thứ tự, ghi nhận lần thực thi tool và có thể liên kết với task, thao tác chờ duyệt hoặc kết quả tool được lưu tạm. Tóm tắt hội thoại gắn với mốc message để hỗ trợ đưa lịch sử cần thiết vào ngữ cảnh xử lý.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{Hinhve/Hinh2_35_class_ai_service}
-\caption{Biểu đồ lớp thiết kế dịch vụ Trợ lý AI.}
+\includegraphics[width=0.92\textwidth]{Hinhve/ai_class_design}
+\caption{Biểu đồ lớp thiết kế chi tiết dịch vụ Trợ lý AI.}
 \label{fig:class-ai-service}
 \end{figure}
 
@@ -812,12 +845,12 @@ Sau khi phân rã hệ thống thành các miền chức năng, mỗi miền đ�
     \item Dịch vụ trợ lý AI: bao gồm các bảng ai\_conversation, ai\_message, ai\_explanations, ai\_task, ai\_run, để quản lý hội thoại, giải thích và gợi ý học tập cho bài nộp.
 \end{itemize}
 
-Biểu đồ \ref{fig:erd} minh họa quan hệ giữa các thực thể chính của hệ thống.
+Hình~\ref{fig:erd} là bản xuất ERD tổng quan từ Visual Paradigm, tập trung vào các bảng nghiệp vụ chính giữa những dịch vụ. Phần AI trong bản xuất hiện tại thể hiện bảng \texttt{ai\_explanations}; các bảng hội thoại và điều phối agent như \texttt{ai\_conversation}, \texttt{ai\_message}, \texttt{ai\_run} và \texttt{ai\_task} được mô tả chi tiết trong các biểu đồ lớp AI ở Hình~\ref{fig:class-ai-analysis} và Hình~\ref{fig:class-ai-service}.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{Hinhve/Hinh2_28_erd}
-\caption{Biểu đồ quan hệ thực thể (ERD) của hệ thống.}
+\includegraphics[width=\textwidth]{Hinhve/vp-erd.jpg}
+\caption{Biểu đồ quan hệ thực thể (ERD) tổng quan của hệ thống, xuất từ Visual Paradigm.}
 \label{fig:erd}
 \end{figure}
 
@@ -831,7 +864,7 @@ Hình \ref{fig:seq-dang-nhap} mô tả luồng xử lý khi người dùng đăn
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{Hinhve/Hinh2_20_seq_dang_nhap}
+\includegraphics[width=\textwidth]{Hinhve/vp-login-sequence.jpg}
 \caption{Sơ đồ tuần tự chức năng Đăng nhập.}
 \label{fig:seq-dang-nhap}
 \end{figure}
@@ -842,7 +875,7 @@ Hình \ref{fig:seq-quan-ly-lop} mô tả luồng xử lý khi giảng viên xem 
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{Hinhve/Hinh2_21_seq_quan_ly_lop}
+\includegraphics[width=\textwidth]{Hinhve/vp-lecturer-view-class-sequence.jpg}
 \caption{Sơ đồ tuần tự chức năng Xem lớp.}
 \label{fig:seq-quan-ly-lop}
 \end{figure}
@@ -851,7 +884,7 @@ Hình \ref{fig:seq-quan-ly-lop-chitiet} mô tả luồng xử lý khi giảng vi
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{Hinhve/Hinh2_22_seq_quan_ly_lop_chitiet}
+\includegraphics[width=\textwidth]{Hinhve/vp-lecturer-view-class-detail-sequence.jpg}
 \caption{Sơ đồ tuần tự chức năng Xem chi tiết lớp.}
 \label{fig:seq-quan-ly-lop-chitiet}
 \end{figure}
@@ -862,7 +895,7 @@ Hình \ref{fig:seq-quan-ly-bai-tap} mô tả luồng xử lý khi giảng viên 
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{Hinhve/Hinh2_23_seq_quan_ly_bai_tap}
+\includegraphics[width=\textwidth]{Hinhve/vp-lecturer-assignment-management-sequence.jpg}
 \caption{Sơ đồ tuần tự chức năng Quản lý bài tập.}
 \label{fig:seq-quan-ly-bai-tap}
 \end{figure}
@@ -873,7 +906,7 @@ Hình \ref{fig:seq-xem-ket-qua-lop} mô tả luồng xử lý khi giảng viên 
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{Hinhve/Hinh2_24_seq_xem_ket_qua_lop}
+\includegraphics[width=\textwidth]{Hinhve/vp-lecturer-view-result-assignment-sequence.jpg}
 \caption{Sơ đồ tuần tự chức năng Xem kết quả chấm của cả lớp.}
 \label{fig:seq-xem-ket-qua-lop}
 \end{figure}
@@ -884,7 +917,7 @@ Hình \ref{fig:seq-nop-bai} mô tả luồng xử lý khi sinh viên nộp bài 
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{Hinhve/Hinh2_25_seq_nop_bai}
+\includegraphics[width=\textwidth]{Hinhve/vp-student-submit-assignment-sequence.jpg}
 \caption{Sơ đồ tuần tự chức năng Nộp bài tập.}
 \label{fig:seq-nop-bai}
 \end{figure}
@@ -895,7 +928,7 @@ Hình \ref{fig:seq-xem-ket-qua-cua-than} mô tả luồng xử lý khi sinh viê
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{Hinhve/Hinh2_26_seq_xem_ket_qua_cua_than}
+\includegraphics[width=\textwidth]{Hinhve/vp-student-review-own-results-sequence.jpg}
 \caption{Sơ đồ tuần tự chức năng Xem kết quả chấm bài tập của bản thân.}
 \label{fig:seq-xem-ket-qua-cua-than}
 \end{figure}
@@ -906,9 +939,31 @@ Hình \ref{fig:seq-xem-diem-ca-nhan} mô tả luồng xử lý khi sinh viên xe
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{Hinhve/Hinh2_27_seq_xem_diem_ca_nhan}
+\includegraphics[width=\textwidth]{Hinhve/vp-student-view-personal-scores-sequence.jpg}
 \caption{Sơ đồ tuần tự chức năng Xem điểm và kết quả cá nhân.}
 \label{fig:seq-xem-diem-ca-nhan}
+\end{figure}
+
+\subsubsection{Trò chuyện với trợ lý AI}
+
+Luồng trò chuyện với trợ lý AI được xử lý theo hai nhánh bất đồng bộ. Nhánh gửi tin nhắn kiểm tra quyền sở hữu hội thoại, chống tạo trùng theo mã tin nhắn phía client, lưu run ở trạng thái \texttt{QUEUED} cùng tin nhắn người dùng, sau đó mới đưa công việc vào worker khi giao dịch đã commit. API trả về mã run trước khi mô hình hoàn thành; giao diện dùng mã này để mở kết nối sự kiện tới điểm cuối SSE. Worker chuyển run sang \texttt{RUNNING}, gọi bộ điều phối agent và phát nội dung theo từng phần. Khi cần, agent thực thi công cụ theo vai trò; khi hoàn tất, hệ thống lưu phản hồi, cập nhật trạng thái và phát sự kiện kết thúc. Hình~\ref{fig:seq-ai-chat} mô tả luồng chính.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.98\textwidth,height=0.78\textheight,keepaspectratio]{Hinhve/vp-user-chat-ai-assistant-sequence.jpg}
+\caption{Sơ đồ tuần tự chức năng trò chuyện với trợ lý AI.}
+\label{fig:seq-ai-chat}
+\end{figure}
+
+\subsubsection{Yêu cầu AI giải thích kết quả bài nộp}
+
+Ngoài hội thoại tự do, dịch vụ hỗ trợ tạo phần giải thích kết quả chấm. Với sinh viên, dịch vụ kiểm tra quyền sở hữu bài nộp; với giảng viên, dịch vụ xác nhận bài nộp thuộc bài tập của lớp do giảng viên quản lý. Khi chưa có bản giải thích đã lưu, dịch vụ lấy dữ liệu kết quả chấm và thông tin bài tập, xây dựng prompt có cấu trúc, gọi mô hình để sinh chẩn đoán và gợi ý, sau đó lưu bản ghi để những lần đọc sau có thể trả kết quả đã lưu. Hình~\ref{fig:seq-ai-explain} minh họa luồng này.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{Hinhve/vp-student-ai-explain-submission-sequence.png}
+\caption{Sơ đồ tuần tự chức năng giải thích kết quả bài nộp bằng AI.}
+\label{fig:seq-ai-explain}
 \end{figure}
 
 \subsection{Kiến trúc hệ thống}
@@ -917,8 +972,7 @@ Hình \ref{fig:architecture} mô tả kiến trúc tổng thể của hệ thố
 
 \begin{figure}[H]
 \centering
-% Bỏ comment dòng dưới sau khi có ảnh:
-% \includegraphics[width=\textwidth]{Hinhve/Hinh2_31_kien_truc_tong_the}
+\includegraphics[width=0.92\textwidth]{Hinhve/Hinh2_1_kien_truc_tong_the}
 \caption{Kiến trúc tổng thể của hệ thống.}
 \label{fig:architecture}
 \end{figure}

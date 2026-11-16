@@ -1,0 +1,252 @@
+@startuml user-chat-ai-assistant-sequence
+autonumber
+skinparam BoxPadding 10
+skinparam ParticipantPadding 10
+skinparam SequenceLifeLineBorderColor #2C3E50
+skinparam SequenceLifeLineBackgroundColor #EAECEE
+
+actor "User\n(Student / Lecturer)" as User
+boundary "AiChatSidebar.tsx" as UI
+boundary "API Gateway" as GW
+control "ChatController" as ChatCtrl
+control "RunController" as RunCtrl
+control "ConversationService" as ConvService
+control "RunWorker" as Worker
+control "SseBroadcaster" as SSE
+control "AgentOrchestrator" as Orchestrator
+control "AgentRuntime" as Runtime
+control "LlmClient" as LLM
+control "ToolExecutor" as ToolExec
+control "DownstreamService\n(Course / Submission)" as ExtService
+database "ConversationRepository" as ConvRepo
+database "RunRepository" as RunRepo
+database "MessageRepository" as MsgRepo
+
+== 1. User Sends Message & Conversation Initialization ==
+User -> UI: enter message + click send
+activate UI
+UI -> GW: call (POST /api/v1/ai/conversations/{id}/messages)
+activate GW
+GW -> ChatCtrl: call (sendMessage)
+activate ChatCtrl
+ChatCtrl -> ChatCtrl: sendMessage()
+ChatCtrl -> ConvService: call (sendMessage)
+activate ConvService
+ConvService -> ConvService: sendMessage()
+
+ConvService -> ConvRepo: call
+activate ConvRepo
+ConvRepo -> ConvRepo: findByIdAndOwnerId()
+ConvRepo --> ConvService: return (Conversation)
+deactivate ConvRepo
+
+ConvService -> MsgRepo: call
+activate MsgRepo
+MsgRepo -> MsgRepo: findMaxSequenceNo()
+MsgRepo --> ConvService: return (nextSeq)
+deactivate MsgRepo
+
+ConvService -> RunRepo: call
+activate RunRepo
+RunRepo -> RunRepo: save(Run[QUEUED])
+RunRepo --> ConvService: return (Run)
+deactivate RunRepo
+
+ConvService -> MsgRepo: call
+activate MsgRepo
+MsgRepo -> MsgRepo: save(Message[role=user])
+MsgRepo --> ConvService: return (Message)
+deactivate MsgRepo
+
+ConvService -> Worker: call (processRunAsync)
+activate Worker
+note right of Worker: Run asynchronously via Virtual Thread
+ConvService --> ChatCtrl: return (SendMessageResponse)
+deactivate ConvService
+ChatCtrl --> GW: return (HTTP 202 Accepted)
+deactivate ChatCtrl
+GW --> UI: return (SendMessageResponse[runId, messageId])
+deactivate GW
+
+== 2. Client Connects to Real-time SSE Stream ==
+UI -> GW: call (GET /api/v1/ai/runs/{runId}/events)
+activate GW
+GW -> RunCtrl: call (subscribeEvents)
+activate RunCtrl
+RunCtrl -> RunCtrl: subscribeEvents()
+RunCtrl -> SSE: call (subscribeReplay)
+activate SSE
+SSE --> RunCtrl: return (SseEmitter)
+RunCtrl --> GW: return (HTTP 200 text/event-stream)
+deactivate RunCtrl
+GW --> UI: return (EventSource SSE connection)
+deactivate GW
+
+== 3. Async Agent Execution & Tool-Calling Loop ==
+Worker -> Orchestrator: call (executeRun)
+activate Orchestrator
+Orchestrator -> Orchestrator: executeRun()
+
+Orchestrator -> RunRepo: call
+activate RunRepo
+RunRepo -> RunRepo: save(Run[RUNNING])
+RunRepo --> Orchestrator: return
+deactivate RunRepo
+
+Orchestrator -> SSE: broadcast("run.started")
+SSE --> UI: SSE event ("run.started")
+
+Orchestrator -> Runtime: call (execute)
+activate Runtime
+Runtime -> Runtime: execute()
+
+Runtime -> LLM: call (streamChatWithMemory)
+activate LLM
+LLM -> LLM: streamChatWithMemory()
+LLM --> Runtime: return (delta token chunk)
+Runtime -> SSE: broadcast("assistant.delta")
+SSE --> UI: SSE event ("assistant.delta")
+
+opt Tool Calling Required (e.g. read assignment / class info)
+    LLM --> Runtime: return (tool_call: GetAssignmentTool)
+    Runtime -> SSE: broadcast("tool.call")
+    SSE --> UI: SSE event ("tool.call")
+    
+    Runtime -> ToolExec: call (executeTool)
+    activate ToolExec
+    ToolExec -> ToolExec: execute()
+    ToolExec -> ExtService: call Feign client (getAssignment)
+    activate ExtService
+    ExtService -> ExtService: getAssignment()
+    ExtService --> ToolExec: return (AssignmentDetailDto)
+    deactivate ExtService
+    ToolExec --> Runtime: return (ToolResult)
+    deactivate ToolExec
+    
+    Runtime -> SSE: broadcast("tool.result")
+    SSE --> UI: SSE event ("tool.result")
+    
+    Runtime -> LLM: feed tool result into context
+    LLM -> LLM: streamCompletion()
+    LLM --> Runtime: return (final answer completion)
+end
+deactivate LLM
+
+Runtime --> Orchestrator: return (completion text)
+deactivate Runtime
+
+== 4. Completion & State Persistence ==
+Orchestrator -> MsgRepo: call
+activate MsgRepo
+MsgRepo -> MsgRepo: save(Message[role=assistant])
+MsgRepo --> Orchestrator: return
+deactivate MsgRepo
+
+Orchestrator -> RunRepo: call
+activate RunRepo
+RunRepo -> RunRepo: save(Run[SUCCEEDED])
+RunRepo --> Orchestrator: return
+deactivate RunRepo
+
+Orchestrator -> SSE: broadcast("run.completed")
+SSE --> UI: SSE event ("run.completed")
+Orchestrator -> SSE: complete(runId)
+deactivate Orchestrator
+SSE --> UI: close SSE stream
+deactivate SSE
+deactivate Worker
+
+UI -> User: display assistant response
+deactivate UI
+@enduml
+
+@startuml student-ai-explain-submission-sequence
+autonumber
+skinparam BoxPadding 10
+skinparam ParticipantPadding 10
+skinparam SequenceLifeLineBorderColor #2C3E50
+skinparam SequenceLifeLineBackgroundColor #EAECEE
+
+actor "Student" as Student
+boundary "SubmissionResultPage.tsx" as UI
+boundary "API Gateway" as GW
+control "AiExplanationController" as Controller
+control "AiExplanationService" as Service
+database "AiExplanationRepository" as Repo
+control "ResultServiceClient" as ResultClient
+control "CourseServiceClient" as CourseClient
+control "PromptBuilder" as PromptBuilder
+control "ExplanationLlmClient" as LLMClient
+entity "AiExplanation" as Entity
+
+== 1. Request AI Submission Explanation ==
+Student -> UI: click "Giải thích kết quả bài nộp bằng AI"
+activate UI
+UI -> GW: call (POST /api/v1/ai/submissions/{id}/explain)
+activate GW
+GW -> Controller: call (explainSubmission)
+activate Controller
+Controller -> Controller: explainSubmission()
+Controller -> Service: call (explainSubmission)
+activate Service
+Service -> Service: explainSubmission()
+
+== 2. Cache Inspection (Idempotency) ==
+Service -> Repo: call (findBySubmissionIdAndCategory)
+activate Repo
+Repo -> Repo: findBySubmissionIdAndCategory()
+Repo --> Service: return (empty - cache miss)
+deactivate Repo
+
+== 3. Fetch Grading Data & Assignment Context via Feign ==
+Service -> ResultClient: call (getBySubmissionId)
+activate ResultClient
+ResultClient -> ResultClient: getBySubmissionId()
+ResultClient --> Service: return (List<ResultDto>)
+deactivate ResultClient
+
+Service -> Service: verifyOwner(studentId == result.studentId)
+
+Service -> CourseClient: call (getAssignment)
+activate CourseClient
+CourseClient -> CourseClient: getAssignment()
+CourseClient --> Service: return (AssignmentDetailDto)
+deactivate CourseClient
+
+== 4. Prompt Construction & Structured LLM Reasoning ==
+Service -> PromptBuilder: call (buildSystemPrompt)
+activate PromptBuilder
+PromptBuilder -> PromptBuilder: buildSystemPrompt()
+PromptBuilder -> PromptBuilder: buildUserPrompt(assignment, result)
+PromptBuilder --> Service: return (systemPrompt, userPrompt)
+deactivate PromptBuilder
+
+Service -> LLMClient: call (generateEntity)
+activate LLMClient
+LLMClient -> LLMClient: generateEntity()
+note right of LLMClient: Model analyzes failed steps,\nerror traces, and runtime logs
+LLMClient --> Service: return (AiExplanationResultDto)
+deactivate LLMClient
+
+== 5. Entity Construction, Caching & Response Delivery ==
+Service -> Entity: call
+activate Entity
+Entity -> Entity: AiExplanation()
+Entity --> Service: return (entity)
+deactivate Entity
+
+Service -> Repo: call (save)
+activate Repo
+Repo -> Repo: save(AiExplanation)
+Repo --> Service: return (savedEntity)
+deactivate Repo
+
+Service --> Controller: return (AiExplanationResponse)
+deactivate Service
+Controller --> GW: return (HTTP 200 OK)
+deactivate Controller
+GW --> UI: return (AiExplanationResponse)
+deactivate GW
+UI -> Student: display (AiExplanationCard: diagnosis, step analysis, hints)
+deactivate UI
+@enduml

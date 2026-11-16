@@ -1,0 +1,292 @@
+<?xml version='1.0' encoding='utf-8'?>
+<xmi:XMI xmlns:uml="http://schema.omg.org/spec/UML/2.0" xmlns:xmi="http://schema.omg.org/spec/XMI/2.1" xmi:version="2.1">
+  <xmi:Documentation exporter="Antigravity DATN Exporter" exporterVersion="1.0" />
+  <uml:Model xmi:type="uml:Model" xmi:id="eed13e0130565d60" name="ai-assistant-service-design">
+    <packagedElement xmi:type="uml:Interaction" xmi:id="236f063d69df5f36" name="user-chat-ai-assistant-sequence">
+      <lifeline xmi:type="uml:Lifeline" xmi:id="364f5ebbe47b5c33" name="User" />
+      <lifeline xmi:type="uml:Lifeline" xmi:id="0c62e6ca7f45578b" name="AiChatSidebar.tsx" />
+      <lifeline xmi:type="uml:Lifeline" xmi:id="63daff5d85fd5af1" name="API Gateway" />
+      <lifeline xmi:type="uml:Lifeline" xmi:id="00672df1336956bd" name="ChatController" />
+      <lifeline xmi:type="uml:Lifeline" xmi:id="f55d09b9735951e8" name="RunController" />
+      <lifeline xmi:type="uml:Lifeline" xmi:id="0d74913e8b8a53a1" name="ConversationService" />
+      <lifeline xmi:type="uml:Lifeline" xmi:id="f2c4f86f38695906" name="ConversationRepository" />
+      <lifeline xmi:type="uml:Lifeline" xmi:id="e0841440757b5281" name="RunRepository" />
+      <lifeline xmi:type="uml:Lifeline" xmi:id="77b11ba71bea53da" name="MessageRepository" />
+      <lifeline xmi:type="uml:Lifeline" xmi:id="f63d40a79286530a" name="RunWorker" />
+      <lifeline xmi:type="uml:Lifeline" xmi:id="5d29fbc4c58058c3" name="SseBroadcaster" />
+      <lifeline xmi:type="uml:Lifeline" xmi:id="d1c79f4e65865e43" name="AgentOrchestrator" />
+      <lifeline xmi:type="uml:Lifeline" xmi:id="11b004839957529d" name="AgentRuntime" />
+      <lifeline xmi:type="uml:Lifeline" xmi:id="56ea362935e755f7" name="LlmClient" />
+      <lifeline xmi:type="uml:Lifeline" xmi:id="6e116f2f0e4e5ff0" name="ToolExecutor" />
+      <lifeline xmi:type="uml:Lifeline" xmi:id="67806b7e44e95fdf" name="DownstreamService" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="a40d0c2a0de9584f" name="send_enter message + click send" covered="364f5ebbe47b5c33" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="5f6839979ca85907" name="recv_enter message + click send" covered="0c62e6ca7f45578b" />
+      <message xmi:type="uml:Message" xmi:id="347a685c432854fc" name="enter message + click send" messageSort="synchCall" sendEvent="a40d0c2a0de9584f" receiveEvent="5f6839979ca85907" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="9a78a539e26f503a" name="send_call (POST /messages)" covered="0c62e6ca7f45578b" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="4e0a3ea7d290543a" name="recv_call (POST /messages)" covered="63daff5d85fd5af1" />
+      <message xmi:type="uml:Message" xmi:id="9af1185fefa75491" name="call (POST /messages)" messageSort="synchCall" sendEvent="9a78a539e26f503a" receiveEvent="4e0a3ea7d290543a" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="db9e2fa8c6fb5a3a" name="send_call (sendMessage)" covered="63daff5d85fd5af1" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="9b35b88632325c14" name="recv_call (sendMessage)" covered="00672df1336956bd" />
+      <message xmi:type="uml:Message" xmi:id="740a064e067259d4" name="call (sendMessage)" messageSort="synchCall" sendEvent="db9e2fa8c6fb5a3a" receiveEvent="9b35b88632325c14" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="fa6f617908965ba5" name="send_sendMessage()" covered="00672df1336956bd" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="65d56d2f89c555de" name="recv_sendMessage()" covered="00672df1336956bd" />
+      <message xmi:type="uml:Message" xmi:id="7f8a18f52b28558a" name="sendMessage()" messageSort="synchCall" sendEvent="fa6f617908965ba5" receiveEvent="65d56d2f89c555de" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="5de45b2047305ebe" name="send_call (sendMessage)" covered="00672df1336956bd" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="6660181671b75739" name="recv_call (sendMessage)" covered="0d74913e8b8a53a1" />
+      <message xmi:type="uml:Message" xmi:id="42989a521a3757fa" name="call (sendMessage)" messageSort="synchCall" sendEvent="5de45b2047305ebe" receiveEvent="6660181671b75739" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="62439b7154d95cca" name="send_sendMessage()" covered="0d74913e8b8a53a1" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="92d4792f40e0519a" name="recv_sendMessage()" covered="0d74913e8b8a53a1" />
+      <message xmi:type="uml:Message" xmi:id="0978f8c041fe54db" name="sendMessage()" messageSort="synchCall" sendEvent="62439b7154d95cca" receiveEvent="92d4792f40e0519a" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="7c78453fad925be9" name="send_call (findByIdAndOwnerId)" covered="0d74913e8b8a53a1" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="4bf315fe1d8e56c2" name="recv_call (findByIdAndOwnerId)" covered="f2c4f86f38695906" />
+      <message xmi:type="uml:Message" xmi:id="786c9060c4d15f0c" name="call (findByIdAndOwnerId)" messageSort="synchCall" sendEvent="7c78453fad925be9" receiveEvent="4bf315fe1d8e56c2" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="5d9fec75e8955895" name="send_return (Conversation)" covered="f2c4f86f38695906" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="10f57424d9955fb5" name="recv_return (Conversation)" covered="0d74913e8b8a53a1" />
+      <message xmi:type="uml:Message" xmi:id="36808f6558f85b9a" name="return (Conversation)" messageSort="reply" sendEvent="5d9fec75e8955895" receiveEvent="10f57424d9955fb5" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="9285351f6ae25f2b" name="send_call (findMaxSequenceNo)" covered="0d74913e8b8a53a1" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="959593b3c49e5389" name="recv_call (findMaxSequenceNo)" covered="77b11ba71bea53da" />
+      <message xmi:type="uml:Message" xmi:id="063a2ed5ac9c5694" name="call (findMaxSequenceNo)" messageSort="synchCall" sendEvent="9285351f6ae25f2b" receiveEvent="959593b3c49e5389" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="ba6e9c0c64a15034" name="send_return (nextSeq)" covered="77b11ba71bea53da" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="f9ce4cb53fa45d2f" name="recv_return (nextSeq)" covered="0d74913e8b8a53a1" />
+      <message xmi:type="uml:Message" xmi:id="860794ac3b0655ae" name="return (nextSeq)" messageSort="reply" sendEvent="ba6e9c0c64a15034" receiveEvent="f9ce4cb53fa45d2f" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="219d3cf8faf05836" name="send_call (save[QUEUED])" covered="0d74913e8b8a53a1" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="f53431d538a85070" name="recv_call (save[QUEUED])" covered="e0841440757b5281" />
+      <message xmi:type="uml:Message" xmi:id="94a4ade831925061" name="call (save[QUEUED])" messageSort="synchCall" sendEvent="219d3cf8faf05836" receiveEvent="f53431d538a85070" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="4619461c06b45116" name="send_return (Run)" covered="e0841440757b5281" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="6eed754825855245" name="recv_return (Run)" covered="0d74913e8b8a53a1" />
+      <message xmi:type="uml:Message" xmi:id="e94c639c4bf55b30" name="return (Run)" messageSort="reply" sendEvent="4619461c06b45116" receiveEvent="6eed754825855245" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="2f6f36abfa9b5d45" name="send_call (save[role=user])" covered="0d74913e8b8a53a1" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="de9f1928f0f75a71" name="recv_call (save[role=user])" covered="77b11ba71bea53da" />
+      <message xmi:type="uml:Message" xmi:id="f79cf37896125f26" name="call (save[role=user])" messageSort="synchCall" sendEvent="2f6f36abfa9b5d45" receiveEvent="de9f1928f0f75a71" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="c37734fda64c52cf" name="send_return (Message)" covered="77b11ba71bea53da" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="d4424ffdb3e75833" name="recv_return (Message)" covered="0d74913e8b8a53a1" />
+      <message xmi:type="uml:Message" xmi:id="535f0ca7b2db51ff" name="return (Message)" messageSort="reply" sendEvent="c37734fda64c52cf" receiveEvent="d4424ffdb3e75833" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="73a241d1d1b557d2" name="send_call (processRunAsync)" covered="0d74913e8b8a53a1" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="585938fad192532c" name="recv_call (processRunAsync)" covered="f63d40a79286530a" />
+      <message xmi:type="uml:Message" xmi:id="4df0237e2e0f5688" name="call (processRunAsync)" messageSort="asynchCall" sendEvent="73a241d1d1b557d2" receiveEvent="585938fad192532c" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="36ab519e5f3d51f4" name="send_return (SendMessageResponse)" covered="0d74913e8b8a53a1" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="adc76f9800a05274" name="recv_return (SendMessageResponse)" covered="00672df1336956bd" />
+      <message xmi:type="uml:Message" xmi:id="8b49f0316f3e59e4" name="return (SendMessageResponse)" messageSort="reply" sendEvent="36ab519e5f3d51f4" receiveEvent="adc76f9800a05274" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="db9d0cc115bd5b49" name="send_return (202 Accepted)" covered="00672df1336956bd" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="6e932515deb55761" name="recv_return (202 Accepted)" covered="63daff5d85fd5af1" />
+      <message xmi:type="uml:Message" xmi:id="db334690ff165b31" name="return (202 Accepted)" messageSort="reply" sendEvent="db9d0cc115bd5b49" receiveEvent="6e932515deb55761" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="5ee0365daf455b45" name="send_return (SendMessageResponse)" covered="63daff5d85fd5af1" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="1823b255bce158ad" name="recv_return (SendMessageResponse)" covered="0c62e6ca7f45578b" />
+      <message xmi:type="uml:Message" xmi:id="10d74e9c551f5311" name="return (SendMessageResponse)" messageSort="reply" sendEvent="5ee0365daf455b45" receiveEvent="1823b255bce158ad" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="7173d34520755080" name="send_call (GET /runs/{id}/events)" covered="0c62e6ca7f45578b" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="b7286626cdde50b6" name="recv_call (GET /runs/{id}/events)" covered="63daff5d85fd5af1" />
+      <message xmi:type="uml:Message" xmi:id="aedaf4342cc752b2" name="call (GET /runs/{id}/events)" messageSort="synchCall" sendEvent="7173d34520755080" receiveEvent="b7286626cdde50b6" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="fcb03fd7077159a6" name="send_call (subscribeEvents)" covered="63daff5d85fd5af1" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="9f17f968fa2a5e8f" name="recv_call (subscribeEvents)" covered="f55d09b9735951e8" />
+      <message xmi:type="uml:Message" xmi:id="23749298bb095459" name="call (subscribeEvents)" messageSort="synchCall" sendEvent="fcb03fd7077159a6" receiveEvent="9f17f968fa2a5e8f" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="26f132bf0da559ac" name="send_subscribeEvents()" covered="f55d09b9735951e8" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="6d2b79783c345086" name="recv_subscribeEvents()" covered="f55d09b9735951e8" />
+      <message xmi:type="uml:Message" xmi:id="6a1c83ea6c995f39" name="subscribeEvents()" messageSort="synchCall" sendEvent="26f132bf0da559ac" receiveEvent="6d2b79783c345086" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="ae4b1a2c810d50a5" name="send_call (subscribeReplay)" covered="f55d09b9735951e8" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="a92668618f3b5e45" name="recv_call (subscribeReplay)" covered="5d29fbc4c58058c3" />
+      <message xmi:type="uml:Message" xmi:id="f2854a16c37052a2" name="call (subscribeReplay)" messageSort="synchCall" sendEvent="ae4b1a2c810d50a5" receiveEvent="a92668618f3b5e45" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="56a453117ffe526d" name="send_return (SseEmitter)" covered="5d29fbc4c58058c3" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="fd8b8b512a9b5438" name="recv_return (SseEmitter)" covered="f55d09b9735951e8" />
+      <message xmi:type="uml:Message" xmi:id="48af469ca0e15db6" name="return (SseEmitter)" messageSort="reply" sendEvent="56a453117ffe526d" receiveEvent="fd8b8b512a9b5438" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="0a4ca95a023b5702" name="send_return (HTTP 200 text/event-stream)" covered="f55d09b9735951e8" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="773f619195905728" name="recv_return (HTTP 200 text/event-stream)" covered="63daff5d85fd5af1" />
+      <message xmi:type="uml:Message" xmi:id="2f678f8373595453" name="return (HTTP 200 text/event-stream)" messageSort="reply" sendEvent="0a4ca95a023b5702" receiveEvent="773f619195905728" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="b1aaf046dfb75a77" name="send_return (SSE stream connection)" covered="63daff5d85fd5af1" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="4212397864875104" name="recv_return (SSE stream connection)" covered="0c62e6ca7f45578b" />
+      <message xmi:type="uml:Message" xmi:id="0ad561a9ad405819" name="return (SSE stream connection)" messageSort="reply" sendEvent="b1aaf046dfb75a77" receiveEvent="4212397864875104" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="863c1c17c87457b2" name="send_call (executeRun via virtual thread)" covered="f63d40a79286530a" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="112bf81445ea59a8" name="recv_call (executeRun via virtual thread)" covered="d1c79f4e65865e43" />
+      <message xmi:type="uml:Message" xmi:id="e6bb5dc96cd5532a" name="call (executeRun via virtual thread)" messageSort="asynchCall" sendEvent="863c1c17c87457b2" receiveEvent="112bf81445ea59a8" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="6be0bd77e6435646" name="send_executeRun()" covered="d1c79f4e65865e43" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="d8ed4057ab89556f" name="recv_executeRun()" covered="d1c79f4e65865e43" />
+      <message xmi:type="uml:Message" xmi:id="3cd8ae769c955d44" name="executeRun()" messageSort="synchCall" sendEvent="6be0bd77e6435646" receiveEvent="d8ed4057ab89556f" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="6e7dbdd44f40523c" name="send_call (save[RUNNING])" covered="d1c79f4e65865e43" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="3ac215ed04f85c1b" name="recv_call (save[RUNNING])" covered="e0841440757b5281" />
+      <message xmi:type="uml:Message" xmi:id="25eb9a4e844e540e" name="call (save[RUNNING])" messageSort="synchCall" sendEvent="6e7dbdd44f40523c" receiveEvent="3ac215ed04f85c1b" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="ad8d84780e075ba7" name="send_return" covered="e0841440757b5281" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="72d0de4df99057e7" name="recv_return" covered="d1c79f4e65865e43" />
+      <message xmi:type="uml:Message" xmi:id="251532af3fd15ba6" name="return" messageSort="reply" sendEvent="ad8d84780e075ba7" receiveEvent="72d0de4df99057e7" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="30a8e956a34e59fe" name="send_broadcast(run.started)" covered="d1c79f4e65865e43" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="9bad5c5e199655a6" name="recv_broadcast(run.started)" covered="5d29fbc4c58058c3" />
+      <message xmi:type="uml:Message" xmi:id="5860611cd9f45466" name="broadcast(run.started)" messageSort="asynchCall" sendEvent="30a8e956a34e59fe" receiveEvent="9bad5c5e199655a6" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="0ba6554628fd5830" name="send_stream SSE (run.started)" covered="5d29fbc4c58058c3" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="5fa2ea0744e45fcb" name="recv_stream SSE (run.started)" covered="0c62e6ca7f45578b" />
+      <message xmi:type="uml:Message" xmi:id="311e305bcfd05a45" name="stream SSE (run.started)" messageSort="asynchCall" sendEvent="0ba6554628fd5830" receiveEvent="5fa2ea0744e45fcb" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="77cc81c2d7c1532d" name="send_call (execute)" covered="d1c79f4e65865e43" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="cc9cfba41f405803" name="recv_call (execute)" covered="11b004839957529d" />
+      <message xmi:type="uml:Message" xmi:id="8ba3a03aeaef536b" name="call (execute)" messageSort="synchCall" sendEvent="77cc81c2d7c1532d" receiveEvent="cc9cfba41f405803" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="723af455eab35adf" name="send_execute()" covered="11b004839957529d" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="27e08476aacf5dff" name="recv_execute()" covered="11b004839957529d" />
+      <message xmi:type="uml:Message" xmi:id="455bb4a74f885dd5" name="execute()" messageSort="synchCall" sendEvent="723af455eab35adf" receiveEvent="27e08476aacf5dff" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="3a9c0d4ede235496" name="send_call (streamChatWithMemory)" covered="11b004839957529d" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="cf2d8e76f7d4563d" name="recv_call (streamChatWithMemory)" covered="56ea362935e755f7" />
+      <message xmi:type="uml:Message" xmi:id="736845ee251d519f" name="call (streamChatWithMemory)" messageSort="synchCall" sendEvent="3a9c0d4ede235496" receiveEvent="cf2d8e76f7d4563d" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="fa983ec229275b6a" name="send_return (delta chunk)" covered="56ea362935e755f7" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="6967f970a45a5dc1" name="recv_return (delta chunk)" covered="11b004839957529d" />
+      <message xmi:type="uml:Message" xmi:id="c4d5b030186951ca" name="return (delta chunk)" messageSort="reply" sendEvent="fa983ec229275b6a" receiveEvent="6967f970a45a5dc1" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="df330a50b11358ee" name="send_broadcast(assistant.delta)" covered="11b004839957529d" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="3075685e9ae95977" name="recv_broadcast(assistant.delta)" covered="5d29fbc4c58058c3" />
+      <message xmi:type="uml:Message" xmi:id="5f5c9eed138158e5" name="broadcast(assistant.delta)" messageSort="asynchCall" sendEvent="df330a50b11358ee" receiveEvent="3075685e9ae95977" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="00ef68c21c105687" name="send_stream SSE (assistant.delta)" covered="5d29fbc4c58058c3" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="81c21409f0525d9c" name="recv_stream SSE (assistant.delta)" covered="0c62e6ca7f45578b" />
+      <message xmi:type="uml:Message" xmi:id="646902bcd3b55e1d" name="stream SSE (assistant.delta)" messageSort="asynchCall" sendEvent="00ef68c21c105687" receiveEvent="81c21409f0525d9c" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="1a370d832ee157e1" name="send_return (tool_call: GetAssignmentTool)" covered="56ea362935e755f7" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="32f793990771532d" name="recv_return (tool_call: GetAssignmentTool)" covered="11b004839957529d" />
+      <message xmi:type="uml:Message" xmi:id="a2c6f37a129c5afa" name="return (tool_call: GetAssignmentTool)" messageSort="reply" sendEvent="1a370d832ee157e1" receiveEvent="32f793990771532d" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="46e482720959573c" name="send_broadcast(tool.call)" covered="11b004839957529d" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="076618c5f86e56cc" name="recv_broadcast(tool.call)" covered="5d29fbc4c58058c3" />
+      <message xmi:type="uml:Message" xmi:id="bee3bc9a229d5800" name="broadcast(tool.call)" messageSort="asynchCall" sendEvent="46e482720959573c" receiveEvent="076618c5f86e56cc" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="e07cc9ef7c395e4d" name="send_stream SSE (tool.call)" covered="5d29fbc4c58058c3" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="2edb6f039c155102" name="recv_stream SSE (tool.call)" covered="0c62e6ca7f45578b" />
+      <message xmi:type="uml:Message" xmi:id="e70ccd49a2cc504d" name="stream SSE (tool.call)" messageSort="asynchCall" sendEvent="e07cc9ef7c395e4d" receiveEvent="2edb6f039c155102" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="d8cd073869e857fb" name="send_call (executeTool)" covered="11b004839957529d" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="60bd5951193159f7" name="recv_call (executeTool)" covered="6e116f2f0e4e5ff0" />
+      <message xmi:type="uml:Message" xmi:id="c6c87dbe84db5dc0" name="call (executeTool)" messageSort="synchCall" sendEvent="d8cd073869e857fb" receiveEvent="60bd5951193159f7" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="1dec150e62cd53e3" name="send_call Feign (getAssignment)" covered="6e116f2f0e4e5ff0" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="5c3f651c4ce55327" name="recv_call Feign (getAssignment)" covered="67806b7e44e95fdf" />
+      <message xmi:type="uml:Message" xmi:id="14592049693b5009" name="call Feign (getAssignment)" messageSort="synchCall" sendEvent="1dec150e62cd53e3" receiveEvent="5c3f651c4ce55327" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="723589b7e802502e" name="send_return (AssignmentDetailDto)" covered="67806b7e44e95fdf" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="c6f4d25d3cae55fb" name="recv_return (AssignmentDetailDto)" covered="6e116f2f0e4e5ff0" />
+      <message xmi:type="uml:Message" xmi:id="1c08ef895b725e63" name="return (AssignmentDetailDto)" messageSort="reply" sendEvent="723589b7e802502e" receiveEvent="c6f4d25d3cae55fb" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="8884862e4a3c54cb" name="send_return (ToolResult)" covered="6e116f2f0e4e5ff0" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="2e6b7a26c8a55602" name="recv_return (ToolResult)" covered="11b004839957529d" />
+      <message xmi:type="uml:Message" xmi:id="47cb1120e0895720" name="return (ToolResult)" messageSort="reply" sendEvent="8884862e4a3c54cb" receiveEvent="2e6b7a26c8a55602" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="73f286c634525fc9" name="send_broadcast(tool.result)" covered="11b004839957529d" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="39d92c49be7d55ca" name="recv_broadcast(tool.result)" covered="5d29fbc4c58058c3" />
+      <message xmi:type="uml:Message" xmi:id="1df86049862b5096" name="broadcast(tool.result)" messageSort="asynchCall" sendEvent="73f286c634525fc9" receiveEvent="39d92c49be7d55ca" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="2b217cb729305bea" name="send_stream SSE (tool.result)" covered="5d29fbc4c58058c3" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="bf70128f0546518b" name="recv_stream SSE (tool.result)" covered="0c62e6ca7f45578b" />
+      <message xmi:type="uml:Message" xmi:id="8eb202d9dc6c5b82" name="stream SSE (tool.result)" messageSort="asynchCall" sendEvent="2b217cb729305bea" receiveEvent="bf70128f0546518b" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="112460f397d45ebb" name="send_feed tool result into context" covered="11b004839957529d" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="5055156cb3825169" name="recv_feed tool result into context" covered="56ea362935e755f7" />
+      <message xmi:type="uml:Message" xmi:id="2feea31e15975bf5" name="feed tool result into context" messageSort="synchCall" sendEvent="112460f397d45ebb" receiveEvent="5055156cb3825169" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="278e3ca4d8d9573b" name="send_return (final completion text)" covered="56ea362935e755f7" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="08ed8f99fa6c56ff" name="recv_return (final completion text)" covered="11b004839957529d" />
+      <message xmi:type="uml:Message" xmi:id="61d4e199ef745e45" name="return (final completion text)" messageSort="reply" sendEvent="278e3ca4d8d9573b" receiveEvent="08ed8f99fa6c56ff" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="5b538fe7a2e15ac7" name="send_return (completion)" covered="11b004839957529d" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="8df8ed9ec2635f4f" name="recv_return (completion)" covered="d1c79f4e65865e43" />
+      <message xmi:type="uml:Message" xmi:id="bcab510834315230" name="return (completion)" messageSort="reply" sendEvent="5b538fe7a2e15ac7" receiveEvent="8df8ed9ec2635f4f" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="12699efc2a585f8e" name="send_call (save[role=assistant])" covered="d1c79f4e65865e43" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="b38d888450dd5a34" name="recv_call (save[role=assistant])" covered="77b11ba71bea53da" />
+      <message xmi:type="uml:Message" xmi:id="63967839e3235f44" name="call (save[role=assistant])" messageSort="synchCall" sendEvent="12699efc2a585f8e" receiveEvent="b38d888450dd5a34" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="5b22dd1289e75e9c" name="send_return" covered="77b11ba71bea53da" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="770ec0a4f08554fc" name="recv_return" covered="d1c79f4e65865e43" />
+      <message xmi:type="uml:Message" xmi:id="43214323d3035fee" name="return" messageSort="reply" sendEvent="5b22dd1289e75e9c" receiveEvent="770ec0a4f08554fc" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="382d17f4f8085349" name="send_call (save[SUCCEEDED])" covered="d1c79f4e65865e43" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="d82fd8052933584c" name="recv_call (save[SUCCEEDED])" covered="e0841440757b5281" />
+      <message xmi:type="uml:Message" xmi:id="a1099d8a88d45c23" name="call (save[SUCCEEDED])" messageSort="synchCall" sendEvent="382d17f4f8085349" receiveEvent="d82fd8052933584c" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="a3ebcb0174645d51" name="send_return" covered="e0841440757b5281" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="98305502854b5771" name="recv_return" covered="d1c79f4e65865e43" />
+      <message xmi:type="uml:Message" xmi:id="a73f76a990e45efa" name="return" messageSort="reply" sendEvent="a3ebcb0174645d51" receiveEvent="98305502854b5771" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="6c96044dfb315084" name="send_broadcast(run.completed)" covered="d1c79f4e65865e43" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="c458a93cb0c05d03" name="recv_broadcast(run.completed)" covered="5d29fbc4c58058c3" />
+      <message xmi:type="uml:Message" xmi:id="97d69511be0d5c23" name="broadcast(run.completed)" messageSort="asynchCall" sendEvent="6c96044dfb315084" receiveEvent="c458a93cb0c05d03" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="78e1240d3ca05934" name="send_stream SSE (run.completed)" covered="5d29fbc4c58058c3" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="7c6a7d87ac2a5735" name="recv_stream SSE (run.completed)" covered="0c62e6ca7f45578b" />
+      <message xmi:type="uml:Message" xmi:id="26ab9678c3a25510" name="stream SSE (run.completed)" messageSort="asynchCall" sendEvent="78e1240d3ca05934" receiveEvent="7c6a7d87ac2a5735" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="569aa1b936f65e5f" name="send_complete(runId)" covered="d1c79f4e65865e43" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="1f49b463d6a356d4" name="recv_complete(runId)" covered="5d29fbc4c58058c3" />
+      <message xmi:type="uml:Message" xmi:id="1b212ef0ce67524b" name="complete(runId)" messageSort="synchCall" sendEvent="569aa1b936f65e5f" receiveEvent="1f49b463d6a356d4" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="634f7424e53d519e" name="send_display assistant response" covered="0c62e6ca7f45578b" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="fa329e061dfc5057" name="recv_display assistant response" covered="364f5ebbe47b5c33" />
+      <message xmi:type="uml:Message" xmi:id="d3484aa4a0535809" name="display assistant response" messageSort="synchCall" sendEvent="634f7424e53d519e" receiveEvent="fa329e061dfc5057" />
+    </packagedElement>
+    <packagedElement xmi:type="uml:Interaction" xmi:id="a03f01ddfcc35513" name="student-ai-explain-submission-sequence">
+      <lifeline xmi:type="uml:Lifeline" xmi:id="07d2e458f18553ba" name="Student" />
+      <lifeline xmi:type="uml:Lifeline" xmi:id="1311feee22685bf2" name="SubmissionResultPage.tsx" />
+      <lifeline xmi:type="uml:Lifeline" xmi:id="602c23b6322058d8" name="API Gateway" />
+      <lifeline xmi:type="uml:Lifeline" xmi:id="3e584498f9a55645" name="AiExplanationController" />
+      <lifeline xmi:type="uml:Lifeline" xmi:id="f16f02bc384a5fe9" name="AiExplanationService" />
+      <lifeline xmi:type="uml:Lifeline" xmi:id="a09f9f058e3e5fb5" name="AiExplanationRepository" />
+      <lifeline xmi:type="uml:Lifeline" xmi:id="c55d05c4e138508d" name="ResultServiceClient" />
+      <lifeline xmi:type="uml:Lifeline" xmi:id="27466599018b5077" name="CourseServiceClient" />
+      <lifeline xmi:type="uml:Lifeline" xmi:id="fc90b35da5b15c51" name="PromptBuilder" />
+      <lifeline xmi:type="uml:Lifeline" xmi:id="b903a8998fcc5db1" name="ExplanationLlmClient" />
+      <lifeline xmi:type="uml:Lifeline" xmi:id="42a77fe4b23e5bbb" name="AiExplanation" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="39508e2a1b2f5f09" name="send_click request AI explanation" covered="07d2e458f18553ba" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="e4eb3535a57852b1" name="recv_click request AI explanation" covered="1311feee22685bf2" />
+      <message xmi:type="uml:Message" xmi:id="aaa3a19085c75471" name="click request AI explanation" messageSort="synchCall" sendEvent="39508e2a1b2f5f09" receiveEvent="e4eb3535a57852b1" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="c0360993eb515f5b" name="send_call (POST /explain)" covered="1311feee22685bf2" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="83b833c227ab5f49" name="recv_call (POST /explain)" covered="602c23b6322058d8" />
+      <message xmi:type="uml:Message" xmi:id="d0a6b390128b5f3a" name="call (POST /explain)" messageSort="synchCall" sendEvent="c0360993eb515f5b" receiveEvent="83b833c227ab5f49" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="dd82140380a15b44" name="send_call (explainSubmission)" covered="602c23b6322058d8" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="feaf11f92e835ebc" name="recv_call (explainSubmission)" covered="3e584498f9a55645" />
+      <message xmi:type="uml:Message" xmi:id="2ed022c3011f5176" name="call (explainSubmission)" messageSort="synchCall" sendEvent="dd82140380a15b44" receiveEvent="feaf11f92e835ebc" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="139215daf9e05f73" name="send_explainSubmission()" covered="3e584498f9a55645" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="c82a3982e74652e9" name="recv_explainSubmission()" covered="3e584498f9a55645" />
+      <message xmi:type="uml:Message" xmi:id="94d2df3e71cd5293" name="explainSubmission()" messageSort="synchCall" sendEvent="139215daf9e05f73" receiveEvent="c82a3982e74652e9" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="8cba9fef756d5630" name="send_call (explainSubmission)" covered="3e584498f9a55645" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="74ec998d41c5517f" name="recv_call (explainSubmission)" covered="f16f02bc384a5fe9" />
+      <message xmi:type="uml:Message" xmi:id="e8f3ce48aecc5c32" name="call (explainSubmission)" messageSort="synchCall" sendEvent="8cba9fef756d5630" receiveEvent="74ec998d41c5517f" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="ba83f7da477b5ff4" name="send_explainSubmission()" covered="f16f02bc384a5fe9" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="52c0e9c612b3529f" name="recv_explainSubmission()" covered="f16f02bc384a5fe9" />
+      <message xmi:type="uml:Message" xmi:id="29c2ee3379dc5410" name="explainSubmission()" messageSort="synchCall" sendEvent="ba83f7da477b5ff4" receiveEvent="52c0e9c612b3529f" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="32726c7e82875f20" name="send_call (findBySubmissionIdAndCategory)" covered="f16f02bc384a5fe9" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="b56d6871731d57d5" name="recv_call (findBySubmissionIdAndCategory)" covered="a09f9f058e3e5fb5" />
+      <message xmi:type="uml:Message" xmi:id="dee8486432c4533d" name="call (findBySubmissionIdAndCategory)" messageSort="synchCall" sendEvent="32726c7e82875f20" receiveEvent="b56d6871731d57d5" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="c2b58d0370bb5507" name="send_return (empty - cache miss)" covered="a09f9f058e3e5fb5" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="26767f0a31d35384" name="recv_return (empty - cache miss)" covered="f16f02bc384a5fe9" />
+      <message xmi:type="uml:Message" xmi:id="1c2daff23876582e" name="return (empty - cache miss)" messageSort="reply" sendEvent="c2b58d0370bb5507" receiveEvent="26767f0a31d35384" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="a4a61f87c1345219" name="send_call (getBySubmissionId)" covered="f16f02bc384a5fe9" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="5cab24ec034c53d7" name="recv_call (getBySubmissionId)" covered="c55d05c4e138508d" />
+      <message xmi:type="uml:Message" xmi:id="ee6bf18e263d5681" name="call (getBySubmissionId)" messageSort="synchCall" sendEvent="a4a61f87c1345219" receiveEvent="5cab24ec034c53d7" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="c64a231f9a2e5bb8" name="send_return (List&lt;ResultDto&gt;)" covered="c55d05c4e138508d" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="7d3e5ce824f35ce8" name="recv_return (List&lt;ResultDto&gt;)" covered="f16f02bc384a5fe9" />
+      <message xmi:type="uml:Message" xmi:id="46bc4a30d96a5cff" name="return (List&lt;ResultDto&gt;)" messageSort="reply" sendEvent="c64a231f9a2e5bb8" receiveEvent="7d3e5ce824f35ce8" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="2360b0768554594b" name="send_verifyOwner(studentId)" covered="f16f02bc384a5fe9" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="6ab5bf6d0afe5554" name="recv_verifyOwner(studentId)" covered="f16f02bc384a5fe9" />
+      <message xmi:type="uml:Message" xmi:id="c7830921933f58db" name="verifyOwner(studentId)" messageSort="synchCall" sendEvent="2360b0768554594b" receiveEvent="6ab5bf6d0afe5554" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="7535ccb780ae51ac" name="send_call (getAssignment)" covered="f16f02bc384a5fe9" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="d5c4a59059c75517" name="recv_call (getAssignment)" covered="27466599018b5077" />
+      <message xmi:type="uml:Message" xmi:id="d63da11b040956e6" name="call (getAssignment)" messageSort="synchCall" sendEvent="7535ccb780ae51ac" receiveEvent="d5c4a59059c75517" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="5cebd9f105c75aaf" name="send_return (AssignmentDetailDto)" covered="27466599018b5077" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="5526abb2a6165e07" name="recv_return (AssignmentDetailDto)" covered="f16f02bc384a5fe9" />
+      <message xmi:type="uml:Message" xmi:id="1cddd65d46b25b86" name="return (AssignmentDetailDto)" messageSort="reply" sendEvent="5cebd9f105c75aaf" receiveEvent="5526abb2a6165e07" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="d33185b18a3e5e94" name="send_call (buildPrompts)" covered="f16f02bc384a5fe9" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="d6c89be013075d87" name="recv_call (buildPrompts)" covered="fc90b35da5b15c51" />
+      <message xmi:type="uml:Message" xmi:id="cfb7879b011b5691" name="call (buildPrompts)" messageSort="synchCall" sendEvent="d33185b18a3e5e94" receiveEvent="d6c89be013075d87" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="88fe45bcd8af549d" name="send_buildSystemPrompt()" covered="fc90b35da5b15c51" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="bef96aacd64b5cbe" name="recv_buildSystemPrompt()" covered="fc90b35da5b15c51" />
+      <message xmi:type="uml:Message" xmi:id="ddb2bcc5d6925bf3" name="buildSystemPrompt()" messageSort="synchCall" sendEvent="88fe45bcd8af549d" receiveEvent="bef96aacd64b5cbe" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="1c4ce9d5180d52ea" name="send_buildUserPrompt()" covered="fc90b35da5b15c51" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="228c1e1ed1d95a78" name="recv_buildUserPrompt()" covered="fc90b35da5b15c51" />
+      <message xmi:type="uml:Message" xmi:id="65488b89f8b65ff0" name="buildUserPrompt()" messageSort="synchCall" sendEvent="1c4ce9d5180d52ea" receiveEvent="228c1e1ed1d95a78" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="b1989961f72b586d" name="send_return (systemPrompt, userPrompt)" covered="fc90b35da5b15c51" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="5b09e9e12dee5041" name="recv_return (systemPrompt, userPrompt)" covered="f16f02bc384a5fe9" />
+      <message xmi:type="uml:Message" xmi:id="c9852a88a78753c9" name="return (systemPrompt, userPrompt)" messageSort="reply" sendEvent="b1989961f72b586d" receiveEvent="5b09e9e12dee5041" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="8b7f5c7d99795ab5" name="send_call (generateEntity)" covered="f16f02bc384a5fe9" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="20c8b7a3e88e5bed" name="recv_call (generateEntity)" covered="b903a8998fcc5db1" />
+      <message xmi:type="uml:Message" xmi:id="79faf24070685562" name="call (generateEntity)" messageSort="synchCall" sendEvent="8b7f5c7d99795ab5" receiveEvent="20c8b7a3e88e5bed" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="886d63417796594f" name="send_generateEntity()" covered="b903a8998fcc5db1" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="0445734e72cd59ef" name="recv_generateEntity()" covered="b903a8998fcc5db1" />
+      <message xmi:type="uml:Message" xmi:id="3e68368a104c58c9" name="generateEntity()" messageSort="synchCall" sendEvent="886d63417796594f" receiveEvent="0445734e72cd59ef" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="8715e75b9a195f24" name="send_return (AiExplanationResultDto)" covered="b903a8998fcc5db1" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="ce85e819162754e8" name="recv_return (AiExplanationResultDto)" covered="f16f02bc384a5fe9" />
+      <message xmi:type="uml:Message" xmi:id="1d4a844aeb595550" name="return (AiExplanationResultDto)" messageSort="reply" sendEvent="8715e75b9a195f24" receiveEvent="ce85e819162754e8" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="1fb429fddd695303" name="send_call (builder)" covered="f16f02bc384a5fe9" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="3c513ea8900b5d4c" name="recv_call (builder)" covered="42a77fe4b23e5bbb" />
+      <message xmi:type="uml:Message" xmi:id="66665287f8475010" name="call (builder)" messageSort="synchCall" sendEvent="1fb429fddd695303" receiveEvent="3c513ea8900b5d4c" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="38213312ad355abd" name="send_return (entity)" covered="42a77fe4b23e5bbb" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="03da37d7a9fc5e8f" name="recv_return (entity)" covered="f16f02bc384a5fe9" />
+      <message xmi:type="uml:Message" xmi:id="6393a7de1d2f56f0" name="return (entity)" messageSort="reply" sendEvent="38213312ad355abd" receiveEvent="03da37d7a9fc5e8f" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="a2b14282d4ee5134" name="send_call (save)" covered="f16f02bc384a5fe9" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="a23b4cc970cd5cc3" name="recv_call (save)" covered="a09f9f058e3e5fb5" />
+      <message xmi:type="uml:Message" xmi:id="b65a455d8ea153d3" name="call (save)" messageSort="synchCall" sendEvent="a2b14282d4ee5134" receiveEvent="a23b4cc970cd5cc3" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="c36ef8074029531b" name="send_return (savedEntity)" covered="a09f9f058e3e5fb5" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="17e3958e767c5af1" name="recv_return (savedEntity)" covered="f16f02bc384a5fe9" />
+      <message xmi:type="uml:Message" xmi:id="cfdae025114e5e4c" name="return (savedEntity)" messageSort="reply" sendEvent="c36ef8074029531b" receiveEvent="17e3958e767c5af1" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="c176b51608c75660" name="send_return (AiExplanationResponse)" covered="f16f02bc384a5fe9" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="9c71f0b63b8552e5" name="recv_return (AiExplanationResponse)" covered="3e584498f9a55645" />
+      <message xmi:type="uml:Message" xmi:id="60325a4a34ab5162" name="return (AiExplanationResponse)" messageSort="reply" sendEvent="c176b51608c75660" receiveEvent="9c71f0b63b8552e5" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="e949e41d02995a18" name="send_return (200 OK)" covered="3e584498f9a55645" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="14261fd2a6d754b1" name="recv_return (200 OK)" covered="602c23b6322058d8" />
+      <message xmi:type="uml:Message" xmi:id="850aef12018c52f1" name="return (200 OK)" messageSort="reply" sendEvent="e949e41d02995a18" receiveEvent="14261fd2a6d754b1" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="175c2a44a23b5adb" name="send_return (AiExplanationResponse)" covered="602c23b6322058d8" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="bc60264f6a135f85" name="recv_return (AiExplanationResponse)" covered="1311feee22685bf2" />
+      <message xmi:type="uml:Message" xmi:id="53bac3fc7ac65d5e" name="return (AiExplanationResponse)" messageSort="reply" sendEvent="175c2a44a23b5adb" receiveEvent="bc60264f6a135f85" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="4ad12bd4bf025828" name="send_display (AiExplanationCard)" covered="1311feee22685bf2" />
+      <fragment xmi:type="uml:OccurrenceSpecification" xmi:id="57c10b4c70335354" name="recv_display (AiExplanationCard)" covered="07d2e458f18553ba" />
+      <message xmi:type="uml:Message" xmi:id="a3ffe594d21450b2" name="display (AiExplanationCard)" messageSort="synchCall" sendEvent="4ad12bd4bf025828" receiveEvent="57c10b4c70335354" />
+    </packagedElement>
+  </uml:Model>
+</xmi:XMI>

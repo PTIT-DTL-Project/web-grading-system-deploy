@@ -65,6 +65,66 @@ Cấu hình triển khai được đóng gói bằng Helm~\cite{helmdocs}. Kho c
 
 Phần lớn chart dùng điểm cuối /actuator/health cho readiness và liveness, với thời gian chờ khởi động lần lượt 30 giây và 60 giây. Riêng dịch vụ trợ lý AI dùng ba probe riêng biệt trỏ tới các nhóm /actuator/health/readiness và /actuator/health/liveness. Lý do là điểm cuối /actuator/health gốc chạy cả chỉ báo cơ sở dữ liệu; khi compute của PostgreSQL được đánh thức từ trạng thái tạm dừng, chỉ báo này có thể giữ probe lâu hơn thời gian chờ mặc định và khiến Pod bị khởi động lại. Các nhóm health chỉ kiểm tra trạng thái nội bộ của ứng dụng nên trả lời nhanh và không phụ thuộc cơ sở dữ liệu.
 
+\subsection{Hiện thực dịch vụ Trợ lý AI}
+\label{section:3.1.ai}
+
+Dịch vụ Trợ lý AI chạy như một ứng dụng Spring Boot độc lập, lắng nghe cổng 8086 và sử dụng cơ sở dữ liệu PostgreSQL riêng. Cấu hình kết nối cơ sở dữ liệu, thông tin xác thực gateway, địa chỉ dịch vụ nội bộ và thông tin truy cập nhà cung cấp mô hình được truyền qua biến môi trường. Flyway quản lý thay đổi lược đồ; Hibernate chỉ kiểm tra tính tương thích giữa entity và cơ sở dữ liệu khi khởi động, không tự tạo bảng.
+
+Các use case theo vai trò và mô hình lớp của dịch vụ được trình bày ở Chương~2 (Hình~\ref{fig:uc-lecturer-ai}, Hình~\ref{fig:uc-student-ai}, Hình~\ref{fig:class-ai}, Hình~\ref{fig:class-ai-analysis} và Hình~\ref{fig:class-ai-service}). Phần này tập trung vào cách các thành phần đó được hiện thực trong API, luồng xử lý bất đồng bộ, lưu trữ và cấu hình vận hành. Hai luồng tiêu biểu được minh họa bằng sơ đồ tuần tự gửi tin nhắn tại Hình~\ref{fig:seq-ai-chat} và sơ đồ giải thích bài nộp tại Hình~\ref{fig:seq-ai-explain}.
+
+\subsubsection{Các chức năng và điểm cuối chính}
+
+Dịch vụ cung cấp hai nhóm chức năng liên quan đến AI. Nhóm hội thoại quản lý conversation, message và run; nhóm giải thích kết quả dùng dữ liệu chấm của một bài nộp để tạo chẩn đoán, phân tích từng bước, gợi ý khắc phục và từ khóa học tập. Bảng~\ref{tab:ai-endpoints} tóm tắt các điểm cuối trọng tâm được triển khai trong controller.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{|p{2.0cm}|p{6.2cm}|X|}
+\hline
+Chức năng & Điểm cuối & Xử lý chính \\ \hline
+Tạo hội thoại & \texttt{POST /api/v1/ai/conversations} & Tạo hội thoại mới cho người dùng hiện tại. \\ \hline
+Gửi tin nhắn & \shortstack[l]{\texttt{POST /api/v1/ai/}\\\texttt{conversations/\{id\}/}\\\texttt{messages}} & Lưu yêu cầu, tạo run và trả \texttt{202 Accepted} cùng mã run. \\ \hline
+Đọc lịch sử & \shortstack[l]{\texttt{GET /api/v1/ai/}\\\texttt{conversations/\{id\}/}\\\texttt{messages}} & Trả danh sách tin nhắn theo thứ tự trong hội thoại. \\ \hline
+Theo dõi run & \shortstack[l]{\texttt{GET /api/v1/ai/runs/}\\\texttt{\{id\}/events}} & Mở luồng \texttt{text/event-stream} để nhận event và nội dung trả lời. \\ \hline
+Xem trạng thái run & \shortstack[l]{\texttt{GET /api/v1/ai/runs/}\\\texttt{\{id\}}} & Trả trạng thái hiện tại và thời điểm bắt đầu/kết thúc run. \\ \hline
+Hủy run & \shortstack[l]{\texttt{POST /api/v1/ai/runs/}\\\texttt{\{id\}/cancel}} & Đánh dấu run đang hoạt động là bị hủy. \\ \hline
+Đọc giải thích (SV) & \shortstack[l]{\texttt{GET /api/v1/ai/}\\\texttt{submissions/\{id\}/}\\\texttt{explain}} & Trả bản giải thích đã lưu; nếu chưa có thì trả \texttt{404}. \\ \hline
+Tạo giải thích (SV) & \shortstack[l]{\texttt{POST /api/v1/ai/}\\\texttt{submissions/\{id\}/}\\\texttt{explain}} & Tạo hoặc trả lại bản phân tích đã lưu cho bài nộp thuộc sinh viên. \\ \hline
+Đọc giải thích (GV) & \shortstack[l]{\texttt{GET /api/v1/ai/}\\\texttt{assignments/\{id\}/}\\\texttt{submissions/\{id\}/}\\\texttt{explain}} & Chỉ đọc bản giải thích đã lưu cho bài nộp trong lớp giảng viên phụ trách. \\ \hline
+Tạo giải thích (GV) & \shortstack[l]{\texttt{POST /api/v1/ai/}\\\texttt{assignments/\{id\}/}\\\texttt{submissions/\{id\}/}\\\texttt{explain}} & Tạo hoặc trả lại giải thích trong bài tập thuộc lớp giảng viên phụ trách. \\ \hline
+Xác nhận thao tác & \shortstack[l]{\texttt{POST /api/v1/ai/}\\\texttt{pending-actions/}\\\texttt{\{id\}/confirm}} & Xác nhận thao tác ghi đang chờ phê duyệt. \\ \hline
+Từ chối thao tác & \shortstack[l]{\texttt{POST /api/v1/ai/}\\\texttt{pending-actions/}\\\texttt{\{id\}/reject}} & Từ chối thao tác ghi đang chờ phê duyệt. \\ \hline
+\end{tabularx}
+\caption{Các điểm cuối chính của dịch vụ Trợ lý AI.}
+\label{tab:ai-endpoints}
+\end{table}
+
+\subsubsection{Luồng hội thoại và xử lý bất đồng bộ}
+
+Khi nhận tin nhắn, \texttt{ConversationService} trước hết đọc hội thoại theo cả mã hội thoại và mã người sở hữu. Nếu client gửi lại một \texttt{clientMessageId} đã tồn tại, service trả mã run và message cũ để tránh tạo yêu cầu trùng. Nếu đây là yêu cầu mới, service tính số thứ tự message, tạo bản ghi \texttt{ai\_run} ở trạng thái \texttt{QUEUED} và lưu message người dùng trong cùng giao dịch. Worker chỉ được gọi sau khi giao dịch commit; do vậy run và message đã được ghi nhận trước khi quá trình gọi mô hình bắt đầu. Với hội thoại đầu tiên chưa có tiêu đề, service đồng thời yêu cầu một worker riêng tạo tiêu đề nền từ câu hỏi đầu tiên.
+
+\texttt{RunWorker} dùng cơ chế tạo virtual thread theo từng tác vụ của Java để tách công việc xử lý lâu khỏi yêu cầu HTTP gửi message. Virtual thread là cơ chế nhẹ của Java để tổ chức các tác vụ có thời gian chờ I/O; nó không làm cho lời gọi tới mô hình hoặc dịch vụ ngoài trở thành giao dịch nguyên tử~\cite{oraclevirtualthreads}. API trả về \texttt{202 Accepted} cùng \texttt{runId}, sau đó giao diện mở kết nối sự kiện riêng. Backend dùng \texttt{SseEmitter} của Spring MVC và phát các sự kiện như \texttt{run.started}, \texttt{assistant.delta}, trạng thái tool, \texttt{run.completed}, \texttt{run.failed} hoặc \texttt{run.cancelled}. SSE cho phép server gửi nhiều event qua phản hồi HTTP đang mở; endpoint được khai báo với kiểu nội dung \texttt{text/event-stream}~\cite{springmvcasync}.
+
+Trong quá trình chạy, \texttt{AgentOrchestrator} kiểm tra run còn ở trạng thái cho phép thực thi, cập nhật trạng thái \texttt{RUNNING}, tạo context gồm người dùng, vai trò, hội thoại và run, rồi gọi \texttt{AgentRuntime}. Runtime xây dựng các lượt gọi model, stream token về giao diện và kiểm tra tín hiệu hủy. Khi thành công, phản hồi assistant được lưu vào bộ nhớ hội thoại hoặc bảng message, run được cập nhật thành \texttt{SUCCEEDED}, sự kiện hoàn tất được phát và SSE được đóng. Khi lỗi nhà cung cấp, lỗi thực thi hoặc phản hồi rỗng xảy ra, hệ thống lưu trạng thái thất bại cùng thông báo phù hợp; khi người dùng hủy, tiến trình dừng và phát sự kiện hủy.
+
+\subsubsection{Tool, phân quyền và xác nhận thao tác ghi}
+
+Các tool được đăng ký trong \texttt{ToolRegistry} và lọc theo vai trò đã lưu trong run. Nhóm tool đọc hỗ trợ tra cứu lớp học, bài tập, bài nộp, kết quả và hội thoại; một số tool gọi các dịch vụ Course, Submission hoặc Result qua OpenFeign. Khi model đề xuất gọi tool, runtime chuyển tên và tham số cho executor, nhận \texttt{ToolResult}, phát event tiến độ và đưa kết quả trở lại ngữ cảnh model. Cách tích hợp này phù hợp với mô hình tool calling: ứng dụng gửi mô tả tool cho model, thực thi yêu cầu tool, sau đó cung cấp kết quả để model tiếp tục sinh phản hồi~\cite{springaidocs}.
+
+Các thao tác có tác động ghi được đánh dấu riêng với thao tác đọc. Thay vì thực thi ngay, tool ghi được chuyển qua \texttt{WriteApprovalService} để tạo đề xuất chờ xác nhận; thao tác chỉ được thực thi khi người dùng xác nhận trong hội thoại hoặc qua API xác nhận. Kết quả và trạng thái thực thi được ghi nhận trong dữ liệu run/tool. Việc tách quyền theo vai trò và bước xác nhận làm giảm nguy cơ model tự ý thay đổi dữ liệu khi nhận câu hỏi thông thường.
+
+\subsubsection{Lưu trữ dữ liệu và chức năng giải thích bài nộp}
+
+Các bảng chính của agent gồm \texttt{ai\_conversation}, \texttt{ai\_message}, \texttt{ai\_run} và \texttt{ai\_task}. Nhóm lưu lịch sử và tool gồm \texttt{ai\_conversation\_summary}, \texttt{ai\_operation} và \texttt{ai\_tool\_execution}. Bảng message lưu vai trò, nội dung, mã run, thứ tự và thông tin tool; chỉ mục duy nhất theo cặp conversation/client message ID hỗ trợ xử lý idempotency. Run lưu trạng thái, thời điểm bắt đầu/kết thúc, thông tin lỗi và dữ liệu giới hạn/usage. Một nhóm bảng riêng, \texttt{ai\_explanations}, lưu kết quả giải thích bài nộp, bao gồm chẩn đoán, vị trí nghi ngờ, gợi ý, từ khóa, kiểm toán telemetry và thông tin model.
+
+Luồng giải thích kiểm tra cache trước khi gọi mô hình. Với yêu cầu của sinh viên, dịch vụ đọc kết quả chấm rồi kiểm tra mã sinh viên sở hữu bài nộp; với giảng viên, dịch vụ xác nhận giảng viên quản lý bài tập trước khi đọc dữ liệu kết quả. Sau đó service lấy thông tin bài tập qua Course Service, tạo system/user prompt, yêu cầu mô hình trả dữ liệu cấu trúc theo DTO, lưu entity và trả response. Chỉ mục duy nhất trên bài nộp và loại phân tích hỗ trợ tránh lưu nhiều bản phân tích cùng loại cho một bài nộp.
+
+\subsubsection{Cấu hình mô hình và giới hạn vận hành}
+
+Thông tin nhà cung cấp, địa chỉ API và tên mô hình được cấu hình riêng cho agent chat và chức năng giải thích, cho phép thay đổi bằng biến môi trường mà không sửa mã nguồn. Mặc định cấu hình trong ứng dụng dùng endpoint tương thích OpenAI; khóa API ở môi trường triển khai được cấp qua Secret. Các client Course và Result đặt timeout kết nối 2 giây và timeout đọc 3 giây để lỗi dịch vụ phụ thuộc được phát hiện sớm. Agent có giới hạn số lượt model và số lần gọi tool cấu hình được, đồng thời có cơ chế hủy run, ghi event và lưu vết phục vụ điều tra.
+
+Trong phạm vi báo cáo hiện tại chưa có số liệu benchmark riêng cho thời gian phản hồi của model, chi phí token hoặc tải đồng thời của SSE. Các chỉ số này cần được đo ở môi trường có cấu hình nhà cung cấp và khóa API thực, không suy ra từ cấu hình hay mã nguồn.
+
 \subsection{Tích hợp liên tục với GitHub Actions}
 \label{section:3.1.3}
 

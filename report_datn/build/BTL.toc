@@ -26,87 +26,99 @@
 \contentsline {subsection}{\numberline {1.3.3}Spring Cloud OpenFeign}{4}{subsection.1.3.3}%
 \contentsline {subsection}{\numberline {1.3.4}Xác thực với Spring Security và OAuth2}{4}{subsection.1.3.4}%
 \contentsline {subsection}{\numberline {1.3.5}RESTful API}{4}{subsection.1.3.5}%
-\contentsline {section}{\numberline {1.4}Cơ sở dữ liệu và công nghệ ORM}{4}{section.1.4}%
-\contentsline {subsection}{\numberline {1.4.1}Hệ quản trị cơ sở dữ liệu quan hệ}{4}{subsection.1.4.1}%
+\contentsline {subsection}{\numberline {1.3.6}Mô hình ngôn ngữ lớn và tích hợp công cụ}{4}{subsection.1.3.6}%
+\contentsline {section}{\numberline {1.4}Cơ sở dữ liệu và công nghệ ORM}{5}{section.1.4}%
+\contentsline {subsection}{\numberline {1.4.1}Hệ quản trị cơ sở dữ liệu quan hệ}{5}{subsection.1.4.1}%
 \contentsline {subsection}{\numberline {1.4.2}ORM và JPA}{5}{subsection.1.4.2}%
 \contentsline {subsection}{\numberline {1.4.3}Quản lý di chuyển schema}{5}{subsection.1.4.3}%
 \contentsline {section}{\numberline {1.5}Giao tiếp bất đồng bộ qua hệ thống trao đổi tin nhắn}{5}{section.1.5}%
 \contentsline {subsection}{\numberline {1.5.1}Khái niệm hệ thống trao đổi tin nhắn}{5}{subsection.1.5.1}%
-\contentsline {subsection}{\numberline {1.5.2}Apache Kafka}{5}{subsection.1.5.2}%
+\contentsline {subsection}{\numberline {1.5.2}Apache Kafka}{6}{subsection.1.5.2}%
 \contentsline {section}{\numberline {1.6}Lưu trữ đối tượng}{6}{section.1.6}%
 \contentsline {subsection}{\numberline {1.6.1}Khái niệm lưu trữ đối tượng}{6}{subsection.1.6.1}%
-\contentsline {subsection}{\numberline {1.6.2}RustFS và presigned URL}{6}{subsection.1.6.2}%
+\contentsline {subsection}{\numberline {1.6.2}RustFS và presigned URL}{7}{subsection.1.6.2}%
 \contentsline {section}{\numberline {1.7}Đóng gói và điều phối ứng dụng}{7}{section.1.7}%
 \contentsline {subsection}{\numberline {1.7.1}Container và Docker}{7}{subsection.1.7.1}%
-\contentsline {subsection}{\numberline {1.7.2}Kubernetes (k3s)}{7}{subsection.1.7.2}%
-\contentsline {subsection}{\numberline {1.7.3}Helm và ArgoCD}{7}{subsection.1.7.3}%
+\contentsline {subsection}{\numberline {1.7.2}Kubernetes (k3s)}{8}{subsection.1.7.2}%
+\contentsline {subsection}{\numberline {1.7.3}Helm và ArgoCD}{8}{subsection.1.7.3}%
 \contentsline {section}{\numberline {1.8}Quản lý danh tính và truy cập}{8}{section.1.8}%
 \contentsline {subsection}{\numberline {1.8.1}Khái niệm IAM}{8}{subsection.1.8.1}%
 \contentsline {subsection}{\numberline {1.8.2}OAuth 2.0 - Khái niệm chung về ủy quyền}{8}{subsection.1.8.2}%
 \contentsline {subsection}{\numberline {1.8.3}OpenID Connect và JWT}{9}{subsection.1.8.3}%
-\contentsline {subsection}{\numberline {1.8.4}Xác thực trên trình duyệt - Authorization Code Flow và PKCE}{9}{subsection.1.8.4}%
+\contentsline {subsection}{\numberline {1.8.4}Xác thực trên trình duyệt - Authorization Code Flow và PKCE}{10}{subsection.1.8.4}%
 \contentsline {section}{\numberline {1.9}Giao diện người dùng phía trước}{11}{section.1.9}%
 \contentsline {subsection}{\numberline {1.9.1}React và TypeScript}{11}{subsection.1.9.1}%
 \contentsline {subsection}{\numberline {1.9.2}Các thư viện hỗ trợ}{11}{subsection.1.9.2}%
-\contentsline {section}{\numberline {1.10}Kết luận chương}{11}{section.1.10}%
-\contentsline {chapter}{\numberline {2}PHÂN TÍCH VÀ THIẾT KẾ HỆ THỐNG}{12}{chapter.2}%
-\contentsline {section}{\numberline {2.1}Phân tích hệ thống}{12}{section.2.1}%
-\contentsline {subsection}{\numberline {2.1.1}Xác định các tác nhân trong hệ thống}{12}{subsection.2.1.1}%
-\contentsline {subsection}{\numberline {2.1.2}Biểu đồ ca chức năng (usecase) tổng quan của hệ thống}{12}{subsection.2.1.2}%
-\contentsline {subsection}{\numberline {2.1.3}Kịch bản các chức năng}{14}{subsection.2.1.3}%
-\contentsline {subsubsection}{\numberline {a}Kịch bản các chức năng chung}{14}{subsubsection.2.1.3.1}%
-\contentsline {subsubsection}{\numberline {b}Kịch bản các chức năng của quản trị viên}{16}{subsubsection.2.1.3.2}%
-\contentsline {subsubsection}{\numberline {c}Kịch bản các chức năng của giảng viên}{17}{subsubsection.2.1.3.3}%
-\contentsline {subsubsection}{\numberline {d}Kịch bản các chức năng của sinh viên}{23}{subsubsection.2.1.3.4}%
-\contentsline {subsection}{\numberline {2.1.4}Biểu đồ lớp toàn hệ thống}{29}{subsection.2.1.4}%
-\contentsline {subsubsection}{\numberline {a}Xác định các lớp của hệ thống}{29}{subsubsection.2.1.4.1}%
-\contentsline {subsubsection}{\numberline {b}Xét quan hệ số lượng giữa các lớp}{30}{subsubsection.2.1.4.2}%
-\contentsline {subsubsection}{\numberline {c}Bổ sung quan hệ đối tượng giữa các lớp}{32}{subsubsection.2.1.4.3}%
-\contentsline {subsubsection}{\numberline {d}Biểu đồ lớp thực thể pha phân tích}{34}{subsubsection.2.1.4.4}%
-\contentsline {subsection}{\numberline {2.1.5}Phân rã hệ thống theo miền chức năng}{34}{subsection.2.1.5}%
-\contentsline {subsection}{\numberline {2.1.6}Biểu đồ lớp chi tiết từng dịch vụ}{35}{subsection.2.1.6}%
-\contentsline {subsubsection}{\numberline {a}Biểu đồ lớp pha phân tích miền Xác thực và phân quyền}{35}{subsubsection.2.1.6.1}%
-\contentsline {subsubsection}{\numberline {b}Biểu đồ lớp pha phân tích dịch vụ quản lý lớp học và điểm}{36}{subsubsection.2.1.6.2}%
-\contentsline {subsubsection}{\numberline {c}Biểu đồ lớp pha phân tích dịch vụ nộp bài}{37}{subsubsection.2.1.6.3}%
-\contentsline {subsubsection}{\numberline {d}Biểu đồ lớp pha phân tích dịch vụ thực thi chấm}{37}{subsubsection.2.1.6.4}%
-\contentsline {subsubsection}{\numberline {e}Biểu đồ lớp pha phân tích dịch vụ kết quả chấm}{38}{subsubsection.2.1.6.5}%
-\contentsline {subsubsection}{\numberline {f}Biểu đồ lớp pha phân tích dịch vụ trợ lý AI}{39}{subsubsection.2.1.6.6}%
-\contentsline {section}{\numberline {2.2}Thiết kế hệ thống}{39}{section.2.2}%
-\contentsline {subsection}{\numberline {2.2.1}Biểu đồ lớp thiết kế chi tiết từng dịch vụ}{39}{subsection.2.2.1}%
-\contentsline {subsubsection}{\numberline {a}Dịch vụ Xác thực và phân quyền}{40}{subsubsection.2.2.1.1}%
-\contentsline {subsubsection}{\numberline {b}Dịch vụ Quản lý lớp học và điểm}{40}{subsubsection.2.2.1.2}%
-\contentsline {subsubsection}{\numberline {c}Dịch vụ Nộp bài}{40}{subsubsection.2.2.1.3}%
-\contentsline {subsubsection}{\numberline {d}Dịch vụ Thực thi chấm}{41}{subsubsection.2.2.1.4}%
-\contentsline {subsubsection}{\numberline {e}Dịch vụ Kết quả chấm}{42}{subsubsection.2.2.1.5}%
-\contentsline {subsubsection}{\numberline {f}Dịch vụ Trợ lý AI}{44}{subsubsection.2.2.1.6}%
-\contentsline {subsection}{\numberline {2.2.2}Thiết kế cơ sở dữ liệu theo dịch vụ}{44}{subsection.2.2.2}%
-\contentsline {subsection}{\numberline {2.2.3}Sơ đồ tuần tự các chức năng}{46}{subsection.2.2.3}%
-\contentsline {subsubsection}{\numberline {a}Đăng nhập}{46}{subsubsection.2.2.3.1}%
-\contentsline {subsubsection}{\numberline {b}Quản lý lớp học}{47}{subsubsection.2.2.3.2}%
-\contentsline {subsubsection}{\numberline {c}Quản lý bài tập}{48}{subsubsection.2.2.3.3}%
-\contentsline {subsubsection}{\numberline {d}Xem kết quả chấm của cả lớp}{49}{subsubsection.2.2.3.4}%
-\contentsline {subsubsection}{\numberline {e}Nộp bài tập}{50}{subsubsection.2.2.3.5}%
-\contentsline {subsubsection}{\numberline {f}Xem kết quả chấm bài tập của bản thân}{51}{subsubsection.2.2.3.6}%
-\contentsline {subsubsection}{\numberline {g}Xem điểm và kết quả cá nhân}{51}{subsubsection.2.2.3.7}%
-\contentsline {subsection}{\numberline {2.2.4}Kiến trúc hệ thống}{52}{subsection.2.2.4}%
-\contentsline {chapter}{\numberline {3}TRIỂN KHAI VÀ ĐÁNH GIÁ HỆ THỐNG}{54}{chapter.3}%
-\contentsline {section}{\numberline {3.1}Triển khai hệ thống}{54}{section.3.1}%
-\contentsline {subsection}{\numberline {3.1.1}Môi trường và kiến trúc triển khai}{54}{subsection.3.1.1}%
-\contentsline {subsection}{\numberline {3.1.2}Đóng gói và cấu hình triển khai}{55}{subsection.3.1.2}%
-\contentsline {subsection}{\numberline {3.1.3}Tích hợp liên tục với GitHub Actions}{56}{subsection.3.1.3}%
-\contentsline {subsection}{\numberline {3.1.4}Triển khai liên tục với ArgoCD}{57}{subsection.3.1.4}%
-\contentsline {subsection}{\numberline {3.1.5}Hạ tầng dùng chung}{58}{subsection.3.1.5}%
-\contentsline {subsection}{\numberline {3.1.6}Nhất quán dữ liệu trong quy trình chấm bài với Grading Saga}{60}{subsection.3.1.6}%
-\contentsline {subsection}{\numberline {3.1.7}Tổng hợp kết quả triển khai}{62}{subsection.3.1.7}%
-\contentsline {section}{\numberline {3.2}Đánh giá hệ thống}{62}{section.3.2}%
-\contentsline {subsection}{\numberline {3.2.1}Tiêu chí và phương pháp đánh giá}{62}{subsection.3.2.1}%
-\contentsline {subsection}{\numberline {3.2.2}Kịch bản kiểm thử chức năng}{63}{subsection.3.2.2}%
-\contentsline {subsection}{\numberline {3.2.3}Kịch bản kiểm thử hiệu năng và độ tin cậy}{64}{subsection.3.2.3}%
-\contentsline {subsection}{\numberline {3.2.4}Ưu điểm của kiến trúc triển khai}{65}{subsection.3.2.4}%
-\contentsline {subsection}{\numberline {3.2.5}Hạn chế và rủi ro}{66}{subsection.3.2.5}%
-\contentsline {section}{\numberline {3.3}Hướng phát triển}{67}{section.3.3}%
-\contentsline {section}{\numberline {3.4}Kết luận chương}{68}{section.3.4}%
-\contentsline {chapter}{TÀI LIỆU THAM KHẢO}{71}{section*.65}%
+\contentsline {section}{\numberline {1.10}Kết luận chương}{12}{section.1.10}%
+\contentsline {chapter}{\numberline {2}PHÂN TÍCH VÀ THIẾT KẾ HỆ THỐNG}{13}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Phân tích hệ thống}{13}{section.2.1}%
+\contentsline {subsection}{\numberline {2.1.1}Xác định các tác nhân trong hệ thống}{13}{subsection.2.1.1}%
+\contentsline {subsection}{\numberline {2.1.2}Biểu đồ ca chức năng (usecase) tổng quan của hệ thống}{13}{subsection.2.1.2}%
+\contentsline {subsection}{\numberline {2.1.3}Kịch bản các chức năng}{15}{subsection.2.1.3}%
+\contentsline {subsubsection}{\numberline {a}Kịch bản các chức năng chung}{15}{subsubsection.2.1.3.1}%
+\contentsline {subsubsection}{\numberline {b}Kịch bản các chức năng của quản trị viên}{17}{subsubsection.2.1.3.2}%
+\contentsline {subsubsection}{\numberline {c}Kịch bản các chức năng của giảng viên}{18}{subsubsection.2.1.3.3}%
+\contentsline {subsubsection}{\numberline {d}Trò chuyện với trợ lý AI dành cho giảng viên}{24}{subsubsection.2.1.3.4}%
+\contentsline {subsubsection}{\numberline {e}Kịch bản các chức năng của sinh viên}{25}{subsubsection.2.1.3.5}%
+\contentsline {subsubsection}{\numberline {f}Trò chuyện với trợ lý AI dành cho sinh viên}{30}{subsubsection.2.1.3.6}%
+\contentsline {subsection}{\numberline {2.1.4}Biểu đồ lớp toàn hệ thống}{31}{subsection.2.1.4}%
+\contentsline {subsubsection}{\numberline {a}Xác định các lớp của hệ thống}{31}{subsubsection.2.1.4.1}%
+\contentsline {subsubsection}{\numberline {b}Xét quan hệ số lượng giữa các lớp}{32}{subsubsection.2.1.4.2}%
+\contentsline {subsubsection}{\numberline {c}Bổ sung quan hệ đối tượng giữa các lớp}{34}{subsubsection.2.1.4.3}%
+\contentsline {subsubsection}{\numberline {d}Biểu đồ lớp thực thể pha phân tích}{36}{subsubsection.2.1.4.4}%
+\contentsline {subsection}{\numberline {2.1.5}Phân rã hệ thống theo miền chức năng}{36}{subsection.2.1.5}%
+\contentsline {subsection}{\numberline {2.1.6}Biểu đồ lớp thiết kế chi tiết toàn hệ thống}{37}{subsection.2.1.6}%
+\contentsline {subsection}{\numberline {2.1.7}Biểu đồ lớp chi tiết từng dịch vụ}{38}{subsection.2.1.7}%
+\contentsline {subsubsection}{\numberline {a}Biểu đồ lớp pha phân tích miền Xác thực và phân quyền}{38}{subsubsection.2.1.7.1}%
+\contentsline {subsubsection}{\numberline {b}Biểu đồ lớp pha phân tích dịch vụ quản lý lớp học và điểm}{39}{subsubsection.2.1.7.2}%
+\contentsline {subsubsection}{\numberline {c}Biểu đồ lớp pha phân tích dịch vụ nộp bài}{40}{subsubsection.2.1.7.3}%
+\contentsline {subsubsection}{\numberline {d}Biểu đồ lớp pha phân tích dịch vụ thực thi chấm}{40}{subsubsection.2.1.7.4}%
+\contentsline {subsubsection}{\numberline {e}Biểu đồ lớp pha phân tích dịch vụ kết quả chấm}{41}{subsubsection.2.1.7.5}%
+\contentsline {subsubsection}{\numberline {f}Biểu đồ lớp pha phân tích dịch vụ trợ lý AI}{42}{subsubsection.2.1.7.6}%
+\contentsline {section}{\numberline {2.2}Thiết kế hệ thống}{43}{section.2.2}%
+\contentsline {subsection}{\numberline {2.2.1}Biểu đồ lớp thiết kế chi tiết từng dịch vụ}{43}{subsection.2.2.1}%
+\contentsline {subsubsection}{\numberline {a}Dịch vụ Xác thực và phân quyền}{43}{subsubsection.2.2.1.1}%
+\contentsline {subsubsection}{\numberline {b}Dịch vụ Quản lý lớp học và điểm}{43}{subsubsection.2.2.1.2}%
+\contentsline {subsubsection}{\numberline {c}Dịch vụ Nộp bài}{44}{subsubsection.2.2.1.3}%
+\contentsline {subsubsection}{\numberline {d}Dịch vụ Thực thi chấm}{45}{subsubsection.2.2.1.4}%
+\contentsline {subsubsection}{\numberline {e}Dịch vụ Kết quả chấm}{45}{subsubsection.2.2.1.5}%
+\contentsline {subsubsection}{\numberline {f}Dịch vụ Trợ lý AI}{47}{subsubsection.2.2.1.6}%
+\contentsline {subsection}{\numberline {2.2.2}Thiết kế cơ sở dữ liệu theo dịch vụ}{47}{subsection.2.2.2}%
+\contentsline {subsection}{\numberline {2.2.3}Sơ đồ tuần tự các chức năng}{49}{subsection.2.2.3}%
+\contentsline {subsubsection}{\numberline {a}Đăng nhập}{49}{subsubsection.2.2.3.1}%
+\contentsline {subsubsection}{\numberline {b}Quản lý lớp học}{50}{subsubsection.2.2.3.2}%
+\contentsline {subsubsection}{\numberline {c}Quản lý bài tập}{51}{subsubsection.2.2.3.3}%
+\contentsline {subsubsection}{\numberline {d}Xem kết quả chấm của cả lớp}{52}{subsubsection.2.2.3.4}%
+\contentsline {subsubsection}{\numberline {e}Nộp bài tập}{53}{subsubsection.2.2.3.5}%
+\contentsline {subsubsection}{\numberline {f}Xem kết quả chấm bài tập của bản thân}{54}{subsubsection.2.2.3.6}%
+\contentsline {subsubsection}{\numberline {g}Xem điểm và kết quả cá nhân}{54}{subsubsection.2.2.3.7}%
+\contentsline {subsubsection}{\numberline {h}Trò chuyện với trợ lý AI}{55}{subsubsection.2.2.3.8}%
+\contentsline {subsubsection}{\numberline {i}Yêu cầu AI giải thích kết quả bài nộp}{56}{subsubsection.2.2.3.9}%
+\contentsline {subsection}{\numberline {2.2.4}Kiến trúc hệ thống}{57}{subsection.2.2.4}%
+\contentsline {chapter}{\numberline {3}TRIỂN KHAI VÀ ĐÁNH GIÁ HỆ THỐNG}{60}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Triển khai hệ thống}{60}{section.3.1}%
+\contentsline {subsection}{\numberline {3.1.1}Môi trường và kiến trúc triển khai}{60}{subsection.3.1.1}%
+\contentsline {subsection}{\numberline {3.1.2}Đóng gói và cấu hình triển khai}{61}{subsection.3.1.2}%
+\contentsline {subsection}{\numberline {3.1.3}Hiện thực dịch vụ Trợ lý AI}{62}{subsection.3.1.3}%
+\contentsline {subsubsection}{\numberline {a}Các chức năng và điểm cuối chính}{63}{subsubsection.3.1.3.1}%
+\contentsline {subsubsection}{\numberline {b}Luồng hội thoại và xử lý bất đồng bộ}{65}{subsubsection.3.1.3.2}%
+\contentsline {subsubsection}{\numberline {c}Tool, phân quyền và xác nhận thao tác ghi}{65}{subsubsection.3.1.3.3}%
+\contentsline {subsubsection}{\numberline {d}Lưu trữ dữ liệu và chức năng giải thích bài nộp}{66}{subsubsection.3.1.3.4}%
+\contentsline {subsubsection}{\numberline {e}Cấu hình mô hình và giới hạn vận hành}{66}{subsubsection.3.1.3.5}%
+\contentsline {subsection}{\numberline {3.1.4}Tích hợp liên tục với GitHub Actions}{66}{subsection.3.1.4}%
+\contentsline {subsection}{\numberline {3.1.5}Triển khai liên tục với ArgoCD}{68}{subsection.3.1.5}%
+\contentsline {subsection}{\numberline {3.1.6}Hạ tầng dùng chung}{68}{subsection.3.1.6}%
+\contentsline {subsection}{\numberline {3.1.7}Nhất quán dữ liệu trong quy trình chấm bài với Grading Saga}{70}{subsection.3.1.7}%
+\contentsline {subsection}{\numberline {3.1.8}Tổng hợp kết quả triển khai}{72}{subsection.3.1.8}%
+\contentsline {section}{\numberline {3.2}Đánh giá hệ thống}{73}{section.3.2}%
+\contentsline {subsection}{\numberline {3.2.1}Tiêu chí và phương pháp đánh giá}{73}{subsection.3.2.1}%
+\contentsline {subsection}{\numberline {3.2.2}Kịch bản kiểm thử chức năng}{73}{subsection.3.2.2}%
+\contentsline {subsection}{\numberline {3.2.3}Kịch bản kiểm thử hiệu năng và độ tin cậy}{75}{subsection.3.2.3}%
+\contentsline {subsection}{\numberline {3.2.4}Ưu điểm của kiến trúc triển khai}{75}{subsection.3.2.4}%
+\contentsline {subsection}{\numberline {3.2.5}Hạn chế và rủi ro}{76}{subsection.3.2.5}%
+\contentsline {section}{\numberline {3.3}Hướng phát triển}{77}{section.3.3}%
+\contentsline {section}{\numberline {3.4}Kết luận chương}{78}{section.3.4}%
+\contentsline {chapter}{TÀI LIỆU THAM KHẢO}{81}{section*.72}%
 \ttl@change@i {\@ne }{chapter}{0.0cm}{\bfseries \vspace {0.3cm}}{{\bfseries {\scshape } \thecontentslabel .\ }}{}{\titlerule *[0.3pc]{.}\contentspage }\relax 
 \ttl@change@v {chapter}{}{}{}\relax 
 \contentsfinish 

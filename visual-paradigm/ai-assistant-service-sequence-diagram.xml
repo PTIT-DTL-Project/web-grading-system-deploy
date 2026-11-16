@@ -1,0 +1,260 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ns0:Project xmlns:ns0="http://www.visual-paradigm.com/product/vpuml/modelexporter" author="duongvct" name="design-phase" umlVersion="2.x" exporterVersion="16.1" documentationType="html">
+  <ns0:ProjectInfo />
+  <ns0:Models>
+    <ns0:Model id="9251a8ba71585245" name="user-chat-ai-assistant-sequence" modelType="Frame">
+      <ns0:ChildModels>
+        <ns0:Model id="b894aa8b316f57a3" name="User" modelType="InteractionActor" />
+        <ns0:Model id="31eb2479be39577b" name="AiChatSidebar.tsx" modelType="InteractionLifeLine" />
+        <ns0:Model id="84be7e68d5f258f9" name="API Gateway" modelType="InteractionLifeLine" />
+        <ns0:Model id="3e01b6647e545b61" name="ChatController" modelType="InteractionLifeLine" />
+        <ns0:Model id="13b8d9befdeb5b0f" name="RunController" modelType="InteractionLifeLine" />
+        <ns0:Model id="f9b481d01bb157ae" name="ConversationService" modelType="InteractionLifeLine" />
+        <ns0:Model id="2357cb53d381551e" name="ConversationRepository" modelType="InteractionLifeLine" />
+        <ns0:Model id="8491a03ba3a35130" name="RunRepository" modelType="InteractionLifeLine" />
+        <ns0:Model id="ef89464226615d30" name="MessageRepository" modelType="InteractionLifeLine" />
+        <ns0:Model id="d3e0f4bc88a15142" name="RunWorker" modelType="InteractionLifeLine" />
+        <ns0:Model id="4e8cbbdb94035da9" name="SseBroadcaster" modelType="InteractionLifeLine" />
+        <ns0:Model id="2c404ce29bb65bff" name="AgentOrchestrator" modelType="InteractionLifeLine" />
+        <ns0:Model id="937c622ce6eb534a" name="AgentRuntime" modelType="InteractionLifeLine" />
+        <ns0:Model id="c1e83ff381e95c74" name="LlmClient" modelType="InteractionLifeLine" />
+        <ns0:Model id="bc3bc3af01e75c7c" name="ToolExecutor" modelType="InteractionLifeLine" />
+        <ns0:Model id="c8b648747bdf55f1" name="DownstreamService" modelType="InteractionLifeLine" />
+      </ns0:ChildModels>
+    </ns0:Model>
+    <ns0:Model id="8e572c8632df5fec" name="Message" modelType="ModelRelationshipContainer">
+      <ns0:ChildModels>
+        <ns0:Model id="5763f02de5b453c5" name="enter message + click send" modelType="Message" />
+        <ns0:Model id="14104c7034f85925" name="call (POST /messages)" modelType="Message" />
+        <ns0:Model id="ec2d49db505f544d" name="call (sendMessage)" modelType="Message" />
+        <ns0:Model id="66b56b14832e5783" name="sendMessage()" modelType="Message" />
+        <ns0:Model id="1fcbf6b9b8e956ea" name="call (sendMessage)" modelType="Message" />
+        <ns0:Model id="e633d97dd92a5e16" name="sendMessage()" modelType="Message" />
+        <ns0:Model id="2114398ea6155d21" name="call (findByIdAndOwnerId)" modelType="Message" />
+        <ns0:Model id="aeff128e20235aa2" name="return (Conversation)" modelType="Message" />
+        <ns0:Model id="ff46316194235ec1" name="call (findMaxSequenceNo)" modelType="Message" />
+        <ns0:Model id="41fee73903cb50e4" name="return (nextSeq)" modelType="Message" />
+        <ns0:Model id="795d175802785634" name="call (save[QUEUED])" modelType="Message" />
+        <ns0:Model id="1817498b9ce65fed" name="return (Run)" modelType="Message" />
+        <ns0:Model id="f07a297fa46853ef" name="call (save[role=user])" modelType="Message" />
+        <ns0:Model id="ccd22ef243c65888" name="return (Message)" modelType="Message" />
+        <ns0:Model id="5bd75d039b155211" name="call (processRunAsync)" modelType="Message" />
+        <ns0:Model id="b0e1bad4b3365cda" name="return (SendMessageResponse)" modelType="Message" />
+        <ns0:Model id="feed3f11b8975b0e" name="return (202 Accepted)" modelType="Message" />
+        <ns0:Model id="4cd4d568e01a54b4" name="return (SendMessageResponse)" modelType="Message" />
+        <ns0:Model id="deceaaebe37955d5" name="call (GET /runs/{id}/events)" modelType="Message" />
+        <ns0:Model id="ccfceb272533576f" name="call (subscribeEvents)" modelType="Message" />
+        <ns0:Model id="9b1d3626d64353a7" name="subscribeEvents()" modelType="Message" />
+        <ns0:Model id="499e46dd183855c9" name="call (subscribeReplay)" modelType="Message" />
+        <ns0:Model id="b62ef5f3f4c556fc" name="return (SseEmitter)" modelType="Message" />
+        <ns0:Model id="06b03f448eba52c9" name="return (HTTP 200 text/event-stream)" modelType="Message" />
+        <ns0:Model id="4dfc33255b4058e0" name="return (SSE stream connection)" modelType="Message" />
+        <ns0:Model id="5bc119a81f81512b" name="call (executeRun via virtual thread)" modelType="Message" />
+        <ns0:Model id="de5979259d8d5b1c" name="executeRun()" modelType="Message" />
+        <ns0:Model id="f34a165b31c2599d" name="call (save[RUNNING])" modelType="Message" />
+        <ns0:Model id="31c3ae78e36b5abc" name="return" modelType="Message" />
+        <ns0:Model id="2453a7c4d8f45c35" name="broadcast(run.started)" modelType="Message" />
+        <ns0:Model id="bd916e4aa4395fcb" name="stream SSE (run.started)" modelType="Message" />
+        <ns0:Model id="e851b837542b5576" name="call (execute)" modelType="Message" />
+        <ns0:Model id="98800f5939a25939" name="execute()" modelType="Message" />
+        <ns0:Model id="4f7b50a0ffa15653" name="call (streamChatWithMemory)" modelType="Message" />
+        <ns0:Model id="78077e3de8a35ad7" name="return (delta chunk)" modelType="Message" />
+        <ns0:Model id="bad1b827dc545dea" name="broadcast(assistant.delta)" modelType="Message" />
+        <ns0:Model id="09170609505a580d" name="stream SSE (assistant.delta)" modelType="Message" />
+        <ns0:Model id="16b8eda9b5f3588c" name="return (tool_call: GetAssignmentTool)" modelType="Message" />
+        <ns0:Model id="b4e6aba654bc5bbd" name="broadcast(tool.call)" modelType="Message" />
+        <ns0:Model id="64c691426d235751" name="stream SSE (tool.call)" modelType="Message" />
+        <ns0:Model id="739997204a48590d" name="call (executeTool)" modelType="Message" />
+        <ns0:Model id="2b595344267b565a" name="call Feign (getAssignment)" modelType="Message" />
+        <ns0:Model id="fe03a0c8d5ea5d38" name="return (AssignmentDetailDto)" modelType="Message" />
+        <ns0:Model id="5e0e799073715769" name="return (ToolResult)" modelType="Message" />
+        <ns0:Model id="f54b0c20104d572f" name="broadcast(tool.result)" modelType="Message" />
+        <ns0:Model id="49fd9d275bc95780" name="stream SSE (tool.result)" modelType="Message" />
+        <ns0:Model id="7d26e92d8eb35247" name="feed tool result into context" modelType="Message" />
+        <ns0:Model id="4a05a9deb7565e8a" name="return (final completion text)" modelType="Message" />
+        <ns0:Model id="416d513be1745995" name="return (completion)" modelType="Message" />
+        <ns0:Model id="f1139b7f43ef56b2" name="call (save[role=assistant])" modelType="Message" />
+        <ns0:Model id="06749d9b384256c4" name="return" modelType="Message" />
+        <ns0:Model id="1ab4038ccbdf5fee" name="call (save[SUCCEEDED])" modelType="Message" />
+        <ns0:Model id="698725e997ff5844" name="return" modelType="Message" />
+        <ns0:Model id="d6667518b645562f" name="broadcast(run.completed)" modelType="Message" />
+        <ns0:Model id="37a8b8ed9cf35a7f" name="stream SSE (run.completed)" modelType="Message" />
+        <ns0:Model id="1c49c128f605503b" name="complete(runId)" modelType="Message" />
+        <ns0:Model id="3369086ce30f5d1f" name="display assistant response" modelType="Message" />
+      </ns0:ChildModels>
+    </ns0:Model>
+    <ns0:Model id="ea1ab5b5a50b560e" name="student-ai-explain-submission-sequence" modelType="Frame">
+      <ns0:ChildModels>
+        <ns0:Model id="611d669768955d7c" name="Student" modelType="InteractionActor" />
+        <ns0:Model id="b196b6ad2cde58b4" name="SubmissionResultPage.tsx" modelType="InteractionLifeLine" />
+        <ns0:Model id="4ce4346c71e0592c" name="API Gateway" modelType="InteractionLifeLine" />
+        <ns0:Model id="1fd5c5b553755f6f" name="AiExplanationController" modelType="InteractionLifeLine" />
+        <ns0:Model id="b257609f11eb533d" name="AiExplanationService" modelType="InteractionLifeLine" />
+        <ns0:Model id="9b6e6ca0f040518c" name="AiExplanationRepository" modelType="InteractionLifeLine" />
+        <ns0:Model id="fc3d7b2591235bad" name="ResultServiceClient" modelType="InteractionLifeLine" />
+        <ns0:Model id="996c410d7e7f5fde" name="CourseServiceClient" modelType="InteractionLifeLine" />
+        <ns0:Model id="f75f191fd3e855ad" name="PromptBuilder" modelType="InteractionLifeLine" />
+        <ns0:Model id="09baf8b20baf5da4" name="ExplanationLlmClient" modelType="InteractionLifeLine" />
+        <ns0:Model id="c45fcb6ccf805111" name="AiExplanation" modelType="InteractionLifeLine" />
+      </ns0:ChildModels>
+    </ns0:Model>
+    <ns0:Model id="7a61c8e0a8115bfb" name="Message" modelType="ModelRelationshipContainer">
+      <ns0:ChildModels>
+        <ns0:Model id="13ad05f8ba82592b" name="click request AI explanation" modelType="Message" />
+        <ns0:Model id="e2fe0bbe901e58ab" name="call (POST /explain)" modelType="Message" />
+        <ns0:Model id="e9f51b6be9e95333" name="call (explainSubmission)" modelType="Message" />
+        <ns0:Model id="2e63d637a3de5cc2" name="explainSubmission()" modelType="Message" />
+        <ns0:Model id="c38325d789915b3c" name="call (explainSubmission)" modelType="Message" />
+        <ns0:Model id="b850b8dcd4e15f1f" name="explainSubmission()" modelType="Message" />
+        <ns0:Model id="85b1a0f949535007" name="call (findBySubmissionIdAndCategory)" modelType="Message" />
+        <ns0:Model id="0216ecf0a7a55f47" name="return (empty - cache miss)" modelType="Message" />
+        <ns0:Model id="0b85b585830f582e" name="call (getBySubmissionId)" modelType="Message" />
+        <ns0:Model id="d4a1251b3d225cef" name="return (List&lt;ResultDto&gt;)" modelType="Message" />
+        <ns0:Model id="790be10e9fe5517b" name="verifyOwner(studentId)" modelType="Message" />
+        <ns0:Model id="9f9d73973f13504a" name="call (getAssignment)" modelType="Message" />
+        <ns0:Model id="3a33f2b9274c5f89" name="return (AssignmentDetailDto)" modelType="Message" />
+        <ns0:Model id="b756c72d7a235a4f" name="call (buildPrompts)" modelType="Message" />
+        <ns0:Model id="8a41703386c559c8" name="buildSystemPrompt()" modelType="Message" />
+        <ns0:Model id="78d6bc46ea515ec8" name="buildUserPrompt()" modelType="Message" />
+        <ns0:Model id="c17aa9ef5e5356f3" name="return (systemPrompt, userPrompt)" modelType="Message" />
+        <ns0:Model id="b3060d7949ca5e2c" name="call (generateEntity)" modelType="Message" />
+        <ns0:Model id="cd1d83295ea75b48" name="generateEntity()" modelType="Message" />
+        <ns0:Model id="65a6335e9a885400" name="return (AiExplanationResultDto)" modelType="Message" />
+        <ns0:Model id="cad7dfcd6f575a63" name="call (builder)" modelType="Message" />
+        <ns0:Model id="fe20b1e2245d59ef" name="return (entity)" modelType="Message" />
+        <ns0:Model id="e886e7125ac85164" name="call (save)" modelType="Message" />
+        <ns0:Model id="43a48d6e64845bca" name="return (savedEntity)" modelType="Message" />
+        <ns0:Model id="32cfcc8bfce35253" name="return (AiExplanationResponse)" modelType="Message" />
+        <ns0:Model id="ea4d2b4e81b25281" name="return (200 OK)" modelType="Message" />
+        <ns0:Model id="6fc441601f8851fa" name="return (AiExplanationResponse)" modelType="Message" />
+        <ns0:Model id="7fdeac71df6a5eb0" name="display (AiExplanationCard)" modelType="Message" />
+      </ns0:ChildModels>
+    </ns0:Model>
+  </ns0:Models>
+  <ns0:Diagrams>
+    <ns0:Diagram id="5ce4e6baddec5c81" name="user-chat-ai-assistant-sequence" diagramType="InteractionDiagram">
+      <ns0:Shapes>
+        <ns0:Shape id="713f3b79f8e456a1" name="User" shapeType="InteractionActor" model="b894aa8b316f57a3" x="60" y="40" width="70" height="14" />
+        <ns0:Shape id="063d705e5c545e99" name="AiChatSidebar.tsx" shapeType="InteractionLifeLine" model="31eb2479be39577b" x="190" y="40" width="153" height="14" />
+        <ns0:Shape id="9893a84ab7125ffd" name="API Gateway" shapeType="InteractionLifeLine" model="84be7e68d5f258f9" x="403" y="40" width="100" height="14" />
+        <ns0:Shape id="ff50b23459b95b19" name="ChatController" shapeType="InteractionLifeLine" model="3e01b6647e545b61" x="563" y="40" width="126" height="14" />
+        <ns0:Shape id="181da3ca821f5a97" name="RunController" shapeType="InteractionLifeLine" model="13b8d9befdeb5b0f" x="749" y="40" width="117" height="14" />
+        <ns0:Shape id="6dcd7cd439cb55e6" name="ConversationService" shapeType="InteractionLifeLine" model="f9b481d01bb157ae" x="926" y="40" width="171" height="14" />
+        <ns0:Shape id="d2bf272a38565390" name="ConversationRepository" shapeType="InteractionLifeLine" model="2357cb53d381551e" x="1157" y="40" width="198" height="14" />
+        <ns0:Shape id="4a9da009c71956f1" name="RunRepository" shapeType="InteractionLifeLine" model="8491a03ba3a35130" x="1415" y="40" width="117" height="14" />
+        <ns0:Shape id="9b5067822839541b" name="MessageRepository" shapeType="InteractionLifeLine" model="ef89464226615d30" x="1592" y="40" width="153" height="14" />
+        <ns0:Shape id="ee025b2ae76e5800" name="RunWorker" shapeType="InteractionLifeLine" model="d3e0f4bc88a15142" x="1805" y="40" width="100" height="14" />
+        <ns0:Shape id="26fb5e6ef1de528e" name="SseBroadcaster" shapeType="InteractionLifeLine" model="4e8cbbdb94035da9" x="1965" y="40" width="126" height="14" />
+        <ns0:Shape id="c382b9f144eb5e67" name="AgentOrchestrator" shapeType="InteractionLifeLine" model="2c404ce29bb65bff" x="2151" y="40" width="153" height="14" />
+        <ns0:Shape id="7b861d1566c35d1a" name="AgentRuntime" shapeType="InteractionLifeLine" model="937c622ce6eb534a" x="2364" y="40" width="108" height="14" />
+        <ns0:Shape id="1352bd45aff759e3" name="LlmClient" shapeType="InteractionLifeLine" model="c1e83ff381e95c74" x="2532" y="40" width="100" height="14" />
+        <ns0:Shape id="672ee2946549556a" name="ToolExecutor" shapeType="InteractionLifeLine" model="bc3bc3af01e75c7c" x="2692" y="40" width="108" height="14" />
+        <ns0:Shape id="35e0535704485271" name="DownstreamService" shapeType="InteractionLifeLine" model="c8b648747bdf55f1" x="2860" y="40" width="153" height="14" />
+      </ns0:Shapes>
+      <ns0:Connectors>
+        <ns0:Connector id="1b5fd59337895051" name="enter message + click send" shapeType="Message" model="5763f02de5b453c5" from="713f3b79f8e456a1" to="063d705e5c545e99" y="120" />
+        <ns0:Connector id="2a6eeb4e48dd5297" name="call (POST /messages)" shapeType="Message" model="14104c7034f85925" from="063d705e5c545e99" to="9893a84ab7125ffd" y="152" />
+        <ns0:Connector id="003f1c5b35b2535b" name="call (sendMessage)" shapeType="Message" model="ec2d49db505f544d" from="9893a84ab7125ffd" to="ff50b23459b95b19" y="184" />
+        <ns0:Connector id="82dc1aab28265b76" name="sendMessage()" shapeType="Message" model="66b56b14832e5783" from="ff50b23459b95b19" to="ff50b23459b95b19" y="216" />
+        <ns0:Connector id="50a9f73991955c27" name="call (sendMessage)" shapeType="Message" model="1fcbf6b9b8e956ea" from="ff50b23459b95b19" to="6dcd7cd439cb55e6" y="248" />
+        <ns0:Connector id="6e068d635bfc5dab" name="sendMessage()" shapeType="Message" model="e633d97dd92a5e16" from="6dcd7cd439cb55e6" to="6dcd7cd439cb55e6" y="280" />
+        <ns0:Connector id="b8d71031d968591a" name="call (findByIdAndOwnerId)" shapeType="Message" model="2114398ea6155d21" from="6dcd7cd439cb55e6" to="d2bf272a38565390" y="312" />
+        <ns0:Connector id="5226add6244e5535" name="return (Conversation)" shapeType="Message" model="aeff128e20235aa2" from="d2bf272a38565390" to="6dcd7cd439cb55e6" y="344" />
+        <ns0:Connector id="cc20c26d327c5b5c" name="call (findMaxSequenceNo)" shapeType="Message" model="ff46316194235ec1" from="6dcd7cd439cb55e6" to="9b5067822839541b" y="376" />
+        <ns0:Connector id="83c6474d1ec35493" name="return (nextSeq)" shapeType="Message" model="41fee73903cb50e4" from="9b5067822839541b" to="6dcd7cd439cb55e6" y="408" />
+        <ns0:Connector id="465550942e0158e7" name="call (save[QUEUED])" shapeType="Message" model="795d175802785634" from="6dcd7cd439cb55e6" to="4a9da009c71956f1" y="440" />
+        <ns0:Connector id="03ed0d95dca85315" name="return (Run)" shapeType="Message" model="1817498b9ce65fed" from="4a9da009c71956f1" to="6dcd7cd439cb55e6" y="472" />
+        <ns0:Connector id="13d3514bf8605f25" name="call (save[role=user])" shapeType="Message" model="f07a297fa46853ef" from="6dcd7cd439cb55e6" to="9b5067822839541b" y="504" />
+        <ns0:Connector id="605be0fcf4aa59b7" name="return (Message)" shapeType="Message" model="ccd22ef243c65888" from="9b5067822839541b" to="6dcd7cd439cb55e6" y="536" />
+        <ns0:Connector id="ade288e59e215d7f" name="call (processRunAsync)" shapeType="Message" model="5bd75d039b155211" from="6dcd7cd439cb55e6" to="ee025b2ae76e5800" y="568" />
+        <ns0:Connector id="8e71067cccd758b9" name="return (SendMessageResponse)" shapeType="Message" model="b0e1bad4b3365cda" from="6dcd7cd439cb55e6" to="ff50b23459b95b19" y="600" />
+        <ns0:Connector id="b9651b675a5d510b" name="return (202 Accepted)" shapeType="Message" model="feed3f11b8975b0e" from="ff50b23459b95b19" to="9893a84ab7125ffd" y="632" />
+        <ns0:Connector id="63256c5790fe5186" name="return (SendMessageResponse)" shapeType="Message" model="4cd4d568e01a54b4" from="9893a84ab7125ffd" to="063d705e5c545e99" y="664" />
+        <ns0:Connector id="2b276f70f1b557c8" name="call (GET /runs/{id}/events)" shapeType="Message" model="deceaaebe37955d5" from="063d705e5c545e99" to="9893a84ab7125ffd" y="696" />
+        <ns0:Connector id="9d93c7f0cb2a5de6" name="call (subscribeEvents)" shapeType="Message" model="ccfceb272533576f" from="9893a84ab7125ffd" to="181da3ca821f5a97" y="728" />
+        <ns0:Connector id="7aa2e132529451f1" name="subscribeEvents()" shapeType="Message" model="9b1d3626d64353a7" from="181da3ca821f5a97" to="181da3ca821f5a97" y="760" />
+        <ns0:Connector id="f269b07caa075a1f" name="call (subscribeReplay)" shapeType="Message" model="499e46dd183855c9" from="181da3ca821f5a97" to="26fb5e6ef1de528e" y="792" />
+        <ns0:Connector id="c68d4f42e423583f" name="return (SseEmitter)" shapeType="Message" model="b62ef5f3f4c556fc" from="26fb5e6ef1de528e" to="181da3ca821f5a97" y="824" />
+        <ns0:Connector id="2de8fd5b39ce5f9a" name="return (HTTP 200 text/event-stream)" shapeType="Message" model="06b03f448eba52c9" from="181da3ca821f5a97" to="9893a84ab7125ffd" y="856" />
+        <ns0:Connector id="89850ec099f55eb9" name="return (SSE stream connection)" shapeType="Message" model="4dfc33255b4058e0" from="9893a84ab7125ffd" to="063d705e5c545e99" y="888" />
+        <ns0:Connector id="ae2e8ebb688c56a6" name="call (executeRun via virtual thread)" shapeType="Message" model="5bc119a81f81512b" from="ee025b2ae76e5800" to="c382b9f144eb5e67" y="920" />
+        <ns0:Connector id="54196a28bcf75a65" name="executeRun()" shapeType="Message" model="de5979259d8d5b1c" from="c382b9f144eb5e67" to="c382b9f144eb5e67" y="952" />
+        <ns0:Connector id="2f669c040a9d5fbe" name="call (save[RUNNING])" shapeType="Message" model="f34a165b31c2599d" from="c382b9f144eb5e67" to="4a9da009c71956f1" y="984" />
+        <ns0:Connector id="bd4c3f96e7755724" name="return" shapeType="Message" model="31c3ae78e36b5abc" from="4a9da009c71956f1" to="c382b9f144eb5e67" y="1016" />
+        <ns0:Connector id="374899f3d0a451c3" name="broadcast(run.started)" shapeType="Message" model="2453a7c4d8f45c35" from="c382b9f144eb5e67" to="26fb5e6ef1de528e" y="1048" />
+        <ns0:Connector id="adb6560048cf587b" name="stream SSE (run.started)" shapeType="Message" model="bd916e4aa4395fcb" from="26fb5e6ef1de528e" to="063d705e5c545e99" y="1080" />
+        <ns0:Connector id="8ccdd99dd54c5705" name="call (execute)" shapeType="Message" model="e851b837542b5576" from="c382b9f144eb5e67" to="7b861d1566c35d1a" y="1112" />
+        <ns0:Connector id="8388f9ef05775f4a" name="execute()" shapeType="Message" model="98800f5939a25939" from="7b861d1566c35d1a" to="7b861d1566c35d1a" y="1144" />
+        <ns0:Connector id="641285d61f21540d" name="call (streamChatWithMemory)" shapeType="Message" model="4f7b50a0ffa15653" from="7b861d1566c35d1a" to="1352bd45aff759e3" y="1176" />
+        <ns0:Connector id="60d5837971805390" name="return (delta chunk)" shapeType="Message" model="78077e3de8a35ad7" from="1352bd45aff759e3" to="7b861d1566c35d1a" y="1208" />
+        <ns0:Connector id="3412c90d662554ba" name="broadcast(assistant.delta)" shapeType="Message" model="bad1b827dc545dea" from="7b861d1566c35d1a" to="26fb5e6ef1de528e" y="1240" />
+        <ns0:Connector id="ef8e348fca435e29" name="stream SSE (assistant.delta)" shapeType="Message" model="09170609505a580d" from="26fb5e6ef1de528e" to="063d705e5c545e99" y="1272" />
+        <ns0:Connector id="3351bf8409165bcc" name="return (tool_call: GetAssignmentTool)" shapeType="Message" model="16b8eda9b5f3588c" from="1352bd45aff759e3" to="7b861d1566c35d1a" y="1304" />
+        <ns0:Connector id="1a4c347181fb508b" name="broadcast(tool.call)" shapeType="Message" model="b4e6aba654bc5bbd" from="7b861d1566c35d1a" to="26fb5e6ef1de528e" y="1336" />
+        <ns0:Connector id="2015995e4575562b" name="stream SSE (tool.call)" shapeType="Message" model="64c691426d235751" from="26fb5e6ef1de528e" to="063d705e5c545e99" y="1368" />
+        <ns0:Connector id="f04560c58cbe5f9d" name="call (executeTool)" shapeType="Message" model="739997204a48590d" from="7b861d1566c35d1a" to="672ee2946549556a" y="1400" />
+        <ns0:Connector id="bd1d1a8036a459c9" name="call Feign (getAssignment)" shapeType="Message" model="2b595344267b565a" from="672ee2946549556a" to="35e0535704485271" y="1432" />
+        <ns0:Connector id="79dd3f0ee83b5fdb" name="return (AssignmentDetailDto)" shapeType="Message" model="fe03a0c8d5ea5d38" from="35e0535704485271" to="672ee2946549556a" y="1464" />
+        <ns0:Connector id="aec69f74214557c1" name="return (ToolResult)" shapeType="Message" model="5e0e799073715769" from="672ee2946549556a" to="7b861d1566c35d1a" y="1496" />
+        <ns0:Connector id="78be12000b9f5505" name="broadcast(tool.result)" shapeType="Message" model="f54b0c20104d572f" from="7b861d1566c35d1a" to="26fb5e6ef1de528e" y="1528" />
+        <ns0:Connector id="4d1749a6c44252e1" name="stream SSE (tool.result)" shapeType="Message" model="49fd9d275bc95780" from="26fb5e6ef1de528e" to="063d705e5c545e99" y="1560" />
+        <ns0:Connector id="b8172a684ee752a3" name="feed tool result into context" shapeType="Message" model="7d26e92d8eb35247" from="7b861d1566c35d1a" to="1352bd45aff759e3" y="1592" />
+        <ns0:Connector id="9d1ca9ace2a05331" name="return (final completion text)" shapeType="Message" model="4a05a9deb7565e8a" from="1352bd45aff759e3" to="7b861d1566c35d1a" y="1624" />
+        <ns0:Connector id="8549fa7707b55776" name="return (completion)" shapeType="Message" model="416d513be1745995" from="7b861d1566c35d1a" to="c382b9f144eb5e67" y="1656" />
+        <ns0:Connector id="a06969833db7598a" name="call (save[role=assistant])" shapeType="Message" model="f1139b7f43ef56b2" from="c382b9f144eb5e67" to="9b5067822839541b" y="1688" />
+        <ns0:Connector id="3145e967c3a05256" name="return" shapeType="Message" model="06749d9b384256c4" from="9b5067822839541b" to="c382b9f144eb5e67" y="1720" />
+        <ns0:Connector id="db901b80092b519f" name="call (save[SUCCEEDED])" shapeType="Message" model="1ab4038ccbdf5fee" from="c382b9f144eb5e67" to="4a9da009c71956f1" y="1752" />
+        <ns0:Connector id="c1d83870042c594b" name="return" shapeType="Message" model="698725e997ff5844" from="4a9da009c71956f1" to="c382b9f144eb5e67" y="1784" />
+        <ns0:Connector id="ab80a841ec0a5022" name="broadcast(run.completed)" shapeType="Message" model="d6667518b645562f" from="c382b9f144eb5e67" to="26fb5e6ef1de528e" y="1816" />
+        <ns0:Connector id="74c441fabdf7515a" name="stream SSE (run.completed)" shapeType="Message" model="37a8b8ed9cf35a7f" from="26fb5e6ef1de528e" to="063d705e5c545e99" y="1848" />
+        <ns0:Connector id="ee0db7bf228a5521" name="complete(runId)" shapeType="Message" model="1c49c128f605503b" from="c382b9f144eb5e67" to="26fb5e6ef1de528e" y="1880" />
+        <ns0:Connector id="137e185d0a8250cf" name="display assistant response" shapeType="Message" model="3369086ce30f5d1f" from="063d705e5c545e99" to="713f3b79f8e456a1" y="1912" />
+      </ns0:Connectors>
+    </ns0:Diagram>
+    <ns0:Diagram id="6f6ab07ec54c5f7c" name="student-ai-explain-submission-sequence" diagramType="InteractionDiagram">
+      <ns0:Shapes>
+        <ns0:Shape id="18bbe8b8e79e5fcd" name="Student" shapeType="InteractionActor" model="611d669768955d7c" x="60" y="40" width="70" height="14" />
+        <ns0:Shape id="9a22c2efb40256be" name="SubmissionResultPage.tsx" shapeType="InteractionLifeLine" model="b196b6ad2cde58b4" x="190" y="40" width="216" height="14" />
+        <ns0:Shape id="c543f551c6c95f5b" name="API Gateway" shapeType="InteractionLifeLine" model="4ce4346c71e0592c" x="466" y="40" width="100" height="14" />
+        <ns0:Shape id="b720565f4a1956e2" name="AiExplanationController" shapeType="InteractionLifeLine" model="1fd5c5b553755f6f" x="626" y="40" width="207" height="14" />
+        <ns0:Shape id="d1951c31560c51c9" name="AiExplanationService" shapeType="InteractionLifeLine" model="b257609f11eb533d" x="893" y="40" width="180" height="14" />
+        <ns0:Shape id="44a07a4f2b0757f4" name="AiExplanationRepository" shapeType="InteractionLifeLine" model="9b6e6ca0f040518c" x="1133" y="40" width="207" height="14" />
+        <ns0:Shape id="d754dc48f2185861" name="ResultServiceClient" shapeType="InteractionLifeLine" model="fc3d7b2591235bad" x="1400" y="40" width="171" height="14" />
+        <ns0:Shape id="e91e05eda38d53fa" name="CourseServiceClient" shapeType="InteractionLifeLine" model="996c410d7e7f5fde" x="1631" y="40" width="171" height="14" />
+        <ns0:Shape id="e3b450cbc15b5ebb" name="PromptBuilder" shapeType="InteractionLifeLine" model="f75f191fd3e855ad" x="1862" y="40" width="117" height="14" />
+        <ns0:Shape id="261e09b4cf285e8e" name="ExplanationLlmClient" shapeType="InteractionLifeLine" model="09baf8b20baf5da4" x="2039" y="40" width="180" height="14" />
+        <ns0:Shape id="34b7b3d00723581d" name="AiExplanation" shapeType="InteractionLifeLine" model="c45fcb6ccf805111" x="2279" y="40" width="117" height="14" />
+      </ns0:Shapes>
+      <ns0:Connectors>
+        <ns0:Connector id="4c2eab98a08d5647" name="click request AI explanation" shapeType="Message" model="13ad05f8ba82592b" from="18bbe8b8e79e5fcd" to="9a22c2efb40256be" y="120" />
+        <ns0:Connector id="f692cebc31745d6f" name="call (POST /explain)" shapeType="Message" model="e2fe0bbe901e58ab" from="9a22c2efb40256be" to="c543f551c6c95f5b" y="152" />
+        <ns0:Connector id="c32c3671a91c5772" name="call (explainSubmission)" shapeType="Message" model="e9f51b6be9e95333" from="c543f551c6c95f5b" to="b720565f4a1956e2" y="184" />
+        <ns0:Connector id="57fee6064a475d12" name="explainSubmission()" shapeType="Message" model="2e63d637a3de5cc2" from="b720565f4a1956e2" to="b720565f4a1956e2" y="216" />
+        <ns0:Connector id="843a109b5f485eaf" name="call (explainSubmission)" shapeType="Message" model="c38325d789915b3c" from="b720565f4a1956e2" to="d1951c31560c51c9" y="248" />
+        <ns0:Connector id="9d3c3d21f90b50ff" name="explainSubmission()" shapeType="Message" model="b850b8dcd4e15f1f" from="d1951c31560c51c9" to="d1951c31560c51c9" y="280" />
+        <ns0:Connector id="558c77ea1c675743" name="call (findBySubmissionIdAndCategory)" shapeType="Message" model="85b1a0f949535007" from="d1951c31560c51c9" to="44a07a4f2b0757f4" y="312" />
+        <ns0:Connector id="b81259026cc7576d" name="return (empty - cache miss)" shapeType="Message" model="0216ecf0a7a55f47" from="44a07a4f2b0757f4" to="d1951c31560c51c9" y="344" />
+        <ns0:Connector id="bb4c9c78f22f523a" name="call (getBySubmissionId)" shapeType="Message" model="0b85b585830f582e" from="d1951c31560c51c9" to="d754dc48f2185861" y="376" />
+        <ns0:Connector id="f062aa995aad5536" name="return (List&lt;ResultDto&gt;)" shapeType="Message" model="d4a1251b3d225cef" from="d754dc48f2185861" to="d1951c31560c51c9" y="408" />
+        <ns0:Connector id="536c42b8320f548c" name="verifyOwner(studentId)" shapeType="Message" model="790be10e9fe5517b" from="d1951c31560c51c9" to="d1951c31560c51c9" y="440" />
+        <ns0:Connector id="a832cba629ff5d18" name="call (getAssignment)" shapeType="Message" model="9f9d73973f13504a" from="d1951c31560c51c9" to="e91e05eda38d53fa" y="472" />
+        <ns0:Connector id="d4118f8cc8ba53d3" name="return (AssignmentDetailDto)" shapeType="Message" model="3a33f2b9274c5f89" from="e91e05eda38d53fa" to="d1951c31560c51c9" y="504" />
+        <ns0:Connector id="033c4f226f0e535f" name="call (buildPrompts)" shapeType="Message" model="b756c72d7a235a4f" from="d1951c31560c51c9" to="e3b450cbc15b5ebb" y="536" />
+        <ns0:Connector id="1e9796379ad45c59" name="buildSystemPrompt()" shapeType="Message" model="8a41703386c559c8" from="e3b450cbc15b5ebb" to="e3b450cbc15b5ebb" y="568" />
+        <ns0:Connector id="3fbc629922e25cef" name="buildUserPrompt()" shapeType="Message" model="78d6bc46ea515ec8" from="e3b450cbc15b5ebb" to="e3b450cbc15b5ebb" y="600" />
+        <ns0:Connector id="7ddab1d647965b42" name="return (systemPrompt, userPrompt)" shapeType="Message" model="c17aa9ef5e5356f3" from="e3b450cbc15b5ebb" to="d1951c31560c51c9" y="632" />
+        <ns0:Connector id="5fb4f09286965ce3" name="call (generateEntity)" shapeType="Message" model="b3060d7949ca5e2c" from="d1951c31560c51c9" to="261e09b4cf285e8e" y="664" />
+        <ns0:Connector id="24157e41e40b57ae" name="generateEntity()" shapeType="Message" model="cd1d83295ea75b48" from="261e09b4cf285e8e" to="261e09b4cf285e8e" y="696" />
+        <ns0:Connector id="3ed842c33ae75dbc" name="return (AiExplanationResultDto)" shapeType="Message" model="65a6335e9a885400" from="261e09b4cf285e8e" to="d1951c31560c51c9" y="728" />
+        <ns0:Connector id="9d86eecbb8275c73" name="call (builder)" shapeType="Message" model="cad7dfcd6f575a63" from="d1951c31560c51c9" to="34b7b3d00723581d" y="760" />
+        <ns0:Connector id="68abeccdaa1750ac" name="return (entity)" shapeType="Message" model="fe20b1e2245d59ef" from="34b7b3d00723581d" to="d1951c31560c51c9" y="792" />
+        <ns0:Connector id="9181acf6a0435be4" name="call (save)" shapeType="Message" model="e886e7125ac85164" from="d1951c31560c51c9" to="44a07a4f2b0757f4" y="824" />
+        <ns0:Connector id="106723f460335b65" name="return (savedEntity)" shapeType="Message" model="43a48d6e64845bca" from="44a07a4f2b0757f4" to="d1951c31560c51c9" y="856" />
+        <ns0:Connector id="635103d0d40c5b62" name="return (AiExplanationResponse)" shapeType="Message" model="32cfcc8bfce35253" from="d1951c31560c51c9" to="b720565f4a1956e2" y="888" />
+        <ns0:Connector id="9068bbbe3ca95289" name="return (200 OK)" shapeType="Message" model="ea4d2b4e81b25281" from="b720565f4a1956e2" to="c543f551c6c95f5b" y="920" />
+        <ns0:Connector id="ecfffe4b244e58ad" name="return (AiExplanationResponse)" shapeType="Message" model="6fc441601f8851fa" from="c543f551c6c95f5b" to="9a22c2efb40256be" y="952" />
+        <ns0:Connector id="267ef976c3025237" name="display (AiExplanationCard)" shapeType="Message" model="7fdeac71df6a5eb0" from="9a22c2efb40256be" to="18bbe8b8e79e5fcd" y="984" />
+      </ns0:Connectors>
+    </ns0:Diagram>
+  </ns0:Diagrams>
+</ns0:Project>

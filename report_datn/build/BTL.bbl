@@ -127,7 +127,8 @@
     \strng{fullhash}{FRT1}
     \field{labelnamesource}{author}
     \field{labeltitlesource}{title}
-    \field{title}{Architectural Styles and the Design of Network-based Software Architectures}
+    \field{title}{Architectural Styles and the Design of Network-based Software
+  Architectures}
     \verb{url}
     \verb https://www.ics.uci.edu/~fielding/pubs/dissertation/top.htm
     \endverb
@@ -136,6 +137,48 @@
     }
     \field{type}{phdthesis}
     \field{year}{2000}
+  \endentry
+
+  \entry{brown2020gpt3}{article}{}{}
+    \true{moreauthor}
+    \true{morelabelname}
+    \name{author}{1}{}{%
+      {{hash=BTB}{%
+         family={Brown},
+         familyi={B\bibinitperiod},
+         given={Tom\bibnamedelima B.},
+         giveni={T\bibinitperiod\bibinitdelim B\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{BTB+1}
+    \strng{fullhash}{BTB+1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Language Models are Few-Shot Learners}
+    \verb{url}
+    \verb https://arxiv.org/abs/2005.14165
+    \endverb
+    \field{volume}{33}
+    \field{journaltitle}{Advances in Neural Information Processing Systems}
+    \field{year}{2020}
+  \endentry
+
+  \entry{springaidocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=V}{%
+         family={{VMware}},
+         familyi={V\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{V2}
+    \strng{fullhash}{V2}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Tool Calling in Spring AI}
+    \verb{url}
+    \verb https://docs.spring.io/spring-ai/reference/api/tools.html
+    \endverb
+    \field{year}{2026}
   \endentry
 
   \entry{postgresqldocs}{online}{}{}
@@ -748,6 +791,43 @@
     \field{title}{Vercel Documentation}
     \verb{url}
     \verb https://vercel.com/docs
+    \endverb
+    \field{year}{2026}
+  \endentry
+
+  \entry{oraclevirtualthreads}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=O}{%
+         family={{Oracle}},
+         familyi={O\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{O1}
+    \strng{fullhash}{O1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Virtual Threads}
+    \verb{url}
+    \verb https://docs.oracle.com/en/java/javase/21/core/virtual-threads.html
+    \endverb
+    \field{year}{2026}
+  \endentry
+
+  \entry{springmvcasync}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=V}{%
+         family={{VMware}},
+         familyi={V\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{V2}
+    \strng{fullhash}{V2}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Asynchronous Requests in Spring MVC}
+    \verb{url}
+    \verb https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-ann-
+    \verb async.html
     \endverb
     \field{year}{2026}
   \endentry
