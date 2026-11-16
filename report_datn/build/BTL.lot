@@ -9,27 +9,27 @@
 \contentsline {table}{\numberline {2.6}{\ignorespaces Kịch bản chức năng Quản lý bài tập.}}{21}{table.caption.20}%
 \contentsline {table}{\numberline {2.7}{\ignorespaces Kịch bản chức năng Quản lý bài tập (tiếp).}}{22}{table.caption.21}%
 \contentsline {table}{\numberline {2.8}{\ignorespaces Kịch bản chức năng Xem kết quả chấm của cả lớp.}}{23}{table.caption.23}%
-\contentsline {table}{\numberline {2.9}{\ignorespaces Kịch bản chức năng Nộp bài tập.}}{25}{table.caption.25}%
-\contentsline {table}{\numberline {2.10}{\ignorespaces Kịch bản chức năng Xem điểm và kết quả cá nhân.}}{26}{table.caption.27}%
-\contentsline {table}{\numberline {2.11}{\ignorespaces Kịch bản chức năng Xem kết quả chấm bài tập của bản thân.}}{27}{table.caption.29}%
-\contentsline {table}{\numberline {2.12}{\ignorespaces Kịch bản chức năng Giảng viên trò chuyện với trợ lý AI.}}{28}{table.caption.30}%
-\contentsline {table}{\numberline {2.13}{\ignorespaces Kịch bản chức năng Sinh viên trò chuyện với trợ lý AI.}}{29}{table.caption.31}%
-\contentsline {table}{\numberline {2.14}{\ignorespaces Phân rã hệ thống thành các miền chức năng.}}{35}{table.caption.33}%
-\contentsline {table}{\numberline {2.15}{\ignorespaces Các trạng thái của một công việc chấm bài.}}{55}{table.caption.58}%
+\contentsline {table}{\numberline {2.9}{\ignorespaces Kịch bản chức năng Giảng viên trò chuyện với trợ lý AI.}}{24}{table.caption.25}%
+\contentsline {table}{\numberline {2.10}{\ignorespaces Kịch bản chức năng Nộp bài tập.}}{26}{table.caption.27}%
+\contentsline {table}{\numberline {2.11}{\ignorespaces Kịch bản chức năng Xem điểm và kết quả cá nhân.}}{27}{table.caption.29}%
+\contentsline {table}{\numberline {2.12}{\ignorespaces Kịch bản chức năng Xem kết quả chấm bài tập của bản thân.}}{29}{table.caption.31}%
+\contentsline {table}{\numberline {2.13}{\ignorespaces Kịch bản chức năng Sinh viên trò chuyện với trợ lý AI.}}{30}{table.caption.33}%
+\contentsline {table}{\numberline {2.14}{\ignorespaces Phân rã hệ thống thành các miền chức năng.}}{36}{table.caption.35}%
+\contentsline {table}{\numberline {2.15}{\ignorespaces Các trạng thái của một công việc chấm bài.}}{60}{table.caption.56}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {3.1}{\ignorespaces Các thành phần chính của môi trường triển khai.}}{60}{table.caption.60}%
-\contentsline {table}{\numberline {3.2}{\ignorespaces Các giai đoạn của quy trình CI/CD.}}{63}{table.caption.62}%
-\contentsline {table}{\numberline {3.3}{\ignorespaces Các Secret cấu hình cho cụm triển khai.}}{65}{table.caption.63}%
-\contentsline {table}{\numberline {3.4}{\ignorespaces Kịch bản kiểm thử chức năng.}}{68}{table.caption.65}%
+\contentsline {table}{\numberline {3.1}{\ignorespaces Các thành phần chính của môi trường triển khai.}}{65}{table.caption.58}%
+\contentsline {table}{\numberline {3.2}{\ignorespaces Các giai đoạn của quy trình CI/CD.}}{68}{table.caption.60}%
+\contentsline {table}{\numberline {3.3}{\ignorespaces Các Secret cấu hình cho cụm triển khai.}}{70}{table.caption.61}%
+\contentsline {table}{\numberline {3.4}{\ignorespaces Kịch bản kiểm thử chức năng.}}{74}{table.caption.63}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {A.1}{\ignorespaces Các trường cơ bản của kế hoạch và bước chấm.}}{77}{table.caption.68}%
-\contentsline {table}{\numberline {A.2}{\ignorespaces Các trường thường dùng trong bước HTTP.}}{77}{table.caption.69}%
-\contentsline {table}{\numberline {A.3}{\ignorespaces Các loại assertion được hỗ trợ và ví dụ.}}{78}{table.caption.70}%
-\contentsline {table}{\numberline {A.4}{\ignorespaces Các loại bước kiểm thử cơ sở dữ liệu.}}{79}{table.caption.71}%
+\contentsline {table}{\numberline {A.1}{\ignorespaces Các trường cơ bản của kế hoạch và bước chấm.}}{83}{table.caption.66}%
+\contentsline {table}{\numberline {A.2}{\ignorespaces Các trường thường dùng trong bước HTTP.}}{83}{table.caption.67}%
+\contentsline {table}{\numberline {A.3}{\ignorespaces Các loại assertion được hỗ trợ và ví dụ.}}{84}{table.caption.68}%
+\contentsline {table}{\numberline {A.4}{\ignorespaces Các loại bước kiểm thử cơ sở dữ liệu.}}{85}{table.caption.69}%
 \addvspace {10\p@ }
-\contentsline {table}{\numberline {B.1}{\ignorespaces Phiên bản ngôn ngữ và công nghệ backend.}}{80}{table.caption.72}%
-\contentsline {table}{\numberline {B.2}{\ignorespaces Phiên bản các công nghệ chính của giao diện web.}}{81}{table.caption.73}%
-\contentsline {table}{\numberline {B.3}{\ignorespaces Phiên bản image của cơ sở dữ liệu và hạ tầng chạy.}}{82}{table.caption.74}%
-\contentsline {table}{\numberline {B.4}{\ignorespaces Tag image các dịch vụ backend được khai báo cho staging.}}{82}{table.caption.75}%
+\contentsline {table}{\numberline {B.1}{\ignorespaces Phiên bản ngôn ngữ và công nghệ backend.}}{86}{table.caption.70}%
+\contentsline {table}{\numberline {B.2}{\ignorespaces Phiên bản các công nghệ chính của giao diện web.}}{87}{table.caption.71}%
+\contentsline {table}{\numberline {B.3}{\ignorespaces Phiên bản image của cơ sở dữ liệu và hạ tầng chạy.}}{88}{table.caption.72}%
+\contentsline {table}{\numberline {B.4}{\ignorespaces Tag image các dịch vụ backend được khai báo cho staging.}}{88}{table.caption.73}%
 \contentsfinish 
 \contentsfinish 

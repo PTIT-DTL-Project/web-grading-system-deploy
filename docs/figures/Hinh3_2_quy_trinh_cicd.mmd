@@ -1,0 +1,51 @@
+flowchart LR
+    subgraph CI["GitHub Actions - Build and Test Services"]
+        direction TB
+        SRC["Mã nguồn backend<br/>Sáu dịch vụ"]
+        TRIGGER["Kích hoạt workflow build và kiểm thử<br/>Push thay đổi dịch vụ lên main, develop, nhánh feat<br/>hoặc pull request vào main / develop"]
+        FILTER["Lọc thay đổi theo đường dẫn<br/>của từng dịch vụ"]
+        MATRIX["Tạo ma trận build<br/>chỉ gồm dịch vụ thay đổi"]
+        TEST["JDK 21 và Maven<br/>Đóng gói JAR, chạy kiểm thử"]
+        ARTIFACT["Lưu artifact danh sách dịch vụ<br/>changed-services.json"]
+        EMPTY["Không có dịch vụ thay đổi<br/>Không tạo ma trận build"]
+        CI_RESULT["Workflow build hoàn tất"]
+
+        SRC --> TRIGGER --> FILTER --> MATRIX
+        FILTER --> ARTIFACT
+        MATRIX -->|Có thay đổi| TEST
+        MATRIX -->|Danh sách rỗng| EMPTY
+        TEST --> CI_RESULT
+        EMPTY --> CI_RESULT
+    end
+
+    subgraph PUBLISH["GitHub Actions - Publish Docker Images"]
+        direction TB
+        GATE["Điều kiện phát hành<br/>Workflow build hoàn tất thành công trên main"]
+        DOWNLOAD["Tải artifact<br/>Lấy danh sách dịch vụ cần phát hành"]
+        EMPTY_PUBLISH["Danh sách rỗng<br/>Bỏ qua phát hành và cập nhật cấu hình"]
+        VERSION["Tăng số patch từ tag gần nhất<br/>theo từng dịch vụ"]
+        RELEASE["Tạo GitHub Release<br/>đính kèm tệp JAR"]
+        IMAGE["Xây dựng và đẩy image lên Docker Hub<br/>Tag phiên bản và latest"]
+        CONFIG["Cập nhật image.tag trong values-stg.yaml<br/>Commit thay đổi vào kho cấu hình"]
+
+        GATE --> DOWNLOAD
+        DOWNLOAD -->|Có dịch vụ thay đổi| VERSION
+        DOWNLOAD -->|Danh sách rỗng| EMPTY_PUBLISH
+        VERSION --> RELEASE --> IMAGE --> CONFIG
+    end
+
+    CI_RESULT -->|Thành công trên main| GATE
+    CI_RESULT -->|Pull request, nhánh khác hoặc build lỗi| NO_RELEASE["Không phát hành image"]
+    ARTIFACT --> DOWNLOAD
+
+    subgraph GITOPS["Triển khai liên tục"]
+        direction TB
+        WATCH["ArgoCD theo dõi nhánh main<br/>của kho cấu hình"]
+        SYNC["Đọc Helm chart và values-stg.yaml<br/>so sánh trạng thái mong muốn với cụm"]
+        DEPLOY["Tự động đồng bộ<br/>prune và selfHeal"]
+        K3S["Cụm k3s<br/>Cập nhật Deployment và Pod trong web-grading"]
+
+        WATCH --> SYNC --> DEPLOY --> K3S
+    end
+
+    CONFIG -->|Commit cấu hình mới| WATCH

@@ -6,7 +6,7 @@ Chương này trình bày cách hệ thống được đóng gói, triển khai 
 \section{Triển khai hệ thống}
 \label{section:3.1}
 
-Mục này trình bày môi trường triển khai, cách đóng gói dịch vụ, quy trình đưa mã nguồn lên cụm và cơ chế bảo đảm nhất quán khi chấm bài.
+Mục này trình bày môi trường và kiến trúc triển khai, cách đóng gói dịch vụ, quy trình CI/CD và GitOps, các dịch vụ hạ tầng dùng chung, cùng kết quả triển khai. Thiết kế quy trình chấm và các cơ chế nhất quán đã được trình bày ở Chương 2; Chương này chỉ xem xét chúng qua các kịch bản đánh giá và những rủi ro vận hành còn lại.
 
 \subsection{Môi trường và kiến trúc triển khai}
 \label{section:3.1.1}
@@ -65,7 +65,7 @@ Phần lớn chart dùng điểm cuối /actuator/health cho readiness và liven
 \subsection{Tích hợp liên tục với GitHub Actions}
 \label{section:3.1.3}
 
-Mã nguồn backend nằm trong một kho mono-repo gồm sáu dịch vụ. Quy trình tích hợp liên tục dùng GitHub Actions~\cite{githubactionsdocs} với hai workflow: workflow thứ nhất build và kiểm thử, workflow thứ hai phát hành image và cập nhật cấu hình.
+Quy trình CI/CD cho sáu dịch vụ backend dùng GitHub Actions~\cite{githubactionsdocs} với hai workflow: workflow thứ nhất xây dựng và kiểm thử mã nguồn, workflow thứ hai phát hành image và cập nhật cấu hình.
 
 Workflow build chạy khi có push lên các nhánh main, develop hoặc nhánh có tên chứa feat, và khi có pull request vào main hoặc develop. Bước phát hiện thay đổi dùng dorny/paths-filter để xác định dịch vụ nào bị ảnh hưởng, sau đó tạo ma trận build chỉ gồm các dịch vụ đó. Mỗi job trong ma trận dùng JDK 21 Temurin, bật cache Maven, chạy mvn clean package -DskipTests để đóng gói nhanh, rồi chạy kiểm thử bằng Maven. Các lớp kiểm thử có tên kết thúc bằng ApplicationTests bị loại trừ vì chúng cần hạ tầng bên ngoài mới khởi động được; phần kiểm thử còn lại bao gồm các kiểm thử dùng Testcontainers cho PostgreSQL và MySQL. Danh sách dịch vụ thay đổi được lưu thành artifact changed-services.json để workflow phát hành sử dụng lại.
 
@@ -73,8 +73,8 @@ Workflow phát hành chạy sau khi workflow build hoàn tất trên nhánh main
 
 \begin{figure}[H]
 \centering
-% Bỏ comment dòng dưới sau khi có ảnh:
-% \includegraphics[width=\textwidth]{Hinhve/Hinh3_2_quy_trinh_cicd.png}
+% Sơ đồ nguồn Mermaid: Hinhve/Hinh3_2_quy_trinh_cicd.mmd
+\includegraphics[width=\textwidth]{Hinhve/gitops-cicd.png}
 \caption{Quy trình CI/CD từ mã nguồn đến cụm triển khai.}
 \label{fig:cicd}
 \end{figure}
@@ -152,8 +152,6 @@ Hệ thống triển khai hệ thống quan sát và giám sát tập trung trê
     \item \textbf{Tempo}: hệ thống lưu trữ và truy vấn traces (tracing). Tempo nhận dữ liệu theo giao thức OTLP qua cổng 4318 từ các dịch vụ Spring Boot, lưu trữ truy vết trong 24 giờ. Tempo cũng sinh RED metrics (tần suất span, thời gian phản hồi) và gửi về Prometheus để hiển thị trên Grafana.
 \end{itemize}
 
-Hệ thống không triển khai: Loki (nhật ký tập trung), Node Exporter (metrics máy chủ), kube-state-metrics (metrics cụm), Alertmanager (cảnh báo), hay Alloy (thu thập telemetry) nếu chưa triển khai.
-
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{Hinhve/Hinh3_2_he-thong-quan-sat.png}
@@ -209,7 +207,7 @@ Nộp bài & Tải tệp qua presigned URL, tệp đúng định dạng, tệp q
 Chấm tự động & Chấm bài hợp lệ, bài thiếu tệp, bài có bước bắt buộc thất bại, bài vượt thời gian, sự kiện chấm bị gửi trùng & Job đi qua đúng các trạng thái; kết quả và lỗi được lưu; không tạo job trùng; job lỗi có thể chấm lại \\ \hline
 Kết quả chấm & Xem kết quả của lớp, xem chi tiết một bài, xem kết quả của bản thân & Điểm và chi tiết từng bước đúng với dữ liệu chấm; sinh viên chỉ thấy kết quả của mình \\ \hline
 Trợ lý AI & Hỏi đáp về bài nộp, yêu cầu giải thích lỗi, mất kết nối tới nhà cung cấp mô hình & Câu trả lời có ngữ cảnh bài nộp; lỗi nhà cung cấp được báo lại và không làm hỏng dữ liệu hội thoại \\ \hline
-Grading Saga & Gửi trùng sự kiện, đặt lại job FAILED, job tồn đọng quá 30 phút, Pod bị xóa khi đang chấm & Không chấm trùng; job được đưa về hàng đợi hoặc yêu cầu xử lý thủ công; trạng thái cuối cùng được ghi nhận \\ \hline
+Độ tin cậy luồng chấm & Gửi trùng sự kiện, đặt lại job FAILED, job PENDING/FETCHING/BUILDING quá 30 phút, Pod bị xóa khi job RUNNING & Không tạo job trùng; job đủ điều kiện được đưa lại hàng đợi; job RUNNING cần được nhận diện để xử lý thủ công; kết quả có thể đối soát \\ \hline
 \end{tabularx}
 \caption{Kịch bản kiểm thử chức năng.}
 \label{tab:functional-tests}
@@ -235,7 +233,7 @@ Kiến trúc triển khai có một số ưu điểm rõ ràng. Việc tách m�
 
 Mô hình GitOps tạo ra một chuỗi truy vết đầy đủ từ commit mã nguồn đến image và commit cấu hình. Mọi thay đổi trạng thái mong muốn của cụm đều nằm trong Git, nên có thể xem lại lịch sử, so sánh hai phiên bản và quay lại phiên bản trước bằng một commit. Cơ chế selfHeal và prune giảm các sai lệch do thao tác thủ công, còn việc tách workflow build khỏi workflow phát hành giúp chỉ những commit đã vượt qua kiểm thử mới được tạo image phát hành.
 
-Luồng chấm bài bất đồng bộ giúp thao tác nộp bài không phải chờ kết quả chấm. Việc dùng chỉ mục duy nhất trên cột mã bài nộp, cơ chế đặt lại job và cơ chế quét job tồn đọng tạo thành ba lớp bảo vệ chống chấm trùng và chống kẹt job. Cách ghi saga theo từng bước cũng giúp xác định lỗi nằm ở bước tải tệp, dựng môi trường, chạy bước kiểm thử hay ghi kết quả, thay vì chỉ biết job thất bại.
+Luồng chấm bài bất đồng bộ giúp thao tác nộp bài không phải chờ kết quả chấm. Thiết kế các cơ chế theo dõi và phục hồi trạng thái được trình bày tại \hyperref[sec:grading-saga]{tiểu mục Nhất quán dữ liệu trong quy trình chấm bài với Grading Saga} ở Chương 2. Trong phạm vi đánh giá triển khai, các cơ chế này được xem xét qua kịch bản gửi sự kiện trùng, job tồn đọng và sự cố Pod; kết quả kiểm chứng chỉ được kết luận sau khi chạy và ghi nhận số liệu thực tế.
 
 Việc dùng các dịch vụ quản lý cho PostgreSQL và Kafka giảm công sức vận hành tầng dữ liệu, đồng thời cho phép tập trung vào phần tính toán và nghiệp vụ. Cách đóng gói image nhiều tầng, truyền cấu hình qua biến môi trường và dùng Helm values giúp cùng một image có thể chạy ở nhiều môi trường mà không phải sửa mã nguồn.
 
@@ -244,7 +242,7 @@ Việc dùng các dịch vụ quản lý cho PostgreSQL và Kafka giảm công s
 
 Bên cạnh các ưu điểm, môi trường triển khai còn một số hạn chế cần được xử lý trước khi vận hành chính thức.
 
-Thứ nhất, một số dịch vụ nội bộ như dịch vụ quản lý lớp học và điểm, dịch vụ nộp bài, dịch vụ kết quả chấm, dịch vụ thực thi chấm và dịch vụ trợ lý AI vẫn có Ingress riêng. Phần lớn các dịch vụ này kiểm tra khóa gateway ở tầng ứng dụng; riêng dịch vụ thực thi chấm chưa có kiểm tra này, nên điểm cuối đặt lại công việc có thể bị gọi trực tiếp nếu tên miền được biết. Việc mở thêm tên miền công khai làm tăng bề mặt tấn công và đi ngược mục tiêu chỉ có một điểm vào duy nhất. Khi vận hành chính thức, nên xóa các Ingress không cần thiết hoặc giới hạn chúng bằng chính sách mạng và Cloudflare Access; riêng dịch vụ thực thi chấm cần được bảo vệ bằng khóa gateway trước khi giữ lại Ingress.
+Thứ nhất, một số dịch vụ nội bộ vẫn có Ingress riêng để phục vụ kiểm thử. Cấu hình này cho phép truy cập trực tiếp từ Internet thay vì đi qua API Gateway, làm tăng nguy cơ truy cập không được kiểm soát. Trước khi vận hành chính thức, cần gỡ các Ingress này hoặc giới hạn quyền truy cập.
 
 Thứ hai, Keycloak đang chạy ở chế độ start-dev và giao diện quản trị được mở công khai. Chế độ này thuận tiện cho phát triển nhưng không phù hợp với môi trường thật vì giảm các kiểm tra bảo mật và không tối ưu hiệu năng. Cần chuyển sang chế độ vận hành chính thức, đổi tài khoản quản trị mặc định và giới hạn đường dẫn /admin bằng Cloudflare Access hoặc quy tắc tường lửa ứng dụng web (WAF).
 
@@ -280,7 +278,7 @@ Về kiểm thử, cần hoàn thiện bộ kiểm thử đầu-cuối cho tất
 
 Chương này đã trình bày cách hệ thống được đóng gói và triển khai: giao diện trên Vercel, backend trên cụm k3s, PostgreSQL và Kafka dưới dạng dịch vụ quản lý, RustFS và Keycloak trong cụm. Hệ thống dùng Docker để đóng gói, Helm để mô tả tài nguyên, GitHub Actions để build và phát hành, ArgoCD để đồng bộ theo GitOps, và các Secret của Kubernetes để tách cấu hình nhạy cảm khỏi mã nguồn.
 
-Chương cũng đã trình bày cơ chế Grading Saga để theo dõi quy trình chấm nhiều bước, chống chấm trùng bằng chỉ mục duy nhất trên cột mã bài nộp, đặt lại job khi cần và quét job tồn đọng. Các cơ chế này không thay thế một giao dịch phân tán, nhưng bảo đảm mỗi bài nộp có trạng thái cuối cùng rõ ràng và có dấu vết để điều tra khi một bước gặp lỗi.
+Thiết kế quy trình chấm và các cơ chế nhất quán được trình bày ở Chương 2; Chương này tập trung vào việc triển khai các thành phần liên quan, cách đánh giá chúng và những giới hạn còn tồn tại trong môi trường hiện tại.
 
 Phần đánh giá đã xác định các tiêu chí, kịch bản kiểm thử chức năng, hiệu năng và độ tin cậy, đồng thời chỉ ra các hạn chế về bề mặt tấn công, chế độ chạy của Keycloak, mức cách ly của Docker-in-Docker, tính nhất quán khi ghi kết quả, giới hạn của một topic Kafka, cấu hình RustFS và mức độ sẵn sàng của cụm. Các hướng phát triển tương ứng đã được nêu để tiếp tục hoàn thiện hệ thống trước khi đưa vào vận hành chính thức.
 

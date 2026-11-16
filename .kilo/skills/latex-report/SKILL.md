@@ -96,6 +96,27 @@ PNGs live in `report_datn/Hinhve/`, named `Hinh2_<n>_<slug>.png`
 (e.g. `Hinh2_5_lua_ng_pkce.png`), included at `width=\textwidth` with
 `\label{fig:<slug>}`. Graphviz `dot` is available for regenerating
 flowcharts; keep node font sizes so text stays legible at text width.
+Before diagnosing page whitespace, inspect the source image dimensions and
+content bounds: internal white margins can make a centered figure look
+undersized or low on the page. When updating a diagram, inspect the latest
+MR/branch commit for revised phase-specific source images first; update both
+the report asset and its figure reference instead of merely enlarging an
+obsolete diagram. When confirmed, crop only at inclusion with
+`trim=<left> <bottom> <right> <top>,clip` (do not alter the source asset),
+or set a deliberate width for a small diagram so labels remain readable.
+Do not rotate a whole page just because an image is landscape-oriented;
+first test it on a portrait page at `\\textwidth`. Reserve landscape pages
+for genuinely wide diagrams (such as sequence diagrams) when a rendered
+preview shows the portrait layout is not legible. For a landscape figure,
+place the image and caption directly in the `landscape` environment with
+`\\captionof{figure}` instead of a float such as `figure[H]`, which can leave
+an empty rotated page before the figure. Scope `\\pagestyle{empty}` to that
+page so portrait running headers and footers do not print sideways, size the
+image to leave room for its caption, and inspect the rendered pages before
+keeping the rotation.
+For long glossary `longtable`s that spill only a few rows onto a final page,
+use `\singlespacing` locally before the table and restore `\onehalfspacing`
+after `\end{longtable}`; verify it still fits the text block.
 
 ## Use-case diagrams and descriptions (Chapter 2)
 
@@ -107,11 +128,13 @@ này cho phép <tác nhân> ...`). 2.1.3 `Kịch bản các chức năng` carrie
 the detail material, grouped by actor in `\subsubsection`s: (a) chung
 (Đăng nhập, Đổi mật khẩu), (b) quản trị viên (Nhập danh sách tài
 khoản), (c) giảng viên (Quản lý lớp học, Quản lý bài tập, Xem kết quả
-chấm của cả lớp), (d) sinh viên (Nộp bài tập, Xem điểm và kết quả cá
-nhân, Xem kết quả chấm bài tập của bản thân). Inside a group each
-function starts directly with its lead sentence (`Bảng … mô tả kịch
-bản …` / `Hình … mô tả chi tiết …`), then its detail figure where a
-diagram exists, then the scenario table. Never mark a function with a
+chấm của cả lớp, Giảng viên trò chuyện với trợ lý AI), (d) sinh viên
+(Nộp bài tập, Xem điểm và kết quả cá nhân, Xem kết quả chấm bài tập
+của bản thân, Sinh viên trò chuyện với trợ lý AI). Keep actor-specific
+AI chat scenarios in their matching actor subsection. Inside a group
+each function starts directly with its lead sentence (`Bảng … mô tả
+kịch bản …` / `Hình … mô tả chi tiết …`), then its detail figure where
+a diagram exists, then the scenario table. Never mark a function with a
 `\paragraph{Chức năng <Tên>.}` run-in heading (removed on request).
 Never list sub-usecases as text bullets: the decomposition lives only
 in the detail diagram. `Xem chi tiết kết quả chấm một bài tập` gets no
@@ -156,6 +179,8 @@ own number and `\label{tab:uc-<slug>-2}`, and its caption ends with
 `(tiếp)`. Do NOT use `\ContinuedFloat`: the `caption` package appends an
 English "(continued)" to the Vietnamese caption. Update the lead-in
 sentence to cite both labels.
+
+For a page with a fixed `[H]` figure that leaves a large vertical gap because of `\flushbottom`, use `\raggedbottom` locally before the lead-in and schedule `\afterpage{\flushbottom}` after the figure; inspect the rendered page to ensure the setting is restored and subsequent pages are unaffected. Do not use a fixed negative `\vspace` to pull the image upward.
 
 Content must be grounded in `docs/design/usecase-flows.md`
 (real preconditions, statuses, error cases) — never invented. Float
@@ -322,21 +347,21 @@ Ví dụ sai (đã sửa):
 
 ## Chương 3 (triển khai và đánh giá)
 
-Chương 3 hiện tạm bỏ phần giám sát và quan sát hệ thống (Prometheus,
-Grafana, Loki, Tempo, Pyroscope): không dựng mục, hình hay screenshot
-Grafana và không cite các tài liệu observability; chỉ nhắc lại như một
-hướng phát triển. Nội dung giữ lại: k3s + Cloudflare Tunnel/Traefik,
-đóng gói Docker/Helm, GitHub Actions, ArgoCD GitOps, PostgreSQL
-(DB-per-service, dịch vụ quản lý), Kafka Aiven (SASL\_SSL/SCRAM, topic
-`wgs-events`), RustFS, Keycloak; hình `Hinh3_1_kien_truc_trien_khai`
-(`fig:deployment`) và `Hinh3_2_quy_trinh_cicd` (`fig:cicd`).
+Mục 3.1 trình bày môi trường và kiến trúc triển khai, đóng gói Docker/Helm,
+GitHub Actions, ArgoCD GitOps, hạ tầng PostgreSQL/Kafka, RustFS, Keycloak
+và các thành phần observability đã triển khai thực tế. Prometheus thu thập
+metrics từ `/actuator/prometheus` mỗi 30 giây, lưu 3 ngày; Grafana dùng
+Prometheus và Tempo; Tempo nhận OTLP qua cổng 4318, lưu trace 24 giờ và
+đẩy RED metrics về Prometheus. Mục triển khai chỉ mô tả thành phần đã có;
+không liệt kê thành phần chưa triển khai nếu đã nêu ở Hướng phát triển.
+Hình kiến trúc triển khai dùng `fig:deployment` và CI/CD dùng `fig:cicd`.
 
-Mục 3.1.6 giữ Grading Saga: trạng thái job `PENDING/FETCHING/BUILDING/
-RUNNING/DONE/FAILED`, bảng job/saga/bước, chỉ mục duy nhất trên cột mã
-bài nộp, gửi kết quả tối đa 3 lần, reset chỉ khi `FAILED`, reaper 5
-phút/30 phút/tối đa 3 lần và không quét `RUNNING`. Mục 3.2 chỉ nêu tiêu
-chí và kịch bản; không bịa kết quả kiểm thử/hiệu năng, chờ `% TODO` sau
-khi chạy. Prometheus/Grafana/Loki/Tempo/Pyroscope chỉ xuất hiện ở 3.3.
+Thiết kế quy trình chấm, Grading Saga, chống trùng và phục hồi trạng thái
+thuộc Chương 2 (`sec:grading-saga`). Mục 3.1 không lặp lại cơ chế này;
+Mục 3.2 có thể nêu kịch bản đánh giá và hạn chế vận hành, nhưng không
+khẳng định kịch bản đã chạy hoặc bịa kết quả khi chưa có số liệu thực tế.
+
+Khi viết hạn chế và rủi ro, tách rõ hiện trạng, đường khai thác hoặc ảnh hưởng cụ thể, rồi đến khuyến nghị khắc phục. Tránh gộp nhiều luận điểm vào một câu hoặc trình bày khuyến nghị như thể đó là hiện trạng đã triển khai.
 
 ## Unnumbered preface in TOC before Chapter 1
 
@@ -475,3 +500,20 @@ punctuation in prose.
 Keep `--` only where a tool or language requires it: BibTeX page
 ranges in `.bib`, CLI flags (`--include`, `--fill`), YAML front
 matter, code blocks, and command examples.
+
+## Proofread technical Vietnamese prose
+
+Before finalizing technical prose, read the rendered PDF for accidental
+foreign-language words, missing spaces around punctuation, and joined
+tokens (especially around colons and inline code). Keep literal syntax
+unchanged, but separate explanatory placeholders clearly from adjacent
+text; verify sentences describing implementation behavior against the
+source rather than relying on outdated prose. Avoid introducing technical
+labels or architecture jargon (for example, `monorepo`) when they add no
+useful information; if a term is necessary, explain it at first use.
+
+For hand-authored report diagrams requested in Mermaid, keep the `.mmd`
+source in `report_datn/Hinhve/` beside the corresponding PNG path, using
+the same filename stem. If the user will export the PNG, do not generate a
+placeholder image; keep the figure caption/label and a commented
+`\\includegraphics` line with the intended output path.

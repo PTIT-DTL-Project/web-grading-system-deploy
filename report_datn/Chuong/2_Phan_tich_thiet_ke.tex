@@ -138,7 +138,7 @@ Hình \ref{fig:uc-classes-management} mô tả chi tiết usecase Quản lý l�
 
 \begin{figure}[H]
 \centering
-\includegraphics[max width=\textwidth]{Hinhve/Hinh2_7_usecase_quan_ly_lop_hoc.png}
+\includegraphics[max width=\textwidth]{Hinhve/lecturer-class-management-uc.jpg}
 \caption{Biểu đồ usecase chi tiết Quản lý lớp học của giảng viên.}
 \label{fig:uc-classes-management}
 \end{figure}
@@ -274,7 +274,7 @@ Hình \ref{fig:uc-review-class-results} mô tả chi tiết usecase Xem kết qu
 
 \begin{figure}[H]
 \centering
-\includegraphics[max width=\textwidth]{Hinhve/Hinh2_9_usecase_xem_ket_qua_lop.png}
+\includegraphics[max width=\textwidth]{Hinhve/lecturer-review-class-assignment-uc.jpg}
 \caption{Biểu đồ usecase chi tiết Xem kết quả chấm của cả lớp dành cho giảng viên.}
 \label{fig:uc-review-class-results}
 \end{figure}
@@ -310,17 +310,55 @@ Kịch bản ngoại lệ &
 \label{tab:uc-review-class-results}
 \end{table}
 
+Hình \ref{fig:uc-lecturer-chat-ai} mô tả chi tiết usecase Giảng viên trò chuyện với trợ lý AI. Kịch bản của chức năng được trình bày trong Bảng \ref{tab:uc-lecturer-chat-ai}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[max width=\textwidth]{Hinhve/lecturer-ai-assistant-uc.jpg}
+\caption{Biểu đồ usecase chi tiết Giảng viên trò chuyện với trợ lý AI.}
+\label{fig:uc-lecturer-chat-ai}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
+\hline
+Tên mục & Nội dung mô tả \\ \hline
+Tên kịch bản & Giảng viên trò chuyện với trợ lý AI \\ \hline
+Tác nhân & Giảng viên \\ \hline
+Tiền điều kiện & Giảng viên đã đăng nhập vào hệ thống. \\ \hline
+Hậu điều kiện & Hệ thống lưu lại lịch sử trò chuyện giữa giảng viên và trợ lý AI. \\ \hline
+Kịch bản chính &
+\begin{enumerate}[leftmargin=*, nosep]
+    \item Giảng viên mở giao diện trò chuyện với trợ lý AI.
+    \item Hệ thống hiển thị giao diện chat trống, sẵn sàng nhận câu hỏi.
+    \item Giảng viên nhập câu hỏi liên quan đến bài tập, hệ thống chấm điểm hoặc hệ thống.
+    \item Hệ thống hiển thị câu trả lời của trợ lý AI cho giảng viên xem.
+    \item Giảng viên có thể tiếp tục đặt câu hỏi bổ sung hoặc kết thúc cuộc trò chuyện.
+\end{enumerate} \\ \hline
+Kịch bản ngoại lệ &
+\begin{itemize}[leftmargin=*, nosep]
+    \item Hệ thống không phản hồi: trợ lý AI không phản hồi trong thời gian quy định; hệ thống thông báo lỗi và gợi ý giảng viên thử lại sau.
+    \item Câu hỏi không liên quan: trợ lý AI trả lời rằng không thể hỗ trợ câu hỏi này và gợi ý các chủ đề liên quan đến hệ thống chấm bài.
+\end{itemize} \\ \hline
+\end{tabularx}
+\caption{Kịch bản chức năng Giảng viên trò chuyện với trợ lý AI.}
+\label{tab:uc-lecturer-chat-ai}
+\end{table}
+
 \subsubsection{Kịch bản các chức năng của sinh viên}
 
 
+\raggedbottom
 Hình \ref{fig:uc-submit-assignment} mô tả chi tiết usecase Nộp bài tập của sinh viên. Kịch bản của chức năng được trình bày trong Bảng \ref{tab:uc-submit-assignments}.
 
 \begin{figure}[H]
 \centering
-\includegraphics[max width=\textwidth]{Hinhve/Hinh2_10_usecase_nop_bai.png}
+\includegraphics[max width=\textwidth]{Hinhve/student-submit-assignment-uc.jpg}
 \caption{Biểu đồ usecase chi tiết Nộp bài tập của sinh viên.}
 \label{fig:uc-submit-assignment}
 \end{figure}
+\afterpage{\flushbottom}
 
 \begin{table}[H]
 \centering
@@ -358,7 +396,7 @@ Hình \ref{fig:uc-view-scores} mô tả chi tiết usecase Xem điểm và kết
 
 \begin{figure}[H]
 \centering
-\includegraphics[max width=\textwidth]{Hinhve/Hinh2_11_usecase_xem_diem_ca_nhan.png}
+\includegraphics[max width=\textwidth]{Hinhve/student-view-scores-result-uc.jpg}
 \caption{Biểu đồ usecase chi tiết Xem điểm và kết quả cá nhân của sinh viên.}
 \label{fig:uc-view-scores}
 \end{figure}
@@ -395,7 +433,7 @@ Hình \ref{fig:uc-review-own-results} mô tả chi tiết usecase Xem kết qu�
 
 \begin{figure}[H]
 \centering
-\includegraphics[max width=\textwidth]{Hinhve/Hinh2_12_usecase_xem_ket_qua_bai_nop.png}
+\includegraphics[max width=\textwidth]{Hinhve/student-review-assignment-result-uc.jpg}
 \caption{Biểu đồ usecase chi tiết Xem kết quả chấm bài tập của bản thân dành cho sinh viên.}
 \label{fig:uc-review-own-results}
 \end{figure}
@@ -430,32 +468,14 @@ Kịch bản ngoại lệ &
 
 
 
-\begin{table}[H]
+Hình \ref{fig:uc-student-chat-ai} mô tả chi tiết usecase Sinh viên trò chuyện với trợ lý AI. Kịch bản của chức năng được trình bày trong Bảng \ref{tab:uc-student-chat-ai}.
+
+\begin{figure}[H]
 \centering
-\begin{tabularx}{\textwidth}{|p{3.2cm}|X|}
-\hline
-Tên mục & Nội dung mô tả \\ \hline
-Tên kịch bản & Giảng viên trò chuyện với trợ lý AI \\ \hline
-Tác nhân & Giảng viên \\ \hline
-Tiền điều kiện & Giảng viên đã đăng nhập vào hệ thống. \\ \hline
-Hậu điều kiện & Hệ thống lưu lại lịch sử trò chuyện giữa giảng viên và trợ lý AI. \\ \hline
-Kịch bản chính &
-\begin{enumerate}[leftmargin=*, nosep]
-    \item Giảng viên mở giao diện trò chuyện với trợ lý AI.
-    \item Hệ thống hiển thị giao diện chat trống, sẵn sàng nhận câu hỏi.
-    \item Giảng viên nhập câu hỏi liên quan đến bài tập, hệ thống chấm điểm hoặc hệ thống.
-    \item Hệ thống hiển thị câu trả lời của trợ lý AI cho giảng viên xem.
-    \item Giảng viên có thể tiếp tục đặt câu hỏi bổ sung hoặc kết thúc cuộc trò chuyện.
-\end{enumerate} \\ \hline
-Kịch bản ngoại lệ &
-\begin{itemize}[leftmargin=*, nosep]
-    \item Hệ thống không phản hồi: trợ lý AI không phản hồi trong thời gian quy định; hệ thống thông báo lỗi và gợi ý giảng viên thử lại sau.
-    \item Câu hỏi không liên quan: trợ lý AI trả lời rằng không thể hỗ trợ câu hỏi này và gợi ý các chủ đề liên quan đến hệ thống chấm bài.
-\end{itemize} \\ \hline
-\end{tabularx}
-\caption{Kịch bản chức năng Giảng viên trò chuyện với trợ lý AI.}
-\label{tab:uc-lecturer-chat-ai}
-\end{table}
+\includegraphics[max width=\textwidth]{Hinhve/student-ai-assistant-uc.jpg}
+\caption{Biểu đồ usecase chi tiết Sinh viên trò chuyện với trợ lý AI.}
+\label{fig:uc-student-chat-ai}
+\end{figure}
 
 \begin{table}[H]
 \centering
@@ -634,7 +654,7 @@ Miền Xác thực và phân quyền gồm Người dùng (User), Vai trò (Role
 
 \begin{figure}[H]
 \centering
-\includegraphics[max width=\textwidth]{Hinhve/Hinh2_14_class_auth.png}
+\includegraphics[trim=1.24cm 0.08cm 0.08cm 3.33cm,clip,width=\textwidth]{Hinhve/Hinh2_14_class_auth.png}
 \caption{Biểu đồ lớp pha phân tích miền Xác thực và phân quyền.}
 \label{fig:class-auth}
 \end{figure}
@@ -656,7 +676,7 @@ Các lớp thuộc dịch vụ nộp bài gồm Bài nộp (Submission) và thô
 
 \begin{figure}[H]
 \centering
-\includegraphics[max width=\textwidth]{Hinhve/Hinh2_16_class_submission.png}
+\includegraphics[width=0.35\textwidth]{Hinhve/Hinh2_16_class_submission.png}
 \caption{Biểu đồ lớp pha phân tích dịch vụ nộp bài.}
 \label{fig:class-submission}
 \end{figure}
@@ -685,11 +705,11 @@ Các lớp thuộc dịch vụ kết quả chấm gồm Kết quả chấm (Resu
 
 \subsubsection{Biểu đồ lớp pha phân tích dịch vụ trợ lý AI}
 
-Các lớp thuộc dịch vụ trợ lý AI gồm Giải thích của trợ lý AI (AiExplanation) cùng thông tin bài nộp và danh mục được giải thích.
+Các lớp thuộc dịch vụ trợ lý AI gồm Cuộc hội thoại (Conversation), Tin nhắn (Message), Tóm tắt hội thoại (ConversationSummary), Tác vụ (Task), Thao tác (Operation), Phiên chạy (Run), Sự kiện chạy (RunEvent), Lần thực thi công cụ (ToolExecution), Hành động chờ người dùng (PendingAction), Kết quả công cụ đã lưu (StoredToolResult) và Giải thích của trợ lý AI (AiExplanation).
 
 \begin{figure}[H]
 \centering
-\includegraphics[max width=\textwidth]{Hinhve/Hinh2_19_class_ai.png}
+\includegraphics[max width=\textwidth,max height=0.72\textheight,keepaspectratio]{Hinhve/Hinh2_19_class_ai.jpg}
 \caption{Biểu đồ lớp pha phân tích dịch vụ trợ lý AI.}
 \label{fig:class-ai}
 \end{figure}
@@ -699,16 +719,15 @@ Các lớp thuộc dịch vụ trợ lý AI gồm Giải thích của trợ lý 
 \section{Thiết kế hệ thống}
 \subsection{Biểu đồ lớp thiết kế toàn hệ thống}
 
-Biểu đồ dưới đây mô tả toàn bộ các lớp thực thể được thiết kế của hệ thống
+Biểu đồ dưới đây mô tả toàn bộ các lớp thực thể được thiết kế của hệ thống.
 
+% Review: 2026-11-16, user feedback: keep the entity-class diagram distinct from the system architecture figure.
 \begin{figure}[H]
 \centering
-\includegraphics[max width=\textwidth]{Hinhve/Hinh2_31_kien_truc_tong_the.png}
-\caption{Kiến trúc tổng thể của hệ thống.}
+\includegraphics[max width=\textwidth]{Hinhve/Hinh2_29_class_diagram_system.png}
+\caption{Biểu đồ lớp thực thể thiết kế của hệ thống.}
 \label{fig:he-thong-toan-bo}
 \end{figure}
-
-Hệ thống được tổ chức theo mô hình Client-Server: phía client đảm nhiệm tương tác với người dùng, phía server xử lý nghiệp vụ, quản lý dữ liệu và cung cấp dịch vụ. Cách tổ chức này tách biệt giao diện khỏi xử lý nghiệp vụ, thuận lợi cho phát triển, triển khai và mở rộng từng phần độc lập.
 
 \subsection{Biểu đồ lớp thiết kế chi tiết từng dịch vụ}
 
@@ -777,7 +796,7 @@ Dịch vụ trợ lý AI quản lý hội thoại, giải thích và gợi ý h�
 
 \begin{figure}[H]
 \centering
-\includegraphics[max width=\textwidth]{Hinhve/Hinh2_35_class_ai_service.png}
+\includegraphics[max width=\textwidth,max height=0.72\textheight,keepaspectratio]{Hinhve/Hinh2_35_class_ai_service.jpg}
 \caption{Biểu đồ lớp thiết kế dịch vụ Trợ lý AI.}
 \label{fig:class-ai-service}
 \end{figure}
@@ -854,54 +873,66 @@ Hình \ref{fig:seq-quan-ly-bai-tap} mô tả luồng xử lý khi giảng viên 
 
 Hình \ref{fig:seq-xem-ket-qua-lop} mô tả luồng xử lý khi giảng viên xem kết quả chấm bài tập của toàn bộ sinh viên trong lớp.
 
-\begin{figure}[H]
+\begingroup
+\pagestyle{empty}
+\begin{landscape}
 \centering
-\includegraphics[max width=\textwidth]{Hinhve/Hinh2_24_seq_xem_ket_qua_lop.png}
-\caption{Sơ đồ tuần tự chức năng Xem kết quả chấm của cả lớp.}
+\includegraphics[width=0.90\paperheight,height=0.58\paperwidth,keepaspectratio]{Hinhve/Hinh2_24_seq_xem_ket_qua_lop.png}
+\captionof{figure}{Sơ đồ tuần tự chức năng Xem kết quả chấm của cả lớp.}
 \label{fig:seq-xem-ket-qua-lop}
-\end{figure}
+\end{landscape}
+\endgroup
 
 \subsubsection{Nộp bài tập}
 
 Hình \ref{fig:seq-nop-bai} mô tả luồng xử lý khi sinh viên nộp bài tập thực hành.
 
-\begin{figure}[H]
+\begingroup
+\pagestyle{empty}
+\begin{landscape}
 \centering
-\includegraphics[max width=\textwidth]{Hinhve/Hinh2_25_seq_nop_bai.png}
-\caption{Sơ đồ tuần tự chức năng Nộp bài tập.}
+\includegraphics[width=0.90\paperheight,height=0.58\paperwidth,keepaspectratio]{Hinhve/Hinh2_25_seq_nop_bai.png}
+\captionof{figure}{Sơ đồ tuần tự chức năng Nộp bài tập.}
 \label{fig:seq-nop-bai}
-\end{figure}
+\end{landscape}
+\endgroup
 
 \subsubsection{Xem kết quả chấm bài tập của bản thân}
 
 Hình \ref{fig:seq-xem-ket-qua-cua-than} mô tả luồng xử lý khi sinh viên xem kết quả chấm của bài nộp mình đã gửi.
 
-\begin{figure}[H]
+\begingroup
+\pagestyle{empty}
+\begin{landscape}
 \centering
-\includegraphics[max width=\textwidth]{Hinhve/Hinh2_26_seq_xem_ket_qua_cua_than.png}
-\caption{Sơ đồ tuần tự chức năng Xem kết quả chấm bài tập của bản thân.}
+\includegraphics[width=0.90\paperheight,height=0.58\paperwidth,keepaspectratio]{Hinhve/Hinh2_26_seq_xem_ket_qua_cua_than.png}
+\captionof{figure}{Sơ đồ tuần tự chức năng Xem kết quả chấm bài tập của bản thân.}
 \label{fig:seq-xem-ket-qua-cua-than}
-\end{figure}
+\end{landscape}
+\endgroup
 
 \subsubsection{Xem điểm và kết quả cá nhân}
 
 Hình \ref{fig:seq-xem-diem-ca-nhan} mô tả luồng xử lý khi sinh viên xem điểm thành phần, điểm tổng kết và bảng điểm của mình trong lớp.
 
-\begin{figure}[H]
+\begingroup
+\pagestyle{empty}
+\begin{landscape}
 \centering
-\includegraphics[max width=\textwidth]{Hinhve/Hinh2_27_seq_xem_diem_ca_nhan.png}
-\caption{Sơ đồ tuần tự chức năng Xem điểm và kết quả cá nhân.}
+\includegraphics[width=0.90\paperheight,height=0.58\paperwidth,keepaspectratio]{Hinhve/Hinh2_27_seq_xem_diem_ca_nhan.png}
+\captionof{figure}{Sơ đồ tuần tự chức năng Xem điểm và kết quả cá nhân.}
 \label{fig:seq-xem-diem-ca-nhan}
-\end{figure}
+\end{landscape}
+\endgroup
 
 \subsection{Kiến trúc hệ thống}
 
 Hình \ref{fig:architecture} mô tả kiến trúc tổng thể của hệ thống. Hệ thống được tổ chức theo mô hình Client - Server: phía client đảm nhiệm tương tác với người dùng, phía server xử lý nghiệp vụ, quản lý dữ liệu và cung cấp dịch vụ. Cách tổ chức này tách biệt giao diện khỏi xử lý nghiệp vụ, thuận lợi cho phát triển, triển khai và mở rộng từng phần độc lập.
 
+% Review: 2026-11-16, user feedback: this architecture caption must reference the architecture diagram, not the class diagram.
 \begin{figure}[H]
 \centering
-% Bỏ comment dòng dưới sau khi có ảnh:
-\includegraphics[max width=\textwidth]{Hinhve/Hinh2_29_class_diagram_system.png}
+\includegraphics[max width=\textwidth]{Hinhve/Hinh2_31_kien_truc_tong_the.png}
 \caption{Kiến trúc tổng thể của hệ thống.}
 \label{fig:architecture}
 \end{figure}
@@ -951,6 +982,7 @@ Luồng chấm bài tự động được thiết kế để đảm bảo tính 
 \end{enumerate}
 
 \subsubsection{Nhất quán dữ liệu trong quy trình chấm bài với Grading Saga}
+\label{sec:grading-saga}
 
 Chấm bài không phải là một giao dịch ngắn. Một bài nộp phải trải qua nhiều bước: lấy cấu hình bài tập, tải tệp từ RustFS, dựng môi trường Docker, chạy từng bước kiểm thử, tính điểm và ghi kết quả sang dịch vụ kết quả. Các tài nguyên này nằm ở nhiều hệ thống khác nhau (cơ sở dữ liệu của dịch vụ thực thi, RustFS, Docker daemon và các dịch vụ khác), không thể bọc toàn bộ quy trình trong một giao dịch ACID. Khi một bước lỗi, hệ thống cần biết bài nộp đang ở bước nào, đã làm gì, có thể chấm lại hay không và làm sao tránh chấm trùng khi Kafka giao lại sự kiện. Đồ án áp dụng mẫu Saga~\cite{newman2021building} để theo dõi tiến trình chấm, gọi là Grading Saga.
 
@@ -1015,9 +1047,9 @@ Trong đó các bước \textnormal{SKIPPED} không tính vào tử số và m�
 
 \begin{enumerate}
 \item \emph{Cấp cổng riêng:} \textnormal{PortAllocator} cấp một cổng riêng cho ứng dụng sinh viên và một cổng riêng cho cơ sở dữ liệu (nếu có), tránh xung đột giữa các công việc chấm chạy song song trên cùng một nút.
-\item \emph{Khởi động Docker Compose:} executor đọc mẫu \textnormal{dockerComposeTemplate} của bài tập, viết lại cản ánh xạ cổng thành \textnormal{cổng được cấp}:\textnormal{cổng trong compose}, inject giới hạn CPU/RAM, rồi khởi động container. Mẫu compose tối thiểu phải khai báo service \textnormal{app} có trường \textnormal{ports} và ít nhất một image; service đầu tiên có trường \textnormal{ports} được coi là ứng dụng chính.
-\item \emph{Thực thi bước chấm:} mỗi bước HTTP được gửi đến \textnormal{http://localhost:{cổng được cấp}{đường dẫn}} trên virtual thread, nên bước treo I/O chỉ chiếm virtual thread rẻ thay vì luồng nền plataforma. Các bước cơ sở dữ liệu kết nối đến cổng DB đã được cấp. Biến trích xuất từ bước trước lưu trong \textnormal{VariableContext} (mỗi công việc chấm một ngữ cảnh) và được thay thế vào cú pháp \textnormal{\$\{\ldots\}} của bước sau.
-\item \emph{Cơ sở dữ liệu sạch giữa các kế hoạch:} sau mỗi kế hoạch, executor ngắt kết nối các session, xóa và tạo lại cơ sở dữ liệu mục tiêu (\textnormal{DROP DATABASE} + \textnormal{CREATE DATABASE}) để kế hoạch sau bắt đầu trên cơ sở dữ liệu sạch.
+\item \emph{Khởi động Docker Compose:} executor đọc mẫu \textnormal{dockerComposeTemplate} của bài tập, cập nhật ánh xạ cổng theo dạng \textnormal{cổng được cấp:cổng trong container}, bổ sung giới hạn CPU/RAM rồi khởi động các container. Mẫu Compose cần khai báo ít nhất một service có cấu hình \textnormal{image} hoặc \textnormal{build}; executor ưu tiên service không mang tên thành phần hạ tầng và có khai báo cổng, nếu không tìm được service phù hợp thì dùng service đầu tiên.
+\item \emph{Thực thi bước chấm:} mỗi bước HTTP gửi yêu cầu đến ứng dụng qua địa chỉ localhost và cổng được cấp, kèm đường dẫn đã cấu hình. Yêu cầu được xử lý trên virtual thread; khi chờ I/O, bước chấm không giữ một luồng nền (platform thread). Các bước cơ sở dữ liệu kết nối đến cổng DB đã được cấp. Biến trích xuất từ bước trước được lưu trong \textnormal{VariableContext} (mỗi công việc chấm có một ngữ cảnh) và được thay thế vào cú pháp \textnormal{\$\{\ldots\}} của bước sau.
+\item \emph{Cơ sở dữ liệu sạch giữa các kế hoạch:} sau mỗi kế hoạch, nếu cấu hình kết nối có tên cơ sở dữ liệu, executor ngắt các session đang kết nối đến cơ sở dữ liệu đó, xóa rồi tạo lại cơ sở dữ liệu mục tiêu (\textnormal{DROP DATABASE} + \textnormal{CREATE DATABASE}) để kế hoạch sau bắt đầu với dữ liệu sạch. Nếu không có tên cơ sở dữ liệu trong cấu hình, bước đặt lại được bỏ qua.
 \item \emph{Dọn dẹp và xử lý công việc treo:} khi công việc chấm kết thúc, dừng compose container và giải phóng cổng. Các công việc chấm bị treo vượt quá thời gian cho phép được dọn dẹp bởi \textit{stale-job-reaper}.
 \end{enumerate}
 
