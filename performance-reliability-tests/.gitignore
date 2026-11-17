@@ -1,0 +1,10 @@
+# Secrets and local test inputs
+.env
+.env.*
+!.env.example
+tokens.json
+*.zip
+
+# Generated measurements
+results/*
+!results/.gitkeep

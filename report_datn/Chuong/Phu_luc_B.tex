@@ -22,8 +22,8 @@ MapStruct & 1.6.3 & Khai báo trong \textnormal{course-service}, \textnormal{exe
 Springdoc OpenAPI & 3.1.0 & Khai báo trong \textnormal{course-service}, \textnormal{executor-service}, \textnormal{result-service} và \textnormal{submission-service}. \\ \hline
 Spring AI OpenAI starter & 2.0.2 & Phiên bản do BOM Spring AI quản lý trong \textnormal{ai-assistant-service}. \\ \hline
 Testcontainers & Theo BOM Spring Boot & Thư viện kiểm thử tích hợp; phiên bản do quản lý phụ thuộc Spring Boot cung cấp. \\ \hline
-AWS SDK for Java S3 & 2.25.15 & Thư viện tương thích giao thức S3 trong \textnormal{submission-service}. \\ \hline
-MinIO Java SDK & 8.5.14 & Thư viện truy cập kho đối tượng trong \textnormal{submission-service} và \textnormal{executor-service}. \\ \hline
+AWS SDK for Java S3 & 2.25.15 & Thư viện client S3 dùng để gọi RustFS trong \textnormal{submission-service}. \\ \hline
+MinIO Java SDK & 8.5.14 & Thư viện client S3 dùng để gọi RustFS trong \textnormal{submission-service} và \textnormal{executor-service}. \\ \hline
 JsonPath & 2.9.0 & Thư viện đọc đường dẫn JSON trong \textnormal{executor-service}. \\ \hline
 Micrometer datasource observation & 2.3.0 & Thư viện quan sát lệnh cơ sở dữ liệu được khai báo trong các dịch vụ. \\ \hline
 \end{tabularx}
@@ -62,9 +62,9 @@ Ant Design Icons & 6.3.4 & Bộ biểu tượng giao diện; phiên bản khóa 
 \label{tab:versions-frontend}
 \end{table}
 
-\section{Cơ sở dữ liệu và hạ tầng chạy}
+\section{Hạ tầng chạy trên cụm}
 
-Bảng sau ghi các image tag được khai báo trong cấu hình phụ thuộc và triển khai. Đây là tag cấu hình, không nhất thiết thể hiện đầy đủ số hiệu bản vá của phần mềm bên trong image.
+Bảng sau ghi các image tag được khai báo cho cụm k3s. Đây là tag cấu hình, không nhất thiết thể hiện đầy đủ số hiệu bản vá của phần mềm bên trong image. PostgreSQL và Kafka ở môi trường này dùng dịch vụ được quản lý bên ngoài cụm, không có image tag trong cấu hình triển khai.
 
 \begin{table}[H]
 \centering
@@ -72,42 +72,17 @@ Bảng sau ghi các image tag được khai báo trong cấu hình phụ thuộc
 \begin{tabularx}{\textwidth}{|p{3.4cm}|p{3.2cm}|X|}
 \hline
 Thành phần & Image tag & Nguồn / phạm vi \\ \hline
-PostgreSQL & \textnormal{16-alpine} & Cấu hình phụ thuộc cục bộ tại \textnormal{src-services/docker-compose.deps.yml}. \\ \hline
-Apache Kafka & \textnormal{7.4.0} & Image Confluent Platform trong cấu hình phụ thuộc cục bộ. \\ \hline
-Apache ZooKeeper & \textnormal{7.4.0} & Image Confluent Platform trong cấu hình phụ thuộc cục bộ. \\ \hline
 Keycloak & \textnormal{26.0} & Image tag khai báo trong cấu hình triển khai; không ghim số hiệu bản vá. \\ \hline
 RustFS & \textnormal{1.0.5} & Image tag trong cấu hình triển khai tại \textnormal{deploy/rustfs}. \\ \hline
 Docker-in-Docker & \textnormal{27-dind} & Image tag dùng cho executor trong Helm chart. \\ \hline
 Kafka UI & \textnormal{v1.5.0} & Image tag trong cấu hình triển khai tại \textnormal{deploy/kafka-ui}. \\ \hline
-MinIO & \textnormal{latest} & Image dùng trong cấu hình phụ thuộc cục bộ; tag thay đổi theo lần tải image và không ghim phiên bản cố định. \\ \hline
 \end{tabularx}
-\caption{Phiên bản image của cơ sở dữ liệu và hạ tầng chạy.}
+\caption{Phiên bản image của hạ tầng chạy trên cụm k3s.}
 \label{tab:versions-infrastructure}
-\end{table}
-
-\section{Phiên bản image dịch vụ trên môi trường staging}
-
-Các tag sau là phiên bản image ứng dụng được khai báo trong Helm values của môi trường staging. Đây là phiên bản phát hành của từng dịch vụ, không phải phiên bản của Java hoặc Spring Boot.
-
-\begin{table}[H]
-\centering
-\small
-\begin{tabularx}{\textwidth}{|p{5cm}|p{2.5cm}|X|}
-\hline
-Dịch vụ & Tag image & Tệp cấu hình \\ \hline
-\textnormal{api-gateway} & \textnormal{v1.0.23} & \textnormal{config-services/api-gateway/values-stg.yaml} \\ \hline
-\textnormal{course-service} & \textnormal{v1.0.42} & \textnormal{config-services/course-service/values-stg.yaml} \\ \hline
-\textnormal{submission-service} & \textnormal{v1.0.35} & \textnormal{config-services/submission-service/values-stg.yaml} \\ \hline
-\textnormal{executor-service} & \textnormal{v1.0.40} & \textnormal{config-services/executor-service/values-stg.yaml} \\ \hline
-\textnormal{result-service} & \textnormal{v1.0.39} & \textnormal{config-services/result-service/values-stg.yaml} \\ \hline
-\textnormal{ai-assistant-service} & \textnormal{v1.0.22} & \textnormal{config-services/ai-assistant-service/values-stg.yaml} \\ \hline
-\end{tabularx}
-\caption{Tag image các dịch vụ backend được khai báo cho staging.}
-\label{tab:versions-service-images}
 \end{table}
 
 \section{Thành phần chưa ghim phiên bản cụ thể}
 
-Node.js, Docker Compose, k3s, Helm CLI, Argo CD và Cloudflare Tunnel chưa có phiên bản cố định trong kho mã nguồn nên không được gán số hiệu phiên bản tại đây.
+Node.js, k3s, Helm CLI, Argo CD và Cloudflare Tunnel chưa có phiên bản cố định trong kho mã nguồn nên không được gán số hiệu phiên bản tại đây.
 
 \end{document}

@@ -34,12 +34,13 @@
 \contentsline {figure}{\numberline {2.30}{\ignorespaces Sơ đồ tuần tự chức năng Nộp bài tập.}}{52}{figure.2.30}%
 \contentsline {figure}{\numberline {2.31}{\ignorespaces Sơ đồ tuần tự chức năng Xem kết quả chấm bài tập của bản thân.}}{54}{figure.2.31}%
 \contentsline {figure}{\numberline {2.32}{\ignorespaces Sơ đồ tuần tự chức năng Xem điểm và kết quả cá nhân.}}{56}{figure.2.32}%
-\contentsline {figure}{\numberline {2.33}{\ignorespaces Kiến trúc tổng thể của hệ thống.}}{57}{figure.caption.54}%
-\contentsline {figure}{\numberline {2.34}{\ignorespaces Kiến trúc dịch vụ Thực thi chấm (executor-service).}}{59}{figure.caption.55}%
+\contentsline {figure}{\numberline {2.33}{\ignorespaces Sơ đồ tuần tự chức năng Trò chuyện với trợ lý AI.}}{57}{figure.caption.54}%
+\contentsline {figure}{\numberline {2.34}{\ignorespaces Kiến trúc tổng thể của hệ thống.}}{58}{figure.caption.55}%
+\contentsline {figure}{\numberline {2.35}{\ignorespaces Kiến trúc dịch vụ Thực thi chấm (executor-service).}}{60}{figure.caption.56}%
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {3.1}{\ignorespaces Kiến trúc triển khai của hệ thống trên cụm k3s.}}{65}{figure.caption.57}%
-\contentsline {figure}{\numberline {3.2}{\ignorespaces Quy trình CI/CD từ mã nguồn đến cụm triển khai.}}{68}{figure.caption.59}%
-\contentsline {figure}{\numberline {3.3}{\ignorespaces Hệ thống quan sát và giám sát (Observability).}}{71}{figure.caption.62}%
+\contentsline {figure}{\numberline {3.1}{\ignorespaces Kiến trúc triển khai của hệ thống trên cụm k3s.}}{66}{figure.caption.58}%
+\contentsline {figure}{\numberline {3.2}{\ignorespaces Quy trình CI/CD từ mã nguồn đến cụm triển khai.}}{69}{figure.caption.60}%
+\contentsline {figure}{\numberline {3.3}{\ignorespaces Hệ thống quan sát và giám sát (Observability).}}{72}{figure.caption.63}%
 \addvspace {10\p@ }
 \addvspace {10\p@ }
 \contentsfinish 

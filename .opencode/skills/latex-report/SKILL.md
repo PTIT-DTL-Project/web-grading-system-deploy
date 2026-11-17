@@ -244,6 +244,18 @@ Cuối Chương 2 có `\section{Thiết kế hệ thống}` ngang hàng với
   hệ thống này không dùng Gemini/vector store, gRPC, Redis Pub/Sub hay
   Transactional Outbox.
 
+Sơ đồ tuần tự (2.2.4) đi theo đúng thứ tự subsubsection: Đăng nhập,
+Quản lý lớp học (xem lớp, xem chi tiết lớp), Quản lý bài tập, Xem kết quả
+chấm của cả lớp, Nộp bài tập, Xem kết quả chấm bài tập của bản thân, Xem
+điểm và kết quả cá nhân, Trò chuyện với trợ lý AI. Sơ đồ nào có nhiều
+lifeline và trải dài theo chiều dọc (ví dụ 13 lifeline, hơn 70 message)
+thì để khổ dọc `[H]` với `max width=\textwidth` - hình cao khoảng 18-19cm,
+vẫn vừa một trang cùng tiêu đề và caption; đừng ép sang trang ngang vì
+khung ngang chỉ cho bề rộng ~14cm, chữ còn nhỏ hơn. Chỉ dùng landscape
+cho sơ đồ thực sự rộng và thấp. Giữ bản xuất Visual Paradigm (`.jpg`) ở
+`visual-paradigm/figures/sequence/` và bản dùng trong báo cáo ở
+`report_datn/Hinhve/` dạng `.png` (`magick <src>.jpg <dst>.png`).
+
 Use-case figures continue the `Hinh2_<n>_<slug>` series
 (`Hinh2_6_usecase_tong_quan` = overview, `Hinh2_7..Hinh2_12` = detail
 diagrams), labels `fig:usecase-tong-quan` and `fig:uc-<slug>`; the
@@ -517,3 +529,41 @@ source in `report_datn/Hinhve/` beside the corresponding PNG path, using
 the same filename stem. If the user will export the PNG, do not generate a
 placeholder image; keep the figure caption/label and a commented
 `\\includegraphics` line with the intended output path.
+
+## Mọi thuật ngữ tiếng Anh phải có trong danh mục thuật ngữ (mandatory)
+
+Danh mục in ra là `Chuong/0_5_Danh_muc_viet_tat.tex` (front matter, trước
+Chương 1), nên thuật ngữ được khai báo ở đó là "khai báo trước khi dùng".
+`Tu_viet_tat.tex` không in ra (`\printnoidxglossaries` bị comment) nên
+đừng thêm entry vào đó rồi tưởng là đã khai báo.
+
+- Mỗi từ tiếng Anh dùng như thuật ngữ trong văn bản (ví dụ `staging`,
+  `job`, `image`, `tag`, `webhook`, `traceId`, `pull request`, `path`,
+  `assertion`) cần một dòng trong longtable: cột 1 là từ, cột 2 tên
+  tiếng Anh đầy đủ, cột 3 nghĩa tiếng Việt ngắn.
+- Nếu đã có tương đương tiếng Việt phổ biến, dịch theo bảng
+  "Dịch từ tiếng Anh sang tiếng Việt" thay vì thêm dòng mới; chỉ khai
+  báo những từ buộc phải giữ tiếng Anh (tên công nghệ, trạng thái,
+  khái niệm không có từ Việt tương đương rõ).
+- Trước khi thêm, kiểm tra trùng: cùng một khái niệm chỉ một dòng.
+  Không thêm `Token` khi đã có `Access Token`/`ID Token`/`Refresh Token`,
+  không thêm `Docker Image` khi đã có `Image`, không thêm
+  `Readiness`/`Liveness` riêng khi đã có `Readiness probe`/
+  `Liveness probe`. Script kiểm tra nhanh:
+
+```bash
+grep -v 'Tên tiếng Anh' Chuong/0_5_Danh_muc_viet_tat.tex \
+  | grep -o 'textbf{[^}]*}' | sed 's/textbf{//;s/}//' \
+  | tr 'A-Z' 'a-z' | sort | uniq -d
+```
+
+  Kết quả rỗng là không trùng. Luôn lọc dòng header
+  (`Viết tắt & Tên tiếng Anh & Tên tiếng Việt`) vì header xuất hiện hai
+  lần trong `\endfirsthead` và `\endhead` và cũng dùng `\textbf{}`.
+- Cột 1 rộng 3.2cm, cột 2 rộng 3.5cm: cụm hai từ như `Readiness probe`
+  vừa khít cột 2, đừng thu cột 2 xuống 3.0cm (sẽ chạm cột 3). Từ dài
+  không có chỗ ngắt phải chèn `\-` hoặc nới cột.
+- Bổ sung hàng loạt entry thì thêm thành một khối ở cuối bảng, giữ
+  nguyên thứ tự các entry cũ, và build lại để kiểm tra longtable vẫn
+  sang trang đúng (`\singlespacing` trước bảng, `\onehalfspacing` sau
+  `\end{longtable}`).

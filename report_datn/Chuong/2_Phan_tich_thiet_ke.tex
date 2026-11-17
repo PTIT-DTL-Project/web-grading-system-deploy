@@ -925,6 +925,17 @@ Hình \ref{fig:seq-xem-diem-ca-nhan} mô tả luồng xử lý khi sinh viên xe
 \end{landscape}
 \endgroup
 
+\subsubsection{Trò chuyện với trợ lý AI}
+
+Hình \ref{fig:seq-tro-chuyen-ai} mô tả luồng xử lý khi người dùng trò chuyện với trợ lý AI: yêu cầu được gửi tới dịch vụ Trợ lý AI và lưu lại trong hội thoại, quá trình xử lý có thể gọi công cụ nội bộ để lấy dữ liệu, kết quả được trả về theo dòng sự kiện và hiển thị dần trên giao diện.
+
+\begin{figure}[H]
+\centering
+\includegraphics[max width=\textwidth]{Hinhve/Hinh2_37_seq_tro_chuyen_ai.png}
+\caption{Sơ đồ tuần tự chức năng Trò chuyện với trợ lý AI.}
+\label{fig:seq-tro-chuyen-ai}
+\end{figure}
+
 \subsection{Kiến trúc hệ thống}
 
 Hình \ref{fig:architecture} mô tả kiến trúc tổng thể của hệ thống. Hệ thống được tổ chức theo mô hình Client - Server: phía client đảm nhiệm tương tác với người dùng, phía server xử lý nghiệp vụ, quản lý dữ liệu và cung cấp dịch vụ. Cách tổ chức này tách biệt giao diện khỏi xử lý nghiệp vụ, thuận lợi cho phát triển, triển khai và mở rộng từng phần độc lập.
