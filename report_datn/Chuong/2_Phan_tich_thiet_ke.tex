@@ -709,10 +709,12 @@ Các lớp thuộc dịch vụ trợ lý AI gồm Cuộc hội thoại (Conversa
 
 \begin{figure}[H]
 \centering
-\includegraphics[max width=\textwidth,max height=0.72\textheight,keepaspectratio]{Hinhve/Hinh2_19_class_ai.jpg}
+\includegraphics[max width=\textwidth,max height=0.72\textheight,keepaspectratio]{Hinhve/vp-ai-assistance-service-analysis.jpg}
 \caption{Biểu đồ lớp pha phân tích dịch vụ trợ lý AI.}
 \label{fig:class-ai}
 \end{figure}
+
+Ở pha phân tích, biểu đồ tập trung vào các khái niệm nghiệp vụ và quan hệ sở hữu giữa chúng. Một cuộc hội thoại có nhiều tin nhắn, tóm tắt và phiên chạy; mỗi phiên chạy ghi nhận trạng thái xử lý của một yêu cầu. Tác vụ lưu mục tiêu và trạng thái làm việc của agent, còn thao tác biểu diễn một lệnh nghiệp vụ cần kiểm soát tính lặp. Hành động chờ người dùng lưu câu hỏi hoặc yêu cầu xác nhận; lần thực thi công cụ và kết quả công cụ đã lưu hỗ trợ theo dõi, tra cứu lại kết quả. Giải thích AI được mô hình hóa riêng theo bài nộp để phân biệt với nội dung hội thoại.
 
 
 
@@ -792,14 +794,16 @@ Dịch vụ kết quả chấm lưu kết quả chấm theo từng bài nộp v�
 
 \subsubsection{Dịch vụ Trợ lý AI}
 
-Dịch vụ trợ lý AI quản lý hội thoại, giải thích và gợi ý học tập cho bài nộp.
+Dịch vụ trợ lý AI lưu hội thoại nhiều lượt, trạng thái tác vụ và phiên chạy bất đồng bộ, lịch sử công cụ, nội dung cần người dùng xác nhận và phần giải thích kết quả bài nộp.
 
 \begin{figure}[H]
 \centering
-\includegraphics[max width=\textwidth,max height=0.72\textheight,keepaspectratio]{Hinhve/Hinh2_35_class_ai_service.jpg}
+\includegraphics[max width=\textwidth,max height=0.72\textheight,keepaspectratio]{Hinhve/vp-ai-assistance-service-design.jpg}
 \caption{Biểu đồ lớp thiết kế dịch vụ Trợ lý AI.}
 \label{fig:class-ai-service}
 \end{figure}
+
+Biểu đồ thiết kế cụ thể hóa các lớp phân tích thành cấu trúc lưu trữ có định danh UUID, kiểu dữ liệu và thời điểm tạo hoặc cập nhật. Tin nhắn thuộc một hội thoại và có số thứ tự; mã tin nhắn do client gửi được dùng để nhận diện yêu cầu gửi lại. Phiên chạy có các trạng thái như \texttt{QUEUED}, \texttt{RUNNING}, \texttt{WAITING\_USER}, \texttt{WAITING\_APPROVAL}, \texttt{SUCCEEDED}, \texttt{FAILED} và \texttt{CANCELLED}, \texttt{LIMIT\_REACHED}. Thao tác lưu khóa idempotency, dấu vân tay yêu cầu, số lần thử và thời điểm kiểm tra tiếp theo; hành động chờ lưu câu hỏi, lựa chọn và hạn hết hiệu lực. Các sự kiện chạy có số thứ tự để phát lại tiến trình, còn kết quả công cụ đã lưu có phạm vi vai trò và thời hạn lưu. Lớp AiExplanation lưu chẩn đoán, vị trí nghi vấn, gợi ý, từ khóa học tập, thông tin mô hình, số token và đánh giá phản hồi.
 
 \subsection{Thiết kế cơ sở dữ liệu theo dịch vụ}
 
@@ -811,14 +815,14 @@ Sau khi phân rã hệ thống thành các miền chức năng, mỗi miền đ�
     \item Dịch vụ nộp bài: bao gồm các bảng submissions, manual\_scores, để quản lý bài nộp của sinh viên và điểm chấm thủ công.
     \item Dịch vụ thực thi chấm: bao gồm các bảng grading\_jobs, grading\_logs, grading\_sagas, grading\_saga\_steps, grading\_step\_results, để quản lý công việc chấm, phiên chấm, bước chấm và nhật ký thực thi.
     \item Dịch vụ kết quả chấm: bao gồm các bảng results, step\_results, để lưu kết quả chấm theo từng bài nộp và kết quả từng bước chấm.
-    \item Dịch vụ trợ lý AI: bao gồm các bảng ai\_conversation, ai\_message, ai\_explanations, ai\_task, ai\_run, để quản lý hội thoại, giải thích và gợi ý học tập cho bài nộp.
+    \item Dịch vụ trợ lý AI: bao gồm các bảng ai\_conversation, ai\_message, ai\_conversation\_summary, ai\_task, ai\_run, ai\_run\_event, ai\_operation, ai\_pending\_action, ai\_tool\_execution, ai\_stored\_tool\_result và ai\_explanations, để quản lý hội thoại, tiến trình agent, thao tác công cụ, yêu cầu chờ xác nhận và giải thích kết quả bài nộp.
 \end{itemize}
 
-Biểu đồ \ref{fig:erd} minh họa quan hệ giữa các thực thể chính của hệ thống.
+Biểu đồ \ref{fig:erd} là bản ERD mới nhất được xuất từ Visual Paradigm. Ngoài các miền xác thực, lớp học, nộp bài, thực thi và kết quả chấm, biểu đồ thể hiện đầy đủ nhóm bảng của dịch vụ trợ lý AI. Các khóa ngoại bên trong nhóm AI liên kết hội thoại với tin nhắn, tác vụ, tóm tắt và phiên chạy; phiên chạy tiếp tục liên kết với sự kiện, lần thực thi công cụ và kết quả công cụ đã lưu. Do mỗi dịch vụ sở hữu cơ sở dữ liệu riêng, các mã bài nộp và sinh viên trong bảng giải thích AI là định danh nghiệp vụ tham chiếu sang dịch vụ khác, không phải khóa ngoại xuyên cơ sở dữ liệu.
 
 \begin{figure}[H]
 \centering
-\includegraphics[max width=\textwidth]{Hinhve/Hinh2_28_erd.png}
+\includegraphics[max width=\textwidth]{Hinhve/vp-erd.jpg}
 \caption{Biểu đồ quan hệ thực thể (ERD) của hệ thống.}
 \label{fig:erd}
 \end{figure}
@@ -927,13 +931,13 @@ Hình \ref{fig:seq-xem-diem-ca-nhan} mô tả luồng xử lý khi sinh viên xe
 
 \subsubsection{Trò chuyện với trợ lý AI}
 
-Hình \ref{fig:seq-tro-chuyen-ai} mô tả luồng xử lý khi người dùng trò chuyện với trợ lý AI: yêu cầu được gửi tới dịch vụ Trợ lý AI và lưu lại trong hội thoại, quá trình xử lý có thể gọi công cụ nội bộ để lấy dữ liệu, kết quả được trả về theo dòng sự kiện và hiển thị dần trên giao diện.
+Khi người dùng gửi câu hỏi, giao diện gọi API tạo tin nhắn. Dịch vụ kiểm tra quyền sở hữu hội thoại và mã tin nhắn phía client để tránh xử lý lặp, sau đó lưu tin nhắn cùng phiên chạy ở trạng thái \texttt{QUEUED}. Công việc chỉ được chuyển cho worker sau khi giao dịch lưu dữ liệu hoàn tất; API trả mã phiên chạy để giao diện mở kết nối sự kiện. Worker cập nhật trạng thái sang \texttt{RUNNING}, gọi agent để trao đổi với mô hình và chỉ thực thi công cụ khi mô hình yêu cầu. Các phần trả lời và trạng thái công cụ được phát qua SSE; khi kết thúc, dịch vụ lưu câu trả lời, trạng thái cuối và sự kiện hoàn tất. Hình~\ref{fig:seq-ai-chat} mô tả luồng này.
 
 \begin{figure}[H]
 \centering
-\includegraphics[max width=\textwidth]{Hinhve/Hinh2_37_seq_tro_chuyen_ai.png}
-\caption{Sơ đồ tuần tự chức năng Trò chuyện với trợ lý AI.}
-\label{fig:seq-tro-chuyen-ai}
+\includegraphics[max width=\textwidth,max height=0.76\textheight,keepaspectratio]{Hinhve/vp-user-chat-ai-assistant-sequence.jpg}
+\caption{Sơ đồ tuần tự chức năng trò chuyện với trợ lý AI.}
+\label{fig:seq-ai-chat}
 \end{figure}
 
 \subsection{Kiến trúc hệ thống}

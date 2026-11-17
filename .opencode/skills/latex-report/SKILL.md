@@ -114,6 +114,16 @@ an empty rotated page before the figure. Scope `\\pagestyle{empty}` to that
 page so portrait running headers and footers do not print sideways, size the
 image to leave room for its caption, and inspect the rendered pages before
 keeping the rotation.
+For AI-service diagrams, treat the current exports under
+`visual-paradigm/figures/` as the source of truth. Keep analysis-phase and
+design-phase class diagrams as separate figures, replace stale report copies
+when a newer Visual Paradigm export exists, and use the exported ERD rather
+than an older report-only image. Copy the exact exported image into
+`report_datn/Hinhve/` and compare hashes before including it. Sequence diagrams
+must use the Visual Paradigm export; do not substitute generated SVG or
+redrawn images. Use a portrait page when the export remains legible at the
+text width, and inspect the rendered PDF page before deciding to rotate it.
+
 For long glossary `longtable`s that spill only a few rows onto a final page,
 use `\singlespacing` locally before the table and restore `\onehalfspacing`
 after `\end{longtable}`; verify it still fits the text block.
