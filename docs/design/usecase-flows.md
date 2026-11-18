@@ -480,9 +480,14 @@ plumbing is hidden from students:
 - Steps of type `DELAY` / `EXTRACT` are dropped.
 - `config` is sanitized: keys `connection` (DB credentials), `extract`, `expected`
   are stripped server-side (`StudentAssignmentService.sanitizeConfig`).
-- `StepResponse.description` (lecturer-authored note) is returned; **FE shows it
+- `StudentStepResponse.description` (lecturer-authored note) is returned; **FE shows it
   verbatim and only falls back to auto-generated text from `config` when `description`
   is null/empty.** Auto-text example: `HTTP_REQUEST POST /api/v1/books {…} → expect 201`.
+- No `required` field: `test_steps.is_required` is executor cascade semantics (a failing
+  required step SKIPs the following steps), not "the student must answer this question".
+  It is omitted from `StudentStepResponse`/`StudentPlanResponse` so the UI and the AI
+  assistant's `listMyTestPlans` tool (which forwards the JSON to the model) cannot
+  present a step as mandatory.
 
 ### Step 3 — Submit a plan (per-plan grading)
 
@@ -1133,6 +1138,9 @@ rows (imported = member). Sorted by `studentCode`. Not enrolled → `404
 - Student step rows expand to the request/response contract only: method, path,
   query, headers, body, expected status / query / checks / statements. No
   assertions, extract, expected values, or connection block.
+- Student step model carries **no `required` flag** (2026-11-12): lecturer's
+  `StepResponse.required` maps to executor cascade behaviour, so students would
+  read it as "this question is mandatory"; `StudentStepResponse` omits it.
 - Sensitive header values (`authorization`, `cookie`, `set-cookie`,
   `proxy-authorization`, `x-api-key`, `x-gateway-secret` — same set as backend
   `HttpLogService`) render masked student-side; follow-up filed to strip them

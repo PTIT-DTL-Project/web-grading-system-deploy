@@ -227,6 +227,13 @@ with a **0-based `page`** (antd `Table.pagination.current` is 1-based → `meta.
 - For list tables that combine long descriptions/topics with status or action columns, assign explicit widths to every column and use `tableLayout="fixed"`; do not let one unconstrained text column consume space or force adjacent columns to collapse.
 - Set the horizontal scroll width to at least the sum of the intended column widths. On narrow screens, scrolling is preferable to unreadably narrow columns or vertically stretched rows.
 - Clamp long descriptive cells to a small number of lines (`Typography.Paragraph` ellipsis) and wrap the full value in an antd `Tooltip` so the complete text remains available. Keep action cells unwrapped and give them enough width for their controls.
+- **Evidence / step-detail tables must allow multi-expand (mandatory)**: keep every key in
+  `expandedRowKeys` — no `keys.slice(-1)` accordion. A reviewer comparing step 1 against step 3
+  must not lose step 1 by opening step 2. Pair it with an *expand all / collapse all* button
+  (i18n `common.expandAll` / `common.collapseAll`) that toggles exactly the rows whose
+  `rowExpandable` predicate is true, and share that predicate in one helper (`hasEvidence(step)`)
+  so button and table can never disagree. Applies to `SubmissionResultPage`,
+  `SubmissionDetailCard` and `AssignmentResultsPage.StepTable`. Review: 2026-11-12.
 
 ## 8. Sidebar collapse controls
 
@@ -238,6 +245,14 @@ with a **0-based `page`** (antd `Table.pagination.current` is 1-based → `meta.
 - **Sticky**: the button is `position: sticky; bottom: 16px` so it stays visible without scrolling (UX review 2026-09-29).
 - **Sizing**: touch target 36×36px, icon 20px `fontSize`, subtle `boxShadow` — keep tap targets ≥36px and icons ≥20px (UX review 2026-09-29).
 - **Utilities**: the chevron button uses only `antd` icons — do not import from other libraries.
+- **Collapsed width is a rail, never 0 on desktop (mandatory)**: the only toggle lives *inside*
+  the Sider, so `collapsedWidth={0}` deleted the control that reopens it ("nhấn vào thì nó thụt
+  vào và mất luôn"). `AppLayout.tsx` uses `SIDER_WIDTH = 224` /
+  `SIDER_COLLAPSED_WIDTH = 80` (antd's collapsed inline `Menu` pins to ~80px) and drops
+  `breakpoint`/`onCollapse` in favour of `collapsed={screens.lg === false || sidebarCollapsed}`;
+  below `lg` the width stays 0 because navigation moves into the header `Drawer`. Use
+  `screens.lg === false`, never `!screens.lg` — the breakpoint is `undefined` on first render and
+  the negation flashes the rail on desktop. Review: 2026-11-12.
 
 ## 9. i18n — both files, always
 

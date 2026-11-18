@@ -577,6 +577,30 @@ ownership check runs against. One path answering to both roles is exactly how th
    header. Assert only the role this service already verified on its own inbound request;
    forward nothing the caller did not have.
 
+## 12.12. Student-facing read DTOs must not carry executor/grader flags (mandatory)
+
+`test_steps.is_required` is executor cascade semantics: a failing `required` step makes the
+following steps `SKIPPED` (`GradingOrchestrator` + `SKIPPED_REQUIRED_FAILED`). It is **not**
+"the student must answer this question". Serving it to students — and, worse, to the AI
+assistant tools that forward the response body verbatim to the model — made the agent tell
+students a step was mandatory.
+
+1. **Split the DTO, do not null the field.** `PlanResponse` /`StepResponse` stay the
+   lecturer/executor contract (they feed the step editor's `required` switch and the internal
+   `InternalStepDto`). Student reads use `StudentPlanResponse` / `StudentStepResponse`
+   (`course-service/dto/response/`), which simply have no such field — so no `"required":
+   null` can leak into an LLM prompt either.
+2. **Sanitize in the mapper, test the serialized JSON.** `StudentAssignmentService
+   .toSanitizedStep` builds the reduced DTO; `StudentAssignmentServiceTest
+   .listPlans_neverSerializesRequiredFlag` asserts the serialized payload contains no
+   `required` key (compile-time absence alone is not verification).
+3. **AI tool schemas need the same discipline.** Tool input schemas that describe a step must
+   declare `required` at step level with an explicit description ("bước phụ thuộc — fail thì
+   các bước sau SKIPPED; KHÔNG phải 'sinh viên bắt buộc làm câu này'") and must never offer a
+   `config.required` property: `StepConfigValidator`/`PlanCorpusTest` reject that key, so
+   advertising it in `DomainApiTool.stepConfigSchema()` made the model emit invalid steps.
+   Guard schema shape with a test (`DomainApiToolTest.stepSchemaKeepsRequiredAtStepLevelOnly`).
+
 ## 13. Verification
 
 - Compile success is NOT verification. Tests must pass (`./mvnw test`).

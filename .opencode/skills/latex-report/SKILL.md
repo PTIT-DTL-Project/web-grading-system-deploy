@@ -271,7 +271,7 @@ relations live inside the exported diagram images.
 Class diagram design: `Biểu đồ lớp thiết kế chi tiết toàn hệ thống` is
 placed immediately before `\subsection{Biểu đồ lớp chi tiết từng dịch vụ}`
 in chapter 2. Caption: `Biểu đồ lớp thiết kế toàn hệ thống.`, label
-`fig:class-system`, image `Hinhve/Hinh2_36_class_diagram_toan_he_thong.png`
+`fig:class-system`, image `Hinhve/Hinh2_29_class_diagram_system.png`
 with `\includegraphics[width=\textwidth]`. Each service-specific class
 diagram follows with its own `\subsubsection{Biểu đồ lớp chi tiết dịch
 vụ <Tên>}`, `\includegraphics[width=<width>\textwidth]{Hinhve/Hinh2_XX_...}`,

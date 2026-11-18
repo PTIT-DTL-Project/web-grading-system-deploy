@@ -42,8 +42,9 @@ Chi tiết một bài tập.
 | `published` | Boolean | Đã xuất bản |
 | `createdAt` / `updatedAt` | OffsetDateTime | Thời điểm tạo/cập nhật |
 
-### 2.2 `PlanResponse` (dto/response)
-Một plan (câu hỏi) của bài tập.
+### 2.2 `StudentPlanResponse` (dto/response)
+Một plan (câu hỏi) của bài tập, dạng rút gọn dành cho sinh viên (không có
+`required` như `PlanResponse` của giảng viên).
 
 | Trường | Kiểu | Mô tả |
 |--------|------|-------|
@@ -52,10 +53,15 @@ Một plan (câu hỏi) của bài tập.
 | `description` | String | Mô tả |
 | `sequenceOrder` | Integer | Thứ tự |
 | `weight` | Integer | Trọng số |
-| `steps` | `List<StepResponse>` | Danh sách bước (đã sanitize) |
+| `steps` | `List<StudentStepResponse>` | Danh sách bước (đã sanitize) |
 
-### 2.3 `StepResponse` (dto/response)
+### 2.3 `StudentStepResponse` (dto/response)
 Một bước trong plan (phiên bản sinh viên, đã sanitize).
+
+**Không có trường `required`**: cờ `test_steps.is_required` là ngữ nghĩa của
+executor-service (bước fail ⇒ các bước sau bị `SKIPPED`), **không** phải "sinh viên
+bắt buộc phải làm câu này". Trường này bị loại khỏi payload sinh viên để cả UI và
+tool của AI assistant (forward nguyên JSON cho model) không hiểu nhầm.
 
 | Trường | Kiểu | Mô tả |
 |--------|------|-------|
@@ -68,7 +74,6 @@ Một bước trong plan (phiên bản sinh viên, đã sanitize).
 | `expectedResult` | JsonNode | Kết quả kỳ vọng (đã strip) |
 | `weight` | Integer | Trọng số |
 | `timeoutMs` | Integer | Timeout (ms) |
-| `required` | Boolean | Bắt buộc |
 
 ### 2.4 `AssignmentPurpose` (entity)
 Enum: `GRADED` (chấm điểm), `PRACTICE` (tự luyện).
@@ -219,8 +224,9 @@ X-User-Email: b22dckh024@example.com
    - Dùng `toSanitizedStep` cho mỗi bước:
      - Bỏ qua bước loại `DELAY` và `EXTRACT` (không hiển thị cho sinh viên).
      - Gọi `sanitizeConfig(step.getConfig())`: parse JSON, xóa các trường `connection` (thông tin kết nối DB), `extract` (biến trích xuất), `expected` (kết quả kỳ vọng) — để không lộ cấu hình chấm điểm.
-   - Map sang `PlanResponse` với `steps` đã sanitize.
-3. Trả về `List<PlanResponse>`.
+     - Không map cờ `is_required` (xem 2.3).
+   - Map sang `StudentPlanResponse` / `StudentStepResponse`.
+3. Trả về `List<StudentPlanResponse>`.
 
 **Ví dụ request:**
 ```http
@@ -246,8 +252,7 @@ X-User-Email: b22dckh024@example.com
         "type": "HTTP_REQUEST",
         "config": { "method": "POST", "path": "/api/students", ... },
         "weight": 30,
-        "timeoutMs": 5000,
-        "required": true
+        "timeoutMs": 5000
       }
     ]
   }

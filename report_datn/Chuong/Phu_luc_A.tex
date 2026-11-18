@@ -3,24 +3,24 @@
 \chapter{Tham khảo cấu hình bài kiểm thử}
 \label{phu-luc:chapter}
 
-Phụ lục này tóm tắt các loại bước kiểm thử, assertion và cách khai báo biến trích xuất; mỗi loại có ví dụ ngắn để tra cứu khi tạo kế hoạch chấm.
+Phụ lục này tóm tắt các loại bước kiểm thử, assertion và cách khai báo biến trích xuất; mỗi loại có ví dụ ngắn để tra cứu khi tạo câu.
 
-\section{Cấu trúc kế hoạch và bước chấm}
+\section{Cấu trúc câu và bước chấm}
 
-Một kế hoạch gồm các bước chạy theo thứ tự \textnormal{sequenceOrder}. Mỗi bước có loại, cấu hình, trọng số và tùy chọn dừng kế hoạch khi thất bại.
+Một câu gồm các bước chạy theo thứ tự \textnormal{sequenceOrder}. Mỗi bước có loại, cấu hình, trọng số và tùy chọn dừng câu khi thất bại.
 
 \begin{table}[H]
 \centering
 \begin{tabularx}{\textwidth}{|p{3.1cm}|X|}
 \hline
 Trường & Ý nghĩa / ví dụ \\ \hline
-\textnormal{sequenceOrder} & Thứ tự chạy kế hoạch, ví dụ \textnormal{1}. \\ \hline
-\textnormal{weight} & Trọng số kế hoạch hoặc bước, ví dụ \textnormal{1}. \\ \hline
+\textnormal{sequenceOrder} & Thứ tự chạy câu, ví dụ \textnormal{1}. \\ \hline
+\textnormal{weight} & Trọng số câu hoặc bước, ví dụ \textnormal{1}. \\ \hline
 \textnormal{stepType} & Loại bước: \textnormal{HTTP\_REQUEST}, \textnormal{DB\_QUERY}, \textnormal{DB\_SCHEMA\_CHECK}, hoặc \textnormal{DB\_MIGRATION}. \\ \hline
 \textnormal{config} & Cấu hình riêng theo loại bước. \\ \hline
-\textnormal{required} & \textnormal{true} để dừng các bước còn lại trong kế hoạch khi bước này thất bại. \\ \hline
+\textnormal{required} & \textnormal{true} để dừng các bước còn lại trong câu khi bước này thất bại. \\ \hline
 \end{tabularx}
-\caption{Các trường cơ bản của kế hoạch và bước chấm.}
+\caption{Các trường cơ bản của câu và bước chấm.}
 \label{tab:plan-step-quick-reference}
 \end{table}
 

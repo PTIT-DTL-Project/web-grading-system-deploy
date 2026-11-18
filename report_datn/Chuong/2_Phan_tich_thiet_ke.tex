@@ -510,7 +510,7 @@ Kịch bản ngoại lệ &
 
 Áp dụng kỹ thuật trích danh từ trên các use case và kịch bản đã mô tả ở các mục trước, các danh từ thu được gồm: tài khoản, người dùng, vai trò, quản trị viên, giảng viên, sinh viên, lớp học, học kỳ, danh sách sinh viên, mã sinh viên, họ tên, email, bài tập, câu, bước chấm, cấu hình chấm, môi trường chạy, thành phần điểm, trọng số, điểm thành phần, điểm tổng kết, điểm chữ, điểm hệ 4, bảng điểm, bài nộp, tệp nén, trạng thái chấm, kết quả chấm, kết quả từng bước, nhật ký chấm, giải thích của trợ lý AI, gợi ý và từ khoá học tập.
 
-Loại bỏ các danh từ nằm ngoài phạm vi mục đích của hệ thống, các danh từ trùng lặp và các danh từ chỉ là thuộc tính của lớp khác (trọng số, trạng thái, mã sinh viên, họ tên, email, thời gian chờ, giới hạn tài nguyên), ta thu được các lớp thực thể sau:
+Loại bỏ các danh từ nằm ngoài phạm vi mục đích của hệ thống, các danh từ trùng lặp và các danh từ chỉ là thuộc tính của lớp khác, ta thu được các lớp thực thể sau:
 
 Người dùng (User), Vai trò (Role), Liên kết người dùng - vai trò (UserRole), Lớp học (CourseClass), Sinh viên thuộc lớp (ClassStudent), Bài tập (Assignment), Câu (TestPlan), Bước chấm (TestStep), Thành phần điểm (ScoreComponent), Điểm thành phần (StudentScore), Bài nộp (Submission), Công việc chấm (GradingJob), Phiên chấm (GradingSaga), Bước của phiên chấm (GradingSagaStep), Nhật ký chấm (GradingLog), Kết quả chấm (Result), Kết quả từng bước (StepResult), Giải thích của trợ lý AI (AiExplanation).
 
@@ -599,7 +599,7 @@ Hai lớp kết hợp trong mô hình gồm:
     \item StudentScore là lớp kết hợp giữa ClassStudent và ScoreComponent, dùng để biểu diễn quan hệ n - n kèm điểm của sinh viên.
 \end{itemize}
 
-Như vậy, mô hình chỉ còn hai lớp kết hợp là UserRole và StudentScore. ClassStudent là lớp thường vì có định danh riêng và các thuộc tính studentCode, studentName, email. Submission cũng là lớp thường vì có định danh riêng, có nhiều bản ghi trên một cặp Assignment-ClassStudent và có thuộc tính tệp nộp, trạng thái chấm, cờ latest.
+Như vậy, mô hình chỉ còn hai lớp kết hợp là UserRole và StudentScore. ClassStudent là lớp thường vì có định danh riêng và các thuộc tính mô tả sinh viên. Submission cũng là lớp thường vì có định danh riêng, có nhiều bản ghi trên một cặp Assignment-ClassStudent và có thuộc tính tệp nộp, trạng thái chấm, cờ latest.
 
 \subsubsection{Biểu đồ lớp thực thể pha phân tích toàn hệ thống }
 
@@ -792,7 +792,7 @@ Dịch vụ kết quả chấm lưu kết quả chấm theo từng bài nộp v�
 
 \subsubsection{Dịch vụ Trợ lý AI}
 
-Dịch vụ trợ lý AI quản lý hội thoại, giải thích và gợi ý học tập cho bài nộp.
+Dịch vụ trợ lý AI lưu hội thoại nhiều lượt, trạng thái tác vụ và phiên chạy bất đồng bộ, lịch sử công cụ, nội dung cần người dùng xác nhận và phần giải thích kết quả bài nộp.
 
 \begin{figure}[H]
 \centering
@@ -811,17 +811,21 @@ Sau khi phân rã hệ thống thành các miền chức năng, mỗi miền đ�
     \item Dịch vụ nộp bài: bao gồm các bảng submissions, manual\_scores, để quản lý bài nộp của sinh viên và điểm chấm thủ công.
     \item Dịch vụ thực thi chấm: bao gồm các bảng grading\_jobs, grading\_logs, grading\_sagas, grading\_saga\_steps, grading\_step\_results, để quản lý công việc chấm, phiên chấm, bước chấm và nhật ký thực thi.
     \item Dịch vụ kết quả chấm: bao gồm các bảng results, step\_results, để lưu kết quả chấm theo từng bài nộp và kết quả từng bước chấm.
-    \item Dịch vụ trợ lý AI: bao gồm các bảng ai\_conversation, ai\_message, ai\_explanations, ai\_task, ai\_run, để quản lý hội thoại, giải thích và gợi ý học tập cho bài nộp.
+    \item Dịch vụ trợ lý AI: bao gồm các bảng ai\_conversation, ai\_message, ai\_conversation\_summary, ai\_task, ai\_run, ai\_run\_event, ai\_operation, ai\_pending\_action, ai\_tool\_execution, ai\_stored\_tool\_result và ai\_explanations, để quản lý hội thoại, tiến trình agent, thao tác công cụ, yêu cầu chờ xác nhận và giải thích kết quả bài nộp.
 \end{itemize}
 
 Biểu đồ \ref{fig:erd} minh họa quan hệ giữa các thực thể chính của hệ thống.
 
-\begin{figure}[H]
+\begingroup
+\pagestyle{empty}
+\begin{landscape}
+\newgeometry{margin=1cm}
 \centering
-\includegraphics[max width=\textwidth]{Hinhve/Hinh2_28_erd.png}
-\caption{Biểu đồ quan hệ thực thể (ERD) của hệ thống.}
+\includegraphics[width=\textwidth,height=0.95\textheight,keepaspectratio]{Hinhve/vp-erd.jpg}
+\captionof{figure}{Biểu đồ quan hệ thực thể (ERD) của hệ thống.}
 \label{fig:erd}
-\end{figure}
+\end{landscape}
+\endgroup
 
 \subsection{Sơ đồ tuần tự các chức năng}
 
@@ -979,39 +983,39 @@ Quy trình chấm bài gồm các dịch vụ phối hợp từ lúc nhận bài
 
 \subsubsection{Tổng quan luồng chấm bài tự động}
 
-Luồng chấm bài tự động được thiết kế để đảm bảo tính cách ly, lặp lại và không chặn thao tác của người dùng. Quy trình chi tiết như sau:
+Luồng chấm bài tự động được thiết kế để đảm bảo tính cách ly, lặp lại và không chặn thao tác của người dùng. Quy trình gồm các bước sau:
 
 \begin{enumerate}[leftmargin=*, nosep]
-\item \textbf{Nộp bài:} Sinh viên tải tệp nén bài làm lên hệ thống. Dịch vụ Nộp bài nhận tệp, lưu vào RustFS (lưu trữ đối tượng tương thích S3) bằng presigned URL, sau đó cập nhật trạng thái bài nộp.
-\item \textbf{Kích hoạt chấm:} Sau khi tải xong, RustFS gọi webhook báo hoàn tất; dịch vụ Nộp bài cập nhật trạng thái và phát sự kiện \textnormal{GRADE\_SUBMISSION} lên Kafka (topic \textnormal{wgs-events}, khóa theo \textnormal{submissionId} để giữ thứ tự xử lý trên từng bài nộp).
-\item \textbf{Tiêu thụ sự kiện:} Dịch vụ Thực thi chấm (executor-service) lắng nghe topic Kafka, deserialize message thành \textnormal{SubmissionGradingEvent}, lấy cấu hình bài tập (\textnormal{AssignmentGradingConfigDto}) từ dịch vụ Quản lý lớp học và điểm qua OpenFeign.
-\item \textbf{Chuẩn bị môi trường:} Executor tải tệp nộp từ RustFS, claim cổng riêng cho ứng dụng sinh viên và cơ sở dữ liệu (nếu có) qua \textnormal{PortAllocator}, khởi động Docker Compose theo mẫu \textnormal{dockerComposeTemplate} của bài tập (viết lại cổng ánh xạ, inject giới hạn CPU/RAM).
-\item \textbf{Thực thi các bước chấm:} \textnormal{GradingOrchestrator} điều phối các bước chấm theo thứ tự trong \textnormal{TestPlan}. Mỗi bước HTTP được gửi đến \textnormal{http://localhost:\{cổng được cấp\}\{đường dẫn\}} trên virtual thread; mỗi bước cơ sở dữ liệu kết nối đến cổng DB đã cấp. Biến trích xuất từ bước trước lưu trong \textnormal{VariableContext} và được thay vào cú pháp \textnormal{\$\{\ldots\}} của bước sau.
-\item \textbf{Cơ sở dữ liệu sạch giữa các kế hoạch:} Sau mỗi \textnormal{TestPlan}, executor ngắt kết nối session, xóa và tạo lại cơ sở dữ liệu mục tiêu (\textnormal{DROP DATABASE} + \textnormal{CREATE DATABASE}) để kế hoạch sau bắt đầu trên dữ liệu sạch.
-\item \textbf{Tổng hợp và ghi kết quả:} Khi hoàn tất tất cả các bước, executor tính điểm theo công thức \eqref{eq:scoring}, ghi kết quả từng bước và kết quả chấm vào dịch vụ Kết quả chấm, đồng thời cập nhật trạng thái bài nộp qua dịch vụ Nộp bài.
-\item \textbf{Dọn dẹp:} Dừng compose container, giải phóng cổng. Các công việc chấm bị treo vượt quá thời gian cho phép được dọn dẹp bởi \textit{stale-job-reaper}.
+\item \textbf{Nộp bài:} Sinh viên tải tệp nén bài làm lên hệ thống. Dịch vụ Nộp bài nhận tệp, lưu vào RustFS bằng presigned URL, sau đó cập nhật trạng thái bài nộp.
+\item \textbf{Kích hoạt chấm:} Sau khi tải xong, RustFS gọi webhook báo hoàn tất; dịch vụ Nộp bài cập nhật trạng thái và phát sự kiện lên Kafka, khóa theo \textnormal{submissionId} để giữ thứ tự xử lý trên từng bài nộp.
+\item \textbf{Tiêu thụ sự kiện:} Dịch vụ Thực thi chấm lắng nghe chủ đề Kafka, lấy cấu hình bài tập và điểm từ dịch vụ Quản lý lớp học.
+\item \textbf{Chuẩn bị môi trường:} Dịch vụ Thực thi chấm tải tệp nộp từ RustFS, cấp cổng riêng cho ứng dụng của sinh viên và cơ sở dữ liệu đi kèm (nếu có), sau đó dựng môi trường chạy theo mẫu Docker Compose của bài tập với giới hạn CPU và bộ nhớ.
+\item \textbf{Thực thi các bước chấm:} Dịch vụ Thực thi chấm lần lượt chạy các bước trong câu: gửi yêu cầu tới ứng dụng đang chạy hoặc truy vấn cơ sở dữ liệu của bài làm, rồi dùng kết quả của bước trước làm đầu vào cho bước sau.
+\item \textbf{Cơ sở dữ liệu sạch giữa các câu:} Sau mỗi câu, hệ thống xóa và tạo lại cơ sở dữ liệu của bài làm để câu tiếp theo bắt đầu trên dữ liệu sạch.
+\item \textbf{Tổng hợp và ghi kết quả:} Khi tất cả các bước hoàn tất, dịch vụ Thực thi chấm tính điểm theo công thức \eqref{eq:scoring}, ghi kết quả từng bước và kết quả chấm sang dịch vụ Kết quả chấm, đồng thời cập nhật trạng thái bài nộp qua dịch vụ Nộp bài.
+\item \textbf{Dọn dẹp:} Hệ thống dừng môi trường chấm và giải phóng cổng; các công việc chấm bị treo quá thời gian cho phép được cơ chế quét công việc tồn đọng dọn dẹp.
 \end{enumerate}
 
 \subsubsection{Nhất quán dữ liệu trong quy trình chấm bài với Grading Saga}
 \label{sec:grading-saga}
 
-Chấm bài không phải là một giao dịch ngắn. Một bài nộp phải trải qua nhiều bước: lấy cấu hình bài tập, tải tệp từ RustFS, dựng môi trường Docker, chạy từng bước kiểm thử, tính điểm và ghi kết quả sang dịch vụ kết quả. Các tài nguyên này nằm ở nhiều hệ thống khác nhau (cơ sở dữ liệu của dịch vụ thực thi, RustFS, Docker daemon và các dịch vụ khác), không thể bọc toàn bộ quy trình trong một giao dịch ACID. Khi một bước lỗi, hệ thống cần biết bài nộp đang ở bước nào, đã làm gì, có thể chấm lại hay không và làm sao tránh chấm trùng khi Kafka giao lại sự kiện. Đồ án áp dụng mẫu Saga~\cite{newman2021building} để theo dõi tiến trình chấm, gọi là Grading Saga.
+Một bài nộp phải trải qua nhiều bước: lấy cấu hình bài tập, tải tệp từ RustFS, dựng môi trường Docker, chạy từng bước kiểm thử, tính điểm và ghi kết quả sang dịch vụ kết quả. Các tài nguyên này nằm ở nhiều hệ thống khác nhau (cơ sở dữ liệu của dịch vụ thực thi, RustFS, Docker daemon và các dịch vụ khác), không thể bọc toàn bộ quy trình trong một giao dịch ACID. Khi một bước lỗi, hệ thống cần biết bài nộp đang ở bước nào, đã làm gì, có thể chấm lại hay không và làm sao tránh chấm trùng khi Kafka giao lại sự kiện. Đồ án áp dụng mẫu Saga~\cite{newman2021building} để theo dõi tiến trình chấm, gọi là Grading Saga.
 
-Mỗi bài nộp có một bản ghi công việc chấm (grading\_jobs), lưu mã bài nộp, mã bài tập, mã sinh viên, mã kế hoạch chấm, đường dẫn tệp trong RustFS, trạng thái, số lần chạy lại, thông báo lỗi và các mốc thời gian. Trên cột mã bài nộp có một chỉ mục duy nhất, bảo đảm một bài nộp chỉ có một công việc chấm. Mỗi lần chạy chấm được ghi thành một phiên chấm (grading\_sagas) và nhiều bản ghi bước (grading\_saga\_steps); mỗi bước lưu tên bước, mã plan, mã bước, trạng thái, lỗi và thời điểm kết thúc. Một job có thể có nhiều lần chạy, nên có thể có nhiều phiên chấm tương ứng. Kết quả từng bước được lưu trong grading\_step\_results, còn nhật ký dạng văn bản được lưu trong grading\_logs.
+Mỗi bài nộp có một bản ghi công việc chấm (grading\_jobs) lưu thông tin nhận diện bài nộp và câu, đường dẫn tệp trong RustFS, trạng thái, số lần chạy lại và các mốc thời gian. Chỉ mục duy nhất trên mã bài nộp bảo đảm mỗi bài nộp chỉ có một công việc chấm. Mỗi lần chạy được ghi thành một phiên chấm (grading\_sagas) và các bước của phiên (grading\_saga\_steps), nên một công việc có thể có nhiều phiên chấm; kết quả từng bước và nhật ký chấm lưu trong grading\_step\_results và grading\_logs.
 
-Bảng \ref{tab:grading-job-status} mô tả các trạng thái của một công việc chấm. Trạng thái của job là nguồn thông tin chính về tiến độ; trạng thái của saga và từng bước là dấu vết chi tiết để điều tra khi có lỗi.
+Bảng \ref{tab:grading-job-status} mô tả các trạng thái của một công việc chấm. Trạng thái công việc cho biết tiến độ chấm, còn trạng thái của saga và từng bước là dấu vết chi tiết để điều tra khi có lỗi.
 
 \begin{table}[H]
 \centering
 \begin{tabularx}{\textwidth}{|p{2.8cm}|X|}
 \hline
 Trạng thái & Ý nghĩa \\ \hline
-\texttt{PENDING} & Sự kiện đã được tiếp nhận, công việc đang chờ worker chấm. \\ \hline
-\texttt{FETCHING} & Đang lấy cấu hình bài tập và kế hoạch chấm từ dịch vụ quản lý lớp học và điểm. \\ \hline
-\texttt{BUILDING} & Đang tải tệp bài nộp, chuẩn bị thư mục làm việc và dựng môi trường Docker. \\ \hline
-\texttt{RUNNING} & Môi trường đã chạy, đang thực thi các bước chấm và tính điểm. \\ \hline
-\texttt{DONE} & Chấm xong, kết quả đã được ghi nhận. \\ \hline
-\texttt{FAILED} & Quá trình chấm dừng do lỗi; thông báo lỗi được lưu lại. \\ \hline
+PENDING & Sự kiện đã được tiếp nhận, công việc đang chờ worker chấm. \\ \hline
+FETCHING & Đang lấy cấu hình bài tập và câu từ dịch vụ quản lý lớp học và điểm. \\ \hline
+BUILDING & Đang tải tệp bài nộp, chuẩn bị thư mục làm việc và dựng môi trường Docker. \\ \hline
+RUNNING & Môi trường đã chạy, đang thực thi các bước chấm và tính điểm. \\ \hline
+DONE & Chấm xong, kết quả đã được ghi nhận. \\ \hline
+FAILED & Quá trình chấm dừng do lỗi; thông báo lỗi được lưu lại. \\ \hline
 \end{tabularx}
 \caption{Các trạng thái của một công việc chấm bài.}
 \label{tab:grading-job-status}
@@ -1019,29 +1023,34 @@ Trạng thái & Ý nghĩa \\ \hline
 
 Các bước chính của một phiên chấm gồm:
 \begin{itemize}
-\item FETCH\_CONFIG: gọi dịch vụ quản lý lớp học và điểm để lấy thông tin bài tập, kế hoạch chấm và các bước cần thực thi.
+\item FETCH\_CONFIG: gọi dịch vụ quản lý lớp học và điểm để lấy thông tin bài tập, câu và các bước cần thực thi.
 \item DOWNLOAD\_ARTIFACT: tải tệp nộp từ RustFS, giải nén và chuẩn bị thư mục làm việc.
 \item BOOT\_COMPOSE: vá tệp Docker Compose với cổng, tài nguyên và thông tin cơ sở dữ liệu cần thiết, sau đó dựng môi trường bằng Docker daemon trong Pod.
-\item RUN\_STEPS: chạy các plan và từng bước theo thứ tự. Mỗi bước được ghi thành một bản ghi STEP; kèm tên bước. Nếu một bước bắt buộc thất bại, các bước còn lại của plan được đánh dấu \texttt{SKIPPED} thay vì tiếp tục chạy.
-\item SCORE\_REPORT: tính điểm từ kết quả các bước, lưu trạng thái \texttt{DONE}, gửi kết quả sang dịch vụ kết quả và cập nhật trạng thái bài nộp.
+\item RUN\_STEPS: chạy lần lượt các câu và từng bước. Mỗi bước được ghi thành một bản ghi STEP kèm tên bước. Nếu một bước bắt buộc thất bại, các bước còn lại của câu được đánh dấu SKIPPED thay vì tiếp tục chạy.
+\item SCORE\_REPORT: tính điểm từ kết quả các bước, lưu trạng thái DONE, gửi kết quả sang dịch vụ kết quả và cập nhật trạng thái bài nộp.
 \end{itemize}
 
-Mỗi bước có thể ở một trong bốn trạng thái \texttt{STARTED}, \texttt{DONE}, \texttt{FAILED} hoặc \texttt{SKIPPED}. Saga tổng hợp có ba trạng thái \texttt{STARTED}, \texttt{DONE} và \texttt{FAILED}. Khi một bước không bắt buộc thất bại, quá trình chấm vẫn tiếp tục và điểm của bước đó được tính là không đạt; khi bước bắt buộc thất bại, plan hiện tại dừng lại nhưng các plan khác vẫn tiếp tục được xử lý.
+Mỗi bước có thể ở một trong bốn trạng thái STARTED, DONE, FAILED hoặc SKIPPED. Saga tổng hợp có ba trạng thái STARTED, DONE và FAILED. Khi một bước không bắt buộc thất bại, quá trình chấm vẫn tiếp tục và điểm của bước đó được tính là không đạt; khi bước bắt buộc thất bại, câu đang chạy dừng lại nhưng các câu khác vẫn tiếp tục được xử lý.
 
-Tính nhất quán được bảo vệ ở ba điểm. Thứ nhất, chỉ mục duy nhất trên cột mã bài nộp biến việc chấm trùng thành một lỗi ràng buộc cơ sở dữ liệu thay vì tạo thêm công việc. Khi nhận một sự kiện trùng, dịch vụ thực thi tìm công việc cũ; nếu công việc cũ đang ở trạng thái \texttt{FAILED}, dịch vụ đặt lại công việc và chấm lại, còn nếu không thì bỏ qua sự kiện. Thứ hai, khi hàng đợi xử lý bị đầy, công việc vẫn ở trạng thái \texttt{PENDING} thay vì bị mất; cơ chế quét công việc tồn đọng sẽ nhặt lại sau. Thứ ba, kết quả được gửi sang dịch vụ kết quả tối đa ba lần với thời gian chờ tăng dần; lỗi xác thực từ phía dịch vụ kết quả không được thử lại vì đó là lỗi dữ liệu, không phải lỗi tạm thời.
+Ba cơ chế sau bảo vệ tính nhất quán của quá trình chấm.
+\begin{itemize}[leftmargin=*, nosep]
+\item Không chấm trùng: vì mã bài nộp là duy nhất. Dịch vụ thực thi sau đó kiểm tra công việc đã có: nếu công việc đang có trạng thái FAILED thì đặt lại và chấm lại, nếu không thì bỏ qua sự kiện.
+\item Không mất việc khi hàng đợi đầy: công việc vẫn giữ trạng thái PENDING và được cơ chế quét công việc tồn đọng đưa trở lại hàng đợi sau đó.
+\item Không mất kết quả khi gửi lỗi: kết quả được gửi tối đa ba lần với thời gian chờ tăng dần; lỗi xác thực không được thử lại vì đó là lỗi dữ liệu, không phải lỗi tạm thời.
+\end{itemize}
 
-Cơ chế đặt lại công việc từ chối các công việc đã \texttt{DONE}. Với công việc chưa hoàn tất, hệ thống xóa kết quả từng bước, xóa các bước của saga, đưa saga về \texttt{STARTED}, đưa job về \texttt{PENDING}, xóa thông báo lỗi và tăng số lần chạy lại. Cơ chế quét công việc tồn đọng chạy định kỳ mỗi 5 phút, tìm các công việc ở trạng thái \texttt{PENDING}, \texttt{FETCHING} hoặc \texttt{BUILDING} đã quá 30 phút và chưa vượt quá ba lần chạy lại, rồi đưa chúng trở lại hàng đợi. Các công việc đang \texttt{RUNNING} không bị quét tự động vì một công việc đang chạy thật và một công việc bị treo do Pod chết có thể trông giống nhau nếu chỉ dựa vào thời gian; việc chấm lại một công việc đang chạy sẽ gây chấm trùng. Vì vậy, trường hợp Pod chết giữa lúc \texttt{RUNNING} cần được xử lý thủ công.
+Cơ chế chạy lại công việc chỉ áp dụng cho công việc chưa DONE. Khi chạy lại, hệ thống xóa kết quả từng bước và các bước của saga, đưa saga về STARTED, đưa công việc về PENDING, xóa thông báo lỗi và tăng số lần chạy lại. Cơ chế quét công việc tồn đọng chạy mỗi 5 phút, tìm các công việc ở trạng thái PENDING, FETCHING hoặc BUILDING quá 30 phút và chưa chạy lại quá ba lần để đưa trở lại hàng đợi. Công việc đang RUNNING không bị quét tự động vì nếu chỉ dựa vào thời gian thì không phân biệt được với công việc bị treo do Pod chết, mà chấm lại một công việc đang chạy sẽ gây chấm trùng. Do đó, trường hợp này cần xử lý thủ công.
 
-Cần phân biệt Grading Saga với một giao dịch phân tán có bù trừ tự động. Ở đây, saga chủ yếu đóng vai trò theo dõi và hỗ trợ phục hồi; các tài nguyên tạm như container, cổng và thư mục làm việc được dọn trong khối \texttt{finally} khi tiến trình còn sống, nhưng không có hành động bù trừ tự động nếu Pod chết đột ngột. Việc ghi saga được thực hiện theo hướng best-effort: nếu ghi saga thất bại, quá trình chấm vẫn tiếp tục và lỗi chỉ được ghi log. Do đó, bảng job mới là nguồn sự thật về trạng thái chấm, còn saga là dấu vết phục vụ điều tra. Nếu việc gửi kết quả thất bại sau ba lần thử, job vẫn có thể ở trạng thái \texttt{DONE} trong khi kết quả chưa có ở dịch vụ kết quả; trường hợp này cần được đối soát và là một hạn chế được nêu ở mục đánh giá trong chương 3.
+Cần phân biệt Grading Saga với giao dịch phân tán có bù trừ tự động (compensating transaction), tức là khi một bước thất bại thì hệ thống tự chạy hành động ngược cho các bước đã hoàn tất. Ở đây, saga chỉ theo dõi và hỗ trợ phục hồi: các tài nguyên tạm như container, cổng và thư mục làm việc được dọn trong khối finally khi tiến trình còn sống, nhưng không có hành động bù trừ tự động nếu Pod chết đột ngột. Việc ghi saga được thực hiện theo hướng best-effort: nếu ghi saga thất bại, quá trình chấm vẫn tiếp tục và lỗi chỉ được ghi log. Do đó, bảng job mới là nguồn sự thật về trạng thái chấm, còn saga là dấu vết phục vụ điều tra. Nếu việc gửi kết quả thất bại sau ba lần thử, công việc vẫn có thể ở trạng thái DONE trong khi kết quả chưa có ở dịch vụ kết quả; trường hợp này cần được đối soát và là một hạn chế được nêu ở mục đánh giá trong chương 3.
 
 \subsubsection{Cấu hình chấm bài qua JSON}
 
 Giảng viên cấu hình chấm bài ở ba cấp:
 
 \begin{itemize}
-\item \emph{Cấp bài tập} (\textnormal{Assignment}): chiến lược chấm (\textnormal{STUDENT\_DOCKER\_COMPOSE}), danh sách cổng cần ánh xạ, thời gian chờ khởi động ứng dụng, thời gian chờ toàn bộ quá trình chấm, giới hạn CPU và RAM (\textnormal{GraderConfig}).
-\item \emph{Cấp kế hoạch chấm} (\textnormal{TestPlan}): mỗi kế hoạch có tên, thứ tự chạy, trọng số trong điểm tổng hợp và danh sách bước. Các kế hoạch chạy theo \textnormal{sequenceOrder}; nếu kế hoạch trước thất bại ở bước bắt buộc, kế hoạch sau không chạy.
-\item \emph{Cấp bước chấm} (\textnormal{TestStep}): mỗi bước là một yêu cầu HTTP (hoặc truy vấn cơ sở dữ liệu) với phương thức, đường dẫn, trạng thái mong đợi, danh sách điều kiện kiểm tra (\textnormal{assertions}) và danh sách biến trích xuất (\textnormal{extract}) để bước sau dùng lại qua cú pháp \textnormal{\$\{\ldots\}}.
+\item \emph{Cấp bài tập} (\textnormal{Assignment}): chiến lược chấm, các cổng cần ánh xạ, thời gian chờ và giới hạn tài nguyên cho môi trường chấm (\textnormal{GraderConfig}).
+\item \emph{Cấp câu} (\textnormal{TestPlan}): mỗi câu có tên, thứ tự chạy, trọng số trong điểm tổng hợp và danh sách bước; nếu câu trước thất bại ở bước bắt buộc thì câu sau không chạy.
+\item \emph{Cấp bước chấm} (\textnormal{TestStep}): mỗi bước là một yêu cầu HTTP hoặc một truy vấn cơ sở dữ liệu, kèm điều kiện kiểm tra (\textnormal{assertions}) và biến trích xuất (\textnormal{extract}) để bước sau dùng lại.
 \end{itemize}
 
 Kết quả từng bước có trạng thái \textnormal{PASSED}, \textnormal{FAILED}, \textnormal{ERROR} hoặc \textnormal{SKIPPED}. Điểm tổng hợp của bài nộp tính theo công thức:
@@ -1054,17 +1063,17 @@ Trong đó các bước \textnormal{SKIPPED} không tính vào tử số và m�
 
 \subsubsection{Thiết kế môi trường thực thi bằng Testcontainers}
 
-Để cách ly môi trường chạy của từng bài nộp, executor-service dùng Docker-in-Docker (DinD) kết hợp Testcontainers theo luồng sau.
+Để cách ly môi trường chạy của từng bài nộp, dịch vụ Thực thi chấm dùng Docker-in-Docker (DinD) kết hợp Testcontainers theo luồng sau.
 
 \begin{enumerate}
 \item \emph{Cấp cổng riêng:} \textnormal{PortAllocator} cấp một cổng riêng cho ứng dụng sinh viên và một cổng riêng cho cơ sở dữ liệu (nếu có), tránh xung đột giữa các công việc chấm chạy song song trên cùng một nút.
-\item \emph{Khởi động Docker Compose:} executor đọc mẫu \textnormal{dockerComposeTemplate} của bài tập, cập nhật ánh xạ cổng theo dạng \textnormal{cổng được cấp:cổng trong container}, bổ sung giới hạn CPU/RAM rồi khởi động các container. Mẫu Compose cần khai báo ít nhất một service có cấu hình \textnormal{image} hoặc \textnormal{build}; executor ưu tiên service không mang tên thành phần hạ tầng và có khai báo cổng, nếu không tìm được service phù hợp thì dùng service đầu tiên.
-\item \emph{Thực thi bước chấm:} mỗi bước HTTP gửi yêu cầu đến ứng dụng qua địa chỉ localhost và cổng được cấp, kèm đường dẫn đã cấu hình. Yêu cầu được xử lý trên virtual thread; khi chờ I/O, bước chấm không giữ một luồng nền (platform thread). Các bước cơ sở dữ liệu kết nối đến cổng DB đã được cấp. Biến trích xuất từ bước trước được lưu trong \textnormal{VariableContext} (mỗi công việc chấm có một ngữ cảnh) và được thay thế vào cú pháp \textnormal{\$\{\ldots\}} của bước sau.
-\item \emph{Cơ sở dữ liệu sạch giữa các kế hoạch:} sau mỗi kế hoạch, nếu cấu hình kết nối có tên cơ sở dữ liệu, executor ngắt các session đang kết nối đến cơ sở dữ liệu đó, xóa rồi tạo lại cơ sở dữ liệu mục tiêu (\textnormal{DROP DATABASE} + \textnormal{CREATE DATABASE}) để kế hoạch sau bắt đầu với dữ liệu sạch. Nếu không có tên cơ sở dữ liệu trong cấu hình, bước đặt lại được bỏ qua.
-\item \emph{Dọn dẹp và xử lý công việc treo:} khi công việc chấm kết thúc, dừng compose container và giải phóng cổng. Các công việc chấm bị treo vượt quá thời gian cho phép được dọn dẹp bởi \textit{stale-job-reaper}.
+\item \emph{Khởi động Docker Compose:} Dịch vụ Thực thi chấm đọc mẫu \textnormal{dockerComposeTemplate} của bài tập, cập nhật ánh xạ cổng theo dạng \textnormal{cổng được cấp:cổng trong container}, bổ sung giới hạn CPU và bộ nhớ rồi khởi động các container. Mẫu Compose phải khai báo ít nhất một dịch vụ có \textnormal{image} hoặc \textnormal{build}; hệ thống ưu tiên dịch vụ không phải thành phần hạ tầng và có khai báo cổng, nếu không có thì dùng dịch vụ đầu tiên.
+\item \emph{Thực thi bước chấm:} mỗi bước HTTP gửi yêu cầu đến ứng dụng qua địa chỉ localhost và cổng được cấp, kèm đường dẫn đã cấu hình. Yêu cầu được xử lý trên luồng ảo; khi chờ vào ra, bước chấm không chiếm một luồng hệ điều hành. Các bước cơ sở dữ liệu kết nối đến cổng DB đã được cấp. Biến trích xuất từ bước trước được lưu trong \textnormal{VariableContext} (mỗi công việc chấm có một ngữ cảnh) và được thay thế vào cú pháp \textnormal{\$\{\ldots\}} của bước sau.
+\item \emph{Cơ sở dữ liệu sạch giữa các câu:} sau mỗi câu, nếu cấu hình kết nối có tên cơ sở dữ liệu, dịch vụ Thực thi chấm ngắt các phiên kết nối đến cơ sở dữ liệu đó, xóa rồi tạo lại cơ sở dữ liệu mục tiêu (\textnormal{DROP DATABASE} + \textnormal{CREATE DATABASE}) để câu sau bắt đầu với dữ liệu sạch. Nếu không có tên cơ sở dữ liệu trong cấu hình, bước đặt lại được bỏ qua.
+\item \emph{Dọn dẹp và xử lý công việc treo:} khi công việc chấm kết thúc, hệ thống dừng các container của môi trường chấm và giải phóng cổng. Các công việc chấm bị treo vượt quá thời gian cho phép được cơ chế quét công việc tồn đọng dọn dẹp.
 \end{enumerate}
 
 
-Chi tiết cấu hình từng trường ở cấp bài tập, kế hoạch, bước, điều kiện kiểm tra, biến trích xuất, cấu hình executor và công thức tính điểm xem ở Phụ lục \ref{phu-luc:chapter}.
+Chi tiết cấu hình từng trường ở cấp bài tập, câu, bước, điều kiện kiểm tra, biến trích xuất, cấu hình dịch vụ Thực thi chấm và công thức tính điểm xem ở Phụ lục \ref{phu-luc:chapter}.
 
 \end{document}
