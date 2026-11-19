@@ -361,12 +361,13 @@ Ví dụ sai (đã sửa):
 
 Mục 3.1 trình bày môi trường và kiến trúc triển khai, đóng gói Docker/Helm,
 GitHub Actions, ArgoCD GitOps, hạ tầng PostgreSQL/Kafka, RustFS, Keycloak
-và các thành phần observability đã triển khai thực tế. Prometheus thu thập
-metrics từ `/actuator/prometheus` mỗi 30 giây, lưu 3 ngày; Grafana dùng
-Prometheus và Tempo; Tempo nhận OTLP qua cổng 4318, lưu trace 24 giờ và
-đẩy RED metrics về Prometheus. Mục triển khai chỉ mô tả thành phần đã có;
-không liệt kê thành phần chưa triển khai nếu đã nêu ở Hướng phát triển.
-Hình kiến trúc triển khai dùng `fig:deployment` và CI/CD dùng `fig:cicd`.
+và các thành phần observability đã triển khai thực tế. Với observability,
+chỉ nêu vai trò từng thành phần: Prometheus thu số liệu định kỳ, Grafana
+hiển thị số liệu từ Prometheus và truy vết từ Tempo, Tempo nhận truy vết
+qua OTLP rồi đẩy RED metrics về Prometheus. Mục triển khai chỉ mô tả thành
+phần đã có; không liệt kê thành phần chưa triển khai nếu đã nêu ở Hướng
+phát triển. Hình kiến trúc triển khai dùng `fig:deployment` và CI/CD dùng
+`fig:cicd`.
 
 Thiết kế quy trình chấm, Grading Saga, chống trùng và phục hồi trạng thái
 thuộc Chương 2 (`sec:grading-saga`). Mục 3.1 không lặp lại cơ chế này;
@@ -374,6 +375,22 @@ Mục 3.2 có thể nêu kịch bản đánh giá và hạn chế vận hành, n
 khẳng định kịch bản đã chạy hoặc bịa kết quả khi chưa có số liệu thực tế.
 
 Khi viết hạn chế và rủi ro, tách rõ hiện trạng, đường khai thác hoặc ảnh hưởng cụ thể, rồi đến khuyến nghị khắc phục. Tránh gộp nhiều luận điểm vào một câu hoặc trình bày khuyến nghị như thể đó là hiện trạng đã triển khai.
+
+## Chương 3: mô tả vai trò, không đọc tên tham số cấu hình (mandatory)
+
+Văn xuôi Chương 3 không nêu tên trường cấu hình, biến môi trường, tên image,
+tên lớp kiểm thử hay giá trị tham số chi tiết: `ingressClassName`,
+`DOCKER_HOST`, `tcp://...`, `maxSurge`, `emptyDir`, `ReadWriteOnce`,
+`SASL_SSL`/`SCRAM-*`, `proxy edge`, `hostname strict`, `mvn ... -DskipTests`,
+`ApplicationTests`, `/actuator/health*`, cổng cụ thể, URL miền cụ thể.
+Thay bằng vai trò và hệ quả: "Traefik làm bộ điều khiển Ingress", "chiến lược
+cập nhật không cho phép tạo thêm Pod khi thay image", "ổ đĩa ảo chỉ cho phép
+một Pod ghi tại một thời điểm", "kết nối Kafka xác thực bằng tài khoản và
+chứng chỉ CA". Vẫn giữ: số liệu có ý nghĩa đánh giá (thời gian chờ probe, mức
+tài nguyên, số bản sao, dung lượng ổ đĩa), tên công nghệ, tên bảng/cơ sở dữ
+liệu trong bảng tổng hợp, và tên lớp miền (`TestPlan`, `TestStep`) khi bàn về
+mô hình. Khi bỏ một thuật ngữ khỏi văn xuôi, xóa luôn dòng tương ứng trong
+`0_5_Danh_muc_viet_tat.tex` để danh mục không còn mục chết.
 
 ## Unnumbered preface in TOC before Chapter 1
 

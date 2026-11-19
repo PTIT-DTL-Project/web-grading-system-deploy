@@ -58,10 +58,14 @@ Một plan (câu hỏi) của bài tập, dạng rút gọn dành cho sinh viên
 ### 2.3 `StudentStepResponse` (dto/response)
 Một bước trong plan (phiên bản sinh viên, đã sanitize).
 
-**Không có trường `required`**: cờ `test_steps.is_required` là ngữ nghĩa của
-executor-service (bước fail ⇒ các bước sau bị `SKIPPED`), **không** phải "sinh viên
-bắt buộc phải làm câu này". Trường này bị loại khỏi payload sinh viên để cả UI và
-tool của AI assistant (forward nguyên JSON cho model) không hiểu nhầm.
+DTO này cố ý bỏ **hai** trường so với `StepResponse` của giảng viên:
+
+- **`required`**: cờ `test_steps.is_required` là ngữ nghĩa của executor-service
+  (bước fail ⇒ các bước sau bị `SKIPPED`), **không** phải "sinh viên bắt buộc phải
+  làm câu này". Trường này bị loại khỏi payload sinh viên để cả UI và tool của AI
+  assistant (forward nguyên JSON cho model) không hiểu nhầm.
+- **`expectedResult`**: chứa đáp án kỳ vọng của giảng viên, cùng nhóm bí mật với
+  `config` đã sanitize (xem `sanitizeConfig`).
 
 | Trường | Kiểu | Mô tả |
 |--------|------|-------|
@@ -71,7 +75,6 @@ tool của AI assistant (forward nguyên JSON cho model) không hiểu nhầm.
 | `description` | String | Mô tả |
 | `type` | String | Loại bước (HTTP_REQUEST, DB_QUERY, ...) |
 | `config` | JsonNode | Config (đã strip `connection`, `extract`, `expected`) |
-| `expectedResult` | JsonNode | Kết quả kỳ vọng (đã strip) |
 | `weight` | Integer | Trọng số |
 | `timeoutMs` | Integer | Timeout (ms) |
 

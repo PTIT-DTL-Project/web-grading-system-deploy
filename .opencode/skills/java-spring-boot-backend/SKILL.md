@@ -588,8 +588,10 @@ students a step was mandatory.
 1. **Split the DTO, do not null the field.** `PlanResponse` /`StepResponse` stay the
    lecturer/executor contract (they feed the step editor's `required` switch and the internal
    `InternalStepDto`). Student reads use `StudentPlanResponse` / `StudentStepResponse`
-   (`course-service/dto/response/`), which simply have no such field — so no `"required":
-   null` can leak into an LLM prompt either.
+   (`course-service/dto/response/`), which have no `required` — so no `"required": null` can
+   leak into an LLM prompt either. `StudentStepResponse` also drops `expectedResult` (the
+   grader's answer key); document **every** deliberate omission in the DTO Javadoc, not just
+   the newest one.
 2. **Sanitize in the mapper, test the serialized JSON.** `StudentAssignmentService
    .toSanitizedStep` builds the reduced DTO; `StudentAssignmentServiceTest
    .listPlans_neverSerializesRequiredFlag` asserts the serialized payload contains no
