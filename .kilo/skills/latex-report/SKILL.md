@@ -369,6 +369,13 @@ phần đã có; không liệt kê thành phần chưa triển khai nếu đã n
 phát triển. Hình kiến trúc triển khai dùng `fig:deployment` và CI/CD dùng
 `fig:cicd`.
 
+Cụm có ba namespace: `web-grading` (ứng dụng), `observability` (Prometheus +
+Grafana + Tempo, cài bằng kube-prometheus-stack và Tempo chart) và `argocd`.
+Chỉ Grafana mở Ingress qua Traefik; Prometheus và Tempo phục vụ trong cụm.
+Mục "Tổng hợp kết quả triển khai" (3.1.7) phải liệt kê cả bộ thành phần quan
+sát, không chỉ dịch vụ nghiệp vụ, và mô tả kết quả (số liệu, truy vết, dashboard)
+chứ không chỉ nêu tên thành phần.
+
 Thiết kế quy trình chấm, Grading Saga, chống trùng và phục hồi trạng thái
 thuộc Chương 2 (`sec:grading-saga`). Mục 3.1 không lặp lại cơ chế này;
 Mục 3.2 có thể nêu kịch bản đánh giá và hạn chế vận hành, nhưng không
@@ -558,6 +565,15 @@ Chương 1), nên thuật ngữ được khai báo ở đó là "khai báo trư�
   `job`, `image`, `tag`, `webhook`, `traceId`, `pull request`, `path`,
   `assertion`) cần một dòng trong longtable: cột 1 là từ, cột 2 tên
   tiếng Anh đầy đủ, cột 3 nghĩa tiếng Việt ngắn.
+- Khi khái niệm đã có dòng trong danh mục thì dùng thẳng thuật ngữ đó
+  trong văn xuôi, đừng dịch thành cụm tiếng Việt khó hiểu. Các cặp đã
+  sửa trong báo cáo: "luồng ảo" -> `virtual thread`, "nhóm tiêu thụ
+  riêng" -> `consumer group`, "điểm cuối" -> `endpoint`, "bảng điều
+  khiển" -> `dashboard`, "ngân sách gián đoạn" -> `PodDisruptionBudget`,
+  "cấu hình sẵn sàng cao" -> `high availability`, "bảng ghi sự kiện cần
+  gửi" -> `outbox`, "thuê quyền xử lý có thời hạn" -> `lease`. Chỉ dịch
+  khi đã có từ tiếng Việt phổ biến và ngắn (hàng đợi, cổng, cơ sở dữ
+  liệu, nhật ký, số liệu).
 - Nếu đã có tương đương tiếng Việt phổ biến, dịch theo bảng
   "Dịch từ tiếng Anh sang tiếng Việt" thay vì thêm dòng mới; chỉ khai
   báo những từ buộc phải giữ tiếng Anh (tên công nghệ, trạng thái,

@@ -1,19 +1,19 @@
 \documentclass[../BTL.tex]{subfiles}
 \begin{document}
 
-Chương này trình bày cách hệ thống được đóng gói, triển khai trên cụm Kubernetes và vận hành với các dịch vụ hạ tầng dùng chung; sau đó trình bày các tiêu chí, kịch bản đánh giá và những hạn chế còn lại. Nội dung được tổ chức thành ba phần chính: triển khai hệ thống (mục \ref{section:3.1}), đánh giá hệ thống (mục \ref{section:3.2}) và hướng phát triển (mục \ref{section:3.3}).
+Chương này trình bày cách hệ thống được đóng gói, triển khai trên cụm Kubernetes và vận hành với các dịch vụ hạ tầng dùng chung; sau đó trình bày các tiêu chí, kịch bản đánh giá và những hạn chế còn lại. Nội dung được tổ chức thành ba phần chính: triển khai hệ thống (mục~\ref{section:3.1}), đánh giá hệ thống (mục~\ref{section:3.2}) và hướng phát triển (mục~\ref{section:3.3}).
 
 \section{Triển khai hệ thống}
 \label{section:3.1}
 
-Mục này trình bày môi trường và kiến trúc triển khai, cách đóng gói dịch vụ, quy trình CI/CD và GitOps, các dịch vụ hạ tầng dùng chung, cùng kết quả triển khai. Thiết kế quy trình chấm và các cơ chế nhất quán đã được trình bày ở Chương 2; Chương này chỉ xem xét chúng qua các kịch bản đánh giá và những rủi ro vận hành còn lại.
+Mục này trình bày môi trường và kiến trúc triển khai, cách đóng gói dịch vụ, quy trình CI/CD và GitOps, các dịch vụ hạ tầng dùng chung, cùng kết quả triển khai. Thiết kế quy trình chấm và các cơ chế nhất quán đã được trình bày ở Chương 2, chương này chỉ xem xét chúng qua các kịch bản đánh giá và những rủi ro vận hành còn lại.
 
 \subsection{Môi trường và kiến trúc triển khai}
 \label{section:3.1.1}
 
 Hệ thống được triển khai theo mô hình lai. Giao diện web chạy trên Vercel, các dịch vụ backend chạy trong cụm k3s~\cite{k3sdocs}, còn PostgreSQL và Kafka được thuê dưới dạng dịch vụ quản lý. Cách chia này giữ phần tính toán trong cụm để chủ động cấu hình, đồng thời chuyển việc sao lưu, vá lỗi và mở rộng dung lượng của tầng dữ liệu cho nhà cung cấp.
 
-Luồng truy cập từ Internet đi qua Cloudflare Zero Trust Tunnel~\cite{cloudflaredocs}. Cloudflare kết thúc kết nối TLS, chuyển tiếp yêu cầu vào cụm qua một kết nối do phía trong khởi tạo; nhờ đó không cần mở cổng vào trực tiếp trên firewall của máy chủ. Trong cụm, Traefik nhận yêu cầu và định tuyến theo tên miền tới Service tương ứng, sau đó Service chuyển tiếp tới các Pod. Hình~\ref{fig:deployment} mô tả kiến trúc triển khai tổng thể.
+Luồng truy cập từ Internet đi qua Cloudflare Zero Trust Tunnel~\cite{cloudflaredocs}. Cloudflare kết thúc kết nối TLS, chuyển tiếp yêu cầu vào cụm qua một kết nối do phía trong khởi tạo; nhờ đó không cần mở cổng vào trực tiếp trên tường lửa của máy chủ. Trong cụm, Traefik nhận yêu cầu và định tuyến theo tên miền tới Service tương ứng, sau đó Service chuyển tiếp tới các Pod. Hình~\ref{fig:deployment} mô tả kiến trúc triển khai tổng thể.
 
 \begin{figure}[H]
 \centering
@@ -45,7 +45,7 @@ Kafka UI & 8080 & Không & 1 & web-dev1-kafka-ui \\ \hline
 \label{tab:deploy-components}
 \end{table}
 
-Hệ thống dùng hai namespace chính: web-grading chứa ứng dụng và argocd chứa ArgoCD. Các Service đều thuộc kiểu ClusterIP; truy cập từ ngoài đi qua Ingress, do Traefik làm bộ điều khiển Ingress. Mỗi tên miền trỏ tới một Service, còn Service chọn Pod theo nhãn ứng dụng. Cách tổ chức này giữ địa chỉ nội bộ ổn định khi Pod được tạo lại.
+Hệ thống dùng ba namespace: web-grading chứa ứng dụng, observability chứa bộ thành phần quan sát và argocd chứa ArgoCD. Các Service đều thuộc kiểu ClusterIP; truy cập từ ngoài đi qua Ingress, do Traefik làm bộ điều khiển Ingress. Mỗi tên miền trỏ tới một Service, còn Service chọn Pod theo nhãn ứng dụng. Cách tổ chức này giữ địa chỉ nội bộ ổn định khi Pod được tạo lại. Prometheus, Grafana và Tempo chạy trong namespace observability; chỉ Grafana có điểm truy cập riêng qua Traefik để xem dashboard, còn Prometheus và Tempo chỉ phục vụ trong cụm.
 
 Giao diện web được triển khai trên Vercel~\cite{verceldocs}. Cấu hình của Vercel chuyển mọi yêu cầu /api sang API Gateway, nhờ đó trình duyệt chỉ gọi cùng một origin và không phát sinh yêu cầu CORS cho các API nghiệp vụ; các đường dẫn còn lại được chuyển về index.html để React Router xử lý điều hướng phía client. Keycloak được cấu hình tên miền công khai và danh sách redirect URI tương ứng với miền của giao diện.
 
@@ -54,13 +54,11 @@ Giao diện web được triển khai trên Vercel~\cite{verceldocs}. Cấu hìn
 
 Mỗi dịch vụ backend có một Dockerfile riêng theo mẫu build nhiều tầng~\cite{dockerdocs}. Tầng thứ nhất dùng image có bộ công cụ phát triển Java 21 để biên dịch mã nguồn và đóng gói thành tệp JAR. Tầng thứ hai chỉ giữ môi trường chạy Java 21 cùng tệp JAR và khởi động dịch vụ từ tệp đó. Cách đóng gói này giữ image chạy nhỏ hơn image build, không chứa mã nguồn và công cụ biên dịch, đồng thời bảo đảm mọi môi trường dùng cùng một phiên bản Java 21.
 
-Toàn bộ cấu hình được truyền qua biến môi trường thay vì ghi vào image. Các giá trị nhạy cảm như thông tin kết nối cơ sở dữ liệu, khóa Kafka và khóa RustFS được lấy từ Secret của Kubernetes; các giá trị không nhạy cảm như tên cơ sở dữ liệu, cổng dịch vụ và mức tài nguyên được khai báo trong tệp values của Helm. Nhờ vậy, cùng một image có thể chạy ở nhiều môi trường mà không cần build lại.
+Toàn bộ cấu hình được truyền qua biến môi trường thay vì ghi vào image. Các giá trị nhạy cảm như thông tin kết nối cơ sở dữ liệu, khóa Kafka và khóa RustFS được lấy từ Secret của Kubernetes, các giá trị không nhạy cảm như tên cơ sở dữ liệu, cổng dịch vụ và mức tài nguyên được khai báo trong tệp values của Helm. Nhờ vậy, cùng một image có thể chạy ở nhiều môi trường mà không cần build lại.
 
 Dịch vụ thực thi chấm là trường hợp đặc biệt vì cần Docker để dựng môi trường chấm của bài nộp. Mỗi Pod của dịch vụ này gồm hai container: container ứng dụng và container chạy Docker daemon riêng. Container ứng dụng kết nối tới daemon đó qua địa chỉ nội bộ của Pod; container Docker chạy ở chế độ đặc quyền, không dùng TLS vì chỉ giao tiếp trong Pod, và dùng chung một volume tạm cho dữ liệu của daemon. Mỗi Pod có Docker daemon riêng nên các bài chấm không dùng chung daemon; volume là tạm thời nên dữ liệu Docker không tồn tại sau khi Pod bị thay thế. Dịch vụ này chạy hai bản sao để tăng khả năng xử lý đồng thời, trong khi các dịch vụ còn lại chạy một bản sao. Chiến lược cập nhật không cho phép tạo thêm Pod trong lúc thay image, nên cụm không bao giờ có Pod thứ ba.
 
-Cấu hình triển khai được đóng gói bằng Helm~\cite{helmdocs}. Kho cấu hình chứa một chart cho mỗi dịch vụ, gồm Deployment và Service; các Ingress được quản lý riêng trong kho triển khai. Mỗi môi trường có một tệp values riêng chứa phiên bản image, cấu hình ứng dụng, tài nguyên và số bản sao; tệp dùng cho staging là values-stg.yaml. Mỗi container có mức tài nguyên yêu cầu và mức giới hạn riêng, trong đó giới hạn cao hơn yêu cầu khoảng hai lần; container Docker có mức riêng vì nhu cầu cao hơn. Tên tài nguyên được sinh từ tên release, mà ArgoCD đặt theo tên Application, nên các Service có tiền tố grading- ghép với tên dịch vụ.
-
-Phần lớn chart dùng chung một điểm cuối kiểm tra sức khỏe cho readiness và liveness, với thời gian chờ khởi động lần lượt 30 giây và 60 giây. Riêng dịch vụ trợ lý AI tách thành các nhóm kiểm tra riêng cho readiness và liveness. Lý do là điểm kiểm tra chung có chạy cả chỉ báo cơ sở dữ liệu; khi compute của PostgreSQL được đánh thức từ trạng thái tạm dừng, chỉ báo này có thể giữ lần kiểm tra lâu hơn thời gian chờ mặc định và khiến Pod bị khởi động lại. Các nhóm kiểm tra riêng chỉ xét trạng thái nội bộ của ứng dụng nên trả lời nhanh và không phụ thuộc cơ sở dữ liệu.
+Cấu hình triển khai được đóng gói bằng Helm~\cite{helmdocs}. Kho cấu hình chứa một chart cho mỗi dịch vụ, gồm Deployment và Service; các Ingress được quản lý riêng trong kho triển khai. Mỗi môi trường có một tệp values riêng chứa phiên bản image, cấu hình ứng dụng, tài nguyên và số bản sao; tệp dùng cho staging là values-stg.yaml. Mỗi container có mức tài nguyên yêu cầu và mức giới hạn riêng, container Docker có mức riêng vì nhu cầu cao hơn.
 
 \subsection{Tích hợp liên tục với GitHub Actions}
 \label{section:3.1.3}
@@ -104,20 +102,18 @@ ArgoCD được cài trong namespace argocd từ manifest chính thức~\cite{ar
 
 Kho cấu hình chứa một chart Helm cho mỗi dịch vụ và một tệp danh sách các dịch vụ cần triển khai. Một script đọc danh sách này, điền tên dịch vụ vào mẫu chung và tạo một Application cho mỗi dịch vụ. Mỗi Application trỏ tới kho cấu hình, theo dõi nhánh main, dùng chart tại thư mục của dịch vụ, nạp tệp values của môi trường staging, triển khai vào namespace web-grading và bật đồng bộ tự động kèm prune và selfHeal. ArgoCD không được phép tự tạo namespace: namespace phải tồn tại trước, tránh việc công cụ tạo tài nguyên ngoài ý muốn.
 
-Luồng triển khai bắt đầu khi workflow phát hành cập nhật tag image trong kho cấu hình. ArgoCD phát hiện commit mới, render chart với values tương ứng rồi so sánh với trạng thái thực tế trong cụm; nếu có khác biệt, ArgoCD áp dụng thay đổi để đưa cụm về đúng mô tả trong Git. Cơ chế selfHeal tự sửa các thay đổi thủ công trên cụm, còn prune xóa tài nguyên không còn trong chart. Khi cần quay lại phiên bản trước, có thể đảo commit cấu hình hoặc chỉnh tag về phiên bản cũ; ArgoCD sẽ đồng bộ lại theo Git thay vì phải thao tác trực tiếp trên cụm.
-
-Thứ tự khởi tạo môi trường được giữ cố định: tạo namespace và Secret, triển khai RustFS, áp dụng Ingress, cài ArgoCD, sau đó tạo các Application. Các bước này được đóng gói trong các script riêng để có thể chạy lại khi dựng môi trường mới. Cách làm này phù hợp với mô hình GitOps: Git là nguồn mô tả trạng thái mong muốn, còn cụm chỉ là nơi thực thi trạng thái đó.
+Luồng triển khai bắt đầu khi workflow phát hành cập nhật tag image trong kho cấu hình. ArgoCD phát hiện commit mới, render chart với values tương ứng rồi so sánh với trạng thái thực tế trong cụm; nếu có khác biệt, ArgoCD áp dụng thay đổi để đưa cụm về đúng mô tả trong Git. Cơ chế selfHeal tự sửa các thay đổi thủ công trên cụm, còn prune xóa tài nguyên không còn trong chart. Khi cần quay lại phiên bản trước, có thể đảo commit cấu hình hoặc chỉnh tag về phiên bản cũ; ArgoCD sẽ đồng bộ lại theo Git thay vì phải thao tác trực tiếp trên cụm.Cách làm này phù hợp với mô hình GitOps: Git là nguồn mô tả trạng thái mong muốn, còn cụm chỉ là nơi thực thi trạng thái đó.
 
 \subsection{Hạ tầng dùng chung}
 \label{section:3.1.5}
 
-Mỗi dịch vụ có một cơ sở dữ liệu PostgreSQL riêng trên nền tảng quản lý Neon~\cite{neondocs}; tên từng cơ sở dữ liệu được liệt kê trong Bảng~\ref{tab:deploy-components}. Dịch vụ API Gateway không cần cơ sở dữ liệu. Các dịch vụ có cơ sở dữ liệu kết nối qua JDBC, thông tin kết nối được lấy từ Secret của cụm. Mỗi dịch vụ có cơ sở dữ liệu chạy Flyway khi khởi động để áp dụng migration, còn Hibernate được đặt ở chế độ validate để chỉ kiểm tra schema, không tự sửa cấu trúc bảng. Cách này giữ migration trong mã nguồn và tránh hai phiên bản dịch vụ cùng tự thay đổi schema.
+Mỗi dịch vụ có một cơ sở dữ liệu PostgreSQL riêng trên nền tảng quản lý Neon~\cite{neondocs}; tên từng cơ sở dữ liệu được liệt kê trong Bảng~\ref{tab:deploy-components}. Dịch vụ API Gateway không cần cơ sở dữ liệu. Thông tin kết nối được lấy từ Secret của cụm. Mỗi dịch vụ có cơ sở dữ liệu chạy Flyway khi khởi động để áp dụng migration, còn Hibernate được đặt ở chế độ validate để chỉ kiểm tra schema, không tự sửa cấu trúc bảng. Cách này giữ migration trong mã nguồn và tránh hai phiên bản dịch vụ cùng tự thay đổi schema.
 
-Kafka được thuê trên Aiven~\cite{aivendocs}. Gói miễn phí giới hạn số topic nên hệ thống dùng một topic chung là wgs-events cho toàn bộ sự kiện. Sự kiện được gửi với khóa là mã bài nộp để các sự kiện của cùng một bài nộp đi vào cùng một partition và giữ đúng thứ tự. Dịch vụ nộp bài phát sự kiện yêu cầu chấm, dịch vụ thực thi chấm tiêu thụ theo một nhóm tiêu thụ riêng, lấy từng bản ghi một và xác nhận sau khi xử lý xong. Kết nối tới Kafka được xác thực bằng tài khoản và chứng chỉ CA; chứng chỉ được đóng gói trong Secret và mount vào container.
+Kafka được thuê trên Aiven~\cite{aivendocs}. Gói miễn phí giới hạn số topic nên hệ thống dùng một topic chung cho toàn bộ sự kiện. Sự kiện được gửi với khóa là mã bài nộp để các sự kiện của cùng một bài nộp đi vào cùng một partition và giữ đúng thứ tự. Dịch vụ nộp bài phát sự kiện yêu cầu chấm, dịch vụ thực thi chấm đọc sự kiện qua một consumer group riêng, mỗi lần lấy một bản ghi và chỉ xác nhận sau khi xử lý xong. Kết nối tới Kafka được xác thực bằng tài khoản và chứng chỉ CA; chứng chỉ được đóng gói trong Secret và mount vào container.
 
-RustFS là hệ thống lưu trữ đối tượng tương thích S3~\cite{awss3docs,rustfsdocs}, chạy trong cụm với một ổ đĩa ảo 10Gi chỉ cho phép một Pod ghi tại một thời điểm. RustFS mở một cổng cho API S3 và một cổng cho giao diện quản trị. Dịch vụ nộp bài cấp \mbox{presigned} URL để sinh viên tải tệp trực tiếp lên RustFS, sau đó RustFS gọi webhook báo hoàn tất tới dịch vụ nộp bài; dịch vụ này cập nhật trạng thái bài nộp và phát sự kiện chấm. Cách làm này tránh truyền tệp lớn qua gateway và giảm tải cho dịch vụ nộp bài.
+RustFS là hệ thống lưu trữ đối tượng tương thích S3~\cite{awss3docs,rustfsdocs}, chạy trong cụm với một PVC 10Gi chỉ cho phép một Pod ghi tại một thời điểm. RustFS mở một cổng cho API S3 và một cổng cho giao diện quản trị. Dịch vụ nộp bài cấp \mbox{presigned} URL để sinh viên tải tệp trực tiếp lên RustFS, sau đó RustFS gọi webhook báo hoàn tất tới dịch vụ nộp bài; dịch vụ này cập nhật trạng thái bài nộp và phát sự kiện chấm. Cách làm này tránh truyền tệp lớn qua gateway và giảm tải cho dịch vụ nộp bài.
 
-Keycloak chạy trong cụm, dùng PostgreSQL quản lý làm kho dữ liệu và được cấu hình tên miền công khai cùng chế độ hoạt động sau proxy TLS. Realm ptit-wgs chứa các client cho giao diện web, dịch vụ người dùng và luồng kiểm tra mật khẩu; client của giao diện web là loại public dùng PKCE, còn các client máy-máy dùng client credentials. Keycloak cấp JWT để API Gateway kiểm tra chữ ký, thời hạn và vai trò trước khi chuyển tiếp yêu cầu.
+Keycloak chạy trong cụm, dùng PostgreSQL quản lý làm kho dữ liệu và được cấu hình tên miền công khai cùng chế độ hoạt động sau proxy TLS. Realm ptit-wgs chứa các client cho giao diện web, dịch vụ người dùng và luồng kiểm tra mật khẩu; client của giao diện web là loại public dùng PKCE, còn client của các dịch vụ backend xác thực bằng Client Credentials Grant. Keycloak cấp JWT để API Gateway kiểm tra chữ ký, thời hạn và vai trò trước khi chuyển tiếp yêu cầu.
 
 Ngoài các thành phần trên, Kafka UI dùng để xem topic, partition và tiến độ consumer trong quá trình vận hành. Dịch vụ trợ lý AI dùng thêm một Secret riêng để giữ khóa API, tên mô hình và địa chỉ nhà cung cấp mô hình. Các Secret được tạo từ tệp môi trường cục bộ và không được commit vào kho mã nguồn. Bảng~\ref{tab:deploy-secrets} tóm tắt các Secret chính.
 
@@ -129,7 +125,7 @@ Ngoài các thành phần trên, Kafka UI dùng để xem topic, partition và t
 Secret & Nội dung & Mục đích \\ \hline
 db-secret & Máy chủ, cổng, tên đăng nhập và mật khẩu PostgreSQL & Kết nối cơ sở dữ liệu của từng dịch vụ \\ \hline
 kafka-aiven-credentials & Địa chỉ bootstrap, tài khoản, mật khẩu và chứng chỉ CA & Kết nối Kafka qua SASL\_SSL \\ \hline
-rustfs-secret & Điểm cuối nội bộ, điểm cuối công khai, access key và secret key & Truy cập RustFS và tạo presigned URL \\ \hline
+rustfs-secret & Endpoint nội bộ, endpoint công khai, access key và secret key & Truy cập RustFS và tạo presigned URL \\ \hline
 gateway-trust & Khóa bí mật dùng chung & Xác thực yêu cầu nội bộ gửi từ gateway \\ \hline
 keycloak-db & Thông tin kết nối cơ sở dữ liệu và tài khoản quản trị Keycloak & Khởi tạo và kết nối Keycloak \\ \hline
 ai-credentials & Khóa API, tên mô hình và địa chỉ nhà cung cấp mô hình & Gọi nhà cung cấp mô hình cho trợ lý AI \\ \hline
@@ -139,15 +135,13 @@ app-config & Mức log của ứng dụng & Điều chỉnh mức ghi log khi v�
 \label{tab:deploy-secrets}
 \end{table}
 
-Khóa dùng chung cho các yêu cầu nội bộ được sinh một lần và tái sử dụng giữa các lần triển khai. Việc tạo khóa mới mà không khởi động lại toàn bộ dịch vụ sẽ khiến các Pod đang chạy giữ khóa cũ và từ chối yêu cầu, nên script tạo Secret ưu tiên đọc giá trị đang có trong cụm thay vì sinh lại.
-
 \subsection{Hệ thống quan sát và giám sát (Observability)}
 \label{section:3.1.6}
 
 Cụm triển khai hệ thống quan sát và giám sát tập trung để theo dõi độ trễ, tỷ lệ lỗi, mức sử dụng tài nguyên và hành vi của từng công việc chấm. Hệ thống gồm ba thành phần chính:
 
 \begin{itemize}
-    \item \textbf{Prometheus}: hệ thống lưu trữ và truy vấn số liệu (metrics) dạng time-series. Prometheus định kỳ lấy số liệu từ điểm cuối giám sát của mỗi dịch vụ Spring Boot và lưu lại trong vài ngày để truy vấn.
+    \item \textbf{Prometheus}: hệ thống lưu trữ và truy vấn số liệu (metrics) dạng time-series. Prometheus định kỳ lấy số liệu từ endpoint giám sát của mỗi dịch vụ Spring Boot và lưu lại trong vài ngày để truy vấn.
     \item \textbf{Grafana}: nền tảng trực quan hóa, cung cấp dashboard cho metrics, logs và traces. Grafana kết nối với hai nguồn dữ liệu: Prometheus cho số liệu và Tempo cho truy vết.
     \item \textbf{Tempo}: hệ thống lưu trữ và truy vấn traces (tracing). Tempo nhận dữ liệu truy vết theo giao thức OTLP từ các dịch vụ Spring Boot và lưu trong một ngày. Tempo cũng sinh RED metrics (tần suất span, thời gian phản hồi) và gửi về Prometheus để hiển thị trên Grafana.
 \end{itemize}
@@ -162,11 +156,13 @@ Cụm triển khai hệ thống quan sát và giám sát tập trung để theo 
 \subsection{Tổng hợp kết quả triển khai}
 \label{section:3.1.7}
 
-Cấu hình triển khai hiện tại gồm sáu dịch vụ backend, Keycloak, RustFS và Kafka UI trong namespace web-grading, cùng sáu Application ArgoCD trong namespace argocd. Ngoài ra còn một Ingress controller Traefik, một tunnel Cloudflare và giao diện web trên Vercel. Các image backend được lấy từ Docker Hub theo tag phiên bản do workflow phát hành tạo ra, còn cấu hình cụm được lấy từ kho cấu hình theo mô hình GitOps.
+Cấu hình triển khai hiện tại gồm sáu dịch vụ backend, Keycloak, RustFS và Kafka UI trong namespace web-grading, sáu Application ArgoCD trong namespace argocd và bộ thành phần quan sát trong namespace observability. Ngoài ra còn một Ingress controller Traefik, một tunnel Cloudflare và giao diện web trên Vercel. Các image backend được lấy từ Docker Hub theo tag phiên bản do workflow phát hành tạo ra, còn cấu hình cụm được lấy từ kho cấu hình theo mô hình GitOps.
+
+Bộ thành phần quan sát đã chạy cùng cụm: Prometheus thu số liệu từ các dịch vụ backend, Tempo nhận dữ liệu truy vết theo giao thức OTLP, còn Grafana hiển thị cả hai trên dashboard dùng chung (mục~\ref{section:3.1.6}). Nhờ đó, độ trễ, tỷ lệ lỗi, mức sử dụng tài nguyên và tiến trình của từng công việc chấm đều quan sát được từ một nơi, và mỗi yêu cầu có thể lần theo các dịch vụ.
 
 Về luồng vận hành, một thay đổi mã nguồn đi qua các bước: chạy kiểm thử, tạo image, cập nhật tag trong kho cấu hình, ArgoCD đồng bộ và thay Pod. Mỗi bước đều để lại dấu vết trong GitHub Actions, GitHub Release, lịch sử commit của kho cấu hình và lịch sử đồng bộ của ArgoCD. Nhờ đó, khi một phiên bản gặp lỗi có thể xác định được image nào đang chạy, cấu hình nào đã tạo ra nó và commit nào cần đảo lại.
 
-Mục \ref{section:3.2} trình bày các tiêu chí và kịch bản đánh giá hệ thống dựa trên môi trường triển khai này.
+Mục~\ref{section:3.2} trình bày các tiêu chí và kịch bản đánh giá hệ thống dựa trên môi trường triển khai này.
 
 \section{Đánh giá hệ thống}
 \label{section:3.2}
@@ -185,7 +181,7 @@ Hệ thống được đánh giá theo năm nhóm tiêu chí:
     \item Khả năng bảo trì: mức độ tự động của quy trình build, kiểm thử, phát hành, triển khai và khả năng quay lại phiên bản trước.
 \end{itemize}
 
-Phương pháp đánh giá kết hợp kiểm thử chức năng theo kịch bản, kiểm thử hiệu năng bằng k6~\cite{k6docs} và kiểm thử độ tin cậy bằng cách tác động vào cụm. Với kiểm thử chức năng, mỗi kịch bản ghi lại điều kiện đầu vào, các bước thực hiện, kết quả mong đợi và trạng thái cuối cùng của bài nộp hoặc công việc chấm. Với kiểm thử hiệu năng, các chỉ số được thu thập gồm thời gian phản hồi trung bình, p50, p95, p99, số yêu cầu mỗi giây, tỷ lệ lỗi và mức sử dụng CPU, bộ nhớ của Pod. Với kiểm thử độ tin cậy, hệ thống được quan sát sau mỗi tác động để xác định công việc chấm có tiếp tục, có bị chấm trùng hay không và trạng thái cuối cùng có rõ ràng hay không. Hai nhóm tiêu chí bảo mật và khả năng bảo trì được đánh giá định tính từ cấu hình triển khai và quy trình CI/CD ở mục \ref{section:3.1}, không có kịch bản đo riêng.
+Phương pháp đánh giá kết hợp kiểm thử chức năng theo kịch bản, kiểm thử hiệu năng bằng k6~\cite{k6docs} và kiểm thử độ tin cậy bằng cách tác động vào cụm. Với kiểm thử chức năng, mỗi kịch bản ghi lại điều kiện đầu vào, các bước thực hiện, kết quả mong đợi và trạng thái cuối cùng của bài nộp hoặc công việc chấm. Với kiểm thử hiệu năng, các chỉ số được thu thập gồm thời gian phản hồi trung bình, p50, p95, p99, số yêu cầu mỗi giây, tỷ lệ lỗi và mức sử dụng CPU, bộ nhớ của Pod. Với kiểm thử độ tin cậy, hệ thống được quan sát sau mỗi tác động để xác định công việc chấm có tiếp tục, có bị chấm trùng hay không và trạng thái cuối cùng có rõ ràng hay không. Hai nhóm tiêu chí bảo mật và khả năng bảo trì được đánh giá định tính từ cấu hình triển khai và quy trình CI/CD ở mục~\ref{section:3.1}, không có kịch bản đo riêng.
 
 \subsection{Kịch bản kiểm thử chức năng}
 \label{section:3.2.2}
@@ -237,7 +233,7 @@ Mỗi lần chạy cần ghi lại môi trường, phiên bản image, bài tậ
 \subsection{Ưu điểm của kiến trúc triển khai}
 \label{section:3.2.4}
 
-Kiến trúc triển khai có một số ưu điểm rõ ràng. Việc tách mỗi dịch vụ thành một Deployment riêng, một cơ sở dữ liệu riêng và một chart Helm riêng cho phép build, kiểm thử, phát hành và quay lại phiên bản của từng dịch vụ mà không ảnh hưởng đến các dịch vụ khác. Khi dịch vụ kết quả gặp lỗi, luồng nộp bài và chấm bài vẫn có thể tiếp tục ở mức độ nhất định; khi dịch vụ trợ lý AI gặp lỗi, các chức năng quản lý lớp học và chấm bài không bị dừng theo.
+Việc tách mỗi dịch vụ thành một Deployment riêng, một cơ sở dữ liệu riêng và một chart Helm riêng cho phép build, kiểm thử, phát hành và quay lại phiên bản của từng dịch vụ mà không ảnh hưởng đến các dịch vụ khác. Khi dịch vụ kết quả gặp lỗi, luồng nộp bài và chấm bài vẫn có thể tiếp tục ở mức độ nhất định; khi dịch vụ trợ lý AI gặp lỗi, các chức năng quản lý lớp học và chấm bài không bị dừng theo.
 
 Mô hình GitOps tạo ra một chuỗi truy vết đầy đủ từ commit mã nguồn đến image và commit cấu hình. Mọi thay đổi trạng thái mong muốn của cụm đều nằm trong Git, nên có thể xem lại lịch sử, so sánh hai phiên bản và quay lại phiên bản trước bằng một commit. Cơ chế selfHeal và prune giảm các sai lệch do thao tác thủ công, còn việc tách workflow build khỏi workflow phát hành giúp chỉ những commit đã vượt qua kiểm thử mới được tạo image phát hành.
 
@@ -260,9 +256,9 @@ Thứ tư, cơ chế ghi kết quả chưa có bảo đảm giao dịch. Kết q
 
 Thứ năm, hệ thống chỉ dùng một topic Kafka cho toàn bộ sự kiện do giới hạn của gói miễn phí. Cách này đơn giản nhưng không tách được thời gian lưu trữ, quyền truy cập và số partition theo từng miền nghiệp vụ; khi lưu lượng tăng, một topic duy nhất có thể trở thành điểm nghẽn. Việc xử lý từng bản ghi một cũng giới hạn tốc độ của mỗi consumer.
 
-Thứ sáu, RustFS chạy một bản sao trên một ổ đĩa ảo chỉ cho phép một Pod ghi tại một thời điểm; cặp khóa truy cập của RustFS được đọc từ Secret của Kubernetes, cùng Secret mà các dịch vụ khách dùng để ký yêu cầu, nên không còn nằm trong manifest. Một Pod RustFS gặp sự cố sẽ làm gián đoạn việc tải và đọc tệp bài nộp; dữ liệu cũng chưa có phương án sao lưu tự động. Cần bật sao lưu và cân nhắc chạy nhiều bản sao hoặc dùng lưu trữ đối tượng bên ngoài.
+Thứ sáu, RustFS chạy một bản sao trên một PVC chỉ cho phép một Pod ghi tại một thời điểm; cặp khóa truy cập của RustFS được đọc từ Secret của Kubernetes, cùng Secret mà các dịch vụ khách dùng để ký yêu cầu, nên không còn nằm trong manifest. Một Pod RustFS gặp sự cố sẽ làm gián đoạn việc tải và đọc tệp bài nộp; dữ liệu cũng chưa có phương án sao lưu tự động. Cần bật sao lưu và cân nhắc chạy nhiều bản sao hoặc dùng lưu trữ đối tượng bên ngoài.
 
-Thứ bảy, cụm k3s hiện tại chưa có cấu hình sẵn sàng cao và chưa có autoscaling. Số bản sao của dịch vụ thực thi cố định là hai, nên không tự tăng khi hàng đợi dài. Hệ thống đã triển khai quan sát và giám sát tập trung (mục \ref{section:3.1.6}) giúp theo dõi độ trễ, tỷ lệ lỗi, mức sử dụng tài nguyên và hành vi của từng công việc chấm.
+Thứ bảy, cụm k3s hiện tại chưa có cấu hình high availability và chưa có autoscaling. Số bản sao của dịch vụ thực thi cố định là hai, nên không tự tăng khi hàng đợi dài. Hệ thống đã triển khai quan sát và giám sát tập trung (mục~\ref{section:3.1.6}) giúp theo dõi độ trễ, tỷ lệ lỗi, mức sử dụng tài nguyên và hành vi của từng công việc chấm.
 
 Thứ tám, quy trình CI/CD chưa có bước quét lỗ hổng image, tạo danh mục thành phần phần mềm (SBOM) hoặc ký image; kiểm thử chỉ chạy cho các dịch vụ thay đổi và loại trừ các lớp ApplicationTests. Những khoảng trống này không ảnh hưởng đến chức năng nhưng làm giảm mức độ bảo đảm chất lượng khi số lượng thay đổi tăng.
 
@@ -271,9 +267,9 @@ Thứ tám, quy trình CI/CD chưa có bước quét lỗ hổng image, tạo da
 
 Từ các hạn chế trên, hướng phát triển của hệ thống được chia thành các nhóm sau.
 
-Về khả năng quan sát, hệ thống đã triển khai Prometheus, Grafana và Tempo (xem mục \ref{section:3.1.6}). Hiện tại hệ thống chưa có hệ thống cảnh báo tự động, lưu trữ nhật ký tập trung và profil hóa, cần bổ sung Alertmanager, Loki (nhật ký tập trung), Alloy (thu thập telemetry) và Pyroscope (profiling) trong tương lai.
+Về khả năng quan sát, hệ thống đã triển khai Prometheus, Grafana và Tempo (xem mục~\ref{section:3.1.6}). Hiện tại hệ thống chưa có hệ thống cảnh báo tự động, lưu trữ nhật ký tập trung và profil hóa, cần bổ sung Alertmanager, Loki (nhật ký tập trung), Alloy (thu thập telemetry) và Pyroscope (profiling) trong tương lai.
 
-Về độ tin cậy và khả năng mở rộng, cần chuyển cụm k3s lên cấu hình nhiều node hoặc dùng dịch vụ Kubernetes quản lý, bổ sung anti-affinity và ngân sách gián đoạn cho các dịch vụ quan trọng, đồng thời dùng Horizontal Pod Autoscaler hoặc KEDA để tăng số bản sao dịch vụ thực thi theo độ dài hàng đợi. Với dịch vụ thực thi, cần thay cơ chế Docker-in-Docker privileged bằng một môi trường cách ly an toàn hơn, hoặc tách việc chạy bài nộp sang một cụm worker riêng.
+Về độ tin cậy và khả năng mở rộng, cần chuyển cụm k3s lên cấu hình nhiều node hoặc dùng dịch vụ Kubernetes quản lý, bổ sung anti-affinity và PodDisruptionBudget cho các dịch vụ quan trọng, đồng thời dùng Horizontal Pod Autoscaler hoặc KEDA để tăng số bản sao dịch vụ thực thi theo độ dài hàng đợi. Với dịch vụ thực thi, cần thay cơ chế Docker-in-Docker privileged bằng một môi trường cách ly an toàn hơn, hoặc tách việc chạy bài nộp sang một cụm worker riêng.
 
 Về dữ liệu, cần tách topic Kafka theo từng miền nghiệp vụ, tăng số partition và đặt chính sách lưu trữ phù hợp; bổ sung outbox hoặc cơ chế lease để bảo đảm kết quả chấm được ghi ít nhất một lần và để xử lý công việc ở trạng thái RUNNING bị treo. Với PostgreSQL và RustFS, cần có phương án sao lưu, phục hồi và kiểm thử phục hồi định kỳ.
 

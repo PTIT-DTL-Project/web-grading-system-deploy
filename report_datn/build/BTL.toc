@@ -99,9 +99,9 @@
 \contentsline {subsection}{\numberline {2.2.5}Kiến trúc hệ thống}{59}{subsection.2.2.5}%
 \contentsline {subsection}{\numberline {2.2.6}Thiết kế quy trình chấm bài tự động}{60}{subsection.2.2.6}%
 \contentsline {subsubsection}{\numberline {a}Kiến trúc dịch vụ thực thi chấm bài}{60}{subsubsection.2.2.6.1}%
-\contentsline {subsubsection}{\numberline {b}Tổng quan luồng chấm bài tự động}{61}{subsubsection.2.2.6.2}%
+\contentsline {subsubsection}{\numberline {b}Tổng quan luồng chấm bài tự động}{60}{subsubsection.2.2.6.2}%
 \contentsline {subsubsection}{\numberline {c}Nhất quán dữ liệu trong quy trình chấm bài với Grading Saga}{61}{subsubsection.2.2.6.3}%
-\contentsline {subsubsection}{\numberline {d}Cấu hình chấm bài qua JSON}{64}{subsubsection.2.2.6.4}%
+\contentsline {subsubsection}{\numberline {d}Cấu hình chấm bài qua JSON}{63}{subsubsection.2.2.6.4}%
 \contentsline {subsubsection}{\numberline {e}Thiết kế môi trường thực thi bằng Testcontainers}{64}{subsubsection.2.2.6.5}%
 \contentsline {chapter}{\numberline {3}TRIỂN KHAI VÀ ĐÁNH GIÁ HỆ THỐNG}{66}{chapter.3}%
 \contentsline {section}{\numberline {3.1}Triển khai hệ thống}{66}{section.3.1}%
@@ -110,11 +110,11 @@
 \contentsline {subsection}{\numberline {3.1.3}Tích hợp liên tục với GitHub Actions}{69}{subsection.3.1.3}%
 \contentsline {subsection}{\numberline {3.1.4}Triển khai liên tục với ArgoCD}{70}{subsection.3.1.4}%
 \contentsline {subsection}{\numberline {3.1.5}Hạ tầng dùng chung}{71}{subsection.3.1.5}%
-\contentsline {subsection}{\numberline {3.1.6}Hệ thống quan sát và giám sát (Observability)}{73}{subsection.3.1.6}%
+\contentsline {subsection}{\numberline {3.1.6}Hệ thống quan sát và giám sát (Observability)}{72}{subsection.3.1.6}%
 \contentsline {subsection}{\numberline {3.1.7}Tổng hợp kết quả triển khai}{73}{subsection.3.1.7}%
 \contentsline {section}{\numberline {3.2}Đánh giá hệ thống}{74}{section.3.2}%
 \contentsline {subsection}{\numberline {3.2.1}Tiêu chí và phương pháp đánh giá}{74}{subsection.3.2.1}%
-\contentsline {subsection}{\numberline {3.2.2}Kịch bản kiểm thử chức năng}{75}{subsection.3.2.2}%
+\contentsline {subsection}{\numberline {3.2.2}Kịch bản kiểm thử chức năng}{74}{subsection.3.2.2}%
 \contentsline {subsection}{\numberline {3.2.3}Kịch bản kiểm thử hiệu năng và độ tin cậy}{75}{subsection.3.2.3}%
 \contentsline {subsection}{\numberline {3.2.4}Ưu điểm của kiến trúc triển khai}{77}{subsection.3.2.4}%
 \contentsline {subsection}{\numberline {3.2.5}Hạn chế và rủi ro}{78}{subsection.3.2.5}%

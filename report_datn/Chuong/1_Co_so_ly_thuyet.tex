@@ -61,7 +61,7 @@ So với kiến trúc đơn khối, kiến trúc vi dịch vụ mang lại các 
 \subsection{Ngôn ngữ Java}
 \label{section:1.3.1}
 
-Java là ngôn ngữ lập trình hướng đối tượng, mạnh và phổ biến trong phát triển ứng dụng doanh nghiệp, với hiệu năng cao cùng hệ sinh thái phụ trợ phong phú. Phiên bản Java 21 - phiên bản phát hành dài hạn (LTS) - cung cấp nhiều tính năng hiện đại như records (định dạng dữ liệu gọn nhẹ), pattern matching (khớp mẫu) và virtual threads (luồng ảo, hỗ trợ xử lý I/O với chi phí tài nguyên thấp)~\cite{oracle2023java21}. Những tính năng này giúp giảm đáng kể lượng code không cần thiết (boilerplate) và nâng cao hiệu năng cho các tác vụ I/O nặng như giao tiếp mạng và truy vấn cơ sở dữ liệu quan hệ.
+Java là ngôn ngữ lập trình hướng đối tượng, mạnh và phổ biến trong phát triển ứng dụng doanh nghiệp, với hiệu năng cao cùng hệ sinh thái phụ trợ phong phú. Phiên bản Java 21 - phiên bản phát hành dài hạn (LTS) - cung cấp nhiều tính năng hiện đại như records (định dạng dữ liệu gọn nhẹ), pattern matching (khớp mẫu) và virtual threads (hỗ trợ xử lý I/O với chi phí tài nguyên thấp)~\cite{oracle2023java21}. Những tính năng này giúp giảm đáng kể lượng code không cần thiết (boilerplate) và nâng cao hiệu năng cho các tác vụ I/O nặng như giao tiếp mạng và truy vấn cơ sở dữ liệu quan hệ.
 
 \subsection{Framework Spring Boot}
 \label{section:1.3.2}
@@ -71,7 +71,7 @@ Spring Boot là một framework ứng dụng dựa trên nền tảng Java, cung
 \subsection{Spring Cloud OpenFeign}
 \label{section:1.3.3}
 
-Spring Cloud OpenFeign là một thư viện cho phép định nghĩa các client HTTP theo cách khai báo (declarative). Thay vì viết code HTTP thủ công, nhà phát triển chỉ cần định nghĩa một interface với các phương thức tương ứng với các điểm cuối cần gọi, và OpenFeign tự động tạo phần triển khai để thực hiện gọi HTTP~\cite{openfeigndocs}. Trong hệ thống, OpenFeign được sử dụng để các vi dịch vụ nội bộ gọi nhau một cách đơn giản và nhất quán.
+Spring Cloud OpenFeign là một thư viện cho phép định nghĩa các client HTTP theo cách khai báo (declarative). Thay vì viết code HTTP thủ công, nhà phát triển chỉ cần định nghĩa một interface với các phương thức tương ứng với các endpoint cần gọi, và OpenFeign tự động tạo phần triển khai để thực hiện gọi HTTP~\cite{openfeigndocs}. Trong hệ thống, OpenFeign được sử dụng để các vi dịch vụ nội bộ gọi nhau một cách đơn giản và nhất quán.
 
 \subsection{Xác thực với Spring Security và OAuth2}
 \label{section:1.3.4}
@@ -202,7 +202,7 @@ OAuth 2.0 là một khung ủy quyền (authorization framework) mở, cho phép
 
 OAuth 2.0 định nghĩa một số grant type (phương thức cấp token), mỗi loại phù hợp với một bối cảnh sử dụng:
 \begin{itemize}
-    \item Authorization Code Grant - phương thức gồm hai bước: client xin một mã ngắn hạn (authorization code) qua trình duyệt của người dùng, rồi đổi mã đó lấy token tại một điểm cuối server mà không qua trình duyệt. Đây là grant type an toàn nhất, phù hợp cho các ứng dụng có backend~\cite{rfc6749}.
+    \item Authorization Code Grant - phương thức gồm hai bước: client xin một mã ngắn hạn (authorization code) qua trình duyệt của người dùng, rồi đổi mã đó lấy token tại một endpoint của server mà không qua trình duyệt. Đây là grant type an toàn nhất, phù hợp cho các ứng dụng có backend~\cite{rfc6749}.
     \item Resource Owner Password Credentials Grant (password grant) cho phép client nhận trực tiếp username/password của người dùng; vì mật khẩu đi qua client nên chỉ được dùng cho các client được tin cậy tuyệt đối, không phù hợp cho ứng dụng web công cộng~\cite{rfc6749}.
     \item Client Credentials Grant dùng cho giao tiếp máy-máy (machine-to-machine), khi client tự xác thực bằng secret của mình mà không cần người dùng~\cite{rfc6749}.
 \end{itemize}
@@ -284,10 +284,10 @@ Observability là khả năng hiểu được trạng thái nội bộ của h�
 \end{itemize}
 
 \subsubsection{Prometheus}
-Prometheus là hệ thống lưu trữ và truy vấn số liệu dạng chuỗi thời gian. Prometheus thu thập số liệu từ các điểm cuối mà dịch vụ cung cấp, lưu trữ theo thời gian và hỗ trợ truy vấn ngôn ngữ PromQL.
+Prometheus là hệ thống lưu trữ và truy vấn số liệu dạng chuỗi thời gian. Prometheus thu thập số liệu từ các endpoint mà dịch vụ cung cấp, lưu trữ theo thời gian và hỗ trợ truy vấn ngôn ngữ PromQL.
 
 \subsubsection{Grafana}
-Grafana là nền tảng trực quan hóa, cung cấp bảng điều khiển cho các chỉ số số liệu, nhật ký và truy vết. Grafana kết nối với các nguồn dữ liệu như Prometheus và Tempo, giúp người quản trị hệ thống theo dõi trạng thái vận hành thông qua biểu đồ và bảng số liệu.
+Grafana là nền tảng trực quan hóa, cung cấp dashboard cho các chỉ số số liệu, nhật ký và truy vết. Grafana kết nối với các nguồn dữ liệu như Prometheus và Tempo, giúp người quản trị hệ thống theo dõi trạng thái vận hành thông qua biểu đồ và bảng số liệu.
 
 \subsubsection{Tempo}
 Tempo là hệ thống lưu trữ và truy vấn traces (tracing). Tempo nhận dữ liệu theo giao thức OTLP từ các dịch vụ, lưu trữ truy vết trong một thời gian nhất định. Tempo giúp theo dõi luồng xử lý của một yêu cầu từ khi gửi đến khi nhận kết quả, đi qua nhiều dịch vụ khác nhau.
