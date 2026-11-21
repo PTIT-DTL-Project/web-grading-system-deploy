@@ -1250,6 +1250,10 @@ scrollbar with it. Use the shared `shared/ui/RowActions.tsx` component instead.
   Never delete straight from the menu click.
 - **Per-row loading** no longer fits a menu item; disable the trigger
   (`disabled={pendingId === row.id}`) instead of passing `loading` around.
+- **Guard inside the handler too**: `run()` returns early on `action.disabled`
+  before opening a confirm or calling `onClick`. antd blocks the click on a disabled
+  menu item, but the guard is what keeps the invariant if the same action list is ever
+  rendered elsewhere (keyboard handler, a test, a future card layout).
 - **Column width** shrinks to the trigger plus the primary CTA (~110–200). Recompute
   `tableScrollX` when you remove a wide action column, or the table keeps a
   horizontal scrollbar for content that no longer exists (a `scroll.x` larger than

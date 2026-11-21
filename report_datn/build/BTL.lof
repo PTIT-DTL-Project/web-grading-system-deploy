@@ -40,7 +40,38 @@
 \addvspace {10\p@ }
 \contentsline {figure}{\numberline {3.1}{\ignorespaces Kiến trúc triển khai của hệ thống trên cụm k3s.}}{64}{figure.caption.62}%
 \contentsline {figure}{\numberline {3.2}{\ignorespaces Quy trình CI/CD từ mã nguồn đến cụm triển khai.}}{66}{figure.caption.64}%
-\contentsline {figure}{\numberline {3.3}{\ignorespaces Hệ thống quan sát và giám sát (Observability).}}{70}{figure.caption.67}%
+\contentsline {figure}{\numberline {3.3}{\ignorespaces Danh sách sáu Application của hệ thống trên ArgoCD.}}{68}{figure.caption.66}%
+\contentsline {figure}{\numberline {3.4}{\ignorespaces Cây tài nguyên của Application dịch vụ thực thi.}}{68}{figure.caption.67}%
+\contentsline {figure}{\numberline {3.5}{\ignorespaces Xem bản ghi sự kiện trong topic wgs-events-deploy trên Kafka UI.}}{69}{figure.caption.68}%
+\contentsline {figure}{\numberline {3.6}{\ignorespaces Bucket submission-files trên giao diện quản trị RustFS.}}{70}{figure.caption.69}%
+\contentsline {figure}{\numberline {3.7}{\ignorespaces Hệ thống quan sát và giám sát (Observability).}}{72}{figure.caption.71}%
+\contentsline {figure}{\numberline {3.8}{\ignorespaces Dashboard JVM của một dịch vụ Spring Boot trên Grafana.}}{72}{figure.caption.72}%
+\contentsline {figure}{\numberline {3.9}{\ignorespaces Danh sách số liệu Prometheus trên Grafana.}}{73}{figure.caption.73}%
+\contentsline {figure}{\numberline {3.10}{\ignorespaces Truy vết phân tán trên Grafana với nguồn dữ liệu Tempo.}}{73}{figure.caption.74}%
+\contentsline {figure}{\numberline {3.11}{\ignorespaces Trang đăng nhập Keycloak của hệ thống.}}{74}{figure.caption.75}%
+\contentsline {figure}{\numberline {3.12}{\ignorespaces Trang chủ sau khi giảng viên đăng nhập.}}{75}{figure.caption.76}%
+\contentsline {figure}{\numberline {3.13}{\ignorespaces Danh sách lớp học của giảng viên.}}{75}{figure.caption.77}%
+\contentsline {figure}{\numberline {3.14}{\ignorespaces Chi tiết lớp học với danh sách bài tập.}}{76}{figure.caption.78}%
+\contentsline {figure}{\numberline {3.15}{\ignorespaces Danh sách sinh viên của lớp.}}{76}{figure.caption.79}%
+\contentsline {figure}{\numberline {3.16}{\ignorespaces Cấu hình thành phần điểm của lớp.}}{77}{figure.caption.80}%
+\contentsline {figure}{\numberline {3.17}{\ignorespaces Bảng điểm của lớp.}}{77}{figure.caption.81}%
+\contentsline {figure}{\numberline {3.18}{\ignorespaces Danh sách câu kiểm tra của một bài tập.}}{78}{figure.caption.82}%
+\contentsline {figure}{\numberline {3.19}{\ignorespaces Chi tiết bước kiểm tra cấu trúc cơ sở dữ liệu.}}{78}{figure.caption.83}%
+\contentsline {figure}{\numberline {3.20}{\ignorespaces Chi tiết bước gọi HTTP của một câu kiểm tra.}}{79}{figure.caption.84}%
+\contentsline {figure}{\numberline {3.21}{\ignorespaces Trợ lý AI đề xuất thao tác và chờ người dùng xác nhận.}}{79}{figure.caption.85}%
+\contentsline {figure}{\numberline {3.22}{\ignorespaces Danh sách bài nộp của một bài tập.}}{80}{figure.caption.86}%
+\contentsline {figure}{\numberline {3.23}{\ignorespaces Kết quả chấm bài của một bài nộp.}}{80}{figure.caption.87}%
+\contentsline {figure}{\numberline {3.24}{\ignorespaces Chi tiết một bước chấm trong kết quả.}}{81}{figure.caption.88}%
+\contentsline {figure}{\numberline {3.25}{\ignorespaces Xem nội dung tệp trong bài nộp.}}{81}{figure.caption.89}%
+\contentsline {figure}{\numberline {3.26}{\ignorespaces Danh sách lớp của sinh viên.}}{82}{figure.caption.90}%
+\contentsline {figure}{\numberline {3.27}{\ignorespaces Sinh viên xem chi tiết lớp và danh sách bài tập.}}{82}{figure.caption.91}%
+\contentsline {figure}{\numberline {3.28}{\ignorespaces Điểm của sinh viên trong lớp.}}{83}{figure.caption.92}%
+\contentsline {figure}{\numberline {3.29}{\ignorespaces Danh sách sinh viên cùng lớp theo góc nhìn sinh viên.}}{83}{figure.caption.93}%
+\contentsline {figure}{\numberline {3.30}{\ignorespaces Chi tiết bài tập theo góc nhìn sinh viên.}}{84}{figure.caption.94}%
+\contentsline {figure}{\numberline {3.31}{\ignorespaces Nội dung một câu kiểm tra mà sinh viên phải đáp ứng.}}{84}{figure.caption.95}%
+\contentsline {figure}{\numberline {3.32}{\ignorespaces Lịch sử nộp bài của sinh viên.}}{85}{figure.caption.96}%
+\contentsline {figure}{\numberline {3.33}{\ignorespaces Kết quả của một lần nộp bài.}}{85}{figure.caption.97}%
+\contentsline {figure}{\numberline {3.34}{\ignorespaces Chi tiết các bước đã chấm của một câu.}}{86}{figure.caption.98}%
 \addvspace {10\p@ }
 \addvspace {10\p@ }
 \contentsfinish 

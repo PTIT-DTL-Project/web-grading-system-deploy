@@ -104,16 +104,44 @@ the report asset and its figure reference instead of merely enlarging an
 obsolete diagram. When confirmed, crop only at inclusion with
 `trim=<left> <bottom> <right> <top>,clip` (do not alter the source asset),
 or set a deliberate width for a small diagram so labels remain readable.
-Do not rotate a whole page just because an image is landscape-oriented;
-first test it on a portrait page at `\\textwidth`. Reserve landscape pages
-for genuinely wide diagrams (such as sequence diagrams) when a rendered
-preview shows the portrait layout is not legible. For a landscape figure,
-place the image and caption directly in the `landscape` environment with
-`\\captionof{figure}` instead of a float such as `figure[H]`, which can leave
-an empty rotated page before the figure. Scope `\\pagestyle{empty}` to that
-page so portrait running headers and footers do not print sideways, size the
-image to leave room for its caption, and inspect the rendered pages before
-keeping the rotation.
+Never rotate a page (`pdflscape`, `landscape`, `\captionof`): the report
+stays portrait throughout. For wide diagrams that are illegible at
+`\textwidth`, rotate only the image inside a normal portrait figure:
+
+```latex
+\begin{figure}[H]
+\centering
+\rotatebox{90}{\includegraphics[width=0.92\textheight,height=0.95\textwidth,keepaspectratio]{...}}
+\caption{...}
+\label{...}
+\end{figure}
+```
+
+Sizes are measured before rotation, so the width limit comes from
+`\textheight` and the height limit from `\textwidth`; keep both plus
+`keepaspectratio` so tall or wide source images both fit. The caption stays
+horizontal. Leave near-square images unrotated at `width=\textwidth` (an ERD
+at 1.23:1 is larger upright). Delete `pdflscape`/`capt-of` imports once no
+landscape page remains. Always render the affected pages and check the
+caption falls inside the text block.
+
+Screenshots of the running system go in an own section, one figure per
+screen, with a caption naming that screen (`Hinh 3.11: Trang đăng nhập
+Keycloak của hệ thống.`). Name the asset after the screen, not after the
+figure counter (`ui-01-dang-nhap-keycloak.png`,
+`argocd-danh-sach-ung-dung.png`): inserting a later screenshot shifts every
+figure number, so `Hinh3_<n>_...` names go stale within one edit. Group the
+screens by role/flow in `\subsubsection` blocks and place the figure right
+after the sentence that cites it (`Hình~\ref{...} là ...`) instead of a bare
+list of images. Admin screens belong with the section they document
+(ArgoCD with GitOps, Kafka UI/RustFS with shared infrastructure, Grafana
+with observability), not in the UI section.
+
+A subsection made only of `figure[H]` blocks stretches inter-paragraph glue
+and opens large gaps mid-page. Wrap such a block in `\raggedbottom` ...
+`\afterpage{\flushbottom}` (both already imported) so slack collects at the
+page bottom, then render two or three consecutive pages to confirm the gaps
+are gone.
 For long glossary `longtable`s that spill only a few rows onto a final page,
 use `\singlespacing` locally before the table and restore `\onehalfspacing`
 after `\end{longtable}`; verify it still fits the text block.
@@ -251,8 +279,8 @@ chấm của cả lớp, Nộp bài tập, Xem kết quả chấm bài tập c�
 lifeline và trải dài theo chiều dọc (ví dụ 13 lifeline, hơn 70 message)
 thì để khổ dọc `[H]` với `max width=\textwidth` - hình cao khoảng 18-19cm,
 vẫn vừa một trang cùng tiêu đề và caption; đừng ép sang trang ngang vì
-khung ngang chỉ cho bề rộng ~14cm, chữ còn nhỏ hơn. Chỉ dùng landscape
-cho sơ đồ thực sự rộng và thấp. Giữ bản xuất Visual Paradigm (`.jpg`) ở
+khung ngang chỉ cho bề rộng ~14cm, chữ còn nhỏ hơn. Không dùng trang ngang nữa: sơ đồ rộng thì xoay ảnh 90 độ trong
+trang dọc (xem mục Figures), caption vẫn nằm ngang. Giữ bản xuất Visual Paradigm (`.jpg`) ở
 `visual-paradigm/figures/sequence/` và bản dùng trong báo cáo ở
 `report_datn/Hinhve/` dạng `.png` (`magick <src>.jpg <dst>.png`).
 
@@ -527,15 +555,15 @@ versions from floating tags (`latest`, major-only tags) or report an environment
 version unless the repository records it.
 
 Tools installed from OS packages (Arch Linux `pacman`/AUR via `yay`) have no
-pinned version in the repository. Document them in a separate table with three
-columns: tool, the version installed at the time of writing, and how to verify
-it (`node -v`, `k3s --version`, `helm version --short`, `cloudflared --version`,
-`kubectl version --client`). State in the intro and after the table that these
-numbers describe the build machine at that moment, are not a project
-constraint, and that reinstallation can yield a different version; give the
-replication path (Corepack/asdf, `INSTALL_K3S_VERSION`, fixed Helm package,
-chart/image tags). Use `\textnormal` for these literals inside Appendix B, not
-`\texttt` — the user rejected monospace in the version appendix.
+pinned version in the repository. Document them in a two-column table only:
+tool and the version installed on the machine at the time of writing
+(`Node.js & 26.13.1`). Do not add a "how to verify" column with shell commands,
+a source/packaging column, or a closing paragraph explaining that the numbers
+describe the machine and how to re-pin them — the user rejected all three;
+keep at most one intro sentence saying the tools are not version-pinned in the
+repository and that the table records the machine at the time of writing. Use
+`\textnormal` for any literal inside Appendix B, not `\texttt` — the user
+rejected monospace in the version appendix.
 
 ## Appendix configuration references stay concise
 
@@ -619,3 +647,15 @@ grep -v 'Tên tiếng Anh' Chuong/0_5_Danh_muc_viet_tat.tex \
   nguyên thứ tự các entry cũ, và build lại để kiểm tra longtable vẫn
   sang trang đúng (`\singlespacing` trước bảng, `\onehalfspacing` sau
   `\end{longtable}`).
+
+## Concurrent builds corrupt `build/` (gotcha)
+
+An editor watcher (TeXstudio, VS Code LaTeX Workshop) may run `latexmk` on the
+same `build/` directory at the same time as the shell. Two writers produce a
+truncated `.aux`/`.toc` and a broken PDF: symptoms are `File ended while
+scanning use of \@writefile`, `Illegal character <..> in hex string`, or
+`Couldn't find trailer dictionary`. Check `pgrep -a latexmk` before building;
+if a watcher build is running, wait for it to finish instead of racing. After a
+race, delete `build/BTL.aux .toc .lof .lot .out` and rebuild once (a second
+immediate run is needed because latexmk schedules bibtex against the empty
+aux).

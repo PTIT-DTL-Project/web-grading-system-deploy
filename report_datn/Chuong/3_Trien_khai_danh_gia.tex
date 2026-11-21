@@ -6,7 +6,7 @@ Chương này trình bày cách hệ thống được đóng gói, triển khai 
 \section{Triển khai hệ thống}
 \label{section:3.1}
 
-Mục này trình bày môi trường và kiến trúc triển khai, cách đóng gói dịch vụ, quy trình CI/CD và GitOps, các dịch vụ hạ tầng dùng chung, cùng kết quả triển khai. Thiết kế quy trình chấm và các cơ chế nhất quán đã được trình bày ở Chương 2, chương này chỉ xem xét chúng qua các kịch bản đánh giá và những rủi ro vận hành còn lại.
+Mục này trình bày môi trường và kiến trúc triển khai, cách đóng gói dịch vụ, quy trình CI/CD và GitOps, các dịch vụ hạ tầng dùng chung, giao diện các màn hình chính, cùng kết quả triển khai. Thiết kế quy trình chấm và các cơ chế nhất quán đã được trình bày ở Chương 2, chương này chỉ xem xét chúng qua các kịch bản đánh giá và những rủi ro vận hành còn lại.
 
 \subsection{Môi trường và kiến trúc triển khai}
 \label{section:3.1.1}
@@ -104,6 +104,30 @@ Kho cấu hình chứa một chart Helm cho mỗi dịch vụ và một tệp da
 
 Luồng triển khai bắt đầu khi workflow phát hành cập nhật tag image trong kho cấu hình. ArgoCD phát hiện commit mới, render chart với values tương ứng rồi so sánh với trạng thái thực tế trong cụm; nếu có khác biệt, ArgoCD áp dụng thay đổi để đưa cụm về đúng mô tả trong Git. Cơ chế selfHeal tự sửa các thay đổi thủ công trên cụm, còn prune xóa tài nguyên không còn trong chart. Khi cần quay lại phiên bản trước, có thể đảo commit cấu hình hoặc chỉnh tag về phiên bản cũ; ArgoCD sẽ đồng bộ lại theo Git thay vì phải thao tác trực tiếp trên cụm.Cách làm này phù hợp với mô hình GitOps: Git là nguồn mô tả trạng thái mong muốn, còn cụm chỉ là nơi thực thi trạng thái đó.
 
+Giao diện ArgoCD liệt kê sáu Application của hệ thống, mỗi Application hiển thị trạng thái sức
+khoẻ, trạng thái đồng bộ, kho cấu hình, nhánh theo dõi và thời điểm đồng bộ gần nhất
+(Hình~\ref{fig:argocd-apps}). Cả sáu đều ở trạng thái Healthy và Synced, nghĩa là trạng thái
+thực tế trong cụm khớp với mô tả trong kho cấu hình.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/deploy-ui/argocd-danh-sach-ung-dung.png}
+\caption{Danh sách sáu Application của hệ thống trên ArgoCD.}
+\label{fig:argocd-apps}
+\end{figure}
+
+Trang chi tiết của một Application hiển thị cây tài nguyên mà chart sinh ra, gồm Deployment,
+Service, ReplicaSet và các Pod, kèm chỉ báo sức khoẻ ở từng nút và thông tin lần đồng bộ gần
+nhất (Hình~\ref{fig:argocd-tree}). Với dịch vụ thực thi, cây tài nguyên cho thấy hai Pod đang
+chạy, khớp với số bản sao khai báo trong chart.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/deploy-ui/argocd-cay-tai-nguyen.png}
+\caption{Cây tài nguyên của Application dịch vụ thực thi.}
+\label{fig:argocd-tree}
+\end{figure}
+
 \subsection{Hạ tầng dùng chung}
 \label{section:3.1.5}
 
@@ -111,7 +135,33 @@ Mỗi dịch vụ có một cơ sở dữ liệu PostgreSQL riêng trên nền t
 
 Kafka được thuê trên Aiven~\cite{aivendocs}. Gói miễn phí giới hạn số topic nên hệ thống dùng một topic chung cho toàn bộ sự kiện. Sự kiện được gửi với khóa là mã bài nộp để các sự kiện của cùng một bài nộp đi vào cùng một partition và giữ đúng thứ tự. Kết nối tới Kafka được xác thực bằng tài khoản và chứng chỉ CA; chứng chỉ được đóng gói trong Secret và mount vào container.
 
+Kafka UI cho phép mở từng topic để xem bản ghi theo offset, partition và khoá
+(Hình~\ref{fig:kafka-ui}). Với topic wgs-events-deploy, khoá của bản ghi là mã bài nộp và phần
+thân là JSON của sự kiện, trong đó sự kiện GRADE\_SUBMISSION mang theo mã bài nộp, mã bài tập,
+mã sinh viên và đường dẫn tệp trên RustFS. Nhờ vậy có thể đối chiếu một sự kiện cụ thể với bản
+ghi trong cơ sở dữ liệu khi cần tìm nguyên nhân.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/deploy-ui/kafka-ui-topic-wgs-events.png}
+\caption{Xem bản ghi sự kiện trong topic wgs-events-deploy trên Kafka UI.}
+\label{fig:kafka-ui}
+\end{figure}
+
+
 RustFS chạy trong cụm với một PVC 10Gi chỉ cho phép một Pod ghi tại một thời điểm. RustFS mở một cổng cho API S3 và một cổng cho giao diện quản trị. Dịch vụ nộp bài cấp \mbox{presigned} URL để sinh viên tải tệp trực tiếp lên RustFS, sau đó RustFS gọi webhook báo hoàn tất tới dịch vụ nộp bài; dịch vụ này cập nhật trạng thái bài nộp và phát sự kiện chấm. Cách làm này tránh truyền tệp lớn qua gateway và giảm tải cho dịch vụ nộp bài.
+
+Giao diện quản trị của RustFS cho phép duyệt bucket submission-files và xem các tệp ZIP đã tải
+lên kèm kích thước và thời điểm sửa đổi (Hình~\ref{fig:rustfs-console}). Tên tệp chính là mã bài
+nộp nên đối chiếu được trực tiếp với bản ghi bài nộp trong cơ sở dữ liệu.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/deploy-ui/rustfs-bucket-submission-files.png}
+\caption{Bucket submission-files trên giao diện quản trị RustFS.}
+\label{fig:rustfs-console}
+\end{figure}
+
 
 Keycloak chạy trong cụm, dùng PostgreSQL quản lý làm kho dữ liệu và được cấu hình tên miền công khai cùng chế độ hoạt động sau proxy TLS. Realm ptit-wgs chứa các client cho giao diện web, dịch vụ người dùng và luồng kiểm tra mật khẩu; client của giao diện web là loại public dùng PKCE, còn client của các dịch vụ backend xác thực bằng Client Credentials Grant. Keycloak cấp JWT để API Gateway kiểm tra chữ ký, thời hạn và vai trò trước khi chuyển tiếp yêu cầu.
 
@@ -148,13 +198,308 @@ Cụm triển khai hệ thống quan sát và giám sát tập trung để theo 
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{Hinhve/Hinh3_2_he-thong-quan-sat.png}
+\includegraphics[width=\textwidth]{Hinhve/Hinh3_3_he-thong-quan-sat.png}
 \caption{Hệ thống quan sát và giám sát (Observability).}
 \label{fig:he-thong-quan-sat}
 \end{figure}
 
-\subsection{Tổng hợp kết quả triển khai}
+Ba hình dưới đây là các màn hình Grafana dùng khi vận hành. Dashboard JVM của một dịch vụ Spring
+Boot hiển thị thời gian hoạt động, mức sử dụng heap và non-heap, số tệp đang mở, mức sử dụng
+CPU và load average của tiến trình, lấy từ endpoint Actuator của dịch vụ
+(Hình~\ref{fig:grafana-jvm}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/deploy-ui/grafana-dashboard-jvm.png}
+\caption{Dashboard JVM của một dịch vụ Spring Boot trên Grafana.}
+\label{fig:grafana-jvm}
+\end{figure}
+
+Màn hình Drilldown liệt kê các số liệu Prometheus đang thu thập, ví dụ độ trễ lớn nhất và số
+yêu cầu HTTP theo thời gian, số yêu cầu đang xử lý và lượng bộ nhớ JVM đã cấp phát
+(Hình~\ref{fig:grafana-metrics}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/deploy-ui/grafana-so-lieu-drilldown.png}
+\caption{Danh sách số liệu Prometheus trên Grafana.}
+\label{fig:grafana-metrics}
+\end{figure}
+
+Với Tempo, màn hình Traces Drilldown hiển thị biểu đồ phân bố độ dài span theo thời gian, số span
+và số lỗi, kèm danh sách các trace chậm nhất để mở xem chi tiết từng span
+(Hình~\ref{fig:grafana-traces}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/deploy-ui/grafana-truy-vet-drilldown.png}
+\caption{Truy vết phân tán trên Grafana với nguồn dữ liệu Tempo.}
+\label{fig:grafana-traces}
+\end{figure}
+
+
+\subsection{Giao diện và chức năng}
 \label{section:3.1.7}
+
+Mục này giới thiệu các màn hình chính của giao diện web, đi theo hai vai trò giảng viên và
+sinh viên. Mỗi hình tương ứng một màn hình của hệ thống, chụp với dữ liệu thử trong quá trình
+kiểm thử. Giao diện viết bằng React và dùng thư viện thành phần Ant Design; phần xác thực do
+Keycloak đảm nhiệm nên ứng dụng không tự quản lý mật khẩu. Các màn hình quản trị của
+ArgoCD, Kafka UI, RustFS và Grafana đã được trình bày ở các mục~\ref{section:3.1.4},
+\ref{section:3.1.5} và~\ref{section:3.1.6}.
+
+\raggedbottom
+
+\subsubsection{Đăng nhập và trang chủ}
+
+Khi người dùng mở ứng dụng, giao diện chuyển hướng sang Keycloak để đăng nhập theo
+Authorization Code Flow kèm PKCE (Hình~\ref{fig:ui-dang-nhap}). Sau khi xác thực thành công,
+trình duyệt quay lại ứng dụng kèm token; các yêu cầu tiếp theo được gửi tới API Gateway và
+mang theo token đó.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/ui-photos/ui-01-dang-nhap-keycloak.png}
+\caption{Trang đăng nhập Keycloak của hệ thống.}
+\label{fig:ui-dang-nhap}
+\end{figure}
+
+Sau khi đăng nhập, giảng viên thấy trang chủ với tên và vai trò của mình cùng bốn lối tắt tới
+các nhóm chức năng chính (Hình~\ref{fig:ui-trang-chu-gv}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/ui-photos/ui-02-trang-chu-giang-vien.png}
+\caption{Trang chủ sau khi giảng viên đăng nhập.}
+\label{fig:ui-trang-chu-gv}
+\end{figure}
+
+\subsubsection{Quản lý lớp học và điểm}
+
+Màn hình lớp học liệt kê các lớp thuộc giảng viên, có bộ lọc, sắp xếp theo từng cột, phân
+trang và nút tạo lớp mới (Hình~\ref{fig:ui-ds-lop}). Mỗi dòng hiển thị học kỳ, trạng thái và
+ngày tạo.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/ui-photos/ui-03-danh-sach-lop-hoc.png}
+\caption{Danh sách lớp học của giảng viên.}
+\label{fig:ui-ds-lop}
+\end{figure}
+
+Bên trong một lớp có bốn thẻ: bài tập, sinh viên, thành phần điểm và bảng điểm. Thẻ bài tập
+liệt kê các bài tập của lớp kèm chủ đề, trạng thái nháp hoặc đã công bố, và cho phép lọc theo
+chủ đề (Hình~\ref{fig:ui-ct-lop-baitap}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/ui-photos/ui-04-chi-tiet-lop-bai-tap.png}
+\caption{Chi tiết lớp học với danh sách bài tập.}
+\label{fig:ui-ct-lop-baitap}
+\end{figure}
+
+Danh sách sinh viên của lớp được nạp từ tệp CSV, hiển thị mã sinh viên, họ tên và email
+(Hình~\ref{fig:ui-ds-sinh-vien}). Thành phần điểm cấu hình trọng số của điểm chuyên cần, điểm
+bài tập và điểm thi cuối kỳ, kèm kiểm tra tổng trọng số bằng 1 (Hình~\ref{fig:ui-thanh-phan-diem}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/ui-photos/ui-05-danh-sach-sinh-vien.png}
+\caption{Danh sách sinh viên của lớp.}
+\label{fig:ui-ds-sinh-vien}
+\end{figure}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/ui-photos/ui-06-thanh-phan-diem.png}
+\caption{Cấu hình thành phần điểm của lớp.}
+\label{fig:ui-thanh-phan-diem}
+\end{figure}
+
+Bảng điểm tổng hợp điểm từng thành phần, điểm tổng kết, xếp loại và GPA của từng sinh viên,
+có ô tìm kiếm theo mã hoặc tên và nút nhập điểm thủ công cho các thành phần không chấm tự động
+(Hình~\ref{fig:ui-bang-diem}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/ui-photos/ui-07-bang-diem.png}
+\caption{Bảng điểm của lớp.}
+\label{fig:ui-bang-diem}
+\end{figure}
+
+\subsubsection{Cấu hình câu kiểm tra và bước chấm}
+
+Bài tập được chia thành các câu, mỗi câu là một kế hoạch chấm có trọng số riêng. Màn hình cấu
+hình liệt kê các câu kèm mô tả và cho phép mở rộng để xem các bước bên trong
+(Hình~\ref{fig:ui-cau-kiem-tra}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/ui-photos/ui-08-danh-sach-cau-kiem-tra.png}
+\caption{Danh sách câu kiểm tra của một bài tập.}
+\label{fig:ui-cau-kiem-tra}
+\end{figure}
+
+Mỗi bước chấm có một màn hình chi tiết riêng theo loại bước. Với bước kiểm tra cấu trúc cơ sở
+dữ liệu, màn hình hiển thị thông tin kết nối tới cơ sở dữ liệu trong Docker Compose của bài
+nộp và danh sách kiểm tra như bảng tồn tại, cột tồn tại, khoá chính (Hình~\ref{fig:ui-buoc-csdl}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/ui-photos/ui-09-buoc-kiem-tra-csdl.png}
+\caption{Chi tiết bước kiểm tra cấu trúc cơ sở dữ liệu.}
+\label{fig:ui-buoc-csdl}
+\end{figure}
+
+Với bước gọi HTTP, màn hình hiển thị phương thức, đường dẫn, phần thân JSON và các điều kiện
+kiểm tra áp lên phản hồi (Hình~\ref{fig:ui-buoc-http}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/ui-photos/ui-10-buoc-goi-http.png}
+\caption{Chi tiết bước gọi HTTP của một câu kiểm tra.}
+\label{fig:ui-buoc-http}
+\end{figure}
+
+\subsubsection{Kết quả chấm và trợ lý AI}
+
+Trợ lý AI được mở từ thanh công cụ ở mọi màn hình. Khi người dùng yêu cầu một thao tác thay
+đổi dữ liệu, trợ lý không thực hiện ngay mà hiển thị suy luận, tham số sẽ gửi và yêu cầu xác
+nhận (Hình~\ref{fig:ui-tro-ly-ai}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/ui-photos/ui-11-tro-ly-ai-xac-nhan.png}
+\caption{Trợ lý AI đề xuất thao tác và chờ người dùng xác nhận.}
+\label{fig:ui-tro-ly-ai}
+\end{figure}
+
+Danh sách bài nộp của một bài tập hiển thị sinh viên, tệp đã nộp, trạng thái chấm và đánh dấu
+bài nộp mới nhất; danh sách lọc được theo từng sinh viên (Hình~\ref{fig:ui-ds-bai-nop}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/ui-photos/ui-12-danh-sach-bai-nop.png}
+\caption{Danh sách bài nộp của một bài tập.}
+\label{fig:ui-ds-bai-nop}
+\end{figure}
+
+Kết quả chấm của một bài nộp gồm điểm của lần nộp, điểm cả bài, phần giải thích do trợ lý AI
+sinh ra và điểm của từng câu (Hình~\ref{fig:ui-ket-qua-cham}). Phần giải thích gồm một đoạn
+tóm tắt kết quả và phân tích riêng cho từng bước, kèm gợi ý cải thiện và từ khóa kỹ thuật
+tương ứng với bước đó. Mở rộng một bước cho thấy yêu cầu đã gửi, phản hồi thực
+tế, bảng đối chiếu giữa kỳ vọng và thực tế, cùng các biến được trích ra cho bước sau
+(Hình~\ref{fig:ui-buoc-ket-qua}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/ui-photos/ui-13-ket-qua-cham-bai.png}
+\caption{Kết quả chấm bài của một bài nộp.}
+\label{fig:ui-ket-qua-cham}
+\end{figure}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/ui-photos/ui-14-chi-tiet-buoc-cham.png}
+\caption{Chi tiết một bước chấm trong kết quả.}
+\label{fig:ui-buoc-ket-qua}
+\end{figure}
+
+Giảng viên cũng có thể mở tệp bài nộp để đối chiếu mã nguồn với kết quả chấm; màn hình hiển
+thị cây thư mục của tệp ZIP và nội dung từng tệp (Hình~\ref{fig:ui-xem-tep}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/ui-photos/ui-15-xem-tep-bai-nop.png}
+\caption{Xem nội dung tệp trong bài nộp.}
+\label{fig:ui-xem-tep}
+\end{figure}
+
+\subsubsection{Giao diện sinh viên}
+
+Sinh viên đăng nhập bằng cùng một trang Keycloak nhưng thấy thanh điều hướng khác, gồm lớp của
+tôi, bài tập, luyện tập và bài nộp của tôi. Màn hình lớp của tôi chỉ liệt kê các lớp mà sinh
+viên đã được ghi danh (Hình~\ref{fig:ui-sv-lop}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/ui-photos/ui-16-sv-lop-cua-toi.png}
+\caption{Danh sách lớp của sinh viên.}
+\label{fig:ui-sv-lop}
+\end{figure}
+
+Trong một lớp, sinh viên xem danh sách bài tập đã công bố và nộp bài trực tiếp từ danh sách
+(Hình~\ref{fig:ui-sv-ct-lop}). Thẻ điểm của tôi tổng hợp điểm tổng kết, GPA và điểm từng thành
+phần; thành phần chưa có dữ liệu được ghi rõ thay vì hiển thị bằng không
+(Hình~\ref{fig:ui-sv-diem}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/ui-photos/ui-17-sv-chi-tiet-lop.png}
+\caption{Sinh viên xem chi tiết lớp và danh sách bài tập.}
+\label{fig:ui-sv-ct-lop}
+\end{figure}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/ui-photos/ui-18-sv-diem-cua-toi.png}
+\caption{Điểm của sinh viên trong lớp.}
+\label{fig:ui-sv-diem}
+\end{figure}
+
+Sinh viên cũng xem được danh sách sinh viên cùng lớp, gồm mã sinh viên và họ tên
+(Hình~\ref{fig:ui-sv-ds-sv}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/ui-photos/ui-19-sv-danh-sach-sinh-vien.png}
+\caption{Danh sách sinh viên cùng lớp theo góc nhìn sinh viên.}
+\label{fig:ui-sv-ds-sv}
+\end{figure}
+
+Chi tiết bài tập hiển thị điểm của bài, mô tả, các giới hạn thời gian và tài nguyên, cùng danh
+sách câu (Hình~\ref{fig:ui-sv-bai-tap}). Nội dung từng câu nêu rõ các bước sẽ được gọi, phương
+thức, đường dẫn, phần thân JSON và truy vấn cơ sở dữ liệu để sinh viên biết chính xác hệ thống
+kiểm tra gì (Hình~\ref{fig:ui-sv-cau}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/ui-photos/ui-20-sv-chi-tiet-bai-tap.png}
+\caption{Chi tiết bài tập theo góc nhìn sinh viên.}
+\label{fig:ui-sv-bai-tap}
+\end{figure}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/ui-photos/ui-21-sv-noi-dung-cau-kiem-tra.png}
+\caption{Nội dung một câu kiểm tra mà sinh viên phải đáp ứng.}
+\label{fig:ui-sv-cau}
+\end{figure}
+
+Lịch sử nộp bài liệt kê các lần nộp kèm tệp, phạm vi câu đã chọn và trạng thái chấm
+(Hình~\ref{fig:ui-sv-lich-su}). Mở một lần nộp cho thấy điểm của lần nộp, điểm cả bài và điểm
+từng câu (Hình~\ref{fig:ui-sv-ket-qua}); chi tiết các bước đã chấm gồm trạng thái đạt, điểm,
+thời gian chạy và yêu cầu đã gửi (Hình~\ref{fig:ui-sv-buoc}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/ui-photos/ui-22-sv-lich-su-nop-bai.png}
+\caption{Lịch sử nộp bài của sinh viên.}
+\label{fig:ui-sv-lich-su}
+\end{figure}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/ui-photos/ui-23-sv-ket-qua-bai-nop.png}
+\caption{Kết quả của một lần nộp bài.}
+\label{fig:ui-sv-ket-qua}
+\end{figure}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Hinhve/ui-photos/ui-24-sv-chi-tiet-buoc.png}
+\caption{Chi tiết các bước đã chấm của một câu.}
+\label{fig:ui-sv-buoc}
+\end{figure}
+
+\afterpage{\flushbottom}
+
+\subsection{Tổng hợp kết quả triển khai}
+\label{section:3.1.8}
 
 Cấu hình triển khai hiện tại gồm sáu dịch vụ backend, Keycloak, RustFS và Kafka UI trong namespace web-grading, sáu Application ArgoCD trong namespace argocd và bộ thành phần quan sát trong namespace observability. Ngoài ra còn một Ingress controller Traefik, một tunnel Cloudflare và giao diện web trên Vercel. Các image backend được lấy từ Docker Hub theo tag phiên bản do workflow phát hành tạo ra, còn cấu hình cụm được lấy từ kho cấu hình theo mô hình GitOps.
 
