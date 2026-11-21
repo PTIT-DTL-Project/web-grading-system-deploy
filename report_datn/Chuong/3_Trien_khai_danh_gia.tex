@@ -13,7 +13,7 @@ Mục này trình bày môi trường và kiến trúc triển khai, cách đón
 
 Hệ thống được triển khai theo mô hình lai. Giao diện web chạy trên Vercel, các dịch vụ backend chạy trong cụm k3s~\cite{k3sdocs}, còn PostgreSQL và Kafka được thuê dưới dạng dịch vụ quản lý. Cách chia này giữ phần tính toán trong cụm để chủ động cấu hình, đồng thời chuyển việc sao lưu, vá lỗi và mở rộng dung lượng của tầng dữ liệu cho nhà cung cấp.
 
-Luồng truy cập từ Internet đi qua Cloudflare Zero Trust Tunnel~\cite{cloudflaredocs}. Cloudflare kết thúc kết nối TLS, chuyển tiếp yêu cầu vào cụm qua một kết nối do phía trong khởi tạo; nhờ đó không cần mở cổng vào trực tiếp trên tường lửa của máy chủ. Trong cụm, Traefik nhận yêu cầu và định tuyến theo tên miền tới Service tương ứng, sau đó Service chuyển tiếp tới các Pod. Hình~\ref{fig:deployment} mô tả kiến trúc triển khai tổng thể.
+Luồng truy cập từ Internet đi qua Cloudflare Zero Trust Tunnel~\cite{cloudflaredocs}. Một tiến trình cloudflared chạy phía trong cụm chủ động mở kết nối ra Cloudflare và giữ kết nối đó thường trực, nên yêu cầu từ Internet được đẩy xuống theo kết nối sẵn có thay vì gọi vào máy chủ. Cloudflare kết thúc TLS ở lớp biên; nhờ cách này máy chủ không cần địa chỉ IP công khai và không cần mở cổng vào trên tường lửa. Trong cụm, Traefik nhận yêu cầu và định tuyến theo tên miền tới Service tương ứng, sau đó Service chuyển tiếp tới các Pod. Hình~\ref{fig:deployment} mô tả kiến trúc triển khai tổng thể.
 
 \begin{figure}[H]
 \centering
@@ -93,14 +93,14 @@ Cập nhật cấu hình & Clone kho cấu hình, thay tag, commit, push & Commi
 \label{tab:cicd-stages}
 \end{table}
 
-Cách tách build và publish giúp một commit chỉ tạo ra một bộ image tương ứng, đồng thời giữ lịch sử phát hành trong GitHub Release. Việc cập nhật kho cấu hình bằng một commit riêng cũng tạo ra điểm kiểm tra rõ ràng: nếu image mới gây lỗi, có thể quay lại commit cấu hình trước đó mà không cần sửa mã nguồn.
+Cách tách build và publish giúp một commit chỉ tạo ra một bộ image tương ứng, đồng thời giữ lịch sử phát hành trong GitHub Release. Việc cập nhật kho cấu hình bằng một commit riêng cũng tạo ra một checkpoint rõ ràng: nếu image mới gây lỗi, có thể quay lại commit cấu hình trước đó mà không cần sửa mã nguồn.
 
 \subsection{Triển khai liên tục với ArgoCD}
 \label{section:3.1.4}
 
-ArgoCD được cài trong namespace argocd từ manifest chính thức~\cite{argocddocs}. Máy chủ ArgoCD chạy sau Traefik và Cloudflare, với TLS được kết thúc ở Cloudflare; Service của ArgoCD giữ kiểu ClusterIP và chỉ Ingress mới mở đường truy cập. Cách cấu hình này tránh phải mở thêm cổng và giữ toàn bộ giao diện quản trị trong cùng một luồng truy cập đã có.
+ArgoCD được cài trong namespace argocd từ manifest chính thức~\cite{argocddocs}. Service của ArgoCD giữ kiểu ClusterIP và chỉ Ingress mới mở đường truy cập. Cách cấu hình này tránh phải mở thêm cổng và giữ toàn bộ giao diện quản trị trong cùng một luồng truy cập đã có.
 
-Kho cấu hình chứa một chart Helm cho mỗi dịch vụ và một tệp danh sách các dịch vụ cần triển khai. Một script đọc danh sách này, điền tên dịch vụ vào mẫu chung và tạo một Application cho mỗi dịch vụ. Mỗi Application trỏ tới kho cấu hình, theo dõi nhánh main, dùng chart tại thư mục của dịch vụ, nạp tệp values của môi trường staging, triển khai vào namespace web-grading và bật đồng bộ tự động kèm prune và selfHeal. ArgoCD không được phép tự tạo namespace: namespace phải tồn tại trước, tránh việc công cụ tạo tài nguyên ngoài ý muốn.
+Kho cấu hình chứa một chart Helm cho mỗi dịch vụ và một tệp danh sách các dịch vụ cần triển khai. Một script đọc danh sách này, điền tên dịch vụ vào mẫu chung và tạo một Application cho mỗi dịch vụ. Mỗi Application trỏ tới kho cấu hình, theo dõi nhánh main, dùng chart tại thư mục của dịch vụ, nạp tệp values của môi trường staging, triển khai vào namespace web-grading và bật đồng bộ tự động kèm prune và selfHeal.
 
 Luồng triển khai bắt đầu khi workflow phát hành cập nhật tag image trong kho cấu hình. ArgoCD phát hiện commit mới, render chart với values tương ứng rồi so sánh với trạng thái thực tế trong cụm; nếu có khác biệt, ArgoCD áp dụng thay đổi để đưa cụm về đúng mô tả trong Git. Cơ chế selfHeal tự sửa các thay đổi thủ công trên cụm, còn prune xóa tài nguyên không còn trong chart. Khi cần quay lại phiên bản trước, có thể đảo commit cấu hình hoặc chỉnh tag về phiên bản cũ; ArgoCD sẽ đồng bộ lại theo Git thay vì phải thao tác trực tiếp trên cụm.Cách làm này phù hợp với mô hình GitOps: Git là nguồn mô tả trạng thái mong muốn, còn cụm chỉ là nơi thực thi trạng thái đó.
 
@@ -109,9 +109,9 @@ Luồng triển khai bắt đầu khi workflow phát hành cập nhật tag imag
 
 Mỗi dịch vụ có một cơ sở dữ liệu PostgreSQL riêng trên nền tảng quản lý Neon~\cite{neondocs}; tên từng cơ sở dữ liệu được liệt kê trong Bảng~\ref{tab:deploy-components}. Dịch vụ API Gateway không cần cơ sở dữ liệu. Thông tin kết nối được lấy từ Secret của cụm. Mỗi dịch vụ có cơ sở dữ liệu chạy Flyway khi khởi động để áp dụng migration, còn Hibernate được đặt ở chế độ validate để chỉ kiểm tra schema, không tự sửa cấu trúc bảng. Cách này giữ migration trong mã nguồn và tránh hai phiên bản dịch vụ cùng tự thay đổi schema.
 
-Kafka được thuê trên Aiven~\cite{aivendocs}. Gói miễn phí giới hạn số topic nên hệ thống dùng một topic chung cho toàn bộ sự kiện. Sự kiện được gửi với khóa là mã bài nộp để các sự kiện của cùng một bài nộp đi vào cùng một partition và giữ đúng thứ tự. Dịch vụ nộp bài phát sự kiện yêu cầu chấm, dịch vụ thực thi chấm đọc sự kiện qua một consumer group riêng, mỗi lần lấy một bản ghi và chỉ xác nhận sau khi xử lý xong. Kết nối tới Kafka được xác thực bằng tài khoản và chứng chỉ CA; chứng chỉ được đóng gói trong Secret và mount vào container.
+Kafka được thuê trên Aiven~\cite{aivendocs}. Gói miễn phí giới hạn số topic nên hệ thống dùng một topic chung cho toàn bộ sự kiện. Sự kiện được gửi với khóa là mã bài nộp để các sự kiện của cùng một bài nộp đi vào cùng một partition và giữ đúng thứ tự. Kết nối tới Kafka được xác thực bằng tài khoản và chứng chỉ CA; chứng chỉ được đóng gói trong Secret và mount vào container.
 
-RustFS là hệ thống lưu trữ đối tượng tương thích S3~\cite{awss3docs,rustfsdocs}, chạy trong cụm với một PVC 10Gi chỉ cho phép một Pod ghi tại một thời điểm. RustFS mở một cổng cho API S3 và một cổng cho giao diện quản trị. Dịch vụ nộp bài cấp \mbox{presigned} URL để sinh viên tải tệp trực tiếp lên RustFS, sau đó RustFS gọi webhook báo hoàn tất tới dịch vụ nộp bài; dịch vụ này cập nhật trạng thái bài nộp và phát sự kiện chấm. Cách làm này tránh truyền tệp lớn qua gateway và giảm tải cho dịch vụ nộp bài.
+RustFS chạy trong cụm với một PVC 10Gi chỉ cho phép một Pod ghi tại một thời điểm. RustFS mở một cổng cho API S3 và một cổng cho giao diện quản trị. Dịch vụ nộp bài cấp \mbox{presigned} URL để sinh viên tải tệp trực tiếp lên RustFS, sau đó RustFS gọi webhook báo hoàn tất tới dịch vụ nộp bài; dịch vụ này cập nhật trạng thái bài nộp và phát sự kiện chấm. Cách làm này tránh truyền tệp lớn qua gateway và giảm tải cho dịch vụ nộp bài.
 
 Keycloak chạy trong cụm, dùng PostgreSQL quản lý làm kho dữ liệu và được cấu hình tên miền công khai cùng chế độ hoạt động sau proxy TLS. Realm ptit-wgs chứa các client cho giao diện web, dịch vụ người dùng và luồng kiểm tra mật khẩu; client của giao diện web là loại public dùng PKCE, còn client của các dịch vụ backend xác thực bằng Client Credentials Grant. Keycloak cấp JWT để API Gateway kiểm tra chữ ký, thời hạn và vai trò trước khi chuyển tiếp yêu cầu.
 
@@ -167,82 +167,69 @@ Mục~\ref{section:3.2} trình bày các tiêu chí và kịch bản đánh giá
 \section{Đánh giá hệ thống}
 \label{section:3.2}
 
-Mục này đánh giá hệ thống ở hai góc: đánh giá định tính kiến trúc triển khai và xây dựng các kịch bản kiểm thử để thu thập dữ liệu định lượng. Các kịch bản xác định dữ liệu cần đo và cách đánh giá; số liệu thực tế được ghi nhận khi chạy trên cụm thử nghiệm.
+Mục này tập trung vào đánh giá định tính kiến trúc triển khai và kết quả kiểm thử định lượng trên staging.
 
 \subsection{Tiêu chí và phương pháp đánh giá}
 \label{section:3.2.1}
 
-Hệ thống được đánh giá theo năm nhóm tiêu chí:
-\begin{itemize}
-    \item Chức năng: các usecase chính hoạt động đúng theo đặc tả, phân quyền đúng vai trò và xử lý được các trường hợp lỗi đã nêu trong kịch bản.
-    \item Hiệu năng: thời gian phản hồi của các API đọc và ghi, số yêu cầu xử lý được trong một đơn vị thời gian, thời gian chấm một bài và mức sử dụng tài nguyên của Pod.
-    \item Độ tin cậy: khả năng phục hồi khi Pod bị xóa, khi Kafka giao lại sự kiện, khi dịch vụ kết quả tạm thời không phản hồi và khi cấu hình cụm bị thay đổi ngoài Git.
-    \item Bảo mật: kiểm soát truy cập theo vai trò, bảo vệ các API nội bộ bằng khóa gateway, thời hạn của presigned URL và cách lưu trữ Secret.
-    \item Khả năng bảo trì: mức độ tự động của quy trình build, kiểm thử, phát hành, triển khai và khả năng quay lại phiên bản trước.
-\end{itemize}
+Phạm vi đánh giá định lượng gồm hiệu năng của một số API đọc và tính nhất quán dữ liệu sau một lượt chấm thử. Các chỉ số API gồm thời gian phản hồi trung bình, p50, p95, p99, số yêu cầu mỗi giây và tỷ lệ lỗi. Với lượt chấm thử, thời gian được đo từ lúc bắt đầu tải tệp lên đến khi bài nộp đạt trạng thái cuối và có thể đọc kết quả; dữ liệu ở ba cơ sở dữ liệu được truy vấn chỉ đọc để đối chiếu số lượng bản ghi và trạng thái. Bảo mật và khả năng bảo trì được nhận xét định tính từ cấu hình triển khai và quy trình CI/CD ở mục~\ref{section:3.1}. Phạm vi này không bao gồm kiểm thử chức năng toàn diện, kiểm thử tải ở mức cao và thử nghiệm gây gián đoạn trên cụm; các phần đó được nêu ở mục~\ref{section:3.3}.
 
-Phương pháp đánh giá kết hợp kiểm thử chức năng theo kịch bản, kiểm thử hiệu năng bằng k6~\cite{k6docs} và kiểm thử độ tin cậy bằng cách tác động vào cụm. Với kiểm thử chức năng, mỗi kịch bản ghi lại điều kiện đầu vào, các bước thực hiện, kết quả mong đợi và trạng thái cuối cùng của bài nộp hoặc công việc chấm. Với kiểm thử hiệu năng, các chỉ số được thu thập gồm thời gian phản hồi trung bình, p50, p95, p99, số yêu cầu mỗi giây, tỷ lệ lỗi và mức sử dụng CPU, bộ nhớ của Pod. Với kiểm thử độ tin cậy, hệ thống được quan sát sau mỗi tác động để xác định công việc chấm có tiếp tục, có bị chấm trùng hay không và trạng thái cuối cùng có rõ ràng hay không. Hai nhóm tiêu chí bảo mật và khả năng bảo trì được đánh giá định tính từ cấu hình triển khai và quy trình CI/CD ở mục~\ref{section:3.1}, không có kịch bản đo riêng.
-
-\subsection{Kịch bản kiểm thử chức năng}
+\subsection{Kịch bản kiểm thử hiệu năng}
 \label{section:3.2.2}
 
-Bảng~\ref{tab:functional-tests} liệt kê các nhóm kịch bản chức năng. Các kịch bản sẽ được chạy theo thứ tự từ xác thực, quản lý lớp học, quản lý bài tập, nộp bài, chấm bài đến xem kết quả và trợ lý AI. Nhóm cuối trong bảng kiểm tra độ tin cậy của luồng chấm, được thực hiện sau khi các nhóm chức năng đã đạt yêu cầu. Với mỗi nhóm, cột kết quả mong đợi mô tả trạng thái mà hệ thống phải đạt được; kết quả thực tế sẽ được đối chiếu và ghi nhận sau khi chạy.
+\raggedbottom
+Ba kịch bản định lượng được thực hiện trên staging. Kịch bản thứ nhất đo tải ba API chỉ đọc gồm danh sách bài tập, chi tiết bài tập và kết quả cá nhân bằng k6~\cite{k6docs}, ở mức một người dùng ảo và ở mức tăng dần từ một lên ba người dùng ảo trong 151 giây. Kịch bản thứ hai thực hiện một lượt nộp và chấm thật đầu-cuối: tài khoản sinh viên test đã được ghi danh vào bài tập công bố nộp một tệp phù hợp với bài tập, sau đó hệ thống chấm và trả kết quả. Kịch bản thứ ba đối soát dữ liệu sau khi chấm bằng truy vấn chỉ đọc trên ba cơ sở dữ liệu của bài nộp, công việc chấm và kết quả.
 
-Dữ liệu đầu vào cho mỗi nhóm sẽ được chuẩn bị theo một bộ mẫu chung: tài khoản thuộc các vai trò khác nhau, lớp có sẵn sinh viên, bài tập ở trạng thái nháp và đã công bố, cùng một bài nộp mẫu. Với các kịch bản lỗi, dữ liệu được chọn để kích hoạt đúng điều kiện biên như tệp quá lớn, sai định dạng hoặc sự kiện bị gửi lặp.
+Bảng~\ref{tab:performance-results} tổng hợp kết quả hiệu năng của ba kịch bản; Bảng~\ref{tab:grading-data} trình bày thời gian đầu-cuối và kết quả đối soát dữ liệu của lượt chấm.
 
-\begin{table}[!ht]
+\begin{table}[H]
 \centering
 \small
-\begin{tabularx}{\textwidth}{|p{3.3cm}|p{5.9cm}|X|}
+\setlength{\tabcolsep}{4pt}
+\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}p{1.75cm}|>{\raggedright\arraybackslash}p{1.7cm}|>{\raggedright\arraybackslash}p{1.7cm}|>{\raggedright\arraybackslash}p{1.75cm}|>{\raggedright\arraybackslash}p{1.6cm}|}
 \hline
-Nhóm chức năng & Kịch bản & Kết quả mong đợi \\ \hline
-Xác thực và phân quyền & Đăng nhập đúng, đăng nhập sai, khóa tài khoản sau nhiều lần sai, đổi mật khẩu bắt buộc & Phiên làm việc hợp lệ; sai thông tin bị từ chối; tài khoản bị khóa đúng quy định; mật khẩu mới được áp dụng \\ \hline
-Quản lý lớp học & Tạo lớp, nhập danh sách sinh viên từ CSV, xem danh sách lớp, cấu hình thành phần điểm & Lớp được tạo đúng; sinh viên hợp lệ được thêm; dòng lỗi được báo lại; thành phần điểm lưu đúng \\ \hline
-Quản lý bài tập & Tạo bài tập, cấu hình các bước chấm, công bố, sửa và xóa bài tập & Bài tập và các bước được lưu; sinh viên chỉ thấy bài đã công bố; thao tác sai quyền bị từ chối \\ \hline
-Nộp bài & Tải tệp qua presigned URL, tệp đúng định dạng, tệp quá lớn, tệp sai định dạng, webhook hoàn tất & Tệp được lưu trong RustFS; bài nộp chuyển trạng thái đúng; tệp lỗi bị từ chối với thông báo rõ ràng \\ \hline
-Chấm tự động & Chấm bài hợp lệ, bài thiếu tệp, bài có bước bắt buộc thất bại, bài vượt thời gian, sự kiện chấm bị gửi trùng & Công việc chấm đi qua đúng các trạng thái; kết quả và lỗi được lưu; không tạo công việc chấm trùng; công việc lỗi có thể chấm lại \\ \hline
-Kết quả chấm & Xem kết quả của lớp, xem chi tiết một bài, xem kết quả của bản thân & Điểm và chi tiết từng bước đúng với dữ liệu chấm; sinh viên chỉ thấy kết quả của mình \\ \hline
-Trợ lý AI & Hỏi đáp về bài nộp, yêu cầu giải thích lỗi, mất kết nối tới nhà cung cấp mô hình & Câu trả lời có ngữ cảnh bài nộp; lỗi nhà cung cấp được báo lại và không làm hỏng dữ liệu hội thoại \\ \hline
-Độ tin cậy luồng chấm & Đối chiếu khóa duy nhất của công việc chấm; khảo sát sự kiện chấm bị gửi trùng chỉ trên topic của môi trường staging cô lập đã được duyệt; công việc chấm ở trạng thái chờ xử lý, đang lấy tệp hoặc đang dựng môi trường quá 30 phút; Pod bị xóa khi công việc đang chấm & Không tạo bản ghi công việc chấm thứ hai; sự kiện gửi trùng có thể khởi chạy lại công việc đã thất bại; công việc cũ ở các trạng thái được cơ chế quét hỗ trợ có thể được đưa lại hàng đợi; công việc đang chấm cần được nhận diện để xử lý thủ công \\ \hline
+Kịch bản & Số yêu cầu & p50 (ms) & p95 (ms) & p99 (ms) & Tỷ lệ lỗi \\ \hline
+API đọc, 1 người dùng ảo, 1 lượt & 3 & 615,741 & 958,163 & 988,601 & 0\% \\ \hline
+API đọc, 1 đến 3 người dùng ảo, 151 giây & 276 & 475,838 & 652,607 & 1.720,390 & 0\% \\ \hline
+Chấm bài, 1 người dùng ảo, 1 bài nộp & 56 & 466,753 & 786,736 & 1.885,968 & 0\% \\ \hline
 \end{tabularx}
-\caption{Kịch bản kiểm thử chức năng.}
-\label{tab:functional-tests}
+\caption{Kết quả kiểm thử hiệu năng trên staging.}
+\label{tab:performance-results}
 \end{table}
 
-% TODO: sau khi chạy các kịch bản, bổ sung bảng kết quả thực tế (đạt/không đạt, thời gian, log).
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{5.6cm}|>{\raggedright\arraybackslash}X|}
+\hline
+Chỉ số & Giá trị \\ \hline
+Thời gian từ lúc bắt đầu tải tệp đến trạng thái cuối & 174,684 giây \\ \hline
+Thời gian đến khi đọc được kết quả & 175,218 giây \\ \hline
+Số bản ghi bài nộp, công việc chấm, kết quả & 1, 1, 1 \\ \hline
+Trạng thái của ba bản ghi & DONE \\ \hline
+Số lần thử lại của công việc chấm & 0 \\ \hline
+Điểm và phạm vi kết quả & 5,00; toàn bài \\ \hline
+\end{tabularx}
+\caption{Thời gian và kết quả đối soát dữ liệu của lượt chấm.}
+\label{tab:grading-data}
+\end{table}
+\afterpage{\flushbottom}
 
-\subsection{Kịch bản kiểm thử hiệu năng và độ tin cậy}
-\label{section:3.2.3}
-
-Kiểm thử hiệu năng và độ tin cậy được thực hiện trên staging đã cô lập, không chạy trên môi trường phục vụ người dùng, vì luồng chấm tạo bài nộp thật và khởi chạy container trong dịch vụ thực thi. Bốn nhóm kịch bản được sử dụng.
-
-Thứ nhất là đo tải trên các API đọc. Kịch bản lần lượt gọi danh sách bài tập, chi tiết bài tập và kết quả cá nhân với bốn mức tải tăng dần là khởi động nhanh, tải bền, tải cao và tăng đột biến; mục đích là quan sát độ trễ và tỷ lệ lỗi của các thao tác chỉ đọc mà không sinh bài nộp. Các mức tải ban đầu được giữ ở mức thăm dò thấp (tối đa ba đến năm người dùng ảo) để không gây áp lực ngoài ý muốn lên staging; đây không phải chỉ tiêu năng lực của hệ thống.
-
-Thứ hai là một lượt chấm thật đầu-cuối. Kịch bản đọc bài tập, xin URL tải lên, gửi tệp ZIP trực tiếp lên RustFS, chờ bài nộp đạt trạng thái cuối cùng rồi đọc kết quả chấm. Mỗi người dùng ảo dùng bearer token riêng còn hạn, được cấp trước qua luồng OIDC Authorization Code kèm PKCE; không dùng phương thức cấp token trực tiếp bằng tài khoản và mật khẩu người dùng. Do chi phí chấm thật, kịch bản này chỉ chạy ở mức một lượt nộp.
-
-Thứ ba là đối soát dữ liệu sau khi chấm. Sau mỗi lượt nộp, dữ liệu được truy vấn chỉ đọc để kiểm tra theo mã bài nộp xem có đúng một bản ghi bài nộp, đúng một công việc chấm và ít nhất một kết quả hay không, kèm trạng thái, thời điểm bắt đầu/kết thúc và số lần thử lại. Tiêu chí này phát hiện các trường hợp tạo trùng hoặc ghi thiếu giữa các dịch vụ; người vận hành vẫn phải đối chiếu trạng thái cuối giữa các dịch vụ vì kết quả truy vấn không tự kết luận chúng khớp nhau. Trong cùng nhóm này, kịch bản tạm ngừng dịch vụ kết quả giúp quan sát các lần thử gửi lại và cho thấy không thể mặc định công việc ở trạng thái DONE là kết quả đã được ghi thành công.
-
-Thứ tư là các thao tác có kiểm soát trên cụm. Kịch bản xóa Pod của dịch vụ thực thi khi công việc đang chạy để xem công việc có được xử lý lại hay cần can thiệp thủ công; kịch bản hạ số bản sao xuống một để kiểm tra ArgoCD tự khôi phục cấu hình mong muốn; kịch bản đổi tag của image qua nhánh và pull request của kho cấu hình để kiểm tra quay lại phiên bản trước. Các thao tác này chỉ thực hiện thủ công, có kiểm tra ngữ cảnh, namespace và xác nhận kép, không sửa trực tiếp cụm và không đẩy thẳng lên nhánh main. Riêng việc phát lại sự kiện chấm vào topic dùng chung chưa được thực hiện, vì bộ xử lý hiện tại có thể chạy lại công việc ở trạng thái FAILED khi nhận sự kiện trùng; muốn khảo sát trường hợp này cần một topic cô lập và quy trình được rà soát trước.
-
-Các số đo gồm thời gian phản hồi HTTP, số yêu cầu mỗi giây, tỷ lệ lỗi và thời gian đầu-cuối từ lúc bắt đầu tải ZIP lên RustFS đến khi bài nộp đạt trạng thái cuối cùng và kết quả đọc được. Thời gian đầu-cuối bao gồm webhook, Kafka, thời gian chờ trong hàng đợi và thực thi chấm. Vì dịch vụ thực thi hiện chưa lưu thời điểm phát sự kiện yêu cầu chấm cùng công việc chấm, phép đo này không thể đại diện chính xác riêng cho khoảng từ lúc phát sự kiện đến khi công việc hoàn tất; muốn đo khoảng đó cần đối chiếu log có traceId hoặc bổ sung mốc thời gian tương quan. Prometheus thu thập theo chu kỳ 30 giây, phù hợp quan sát xu hướng và tài nguyên nhưng không thay thế phép đo thời gian chính xác của từng công việc.
-
-Mỗi lần chạy cần ghi lại môi trường, phiên bản image, bài tập và tệp ZIP mẫu, số người dùng ảo, thời gian chạy, p50/p95/p99, thông lượng, tỷ lệ lỗi, thời gian đầu-cuối, mức dùng CPU/bộ nhớ, các mã bài nộp, số công việc chấm và kết quả đối soát cùng thời gian khôi phục sau sự cố. Các kịch bản trên mô tả phương pháp dự kiến; báo cáo chưa đưa ra số liệu thực nghiệm. Kết quả chỉ được bổ sung sau khi chạy và lưu bằng chứng trên staging.
-
-% TODO: bổ sung số liệu p50/p95/p99, RPS, tỷ lệ lỗi, tài nguyên và kết quả phục hồi sau khi chạy thực nghiệm.
+Cả ba kịch bản hoàn tất mà không có yêu cầu lỗi. Khi số người dùng ảo tăng từ một lên ba, p95 giảm từ 958,163 ms xuống 652,607 ms trong khi p99 tăng từ 988,601 ms lên 1.720,390 ms, cho thấy đuôi độ trễ dài ra khi có nhiều yêu cầu đồng thời hơn. Lượt chấm hoàn tất sau 174,684 giây và kết quả đọc được sau 175,218 giây; đối soát ghi nhận đúng một bản ghi ở mỗi dịch vụ, cả ba ở trạng thái DONE và không có lần thử lại.
 
 \subsection{Ưu điểm của kiến trúc triển khai}
-\label{section:3.2.4}
+\label{section:3.2.3}
 
 Việc tách mỗi dịch vụ thành một Deployment riêng, một cơ sở dữ liệu riêng và một chart Helm riêng cho phép build, kiểm thử, phát hành và quay lại phiên bản của từng dịch vụ mà không ảnh hưởng đến các dịch vụ khác. Khi dịch vụ kết quả gặp lỗi, luồng nộp bài và chấm bài vẫn có thể tiếp tục ở mức độ nhất định; khi dịch vụ trợ lý AI gặp lỗi, các chức năng quản lý lớp học và chấm bài không bị dừng theo.
 
 Mô hình GitOps tạo ra một chuỗi truy vết đầy đủ từ commit mã nguồn đến image và commit cấu hình. Mọi thay đổi trạng thái mong muốn của cụm đều nằm trong Git, nên có thể xem lại lịch sử, so sánh hai phiên bản và quay lại phiên bản trước bằng một commit. Cơ chế selfHeal và prune giảm các sai lệch do thao tác thủ công, còn việc tách workflow build khỏi workflow phát hành giúp chỉ những commit đã vượt qua kiểm thử mới được tạo image phát hành.
 
-Luồng chấm bài bất đồng bộ giúp thao tác nộp bài không phải chờ kết quả chấm. Thiết kế các cơ chế theo dõi và phục hồi trạng thái được trình bày tại \hyperref[sec:grading-saga]{tiểu mục Nhất quán dữ liệu trong quy trình chấm bài với Grading Saga} ở Chương 2. Trong phạm vi đánh giá triển khai, các cơ chế này được xem xét qua kịch bản gửi sự kiện trùng, công việc tồn đọng và sự cố Pod; kết quả kiểm chứng chỉ được kết luận sau khi chạy và ghi nhận số liệu thực tế.
+Luồng chấm bài bất đồng bộ giúp thao tác nộp bài không phải chờ kết quả chấm. Thiết kế các cơ chế theo dõi và phục hồi trạng thái được trình bày tại \hyperref[sec:grading-saga]{tiểu mục Nhất quán dữ liệu trong quy trình chấm bài với Grading Saga} ở Chương~2.
 
 Việc dùng các dịch vụ quản lý cho PostgreSQL và Kafka giảm công sức vận hành tầng dữ liệu, đồng thời cho phép tập trung vào phần tính toán và nghiệp vụ. Cách đóng gói image nhiều tầng, truyền cấu hình qua biến môi trường và dùng Helm values giúp cùng một image có thể chạy ở nhiều môi trường mà không phải sửa mã nguồn.
 
 \subsection{Hạn chế và rủi ro}
-\label{section:3.2.5}
+\label{section:3.2.4}
 
 Bên cạnh các ưu điểm, môi trường triển khai còn một số hạn chế cần được xử lý trước khi vận hành chính thức.
 
@@ -275,7 +262,18 @@ Về dữ liệu, cần tách topic Kafka theo từng miền nghiệp vụ, tăn
 
 Về bảo mật, cần chuyển Keycloak sang chế độ vận hành chính thức, giới hạn giao diện quản trị, xóa các Ingress không cần thiết, bổ sung NetworkPolicy giữa các namespace và dịch vụ, đưa Secret sang một hệ thống quản lý tập trung như External Secrets hoặc Vault, đồng thời thêm bước quét lỗ hổng, tạo danh mục thành phần phần mềm (SBOM) và ký image vào quy trình CI/CD.
 
-Về kiểm thử, cần hoàn thiện bộ kiểm thử đầu-cuối cho tất cả usecase, chạy các kịch bản hiệu năng và độ tin cậy đã nêu, ghi nhận số liệu thực tế và bổ sung kiểm thử phá hoại để đánh giá khả năng phục hồi. Kết quả của các lần chạy này sẽ là cơ sở để đánh giá định lượng thay cho phần đánh giá định tính hiện tại.
+Về kiểm thử, phạm vi hiện tại mới gồm ba kịch bản ở mục~\ref{section:3.2.2}, nên còn những phần sau chưa thực hiện:
+
+\begin{itemize}
+    \item Kiểm thử chức năng đầu-cuối cho toàn bộ luồng nghiệp vụ: tạo lớp và ghi danh, tạo bài tập cùng tiêu chí chấm, nộp bài, chấm, xem kết quả và phúc khảo, kèm các trường hợp biên như tệp sai định dạng, tệp quá dung lượng, nộp muộn và nộp lại; đồng thời khôi phục các lớp kiểm thử tự động đang bị loại trừ trong quy trình CI.
+    \item Kiểm thử hiệu năng ở mức cao hơn: tăng số người dùng ảo vượt mức ba, chạy các mức tải đỉnh và tăng đột biến để tìm điểm bão hoà; đo thêm mức dùng CPU, bộ nhớ, độ dài hàng đợi và thời gian chấm khi nhiều bài được chấm đồng thời.
+    \item Kiểm thử khả năng phục hồi: dừng Pod hoặc dịch vụ giữa lúc chấm, quay lại image trước, phát lại sự kiện Kafka và tạo sự kiện trùng để xác nhận tính bất biến của quy trình chấm, xử lý công việc ở trạng thái RUNNING bị treo.
+    \item Kiểm thử nhất quán dữ liệu ở quy mô lớn: tự động đối soát sau mỗi lượt chấm thay vì đối soát thủ công, và kiểm tra trường hợp ghi kết quả thất bại ở cả ba lần thử.
+    \item Kiểm thử bảo mật: quét lỗ hổng image và thư viện phụ thuộc, thử truy cập trái phép qua các Ingress nội bộ còn mở, kiểm tra phân quyền theo vai trò tại API Gateway.
+    \item Kiểm thử sao lưu và phục hồi đối với PostgreSQL và RustFS, bao gồm đo thời gian phục hồi và xác nhận không mất dữ liệu bài nộp.
+\end{itemize}
+
+Các kịch bản trên cần một môi trường staging cô lập để không ảnh hưởng dữ liệu thật, và chưa được thực hiện trong phạm vi của báo cáo.
 
 \section{Kết luận chương}
 \label{section:3.4}
@@ -284,6 +282,6 @@ Chương này đã trình bày cách hệ thống được đóng gói và tri�
 
 Thiết kế quy trình chấm và các cơ chế nhất quán được trình bày ở Chương 2; Chương này tập trung vào việc triển khai các thành phần liên quan, cách đánh giá chúng và những giới hạn còn tồn tại trong môi trường hiện tại.
 
-Phần đánh giá đã xác định các tiêu chí, kịch bản kiểm thử chức năng, hiệu năng và độ tin cậy, đồng thời chỉ ra các hạn chế về bề mặt tấn công, chế độ chạy của Keycloak, mức cách ly của Docker-in-Docker, tính nhất quán khi ghi kết quả, giới hạn của một topic Kafka, cấu hình RustFS và mức độ sẵn sàng của cụm. Các hướng phát triển tương ứng đã được nêu để tiếp tục hoàn thiện hệ thống trước khi đưa vào vận hành chính thức.
+Phần đánh giá trình bày kết quả đo ba kịch bản trên staging: tải API đọc ở mức một và ba người dùng ảo, một lượt nộp và chấm thật đầu-cuối, cùng đối soát dữ liệu sau khi chấm. Chương cũng nêu các hạn chế trong môi trường triển khai, các phần kiểm thử chưa thực hiện và hướng cải thiện tương ứng trước khi đưa hệ thống vào vận hành chính thức.
 
 \end{document}

@@ -3,7 +3,7 @@
 \chapter{Phiên bản công nghệ sử dụng}
 \label{phu-luc:versions}
 
-Phụ lục này tổng hợp phiên bản được khai báo trong mã nguồn, tệp khóa phụ thuộc và cấu hình triển khai của hệ thống. Với thư viện được quản lý qua BOM, bảng ghi phiên bản BOM thay vì tự suy ra phiên bản riêng của từng thư viện. Phiên bản container được ghi đúng theo image tag trong cấu hình; tag không chỉ rõ bản vá thì không suy diễn thêm.
+Phụ lục này tổng hợp phiên bản được khai báo trong mã nguồn, tệp khóa phụ thuộc và cấu hình triển khai của hệ thống. Với thư viện được quản lý qua BOM, bảng ghi phiên bản BOM thay vì tự suy ra phiên bản riêng của từng thư viện. Phiên bản container được ghi đúng theo image tag trong cấu hình; tag không chỉ rõ bản vá thì không suy diễn thêm. Với công cụ cài qua trình quản lý gói của hệ điều hành, bảng ghi phiên bản đang cài trên máy tại thời điểm viết báo cáo kèm cách xác minh, không chuyển thành yêu cầu phiên bản cho dự án.
 
 \section{Ngôn ngữ và công nghệ backend}
 
@@ -81,8 +81,28 @@ Kafka UI & \textnormal{v1.5.0} & Image tag trong cấu hình triển khai tại 
 \label{tab:versions-infrastructure}
 \end{table}
 
-\section{Thành phần chưa ghim phiên bản cụ thể}
+\section{Công cụ cài ngoài kho mã nguồn}
 
-Node.js, k3s, Helm CLI, Argo CD và Cloudflare Tunnel chưa có phiên bản cố định trong kho mã nguồn nên không được gán số hiệu phiên bản tại đây.
+Node.js, k3s, Helm, Cloudflare Tunnel và kubectl không được khai báo phiên bản trong kho mã nguồn mà cài từ gói của hệ điều hành. Bảng~\ref{tab:versions-tools} ghi phiên bản đang cài trên máy tại thời điểm viết báo cáo và lệnh dùng để xác minh lại.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{|p{3.3cm}|p{2.3cm}|>{\raggedright\arraybackslash}X|}
+\hline
+Công cụ & Phiên bản & Nguồn xác minh \\ \hline
+Node.js & 26.13.1 & Gói \textnormal{nodejs} trên Arch Linux, dùng để build giao diện; kiểm tra bằng \textnormal{node -v}. \\ \hline
+npm & 12.2.2 & Đi kèm gói Node.js; kiểm tra bằng \textnormal{npm -v}. \\ \hline
+k3s & v1.37.2+k3s1 & Gói \textnormal{k3s-bin} từ AUR trên máy chủ cụm; kiểm tra bằng \textnormal{k3s --version}. \\ \hline
+kubectl & v1.37.2 & Cùng phiên bản với cụm; kiểm tra bằng \textnormal{kubectl version --client}. \\ \hline
+Helm & v4.3.0 & CLI dùng để cài các thành phần hạ tầng; kiểm tra bằng \textnormal{helm version --short}. \\ \hline
+Cloudflare Tunnel & 2026.11.0 & Tiến trình \textnormal{cloudflared} chạy cùng cụm; kiểm tra bằng \textnormal{cloudflared --version}. \\ \hline
+Argo CD & Không ghim & Cài từ manifest nhánh \textnormal{stable} trong \textnormal{deploy/install-argocd.sh}; số hiệu thực tế đọc từ image của Deployment \textnormal{argocd-server} trong namespace \textnormal{argocd}. \\ \hline
+\end{tabularx}
+\caption{Phiên bản công cụ cài ngoài kho mã nguồn tại thời điểm viết báo cáo.}
+\label{tab:versions-tools}
+\end{table}
+
+Các số hiệu trên mô tả trạng thái máy khi viết báo cáo, không phải ràng buộc của dự án: cài lại từ gói mới nhất có thể cho phiên bản khác. Muốn tái lập đúng môi trường đã đo, cần ghim phiên bản bằng công cụ tương ứng, ví dụ Corepack hoặc asdf cho Node.js, biến \textnormal{INSTALL\_K3S\_VERSION} cho k3s, gói Helm theo phiên bản cố định, và chart hoặc manifest có image tag cụ thể cho Argo CD và Cloudflare Tunnel.
 
 \end{document}

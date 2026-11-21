@@ -235,6 +235,74 @@ with a **0-based `page`** (antd `Table.pagination.current` is 1-based → `meta.
   so button and table can never disagree. Applies to `SubmissionResultPage`,
   `SubmissionDetailCard` and `AssignmentResultsPage.StepTable`. Review: 2026-11-12.
 
+### 7.2 Select filters over long option lists (mandatory)
+
+- Rule of thumb: if the options come from an API list that can grow (roster, assignment
+  list, conversation titles, plan list), the select is type-to-filter — fetch the full list
+  once, filter locally on every keystroke, never make the user press Enter.
+  `showSearch` + `optionFilterProp="label"` + `filterOption={filterOptionByLabel}` (+ a width
+  that fits the longest label, 260px for `code — name`).
+- Every `FilterConfig` of `type: 'select'` already gets it from `shared/ui/FilterBar.tsx`, so
+  all pages (submissions, results, classes, student lists) inherit it — do not hand-roll a
+  second searchable `Select` for a filter bar.
+- Standalone API-backed pickers opt in explicitly: `ConversationSelector` (conversation
+  titles) and `SubmitAssignmentModal` (plan list). Those labels must be **strings**, not JSX
+  nodes — a JSX label stringifies to `[object Object]` and `filterOption` can never match it;
+  render the icon/decoration through `optionRender` instead.
+- Short enum selects (step types, HTTP methods, assertion kinds, DB types, status) stay plain:
+  searching eight fixed values is noise.
+- **A server filter that is exact-match must be a pick-list, never a free-text box
+  (mandatory).** `GET /api/v1/assignments?topic=` compares `lower(topic) = lower(:topic)`,
+  so typing `quản lý` against the stored `quản lý sinh viên` returned an empty table and
+  looked like search was broken. Build the options from the values the API actually holds:
+  `useTopicOptions` (`features/assignments/useTopicOptions.ts`) uses
+  `/assignments/topics` for owner-wide lists, `/student/assignments/topics` for published
+  practice, and a class-scoped `size=1000` page when a class narrows the list — never
+  `listTopics` for a class tab, whose owner-wide answer includes topics with zero rows there.
+- Selecting an option applies immediately even on pages whose typed search waits for
+  Enter/Filter: `useList.submitFilterValue` + `FilterBar.onSelectSubmit`. Do **not**
+  implement it as `onFilterChange` followed by `onSubmit` — React has not applied the
+  filter state yet, so that submits the previous value.
+- **Server-side text filters are debounced and reset the page (mandatory).** When a term is
+  sent to the API (e.g. `GET /classes/{id}/transcript?search=`, roster contains match), keep
+  the input value in its own state, push `search.trim()` into an `appliedSearch` state after
+  ~350 ms (`setTimeout` in a `useEffect` with cleanup), and `setPage(0)` at the same time —
+  otherwise every keystroke fires a request and a stale page index shows an empty table even
+  though matches exist (`TranscriptTab` + `useTranscript`). Pass `undefined` rather than `''`
+  so the param is omitted.
+- The matcher lives in `shared/ui/selectSearch.ts` (`filterOptionByLabel`) and folds case,
+  diacritics and `đ/Đ` so `vu cong tuan duong` matches `Vũ Công Tuấn Dương`; it matches the
+  label **and** the submitted value (e.g. `studentCode`). Keep non-component helpers out of
+  `FilterBar.tsx` — exporting a function from a component file trips oxlint's
+  `only-export-components` fast-refresh warning.
+- Covered by `selectSearch.test.ts`; adding a new select filter needs no new test, changing
+  the matcher does.
+
+### 7.3 No editor inside a horizontally scrolling table row (mandatory)
+
+- A `Table` with `tableLayout="fixed"` + `scroll={{ x: N }}` puts its rows in a scroll
+  container. Rendering an editor in `expandedRowRender` (the class Assignments tab used to
+  expand into `TestPlanEditor`) means focusing any field makes the browser pan that
+  container, so labels look clipped/shifted — the user-reported "chọn là bị lệch".
+  Open the editor in a `Drawer` (`width="min(880px, 94vw)"`, `destroyOnHidden`) from an
+  action-column button instead; keep the row itself read-only.
+- Any JSON/code preview (`<pre>`, `Typography.Paragraph code`) needs
+  `whiteSpace: 'pre-wrap'`, `wordBreak: 'break-word'`, `maxWidth: '100%'` — one long line
+  otherwise widens the whole column and scrolls the page (`.ant-layout-content` has
+  `overflow-x: auto`).
+- Wrap flexible rows (`Space`, Form.Item groups) with `wrap` / `minWidth: 0` so a wide
+  assertion row shrinks instead of pushing the layout.
+
+### 7.4 `t('key') || 'fallback'` never falls back (mandatory)
+
+- `t()` returns the **key** when it is missing, so `t('step.dbConnectionRequired') || 'Kết nối
+  DB là bắt buộc'` renders `step.dbConnectionRequired` verbatim. Add the key to both locale
+  files instead (the earlier `t('key', 'default')` form at least rendered the default, but it
+  hides the gap — normalise to `t('key')` once the key exists).
+- Before shipping an i18n-touching change, diff used keys against the JSON:
+  `python`/`node` snippet or `npm run i18n:check`; a missing key shows up in the UI as a raw
+  dotted path, not as an error.
+
 ## 8. Sidebar collapse controls
 
 - **Placement**: a circular chevron button at the bottom‑right edge of the Sider, only the brand header compacts to show a short name (`app.shortName`).
@@ -759,6 +827,15 @@ drifts visually from the list it persists.
   ```
 - When a translation value already contains a character (e.g. `"{{weight}}%"`),
   do not append that character again in JSX. `20%%` is a common symptom.
+- **Do not reword a shared key to fit a second role — add a role-specific key.**
+  `assignment.submissions` = "Nộp bài" (a student verb) was reused as the lecturer's
+  menu item, the submissions page title and the results page's back label, so the UI
+  told lecturers to submit their own assignment. Give the lecturer its own noun key
+  (`assignment.submissionList` = "Danh sách bài nộp") and leave the original value
+  alone; verbs stay student-only (`assignments.submit`, `submitModal.*`). Renaming a
+  value in place silently changes every other place that key renders — grep
+  `t('section.key')`, `backLabelKey="…"`-style props and any dynamic
+  key built with a template literal before touching a value.
 
 ## 16. Row alignment in Space/List layouts
 
@@ -1123,3 +1200,105 @@ is `STUDENT_DOCKER_COMPOSE`), the FE must stop expressing it at all:
 - i18n keys can stay even when unused; deleting them is a separate, optional
   cleanup — do not bundle it into the behaviour change without asking.
 
+
+## 25. Render grader config as sentences, never as raw enum tokens
+
+A step/config detail view is a *teaching* surface. Printing the stored enum and its
+field values is fine for logs, not for students:
+
+- **Translate every enum on screen.** Step type (`DB_SCHEMA_CHECK` → "Kiểm tra cấu
+  trúc CSDL"), assertion kind, check kind. Keep the technical value available to the
+  lecturer variant only. Table columns that render `stepType` need
+  `render: (v) => t('step.typeOptions.' + v, { defaultValue: v })` — `defaultValue`
+  keeps a new backend enum readable instead of showing a raw key.
+- **Turn `{kind, field...}` objects into one sentence.** `TABLE_EXISTS books` →
+  "Bảng «books» phải tồn tại trong CSDL.", `COLUMN_EXISTS books.id bigint` → "Bảng
+  «books» phải có cột «id» với kiểu dữ liệu «bigint»." Add keys
+  `step.checkSentence*` with `{{table}}`/`{{column}}`/`{{type}}` interpolation instead
+  of concatenating field values in code (word order differs per locale).
+- **Translate field names too** when you still show them
+  (`t('step.checkField.' + key, { defaultValue: key })`) — `table_name` means nothing
+  to a student.
+- **Say when something is empty**: an empty `checks: []` list must render
+  "Chưa khai báo kiểm tra nào — bước này luôn đậu." not a blank heading.
+- **Number repeated items** ("Kiểm tra 1", "Câu lệnh 2") so a student can point at one.
+- **Do not widen what students see while doing this.** `assertions`, `extract`,
+  `expected` and `connection` are stripped server-side (`sanitizeConfig`); keep the
+  lecture-only guards (`full && ...`) so a future backend regression cannot leak the
+  answer key through a newly-added renderer.
+- Regression test: render the component per variant and assert the sentence text is
+  present **and** the raw token is absent (`expect(text).not.toContain('TABLE_EXISTS')`).
+  antd `Space`/`Descriptions` need a `window.matchMedia` shim in jsdom.
+
+## 26. Row actions live behind a "..." menu (`RowActions`)
+
+Inline `type="link"` buttons per table row do not scale: the class assignment table
+needed `width: 440` for five links, overflowed the viewport and dragged the page
+scrollbar with it. Use the shared `shared/ui/RowActions.tsx` component instead.
+
+- **Rules:** exactly one action → plain button, no menu. A primary CTA plus
+  secondaries → keep the CTA visible (`primary` prop) and put the rest in the menu.
+  Two or more equal-weight actions → all of them in the menu.
+- **Menu items** are `RowAction` objects: `{ key, label, icon?, danger?, disabled?,
+  hidden?, confirmTitle?, onClick }`. Use `hidden` (not conditional JSX) for state
+  dependent entries — `hidden: !record.published` keeps the caller a single literal.
+  The component drops `hidden` items and renders **no trigger at all** when nothing
+  is left, so a read-only row stays clean.
+- **Destructive actions cannot use `Popconfirm`** inside a `Dropdown`: the confirm
+  cannot be anchored to a portaled menu item. Pass `confirmTitle` and the component
+  calls `modal.confirm` (`App.useApp()`), with `okText` defaulting to the item label.
+  Never delete straight from the menu click.
+- **Per-row loading** no longer fits a menu item; disable the trigger
+  (`disabled={pendingId === row.id}`) instead of passing `loading` around.
+- **Column width** shrinks to the trigger plus the primary CTA (~110–200). Recompute
+  `tableScrollX` when you remove a wide action column, or the table keeps a
+  horizontal scrollbar for content that no longer exists (a `scroll.x` larger than
+  the sum of column widths renders a phantom scrollbar and hides real columns).
+- **Center the column** (`align: 'center'` on the antd column, `RowActions`
+  defaults to `align="center"`). antd left-aligns the `Thao tác` header, so a
+  right-aligned trigger sat at the far edge with a gap in between; centering both
+  makes the header and the dots line up in every table.
+- **Tests:** `RowActions.test.tsx` covers hidden items, the plain click, and the
+  confirm path. jsdom needs a `ResizeObserver` stub in addition to `matchMedia`;
+  with vitest globals off, register `afterEach(cleanup)` yourself or the next test
+  sees the previous render's DOM.
+
+### 26.1 A table's name column is the navigation — never a duplicate "Mở"/"Chi tiết" action
+
+If a list opens a detail page, the **name cell is the link**:
+
+- `render: (name, row) => <Typography.Link onClick={() => navigate(...)}>{name}</Typography.Link>`
+  wrapped in the existing `Tooltip`. Keep the sorter on the same column; the link
+  does not interfere with it.
+- Then **delete the navigate action** from the action column — the "Mở" button (class
+  tables) or the "Chi tiết" entry (student assignment tables). One navigation per row.
+- A column with no action left is removed entirely (`StudentClassesPage`); a column
+  with a single remaining action becomes a plain button again (`ClassesPage` keeps
+  "Lưu trữ" as a danger `Popconfirm` link), because a "..." menu for exactly one item
+  is pure indirection.
+- Recompute `tableScrollX` after removing a column, and drop icon imports that only
+  the deleted action used (`EyeOutlined`) or `tsc` fails with TS6133.
+- The two halves must move together: making the name clickable **and** removing the
+  button happen in the same change, and for both the lecturer and the student table
+  of the same resource.
+
+### 25.1 Never render a config object with a per-kind `switch`
+
+The assertion renderer used `if (kind === 'status') … if (kind === 'field_equals') …`,
+so every kind added later (`json_path_equals`, `array_length`, `contains_item`,
+`greater_than`, `less_than`, `matches_regex`, `any_of`) rendered **only its tag** —
+the user saw "Giá trị tại đường dẫn bằng" with no path and no expected value.
+
+- Iterate the object instead: `Object.entries(assertion)`, skip `kind`, map known
+  field keys to labels (`ASSERTION_FIELD_LABELS`), and fall back to
+  `t(key, { defaultValue: key })` for fields you have not seen yet. A new backend
+  field then shows up by itself instead of disappearing.
+- Boolean values go through `common.yes` / `common.no`; nested objects/arrays render
+  as a `JsonBlock` under their label; nested assertion arrays (`any_of`) recurse with
+  an indent and a "chỉ cần MỘT điều kiện đúng" hint.
+- Mirror the backend's defaults explicitly: `json_path` without `exists` means "must
+  exist", so print that row rather than leaving the assertion looking half-filled.
+- Test the long tail, not just the two kinds you happen to use: one case per
+  validator kind, asserting a field value is present (`expect(text).toContain('$.title')`).
+  Cross-check the kind list against `StepConfigValidator.ASSERTION_KINDS` and its
+  `switch`, and keep `step.assertionKindOptions` covering every value in it.

@@ -323,29 +323,37 @@ X-User-Id: 2be57808-9203-4150-8f29-19aecbe9f725
 
 **Header đầu vào:** `X-User-Id`
 
-**Query params:** `page` (int, mặc định 0), `size` (int, mặc định 20) — qua `Pageable`
+**Query params:**
+- `page` (int, mặc định 0), `size` (int, mặc định 20) — qua `Pageable`
+- `search` (String, tuỳ chọn) — lọc danh sách sinh viên theo **mã SV hoặc tên**, kiểu
+  contains, không phân biệt hoa/thường. Rỗng/không truyền = không lọc. Dùng khi lớp
+  đông (100+ sinh viên) và chỉ phân trang thì không tìm nổi.
 
 **Luồng xử lý (Service `transcript`):**
 
 1. Gọi `requireOwnedClass(classId, ownerId)` để kiểm tra sở hữu lớp.
 2. Lấy tất cả thành phần điểm của lớp.
-3. Lấy trang danh sách sinh viên trong lớp (`classStudentRepository.findAllByClassId(classId, pageable)`).
-4. Nếu danh sách rỗng → trả về `Page.empty(pageable)`.
-5. Lấy điểm thủ công của tất cả sinh viên trong lớp (`findAllByClassId`), nhóm theo `studentCode`.
-6. Lấy danh sách assignment `GRADED` đã publish của lớp.
-7. Lấy danh sách `student_user_id` của các sinh viên trong trang (bỏ qua null).
-8. Gọi `resultServiceClient.weightedBatch(new BatchAverageRequest(assignmentIds, studentUserIds))` để lấy điểm bài tập cho toàn bộ trang trong **1 HTTP call** (batch).
-9. Duyệt từng sinh viên trong trang:
+3. `likePattern(search)`: chuẩn hoá `search` (trim + lowercase, escape `%`, `_`, `\`)
+   rồi bọc `%...%`; blank → `null` (tắt lọc).
+4. Lấy trang sinh viên trong lớp qua `classStudentRepository.findByClassIdFiltered(classId, pattern, pageable)`
+   (`lower(student_code) LIKE pattern OR lower(student_name) LIKE pattern ESCAPE '\'`).
+5. Nếu danh sách rỗng → trả về `Page.empty(pageable)`.
+6. Lấy điểm thủ công của tất cả sinh viên trong lớp (`findAllByClassId`), nhóm theo `studentCode`.
+7. Lấy danh sách assignment `GRADED` đã publish của lớp.
+8. Lấy danh sách `student_user_id` của các sinh viên trong trang (bỏ qua null).
+9. Gọi `resultServiceClient.weightedBatch(new BatchAverageRequest(assignmentIds, studentUserIds))` để lấy điểm bài tập cho toàn bộ trang trong **1 HTTP call** (batch).
+10. Duyệt từng sinh viên trong trang:
    - Lấy điểm thủ công theo `studentCode`.
    - Lấy điểm bài tập từ map batch theo `studentUserId`.
    - Tính từng thành phần (EXERCISE từ batch, còn lại từ manual).
    - Tính tổng, làm tròn 2 chữ số nếu đầy đủ.
    - Xếp loại (F nếu có sub-score ≤ 0 hoặc tổng < 4.00).
-10. Trả về `new PageImpl<>(entries, pageable, rosterPage.getTotalElements())`.
+11. Trả về `new PageImpl<>(entries, pageable, rosterPage.getTotalElements())` — `total` là số
+    sinh viên **khớp filter**, nên phân trang của bảng phản ánh đúng kết quả lọc.
 
 **Ví dụ request:**
 ```http
-GET /api/v1/classes/03310ff7-b94f-423a-abf2-6332331c9471/transcript?page=0&size=20
+GET /api/v1/classes/03310ff7-b94f-423a-abf2-6332331c9471/transcript?page=0&size=20&search=duong
 X-User-Id: 2be57808-9203-4150-8f29-19aecbe9f725
 ```
 

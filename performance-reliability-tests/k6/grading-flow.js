@@ -1,12 +1,15 @@
 import http from 'k6/http';
+import encoding from 'k6/encoding';
 import { check, sleep } from 'k6';
 import { Counter, Rate, Trend } from 'k6/metrics';
 
 const profile = __ENV.PROFILE || 'smoke';
 const baseUrl = (__ENV.BASE_URL || '').replace(/\/$/, '');
-const accessToken = __ENV.ACCESS_TOKEN || '';
+const accessToken = (__ENV.ACCESS_TOKEN || '').trim();
 const tokenFile = __ENV.TOKENS_FILE || '';
-const tokens = tokenFile ? JSON.parse(open(tokenFile)) : (accessToken ? [accessToken] : []);
+const rawTokenEntries = tokenFile ? JSON.parse(open(tokenFile)) : (accessToken ? [accessToken] : []);
+const clientId = __ENV.KEYCLOAK_CLIENT_ID || 'web-grading-fe';
+const tokenUrlOverride = __ENV.KEYCLOAK_TOKEN_URL || '';
 const assignmentId = __ENV.ASSIGNMENT_ID || '';
 const assignmentListPath = __ENV.STUDENT_ASSIGNMENTS_PATH || '/api/v1/student/assignments?page=0&size=20';
 const assignmentDetailPath = (__ENV.ASSIGNMENT_DETAIL_PATH || '/api/v1/student/assignments/{id}').replace('{id}', encodeURIComponent(assignmentId));
@@ -28,7 +31,70 @@ const uploadFailures = new Counter('upload_failures');
 const gradingFailures = new Counter('grading_failures');
 const gradingTimeouts = new Counter('grading_timeouts');
 const missingResults = new Counter('missing_result_after_terminal');
+const refreshFailures = new Counter('token_refresh_failures');
+const refreshUnavailable = new Counter('token_refresh_unavailable');
 const flowSuccess = new Rate('grading_flow_success');
+
+// A grading flow polls for up to 10 minutes while Keycloak access tokens live ~5
+// minutes, so the token must be refreshed mid-run. Entries may be a token string
+// or {access_token, refresh_token}.
+// Review: 2026-11-21, read-load run proved tokens expire during multi-minute runs.
+function normalizeEntry(entry, index) {
+  if (typeof entry === 'string') {
+    return { access: entry.trim(), refresh: '' };
+  }
+  if (entry && typeof entry === 'object') {
+    return {
+      access: typeof entry.access_token === 'string' ? entry.access_token.trim() : '',
+      refresh: typeof entry.refresh_token === 'string' ? entry.refresh_token.trim() : '',
+    };
+  }
+  throw new Error(
+    `TOKENS_FILE entry ${index + 1} must be a token string or an object with access_token and refresh_token.`,
+  );
+}
+
+const tokens = rawTokenEntries.map(normalizeEntry);
+const session = { access: '', refresh: '' };
+let missingRefreshWarned = false;
+
+function claimsOf(token) {
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  try {
+    return JSON.parse(encoding.b64decode(parts[1], 'rawurl', 's'));
+  } catch (_) {
+    return null;
+  }
+}
+
+function refreshSession() {
+  const url = tokenUrlOverride
+    || (() => {
+      const claims = claimsOf(session.access);
+      const issuer = claims && typeof claims.iss === 'string' ? claims.iss.replace(/\/$/, '') : '';
+      return issuer ? `${issuer}/protocol/openid-connect/token` : '';
+    })();
+  if (!session.refresh || !url) return false;
+  const response = http.post(
+    url,
+    { grant_type: 'refresh_token', client_id: clientId, refresh_token: session.refresh },
+    { tags: { endpoint: 'token_refresh' } },
+  );
+  if (response.status !== 200) return false;
+  let body = null;
+  try {
+    body = response.json();
+  } catch (_) {
+    return false;
+  }
+  if (!body || typeof body.access_token !== 'string' || !body.access_token) return false;
+  session.access = body.access_token;
+  if (typeof body.refresh_token === 'string' && body.refresh_token) {
+    session.refresh = body.refresh_token;
+  }
+  return true;
+}
 
 const profiles = {
   smoke: {
@@ -45,8 +111,8 @@ if (!profiles[profile]) {
 if (!baseUrl || !assignmentId || !zipPath) {
   throw new Error('Set BASE_URL, ASSIGNMENT_ID and ZIP_PATH.');
 }
-if (!Array.isArray(tokens) || tokens.some((token) => typeof token !== 'string' || token.trim() === '')
-    || new Set(tokens).size !== tokens.length) {
+if (!Array.isArray(tokens) || tokens.some((token) => !token.access)
+    || new Set(tokens.map((token) => token.access)).size !== tokens.length) {
   throw new Error('TOKENS_FILE must be a JSON array of non-empty, distinct bearer tokens.');
 }
 if (tokens.length < 1) {
@@ -72,13 +138,30 @@ export const options = {
     grading_failures: ['count==0'],
     grading_timeouts: ['count==0'],
     missing_result_after_terminal: ['count==0'],
+    token_refresh_failures: ['count==0'],
   },
 };
 
 let authRejected = false;
 
 function currentToken() {
-  return tokens.length ? tokens[(__VU - 1) % tokens.length] : accessToken;
+  if (!session.access) {
+    const entry = tokens.length ? tokens[(__VU - 1) % tokens.length] : null;
+    session.access = entry ? entry.access : accessToken;
+    session.refresh = entry ? entry.refresh : '';
+  }
+  const claims = claimsOf(session.access);
+  const expiresIn = claims && typeof claims.exp === 'number' ? claims.exp - Math.floor(Date.now() / 1000) : null;
+  if (expiresIn !== null && expiresIn < 60) {
+    if (session.refresh) {
+      if (!refreshSession()) refreshFailures.add(1);
+    } else if (!missingRefreshWarned) {
+      missingRefreshWarned = true;
+      refreshUnavailable.add(1);
+      console.warn('access token near expiry and no refresh_token; a long grading run will get HTTP 401.');
+    }
+  }
+  return session.access;
 }
 
 function apiParams() {

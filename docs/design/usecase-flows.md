@@ -176,11 +176,14 @@ which is trimmed first) → `404 Student '<code>' not found in class <classId>`.
 ### Step 6 — Class transcript
 
 ```
-GET /api/v1/classes/{classId}/transcript
+GET /api/v1/classes/{classId}/transcript?page=0&size=20&search=<code-or-name>
 ```
 
 Expected: `200` with one entry per imported student: code, name, per-component
-entries, total + letterGrade + gpa (all null when incomplete).
+entries, total + letterGrade + gpa (all null when incomplete). `search` is optional and
+matches student code **or** name (contains, case-insensitive); `meta.total` reflects the
+filtered roster, so a 100-student class can be narrowed to one student without paging
+through it. The FE debounces the term (350 ms) and resets to page 0 on change.
 
 ### Step 7 — Archive class (one-way)
 
@@ -248,9 +251,16 @@ GET /api/v1/assignments?classId=&purpose=&topic=&published=&search=&page=0&size=
 ```
 
 Expected: `200` paged envelope; filters combinable; `search` matches title **or**
-topic (case-insensitive contains); `topic` is exact topic match. Not the structured
+topic (case-insensitive contains); `topic` is **exact** topic match. Not the structured
 `field:value` grammar used by `/api/v1/classes`. Sorted `createdAt desc`; page
 beyond last → empty result, correct `meta.total`.
+
+Because `topic` is exact-match, the FE never sends free text for it: every topic filter
+(class Assignments tab, practice list, student assignment lists) is a type-to-search
+pick-list built from the topics that exist — `GET /api/v1/assignments/topics` for the
+lecturer, `GET /api/v1/student/assignments/topics` for published practice, and the
+class-scoped assignment page for student/class scopes. Selecting an option refetches
+immediately (`useList.submitFilterValue`), even on pages where typed search needs Enter.
 
 ### Step 3 — Detail
 

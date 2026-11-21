@@ -603,6 +603,26 @@ students a step was mandatory.
    advertising it in `DomainApiTool.stepConfigSchema()` made the model emit invalid steps.
    Guard schema shape with a test (`DomainApiToolTest.stepSchemaKeepsRequiredAtStepLevelOnly`).
 
+## 12.13. Paged read + optional user filter: filter in the query, return filtered total (mandatory)
+
+A paged roster/transcript without a filter is unusable at 100+ rows, and client-side
+filtering is wrong once the server paginates — you would only search the current page.
+
+1. **Filter in the repository query, not in the service.** `ClassStudentRepository
+   .findByClassIdFiltered(classId, pattern, pageable)` keeps `meta.total` equal to the
+   matched rows, so the FE pager matches the filter. A `Page.empty(pageable)` short-circuit
+   for an empty page stays as-is.
+2. **Build the LIKE pattern once in the service** (`ScoreService.likePattern`): trim +
+   `toLowerCase(Locale.ROOT)`, escape `\`, `%`, `_` (backslash first), wrap in `%...%`,
+   and return `null` for blank so one `:searchPattern is null` branch disables the filter.
+   The JPQL side must declare `escape '\'`; typed `%`/`_` then stay literal
+   (`ClassStudentTranscriptFilterTest.typedWildcardsStayLiteral`).
+3. **Keep the parameter optional** (`@RequestParam(required = false)`) so existing callers
+   and the AI tools keep working; document the new param in
+   `docs/api/docs/<service>/<controller>.md` and in `usecase-flows.md` in the same task.
+4. **Search the columns the user thinks in.** For a roster that is code **or** name; a
+   filter that only matches the code looks broken to anyone reading names.
+
 ## 13. Verification
 
 - Compile success is NOT verification. Tests must pass (`./mvnw test`).

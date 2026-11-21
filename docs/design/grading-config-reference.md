@@ -171,7 +171,7 @@ Chi tiết: [design-db-v1.0.md §2.3](design-db-v1.0.md).
 | Trường | Kiểu | Bắt buộc | Mặc định | Mô tả |
 |--------|------|----------|----------|--------|
 | `db_type` | String | ❌ | `postgres` | Engine: `postgres` \| `mysql` \| `mariadb` (không phân biệt hoa thường) — chọn JDBC dialect (`DbDialectRegistry` trong executor). `mariadb` = alias của `mysql` (wire-compatible). Giá trị khác → 400 lúc lưu step |
-| `db_service` | String | ❌ | `db` | Tên service DB trong compose — executor expose port của service này ra host |
+| `db_service` | String | ✅ (thực tế) | — (không có mặc định) | Tên service DB **đúng key trong `docker-compose.yml`**. Executor publish cổng của service này ra host để bước DB kết nối. Bỏ trống → không publish cổng → bước DB lỗi kết nối |
 | `db_port` | int | ❌ | Theo engine: 5432 / 3306 | Port DB nghe trong container |
 | `database` | String | **✅** | — | Tên database (**bắt buộc**) |
 | `username` | String | **✅** | — | Tài khoản (**bắt buộc**) |

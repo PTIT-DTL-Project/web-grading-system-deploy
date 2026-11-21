@@ -123,12 +123,6 @@ INPUT /usr/share/texmf-dist/tex/latex/titlesec/titletoc.sty
 INPUT /usr/share/texmf-dist/tex/latex/titlesec/titletoc.sty
 INPUT /usr/share/texmf-dist/tex/latex/chngcntr/chngcntr.sty
 INPUT /usr/share/texmf-dist/tex/latex/chngcntr/chngcntr.sty
-INPUT /usr/share/texmf-dist/tex/latex/pdflscape/pdflscape.sty
-INPUT /usr/share/texmf-dist/tex/latex/pdflscape/pdflscape.sty
-INPUT /usr/share/texmf-dist/tex/latex/pdflscape/pdflscape-nometadata.sty
-INPUT /usr/share/texmf-dist/tex/latex/pdflscape/pdflscape-nometadata.sty
-INPUT /usr/share/texmf-dist/tex/latex/graphics/lscape.sty
-INPUT /usr/share/texmf-dist/tex/latex/graphics/lscape.sty
 INPUT /usr/share/texmf-dist/tex/latex/tools/afterpage.sty
 INPUT /usr/share/texmf-dist/tex/latex/tools/afterpage.sty
 INPUT /usr/share/texmf-dist/tex/latex/algorithm2e/algorithm2e.sty
@@ -137,8 +131,6 @@ INPUT /usr/share/texmf-dist/tex/latex/tools/xspace.sty
 INPUT /usr/share/texmf-dist/tex/latex/tools/xspace.sty
 INPUT /usr/share/texmf-dist/tex/latex/relsize/relsize.sty
 INPUT /usr/share/texmf-dist/tex/latex/relsize/relsize.sty
-INPUT /usr/share/texmf-dist/tex/latex/capt-of/capt-of.sty
-INPUT /usr/share/texmf-dist/tex/latex/capt-of/capt-of.sty
 INPUT /usr/share/texmf-dist/tex/latex/multirow/multirow.sty
 INPUT /usr/share/texmf-dist/tex/latex/multirow/multirow.sty
 INPUT /usr/share/texmf-dist/tex/latex/fancyhdr/fancyhdr.sty

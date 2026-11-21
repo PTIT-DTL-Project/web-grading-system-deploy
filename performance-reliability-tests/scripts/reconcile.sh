@@ -1,6 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+TEST_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+ENV_FILE="${ENV_FILE:-$TEST_ROOT/.env}"
+
+if [[ -f "$ENV_FILE" ]]; then
+  # Load operator-controlled local URLs without exposing them through shell tracing.
+  set -a
+  # shellcheck disable=SC1090
+  source "$ENV_FILE"
+  set +a
+fi
+
 : "${SUBMISSION_DB_URL:?Set SUBMISSION_DB_URL to a read-only submission_db connection}"
 : "${EXECUTOR_DB_URL:?Set EXECUTOR_DB_URL to a read-only executor_db connection}"
 : "${RESULT_DB_URL:?Set RESULT_DB_URL to a read-only result_db connection}"

@@ -359,6 +359,14 @@ Ví dụ sai (đã sửa):
 
 ## Chương 3 (triển khai và đánh giá)
 
+Khi viết phần đánh giá, chỉ trình bày như kết quả những kiểm thử đã chạy và có bằng chứng. Không đưa kịch bản chức năng hoặc thử nghiệm rủi ro cao chưa thực hiện vào danh sách kết quả; nếu cần nhắc đến, chuyển ngắn gọn sang Hướng phát triển và ghi rõ chưa thực hiện. Thu hẹp phạm vi đánh giá theo yêu cầu dự án, không cần liệt kê mọi loại kiểm thử có thể có.
+
+Kết quả đo đạc trình bày bằng bảng (caption dưới bảng, đầy đủ đường kẻ) thay vì liệt kê số liệu dài trong văn xuôi: mỗi bảng gồm kịch bản, mức tải, số yêu cầu, p50/p95/p99, tỷ lệ lỗi, kết quả; các chỉ số thời gian đầu-cuối và đối soát dữ liệu tách bảng riêng. Không kể lại các lần chạy thất bại do xác thực, token hay cấu hình môi trường trong phần kết quả — đó là lỗi vận hành khi chuẩn bị, không phải kết quả đánh giá; chỉ giữ câu giới hạn phạm vi (số người dùng ảo, số lượt) để người đọc không suy rộng.
+
+Phần kết quả chỉ gồm ba thành phần: kịch bản đã chạy, bảng số liệu, một đoạn nhận xét ngắn. Không mô tả công cụ kiểm thử, cách runner lưu kết quả, đường dẫn thư mục `results/`, profile hay metadata lần chạy — người đọc báo cáo không cần biết quy trình vận hành harness. Những gì chưa đo được (CPU, bộ nhớ, phiên bản image, điểm bão hoà, kịch bản sự cố) đưa vào Hướng phát triển dưới dạng việc cần làm, không kể như hạn chế của kết quả vừa trình bày. Gom mọi phần kiểm thử chưa thực hiện thành một danh sách `itemize` duy nhất ở Hướng phát triển, mỗi mục là một nhóm việc (chức năng đầu-cuối, tải cao và điểm bão hoà, phục hồi khi sự cố, nhất quán dữ liệu quy mô lớn, bảo mật, sao lưu) kèm điều kiện cần (staging cô lập), thay vì rải câu "chưa thực hiện" trong phần đánh giá. Khi đã có số liệu thì không giữ câu "số liệu sẽ được bổ sung sau" ở Kết luận chương — phải viết đúng kết quả đã đo.
+
+Bảng nhiều cột phải tính cả `\tabcolsep`: tổng bề rộng các cột cộng `2*\tabcolsep*số_cột` không vượt `\textwidth`, nếu không cột cuối tràn ra ngoài khung kẻ. Với bảng 6–8 cột, đặt `\setlength{\tabcolsep}{4pt}`, gộp mức tải vào cột kịch bản, bỏ cột "Kết quả" khi mọi dòng đều đạt (nêu trong câu nhận xét), và dùng `>{\raggedright\arraybackslash}p{...}` cho các cột hẹp để tiêu đề ngắn không bị kéo giãn chữ. Hai bảng liên tiếp trong cùng tiểu mục nên đặt cạnh nhau và tham chiếu chung một câu, tránh câu "Bảng X trình bày…" mồ côi ở cuối trang.
+
 Mục 3.1 trình bày môi trường và kiến trúc triển khai, đóng gói Docker/Helm,
 GitHub Actions, ArgoCD GitOps, hạ tầng PostgreSQL/Kafka, RustFS, Keycloak
 và các thành phần observability đã triển khai thực tế. Với observability,
@@ -516,7 +524,18 @@ When documenting technology versions in appendices, derive versions from
 project manifests, lockfiles, Maven BOMs, and deployment image tags. Distinguish
 application image release tags from framework versions; do not infer patch
 versions from floating tags (`latest`, major-only tags) or report an environment
-version unless the repository records it. Label unpinned tooling as unpinned.
+version unless the repository records it.
+
+Tools installed from OS packages (Arch Linux `pacman`/AUR via `yay`) have no
+pinned version in the repository. Document them in a separate table with three
+columns: tool, the version installed at the time of writing, and how to verify
+it (`node -v`, `k3s --version`, `helm version --short`, `cloudflared --version`,
+`kubectl version --client`). State in the intro and after the table that these
+numbers describe the build machine at that moment, are not a project
+constraint, and that reinstallation can yield a different version; give the
+replication path (Corepack/asdf, `INSTALL_K3S_VERSION`, fixed Helm package,
+chart/image tags). Use `\textnormal` for these literals inside Appendix B, not
+`\texttt` — the user rejected monospace in the version appendix.
 
 ## Appendix configuration references stay concise
 
