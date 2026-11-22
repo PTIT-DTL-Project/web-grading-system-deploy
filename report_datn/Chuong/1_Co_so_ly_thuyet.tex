@@ -68,18 +68,29 @@ Java là ngôn ngữ lập trình hướng đối tượng, mạnh và phổ bi�
 
 Spring Boot là một framework ứng dụng dựa trên nền tảng Java, cung cấp cơ chế tự động cấu hình (auto-configuration), nhúng server web (Tomcat) và các starter - tập hợp các phụ thuộc được cấu hình sẵn cho từng tính năng~\cite{springbootdocs}. Spring Boot giúp giảm tối đa khối lượng cấu hình thủ công, cho phép nhà phát triển tập trung vào nghiệp vụ kinh doanh. Trong hệ thống, mỗi vi dịch vụ được xây dựng bằng Spring Boot, đảm bảo tính nhất quán và dễ bảo trì cho toàn bộ hệ thống.
 
-\subsection{Spring Cloud OpenFeign}
+\subsection{Spring AI và mô hình ngôn ngữ lớn}
 \label{section:1.3.3}
+
+Mô hình ngôn ngữ lớn (Large Language Model - LLM) là mô hình học máy được huấn luyện trên tập dữ liệu văn bản quy mô lớn để hiểu yêu cầu và sinh nội dung bằng ngôn ngữ tự nhiên. Khi tích hợp vào ứng dụng, mô hình nhận chỉ dẫn hệ thống, câu hỏi của người dùng và ngữ cảnh nghiệp vụ; đầu ra có thể là văn bản hoặc dữ liệu theo cấu trúc. Kết quả sinh cần được xem là nội dung do mô hình đề xuất, vì vậy ứng dụng phải kiểm tra định dạng và quyền thực hiện trước khi dùng kết quả đó.
+
+Spring AI là lớp tích hợp mô hình AI vào ứng dụng Spring. API \textnormal{ChatModel} cung cấp giao diện gọi mô hình, còn \textnormal{ChatClient} hỗ trợ tạo yêu cầu hội thoại, cấu hình nội dung đầu vào và nhận kết quả văn bản hoặc cấu trúc. Spring AI cũng chuẩn hóa các khái niệm như bộ nhớ hội thoại và gọi công cụ (tool calling), qua đó giảm sự phụ thuộc trực tiếp của nghiệp vụ vào giao thức riêng của một nhà cung cấp~\cite{springaidocs}.
+
+Trong cơ chế gọi công cụ, ứng dụng mô tả cho mô hình tên, mục đích và tham số của các chức năng được phép sử dụng. Mô hình chỉ có thể đề xuất một lần gọi công cụ; mã ứng dụng mới là thành phần thực thi chức năng đó, kiểm tra quyền và gửi kết quả lại cho mô hình để tạo câu trả lời. Vì vậy, quyền công cụ phải được giới hạn theo vai trò người dùng và các thao tác làm thay đổi dữ liệu cần có bước kiểm soát phù hợp. Bộ nhớ hội thoại lưu các lượt trao đổi gắn với một định danh hội thoại để những yêu cầu sau có thể sử dụng ngữ cảnh trước đó.
+
+Trong dịch vụ trợ lý AI của đề tài, Spring AI kết nối tới một API tương thích OpenAI. Dịch vụ dùng mô hình ngôn ngữ cho hai nhiệm vụ riêng: hội thoại có thể gọi công cụ nghiệp vụ, còn giải thích kết quả chấm yêu cầu đầu ra dạng JSON để chuyển thành DTO và lưu trữ. Hai luồng chia sẻ lớp tích hợp mô hình nhưng có cấu hình và cách xử lý đầu ra riêng; nội dung giải thích được tạo từ kết quả chấm và thông tin bài tập thay vì chỉ dựa trên câu hỏi tự do.
+
+\subsection{Spring Cloud OpenFeign}
+\label{section:1.3.4}
 
 Spring Cloud OpenFeign là một thư viện cho phép định nghĩa các client HTTP theo cách khai báo (declarative). Thay vì viết code HTTP thủ công, nhà phát triển chỉ cần định nghĩa một interface với các phương thức tương ứng với các endpoint cần gọi, và OpenFeign tự động tạo phần triển khai để thực hiện gọi HTTP~\cite{openfeigndocs}. Trong hệ thống, OpenFeign được sử dụng để các vi dịch vụ nội bộ gọi nhau một cách đơn giản và nhất quán.
 
 \subsection{Xác thực với Spring Security và OAuth2}
-\label{section:1.3.4}
+\label{section:1.3.5}
 
 Spring Security là module bảo mật của Spring, cung cấp cơ chế xác thực (authentication) và phân quyền (authorization) mạnh mẽ. Kết hợp với OAuth2 - giao thức ủy quyền mở - Spring Boot cung cấp cơ chế OAuth2 Resource Server, cho phép xác thực JWT (JSON Web Token) nhận được từ máy chủ xác thực (Keycloak) mà không cần duy trì trạng thái session phía server~\cite{springsecuritydocs}.
 
 \subsection{RESTful API}
-\label{section:1.3.5}
+\label{section:1.3.6}
 
 REST (Representational State Transfer) là một kiểu kiến trúc cho các hệ thống phân tán, dựa trên các nguyên tắc: tài nguyên (resource) được xác định bằng URI, các thao tác thực hiện qua các phương thức HTTP (GET, POST, PUT, DELETE), và truyền thông không trạng thái (stateless)~\cite{fielding2000rest}. Toàn bộ giao diện của hệ thống đều được xây dựng theo REST, giúp client dễ dàng tương tác và tích hợp.
 
@@ -295,6 +306,6 @@ Tempo là hệ thống lưu trữ và truy vấn traces (tracing). Tempo nhận 
 \section{Kết luận chương}
 \label{section:1.11}
 
-Chương này đã trình bày các cơ sở lý thuyết và công nghệ được lựa chọn: kiến trúc vi dịch vụ với mẫu DB-per-service; nền tảng Java cùng Spring Boot; lưu trữ quan hệ với ORM; trao đổi tin nhắn bất đồng bộ qua Kafka; lưu trữ đối tượng tương thích S3; đóng gói và điều phối bằng Docker và Kubernetes; quản lý danh tính với OAuth 2.0, OIDC và PKCE; và giao diện React. Các công nghệ được chọn đều là giải pháp mã nguồn mở, ổn định, có cộng đồng hỗ trợ lớn.
+Chương này đã trình bày các cơ sở lý thuyết và công nghệ được lựa chọn: kiến trúc vi dịch vụ với mẫu DB-per-service; nền tảng Java cùng Spring Boot và Spring AI; lưu trữ quan hệ với ORM; trao đổi tin nhắn bất đồng bộ qua Kafka; lưu trữ đối tượng tương thích S3; đóng gói và điều phối bằng Docker và Kubernetes; quản lý danh tính với OAuth 2.0, OIDC và PKCE; và giao diện React. Các công nghệ được chọn đều là giải pháp mã nguồn mở, ổn định, có cộng đồng hỗ trợ lớn.
 
 \end{document}

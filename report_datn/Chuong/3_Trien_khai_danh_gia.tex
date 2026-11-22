@@ -238,6 +238,27 @@ và số lỗi, kèm danh sách các trace chậm nhất để mở xem chi ti�
 \end{figure}
 
 
+\subsection{Triển khai dịch vụ trợ lý AI}
+\label{section:3.1.ai}
+
+Dịch vụ trợ lý AI được triển khai như một Spring Boot service độc lập, sử dụng cơ sở dữ liệu PostgreSQL riêng và Flyway để quản lý các bảng hội thoại, lần chạy, sự kiện, thao tác công cụ và dữ liệu giải thích. Tệp cấu hình Maven khai báo Spring AI 2.0.2 cùng starter mô hình OpenAI; địa chỉ API, khóa truy cập và tên mô hình được truyền qua cấu hình môi trường. Mặc định cấu hình dùng API tương thích OpenAI và mô hình \textnormal{gpt-4o-mini}, nhưng có thể đổi nhà cung cấp, địa chỉ máy chủ và tên mô hình khi triển khai.
+
+\subsubsection{Luồng trò chuyện với trợ lý}
+
+Khi người dùng gửi tin nhắn, \textnormal{ChatController} chuyển yêu cầu cho \textnormal{ConversationService}. Dịch vụ kiểm tra hội thoại thuộc người dùng hiện tại, lưu tin nhắn và tạo bản ghi \textnormal{Run} ở trạng thái \textnormal{QUEUED}; nếu có mã tin nhắn phía client đã được xử lý thì trả lại lần chạy cũ để tránh tạo trùng. Công việc chỉ được đưa vào \textnormal{RunWorker} sau khi giao dịch lưu dữ liệu commit thành công. Worker dùng virtual thread để gọi \textnormal{AgentOrchestrator} xử lý ở nền.
+
+\textnormal{AgentOrchestrator} dựng ngữ cảnh từ danh tính và vai trò người gọi, sau đó phối hợp \textnormal{AgentRuntime}, \textnormal{LlmClient} và \textnormal{ToolRegistry}. Các công cụ được đăng ký theo miền nghiệp vụ và lọc theo vai trò; công cụ đọc truy vấn dữ liệu dịch vụ phù hợp, còn thao tác thay đổi dữ liệu đi qua trạng thái thao tác và cơ chế chờ xác nhận. \textnormal{JpaChatMemory} triển khai giao diện bộ nhớ của Spring AI trên bảng tin nhắn PostgreSQL để lưu và khôi phục ngữ cảnh theo hội thoại.
+
+Trong quá trình xử lý, dịch vụ phát sự kiện dạng Server-Sent Events (SSE), gồm phần văn bản đang sinh, diễn biến công cụ và trạng thái kết thúc. Client nhận mã \textnormal{runId} từ yêu cầu gửi tin nhắn rồi đăng ký \textnormal{GET /api/v1/ai/runs/\{id\}/events}; dịch vụ kiểm tra quyền sở hữu lần chạy trước khi cấp luồng. Các sự kiện được lưu cùng số thứ tự để hỗ trợ phát lại khi client kết nối lại. Khi hoàn tất, câu trả lời và trạng thái \textnormal{SUCCEEDED}, \textnormal{FAILED} hoặc \textnormal{CANCELLED} được lưu để lần đọc sau không phụ thuộc vào kết nối SSE đang mở.
+
+\subsubsection{Luồng tạo giải thích kết quả chấm}
+
+Chức năng giải thích là luồng riêng với trò chuyện. Với sinh viên, dịch vụ kiểm tra quyền sở hữu bài nộp; với giảng viên, endpoint riêng kiểm tra bài tập thuộc lớp mà giảng viên quản lý. Sau khi xác định quyền, dịch vụ lấy kết quả chấm từ \textnormal{result-service} và thông tin bài tập từ \textnormal{course-service} qua OpenFeign. Trường nội dung phản hồi thực tế của từng bước được đưa qua \textnormal{DataSanitizer} trước khi đưa vào prompt; các trường còn lại được ánh xạ theo DTO kết quả chấm.
+
+\textnormal{PromptBuilder} ghép chỉ dẫn gia sư sư phạm với điểm, trạng thái, nhật ký tổng hợp và dữ liệu từng bước chấm. \textnormal{ExplanationLlmClient} gọi mô hình qua Spring AI và yêu cầu đầu ra JSON để ánh xạ thành \textnormal{AiExplanationResultDto}; dịch vụ chuyển kết quả thành phần tóm tắt chung và danh sách phân tích từng bước, mỗi bước có thể chứa gợi ý hành động và từ khóa học tập. Kết quả hợp lệ do mô hình tạo ra được lưu trong \textnormal{ai\_explanations} để tái sử dụng. Khi dịch vụ ở chế độ ngoại tuyến hoặc phản hồi không hợp lệ, hệ thống vẫn trả kết quả suy giảm nhưng không lưu bản thay thế này vào cache, để yêu cầu sau có thể thử sinh lại.
+
+Hai luồng dùng chung tích hợp mô hình nhưng có mục tiêu và hợp đồng đầu ra khác nhau: chat điều phối công cụ và trả lời nhiều lượt theo hội thoại; giải thích tổng hợp dữ liệu chấm thành cấu trúc cố định gắn với bài nộp. Việc tách này giúp kiểm soát quyền truy cập, cách lưu trữ và xử lý lỗi theo đúng nghiệp vụ.
+
 \subsection{Giao diện và chức năng}
 \label{section:3.1.7}
 
