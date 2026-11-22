@@ -399,4 +399,6 @@ FE nhận câu hỏi vừa tạo (plan + các bước đã validate)
 
 ---
 
+**Tầng service (từng hàm, từng map, luật validate config):** xem [`test-plan-service.md`](test-plan-service.md).
+
 *Tài liệu này là phần của bộ dokument chi tiết luồng API theo plan mode, nằm trong thư mục `docs/api/docs/course-service/`. Các controller/service khác sẽ được viết tiếp theo theo cùng mẫu.*

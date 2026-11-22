@@ -410,4 +410,6 @@ executor-service: patch submission status = DONE
 
 ---
 
+**Tầng service (công thức điểm, từng hàm, từng map):** xem [`result-service.md`](result-service.md).
+
 *Tài liệu này là phần của bộ dokument chi tiết luồng API theo plan mode, nằm trong thư mục `docs/api/docs/result-service/`. Các controller/service khác sẽ được viết tiếp theo theo cùng mẫu.*

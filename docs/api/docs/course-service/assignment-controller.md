@@ -433,4 +433,6 @@ Gateway → FE nhận JSON bài tập vừa tạo
 
 ---
 
+**Tầng service (từng hàm, từng map, bất biến dữ liệu):** xem [`assignment-service.md`](assignment-service.md).
+
 *Tài liệu này là phần đầu của bộ dokument chi tiết luồng API theo plan mode. Các service/controller khác sẽ được viết tiếp theo theo cùng mẫu, tất cả nằm trong thư mục `docs/api/docs/`.*

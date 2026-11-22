@@ -290,4 +290,6 @@ Gateway → FE nhận danh sách kết quả chấm bài có phân trang
 
 ---
 
+**Tầng service (từng hàm, làm giàu roster, phân trang):** xem [`assignment-grading-service.md`](assignment-grading-service.md).
+
 *Tài liệu này là phần tiếp theo của bộ dokument chi tiết luồng API theo plan mode, nằm trong thư mục `docs/api/docs/course-service/`. Các controller/service khác sẽ được viết tiếp theo theo cùng mẫu.*

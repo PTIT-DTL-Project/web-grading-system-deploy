@@ -1,12 +1,12 @@
 # PLAN: Viết docs API chi tiết cho tất cả controller/service
 
-Trạng thái: **HOÀN TẤT** (24/24 controller/service đã viết)
+Trạng thái: **HOÀN TẤT** (29/29 controller/service đã viết)
 
 Thư mục lưu trữ: `docs/api/docs/<service>/<controller-name>.md`
 
-## Danh sách đã hoàn tất (24 file)
+## Danh sách đã hoàn tất (29 file)
 
-### course-service (5 controller + 3 service)
+### course-service (7 controller + 8 service)
 - [x] `assignment-controller.md` — AssignmentController (tạo/danh sách/chi tiết/cập nhật/xóa mềm/xuất bản bài tập)
 - [x] `assignment-grading-controller.md` — AssignmentGradingController (xem kết quả chấm + danh sách nộp bài của giảng viên)
 - [x] `class-controller.md` — ClassController (tạo/danh sách/chi tiết/lưu trữ/nhập CSV sinh viên/xem danh sách sinh viên lớp)
@@ -16,15 +16,20 @@ Thư mục lưu trữ: `docs/api/docs/<service>/<controller-name>.md`
 - [x] `test-plan-controller.md` — TestPlanController (tạo plan/step, danh sách, cập nhật, xóa mềm)
 - [x] `internal-assignment-controller.md` — InternalAssignmentController (grading config, plans, exists, dry-run, config-schema cho executor/submission)
 - [x] `internal-test-plan-controller.md` — InternalTestPlanController (validate plan/step config, capabilities schema cho ai-assistant-service)
+- [x] `score-service.md` — **ScoreService** (từng hàm: components/scores/transcript, công thức tổng điểm, quy tắc F, map entity↔DTO, ma trận null-vs-0)
+- [x] `test-plan-service.md` — **TestPlanService + StepConfigValidator** (từng hàm plan/step, luật validate config 4 loại bước, map DTO↔entity, internal DTO cho executor)
+- [x] `assignment-service.md` — **AssignmentService** (tạo/sửa/publish, bất biến class_id, map request↔entity↔response, ảnh hưởng publish tới điểm EXERCISE)
+- [x] `assignment-grading-service.md` — **AssignmentGradingService** (màn chấm của giảng viên: owner check, gọi result/submission service, làm giàu roster, tổng hợp sinh viên chưa nộp, phân trang)
 
 ### executor-service (2 controller + 1 service quan trọng)
 - [x] `dry-run-controller.md` — DryRunController (chấm thử, không side effect)
 - [x] `reset-grading-job-controller.md` — ResetGradingJobController + ResetGradingJobService (reset job, chạy lại chấm điểm)
 - [x] `grading-orchestrator.md` — GradingOrchestrator (luồng chấm điểm FETCHING→BUILDING→RUNNING→DONE/FAILED, công thức điểm, biến thay thế, auto_inject_headers, DB sandbox, dry-run)
 
-### result-service (2 controller + 1 service)
+### result-service (2 controller + 2 service)
 - [x] `result-controller.md` — ResultController (xem kết quả theo submission, xem kết quả bài tập của mình)
 - [x] `result-internal-controller.md` — ResultInternalController + ResultService (điểm trung bình có trọng số, by assignment, by submission, tạo kết quả chấm)
+- [x] `result-service.md` — **ResultService** (công thức 2 tầng max-per-plan, plan chưa nộp = 0, cách tính plan từ step_results, hạ latest + flush, map request↔entity↔response)
 
 ### submission-service (3 controller + 1 service)
 - [x] `submission-controller.md` — SubmissionController (presigned-url, danh sách nộp của mình, chi tiết nộp, health, version)

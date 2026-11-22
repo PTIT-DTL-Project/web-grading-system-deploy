@@ -407,10 +407,28 @@ MANDATORY before telling the user a task is done:
    be booted in the environment, add the request definition (method/URL/headers/body)
    but leave `response` empty and say so — do not fabricate responses.
    **Gateway-hosted endpoints** (e.g. `POST /api/v1/account/change-password`) go in
-   `Web grading service - gateway.postman_collection.json` under the matching
-   folder of `Gateway (production-like)` instead; a throwaway Keycloak probe user
-   (with an **email** — see keycloak skill §4) is the way to capture its live
-   responses, and delete the probe afterwards.
+   `Web grading service - gateway.postman_collection.json`, in the numbered folder
+   that matches the domain (`01 · Lớp học & điểm` … `08 · Tài khoản & quản trị`);
+   a throwaway Keycloak probe user (with an **email** — see keycloak skill §4) is the
+   way to capture its live responses, and delete the probe afterwards.
+   Collection conventions (rebuilt 2026-11-22, keep them):
+   - `Authorization: Bearer {{accessToken}}` at **collection** level; folder
+     `00 · Token (Keycloak)` mints lecturer/student/admin tokens by password grant
+     (`wgs-postman`) and writes `accessToken`/`refreshToken`/`tokenExpiresAt` via test
+     scripts — no Postman Environment and no manual token copy.
+   - Never send `X-User-Id` / `X-User-Roles` / `X-Gateway-Secret` from Postman: the
+     gateway derives them from the JWT and strips caller-supplied values.
+   - Ids live in collection variables (`classId`, `assignmentId`, `planId`, `stepId`,
+     `submissionId`, `uploadUrl`, …); create-requests fill them in test scripts instead
+     of hardcoding UUIDs in URLs.
+   - `/api/v1/internal/**` is not gateway-routed: keep it in `99 · Internal` with the
+     service ports and say so in the description.
+   - **Wrap every script body in `(function () { … })();`.** Postman concatenates the
+     collection-level, folder-level and request-level scripts into ONE scope, so a second
+     `const data` / `const body` anywhere in that chain aborts the whole script with
+     `SyntaxError: Identifier 'data' has already been declared` (seen live 2026-11-22).
+     An IIFE keeps each script's locals private and makes the collection composable next
+     to user-added scripts.
 6. **No all-args positional constructors**: every record constructor call with more
     than 2 positional arguments must use a builder (`X.builder().field(val)...build()`)
     or a named static factory method. This applies at all call sites AND inside helper
@@ -1262,8 +1280,12 @@ not submitted":
 
 - an unlinked roster row (`class_students.student_user_id` null) can never submit → `0`;
 - result-service already reports `0.00` for "no attempt", and a `null` average (failed
-  stepless run) is normalised to `0` in `computeExercise` (single) and by
-  `BatchExercise`/`getOrDefault(..., ZERO)` (transcript);
+  stepless run) is normalised to `0` in `computeExercise` (single) and in `transcript`
+  (batch). **`Map.getOrDefault(id, ZERO)` is NOT that normalisation**: a student whose only
+  attempt is a stepless `FAILED` FULL run is *present* in the batch map with a null value,
+  and `getOrDefault` hands the null straight back — read the value first and fall back
+  explicitly (`scored != null ? scored : ZERO`), otherwise the transcript stays blank while
+  the single-student read shows a total (fixed 2026-11-22);
 - a failed batch or an empty published-assignment list returns `usable=false` → component
   stays null, so an outage does not silently grade the whole class 0 and an unpublished
   assignment does not fail everyone.

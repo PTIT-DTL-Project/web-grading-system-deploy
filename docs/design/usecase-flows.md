@@ -573,6 +573,26 @@ average of these per-assignment scores (one assignment = one vote), so plan weig
 leak across assignments. `course-service` `ScoreService.computeExercise` calls
 `POST /api/v1/internal/results/weighted`.
 
+### Step 5 — Submission history of one assignment (FE deep link)
+
+```
+GET /api/v1/submissions?page=0&size=20&search=&assignmentId={assignmentId}
+```
+
+The assignment detail screen's **"Xem lịch sử nộp"** button navigates to
+`/student/submissions?assignmentId={id}`; `MySubmissionsPage` hydrates that query param
+into its `assignmentId` filter on mount, so the table opens already scoped to the
+assignment (server filter, not client-side) instead of listing every submission of the
+student. The same link is used by the **"Về lịch sử nộp"** buttons on the result screen
+(`/student/submissions/{submissionId}/results`), which carry the submission's
+`assignmentId` so returning to the history keeps the scope. Landing on
+`/student/submissions` without the param (sidebar entry) lists all submissions.
+
+**Precondition:** the URL hydration must survive React's `<StrictMode>` double-run of
+effects — a "first mount" ref guard in `useList` used to treat the second run as a parent
+filter update and reset the hydrated value (list fell back to "all submissions").
+`useList` now applies parent-provided initial filters only when their **values** differ.
+
 ### Error behavior
 
 `404` for any assignment the student isn't enrolled in or that isn't published. Upload

@@ -489,4 +489,6 @@ FE hiển thị bảng điểm trung bình phân trang
 
 ---
 
+**Tầng service (từng hàm, từng map, công thức):** xem [`score-service.md`](score-service.md).
+
 *Tài liệu này là phần của bộ dokument chi tiết luồng API theo plan mode, nằm trong thư mục `docs/api/docs/course-service/`. Các controller/service khác sẽ được viết tiếp theo theo cùng mẫu.*

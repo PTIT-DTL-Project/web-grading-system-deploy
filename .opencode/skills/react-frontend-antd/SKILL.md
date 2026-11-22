@@ -1341,3 +1341,51 @@ column, never globally:
 - Test it as a column-level assertion (`cells.filter(t => t === empty).toHaveLength(3)`),
   not by cell index: antd's fixed columns duplicate `<th>`/`<td>`, so header index ≠ cell
   index.
+
+## 27. `useList` filters: URL hydration, and why a "first mount" ref guard is a bug
+
+`useList` persists filters to the query string and hydrates them on mount. Two rules keep
+that working; both were broken by the same defect (2026-11-22).
+
+### 27.1 Deep links must actually filter after mount
+
+`/student/submissions?assignmentId=…` ("Xem lịch sử nộp" on an assignment) must open the
+table **scoped to that assignment**; every navigation that returns to a filtered list
+(the result screen's "Về lịch sử nộp") must carry the param forward.
+
+- Hydration reads `window.location.search` in the `useState` initializer, so the first
+  fetch already carries the value — do not duplicate it into `initialFilters` (a second
+  copy fights the URL and re-applies after the user clears the control).
+- Any parent-supplied filter sync must be skipped when values are unchanged, otherwise it
+  rewrites the URL back to the empty state.
+- Test at page level: render the page with the query string set, assert the **fetcher
+  received** the filter (last call, not first) and that the control renders the value, not
+  its placeholder.
+
+### 27.2 Never guard a parent-sync effect with an `isInitialMount` ref
+
+```ts
+// WRONG: StrictMode re-runs every effect once more; the second run looks like a parent
+// update and wipes the URL-hydrated filters.
+const isInitialMount = useRef(true)
+useEffect(() => {
+  if (isInitialMount.current) { isInitialMount.current = false; return }
+  setLocalFilters(filters)   // ← resets the deep link on the second dev run
+}, [filters])
+
+// RIGHT: compare the filter *values* against what was last applied.
+const lastFiltersRef = useRef(filters)
+useEffect(() => {
+  if (shallowEqualFilters(lastFiltersRef.current, filters)) return
+  lastFiltersRef.current = filters
+  setLocalFilters(filters); setSubmittedFilters(filters); setSubmitVersion(v => v + 1)
+}, [filters])
+```
+
+Identity comparison is not enough either: inline `initialFilters={{ … }}` literals get a
+new reference every render and would loop (effect → `setState` → render → effect). Compare
+keys + primitive values, and keep the ref pointing at the applied object.
+
+Symptom to recognise: a deep link works on first paint, then the list reloads unfiltered
+and the URL loses its query string — dev only, because production builds drop StrictMode's
+double-invoke.

@@ -83,6 +83,12 @@ Plan that drove the Phase 1 changes:
   `Invalid user credentials`, so verification semantics hold either way — but **probe
   users for captures/tests must be given an email**, or every correct-password attempt
   looks like a pending required action.
+- **Local seed `keycloak/ptit-wgs-realm.json` is gitignored and shipped the three test
+  users with `temporary: true` + `requiredActions: ["UPDATE_PASSWORD"]`, so a fresh
+  `--import-realm` made every password grant answer `Account is not fully set up`
+  (live-verified 2026-11-22). Fixed in the local seed (temporary=false, requiredActions
+  cleared) — if you re-import an older copy, expect the same error and fix the seed, not
+  the password.
 - **Wrong credentials answer `401` + `invalid_grant` / `"Invalid user credentials"`, NOT
   400** (live-verified 2026-10-03 against Keycloak 26.8). Code that only accepts 400 maps
   every wrong-password case to `identity_provider_unavailable` (502). Accept 400 **and**
