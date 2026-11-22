@@ -315,9 +315,17 @@ bài tập và điểm thi cuối kỳ, kèm kiểm tra tổng trọng số bằ
 \label{fig:ui-thanh-phan-diem}
 \end{figure}
 
-Bảng điểm tổng hợp điểm từng thành phần, điểm tổng kết, xếp loại và GPA của từng sinh viên,
-có ô tìm kiếm theo mã hoặc tên và nút nhập điểm thủ công cho các thành phần không chấm tự động
-(Hình~\ref{fig:ui-bang-diem}).
+Bảng điểm tổng hợp điểm từng thành phần, điểm tổng kết, xếp loại và GPA của từng sinh viên
+(Hình~\ref{fig:ui-bang-diem}). Mỗi thành phần điểm đã cấu hình cho lớp được hiển thị thành một
+cột riêng với tên tiếng Việt kèm trọng số, ví dụ Điểm chuyên cần (10\%), Điểm bài tập (20\%),
+Điểm thi cuối kỳ (70\%). Cột điểm bài tập là thành phần chấm tự động nên chỉ đọc: hệ thống lấy
+điểm cao nhất của mỗi câu trong từng bài, tính theo trọng số câu rồi lấy trung bình giữa các
+bài, và sinh viên chưa nộp bài nào được tính 0 điểm. Điểm tổng kết bằng tổng điểm từng thành
+phần nhân với trọng số tương ứng; xếp loại tính theo thang điểm 10 và quy đổi sang điểm hệ 4,
+trong đó một thành phần điểm bằng 0 hoặc điểm tổng kết dưới 4 bị xếp loại F (các dòng F trong
+Hình~\ref{fig:ui-bang-diem} là những sinh viên chưa nộp bài nên điểm bài tập bằng 0). Bảng có ô
+tìm kiếm theo mã hoặc tên sinh viên (lọc phía máy chủ) và nút nhập điểm thủ công cho các thành
+phần không chấm tự động.
 
 \begin{figure}[H]
 \centering
@@ -427,9 +435,12 @@ viên đã được ghi danh (Hình~\ref{fig:ui-sv-lop}).
 \end{figure}
 
 Trong một lớp, sinh viên xem danh sách bài tập đã công bố và nộp bài trực tiếp từ danh sách
-(Hình~\ref{fig:ui-sv-ct-lop}). Thẻ điểm của tôi tổng hợp điểm tổng kết, GPA và điểm từng thành
-phần; thành phần chưa có dữ liệu được ghi rõ thay vì hiển thị bằng không
-(Hình~\ref{fig:ui-sv-diem}).
+(Hình~\ref{fig:ui-sv-ct-lop}). Thẻ điểm của tôi tổng hợp điểm tổng kết, xếp loại, GPA và điểm
+từng thành phần kèm trọng số của lớp (Hình~\ref{fig:ui-sv-diem}). Điểm bài tập do hệ thống chấm
+tự động nên sinh viên chỉ đọc, kèm dòng ghi chú cách tính: lấy điểm cao nhất của từng câu trong
+mỗi bài, tính theo trọng số câu rồi lấy trung bình giữa các bài. Những thành phần chưa có dữ
+liệu được ghi rõ là không có dữ liệu thay vì hiển thị bằng không, và điểm tổng kết chỉ xuất hiện
+khi đã đủ điểm của mọi thành phần.
 
 \begin{figure}[H]
 \centering

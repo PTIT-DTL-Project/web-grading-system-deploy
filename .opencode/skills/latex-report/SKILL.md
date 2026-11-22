@@ -510,15 +510,29 @@ not add derived or copied links there: `User - Assignment`,
 `User - Submission` only in the 2.1.6 service-boundary note, because
 submission-service knows only `studentId`.
 
-The whole-system export lives at
-`visual-paradigm/figures/class-diagram/ptich/class-diagram-ptich.jpg`
-and is duplicated to
-`report_datn/Hinhve/Hinh2_13_bieu_do_lop.png`. The Visual Paradigm
-Community watermark sits at the bottom right; for the 834x821 export,
-cover it with a white rectangle instead of cropping, because cropping
-the bottom cuts the `StepResult` class box:
-`magick <src>.jpg -fill white -draw "rectangle 580,785 834,821" <dst>.png`.
-Verify the PNG keeps 834x821.
+Two whole-system exports exist and must not be swapped:
+
+| Phase | Source (Visual Paradigm) | Report asset | Label |
+|---|---|---|---|
+| Analysis (2.1.4d) | `class-diagram/ptich/class-diagram-ptich.jpg` | `Hinhve/Hinh2_13_bieu_do_lop.png` | `fig:class-diagram` |
+| Design (2.2.1) | `class-diagram/design/design-system-class-diagram.jpg` | `Hinhve/Hinh2_29_class_diagram_system.png` | `fig:he-thong-toan-bo` |
+
+Tell them apart by content, not by filename: the analysis export has no
+type annotations and no `id` attributes, the design export writes
+`-name : string`, `-id : UUID`, ... and carries `«enumeration»` boxes for
+statuses (`SubmissionStatus`, `GradingJobStatus`, `RunStatus`, ...).
+Duplicate with `magick <src>.jpg <dst>.png` (2024-11: 1997x1018 and
+2402x1093) and verify the PNG keeps the source dimensions.
+
+Both are wider than 2:1, so an upright `width=\textwidth` shrinks the class
+text to unreadable size; rotate them like the sequence diagrams with
+`width=<f>\textheight,height=0.95\textwidth,keepaspectratio` and keep the
+caption horizontal. The design figure shares its page with the 2.2/2.2.1
+headings and two short paragraphs, so it needs `f=0.70` (`0.76` already
+pushes it to the next page and leaves that page two-thirds empty); the
+analysis figure stands alone under its own heading and takes `f=0.88`.
+Keep the Visual Paradigm Community watermark: it sits in empty canvas at the
+bottom right, so there is nothing to crop and no scope to overlap a class box.
 
 ## Per-service class diagrams (2.1.6)
 

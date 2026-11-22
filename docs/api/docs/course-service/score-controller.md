@@ -260,11 +260,21 @@ Content-Type: application/json
    - Lấy tất cả thành phần điểm của lớp.
    - Lấy điểm nhập thủ công của sinh viên (`findAllByClassIdAndStudentCode`), thu gom thành map `componentId → score`.
    - Tính điểm bài tập tự động (`computeExercise`):
-     - Lấy `studentUserId` từ roster (`findByClassIdAndStudentCode`). Nếu null → trả về null (chưa có mapping user, không thể chấm tự động).
+     - Lấy `studentUserId` từ roster (`findByClassIdAndStudentCode`). Nếu null → trả về **0** (dòng roster
+       chưa liên kết tài khoản thì không thể nộp bài, nên điểm bài tập thực sự là 0; trước đây trả null
+       làm tổng điểm bị trống dù các thành phần khác đã nhập).
      - Lấy danh sách assignment `GRADED` đã publish của lớp (`findAllByClassIdAndPurposeAndPublished`).
-     - Nếu không có assignment nào → trả về null.
+     - Nếu không có assignment nào → trả về null (chưa có gì để chấm, không suy ra 0 cho cả lớp).
      - Gọi `resultServiceClient.weighted(new AverageRequest(assignmentIds, studentUserId))` → lấy giá trị `"average"`.
-     - Nếu lỗi (service down, không có kết quả) → log warns, trả về null (degrade gracefully, không làm fail toàn bộ bảng điểm).
+       result-service trả `0.00` khi sinh viên chưa nộp lần nào, nên điểm bài tập vẫn là một số và tổng điểm
+       vẫn được tính. `null` từ result-service (lần chạy FULL lỗi không có bước) cũng được quy về **0**.
+     - Nếu lỗi (service down) → log warns, trả về null (degrade gracefully, không làm fail toàn bộ bảng điểm,
+       cũng không tự cho cả lớp điểm 0).
+
+   Quy tắc: điểm thành phần `EXERCISE` chỉ là null khi **không có bài đã publish** hoặc **result-service
+   không truy cập được**; mọi trường hợp "sinh viên chưa làm bài" đều là 0 và tham gia vào tổng điểm.
+   Review: 2026-11-22, yêu cầu người dùng (đã nhập điểm thành phần khác nhưng bài tập 0 do chưa làm
+   thì vẫn phải có tổng điểm).
    - Duyệt từng thành phần:
      - Nếu là `EXERCISE` → lấy điểm từ `computeExercise`.
      - Ngược lại → lấy điểm từ map điểm thủ công.
@@ -341,10 +351,11 @@ X-User-Id: 2be57808-9203-4150-8f29-19aecbe9f725
 6. Lấy điểm thủ công của tất cả sinh viên trong lớp (`findAllByClassId`), nhóm theo `studentCode`.
 7. Lấy danh sách assignment `GRADED` đã publish của lớp.
 8. Lấy danh sách `student_user_id` của các sinh viên trong trang (bỏ qua null).
-9. Gọi `resultServiceClient.weightedBatch(new BatchAverageRequest(assignmentIds, studentUserIds))` để lấy điểm bài tập cho toàn bộ trang trong **1 HTTP call** (batch).
+9. Gọi `resultServiceClient.weightedBatch(new BatchAverageRequest(assignmentIds, studentUserIds))` để lấy điểm bài tập cho toàn bộ trang trong **1 HTTP call** (batch). Kết quả kèm cờ `usable`: `false` khi lớp chưa có bài publish hoặc lời gọi lỗi; `true` khi gọi thành công (sinh viên vắng mặt trong map = chưa nộp = 0).
 10. Duyệt từng sinh viên trong trang:
    - Lấy điểm thủ công theo `studentCode`.
-   - Lấy điểm bài tập từ map batch theo `studentUserId`.
+   - Lấy điểm bài tập: `studentUserId` null → 0; batch gọi thành công mà thiếu sinh viên trong map → 0;
+     batch lỗi hoặc lớp chưa có bài publish → null (tổng điểm để trống).
    - Tính từng thành phần (EXERCISE từ batch, còn lại từ manual).
    - Tính tổng, làm tròn 2 chữ số nếu đầy đủ.
    - Xếp loại (F nếu có sub-score ≤ 0 hoặc tổng < 4.00).

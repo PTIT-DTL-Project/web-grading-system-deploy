@@ -1306,3 +1306,38 @@ the user saw "Giá trị tại đường dẫn bằng" with no path and no expec
   validator kind, asserting a field value is present (`expect(text).toContain('$.title')`).
   Cross-check the kind list against `StepConfigValidator.ASSERTION_KINDS` and its
   `switch`, and keep `step.assertionKindOptions` covering every value in it.
+
+### 26.2 Auto-derived score components belong in the table, read-only
+
+`EXERCISE` is computed from graded submissions, so it cannot be entered by hand — but
+hiding it from the transcript was the wrong trade: with components at 10/30/60 the table
+rendered only two columns, so the assignment score driving `total` was invisible and the
+lecturer saw a score they could not account for.
+
+- Render **one column per configured component**, including the auto-graded one; the
+  backend rejects manual `EXERCISE` writes (`EXERCISE is auto-graded from results`) and
+  the score drawer already shows it as a disabled row, so the table must match.
+- Header = translated component label + weight (`Điểm bài tập (30%)`), never the raw enum.
+- Mark the cell as derived: tooltip `components.autoGraded` / `transcript.exerciseHighestHint`,
+  no editable control, no "enter scores" affordance pointing at it.
+- A missing score renders `common.empty`, not `0` — zero is a real score in this domain.
+- Test the column set, not just one cell: assert every configured component appears in
+  order and the raw enum string is absent from the header.
+
+### 26.3 `0` vs "no data" is a domain decision per column
+
+A `null` score has two possible renderings and they mean different things; pick per
+column, never globally:
+
+- **Auto-derived components read `0`.** `EXERCISE` with no submission *is* a zero score:
+  the grader has nothing to average, the policies ("unsubmitted = 0") already say so, and
+  the lecturer scanning a class needs a number. Render `score ?? 0` with a tooltip
+  (`transcript.exerciseUnscored`) so 0-with-no-data is distinguishable from a real 0.
+- **Manual components keep the empty state** (`common.empty`). A rendered `0` there claims
+  a lecturer entered a zero they never entered.
+- **Derived aggregates stay empty** (`total`, `letterGrade`, `gpa`) until every component
+  has a value — filling a 0 into the exercise column must not make an incomplete total
+  look complete; that logic lives in the backend and the FE only renders it.
+- Test it as a column-level assertion (`cells.filter(t => t === empty).toHaveLength(3)`),
+  not by cell index: antd's fixed columns duplicate `<th>`/`<td>`, so header index ≠ cell
+  index.

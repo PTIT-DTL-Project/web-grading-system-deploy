@@ -204,7 +204,7 @@ X-User-Id: e4ab4157-8970-4169-90fb-b88d788a124c
 - **Output:** `List<AssignmentResultGroupResponse>`.
 - **Làm gì:** Truy vấn tất cả result của assignment, lọc theo studentId nếu có. Nhóm theo studentId. Với mỗi sinh viên:
   - Tính `perPlanBests` (điểm tốt nhất mỗi plan).
-  - Tính `exerciseScore = maxPerPlanAverage(...)` (công thức weight-weighted).
+  - Tính `exerciseScore = maxPerPlanAverage(...)` — tầng 1 (weight-weighted trong phạm vi bài này).
   - Lấy `gradedRows(...)` (các attempt có điểm được tính — best attempt per plan, không phải latest).
   - Map từng result sang `ResultResponse` (có steps nếu `includeSteps=true`).
 
@@ -212,16 +212,30 @@ X-User-Id: e4ab4157-8970-4169-90fb-b88d788a124c
 
 ## 5. Công thức tính điểm bài tập (tóm tắt)
 
-Điểm bài tập của một sinh viên trên một bài tập = trung bình có trọng số của điểm **tốt nhất mỗi plan** (max over every attempt, không phải latest):
+Công thức hai tầng (`ResultService.maxPerPlanAverage`):
+
+**Tầng 1 — trong một bài tập:** trung bình có trọng số của điểm **tốt nhất mỗi plan**
+(max over every attempt, không phải latest):
 
 - Mỗi plan có trọng số `planWeight` (từ course-service, cache 5 phút).
 - Điểm mỗi plan = điểm tốt nhất trong các attempt của plan đó (chuẩn hóa về thang 10).
 - Nếu plan chưa nộp → điểm 0 nhưng **vẫn cộng trọng số vào mẫu số** (Review: 2026-10-31).
-- Điểm bài tập = `Σ(điểm_plan_i × trọng_số_i) / Σ(trọng_số_i)`, làm tròn 2 chữ số, `HALF_UP`.
+- Điểm bài (assignment) = `Σ(điểm_plan_i × trọng_số_i) / Σ(trọng_số_i)`, giữ 6 chữ số
+  khi tính tiếp.
+
+**Tầng 2 — điểm bài tập của lớp (transcript):** trung bình cộng điểm các bài, **mỗi bài
+một phiếu** — trọng số câu chỉ có nghĩa bên trong bài của nó nên không bao giờ cộng chéo
+sang bài khác. Kết quả cuối làm tròn 2 chữ số, `HALF_UP`.
+
 - Nếu không có attempt nào có thể tính điểm → `null` (không phải 0).
 - Nếu chưa nộp submission nào → `0.00` (mọi plan chưa nộp tính 0).
 
-**Ví dụ:** 2 plan trọng số 50 và 50. Sinh viên nộp plan 1 đạt 10, chưa nộp plan 2 → điểm = (10×50 + 0×50) / 100 = 5.00.
+**Ví dụ tầng 1:** 2 plan trọng số 50 và 50. Sinh viên nộp plan 1 đạt 10, chưa nộp plan 2 → điểm bài = (10×50 + 0×50) / 100 = 5.00.
+
+**Ví dụ tầng 2:** bài A có 4 câu (mỗi câu weight 100) đạt 10/10/9/0 → 7.25; bài B có 1
+câu (weight 10) đạt 10 → 10.00. Điểm bài tập của lớp = (7.25 + 10.00) / 2 = **8.63**
+(trước 2026-11-21 công thức gộp trọng số thô của cả 5 câu nên ra 7.32 — bài B chỉ nặng
+10/410). Review: 2026-11-21.
 
 ---
 
@@ -249,7 +263,7 @@ ResultService.getByAssignment()
    │ 3. Truy vấn tất cả Result của assignment
    │ 4. Lọc theo studentId
    │ 5. Tính perPlanBests (điểm tốt nhất mỗi plan)
-   │ 6. Tính exerciseScore = maxPerPlanAverage(...) (công thức weight-weighted)
+   │ 6. Tính exerciseScore = maxPerPlanAverage(...) (tầng 1: weight-weighted trong bài)
    │ 7. Lấy gradedRows (best attempt per plan, không phải latest)
    │ 8. Map → AssignmentResultGroupResponse
    ▼

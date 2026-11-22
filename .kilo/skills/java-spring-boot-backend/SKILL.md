@@ -1227,3 +1227,51 @@ canonical constructors instead.
 
 
 
+
+## 27. Aggregate scores: a weight is only comparable inside its own parent
+
+`plan.weight` is **relative to its assignment** — 4 plans at weight 100 (total 400) is
+as legal as 1 plan at weight 10. Summing those weights across assignments is a silent
+scoring bug: with a 4×100 assignment at 7.25 and a 1×10 assignment at 10.00, the pooled
+formula produced `(10·100×3 + 0·100 + 10·10)/410 = 7.32`, i.e. the second assignment was
+worth 2.4% of the class score instead of 50%.
+
+- **Two levels, always:** inside a parent, weight-weighted; across parents, a plain
+  average (one parent, one vote) unless the parent itself carries a stored weight in the
+  DB (`assignment.weight` does not exist — do not invent one implicitly).
+- **Division precision:** divide at the inner level with `scale 6, HALF_UP`, round only
+  once at the end (`scale 2`) — rounding each parent then averaging loses a hundredth
+  (10/10/9 across three plans is a real case).
+- **Missing child still counts:** an unsubmitted plan contributes `0 × weight` and keeps
+  its weight in its own parent's denominator, but a parent with no plans at all is
+  skipped instead of scoring 0.
+- **Write the reason in the method javadoc** when the formula changes, with a
+  `Review: <date>` line and the concrete before/after numbers; this number is a grade,
+  not a metric.
+- **Tests:** one case per level plus the cross-parent case that punishes the old formula
+  (`7.25 + 10.00 → 8.63`, not 7.32), and update the docs that state the formula:
+  `docs/design/usecase-flows.md` (EXERCISE chain), `docs/api/docs/result-service/*`,
+  `docs/api/API-TEST-GUIDE.md`, and the FE hint string that describes it.
+
+## 28. "Not done" is a zero, not a missing score (course total)
+
+`ScoreService.buildScores` / `transcript` leave `total`, `letterGrade` and `gpa` null only
+when a component is genuinely unknown. For the auto-graded `EXERCISE` component that means
+**nothing published to grade** or **result-service unreachable** — never "the student has
+not submitted":
+
+- an unlinked roster row (`class_students.student_user_id` null) can never submit → `0`;
+- result-service already reports `0.00` for "no attempt", and a `null` average (failed
+  stepless run) is normalised to `0` in `computeExercise` (single) and by
+  `BatchExercise`/`getOrDefault(..., ZERO)` (transcript);
+- a failed batch or an empty published-assignment list returns `usable=false` → component
+  stays null, so an outage does not silently grade the whole class 0 and an unpublished
+  assignment does not fail everyone.
+
+Consequence: a 0 sub-score still forces `F` (`evaluateGrade`), so entering only the manual
+components and leaving the exercise at 0 now yields a real total and an F instead of a blank
+cell. Keep the FE in step: `TranscriptTab` renders a null `EXERCISE` as 0 with an
+"chưa chấm" tooltip, manual components keep the empty state. Document the rule in
+`docs/api/docs/course-service/score-controller.md` and `docs/design/usecase-flows.md`
+(UC-01 step 5/6 + the EXERCISE chain), and cover both directions with tests: unlinked row →
+total computed, result-service throwing → total null.

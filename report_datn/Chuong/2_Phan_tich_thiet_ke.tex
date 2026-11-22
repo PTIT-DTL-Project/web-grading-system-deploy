@@ -198,7 +198,7 @@ Kịch bản ngoại lệ &
     \item Tệp CSV sai định dạng: hệ thống báo lỗi.
     \item Cấu trúc điểm thiếu thành phần thi cuối kỳ, trọng số thành phần này thấp hơn mức tối thiểu hoặc tổng trọng số không bằng 1: hệ thống từ chối lưu.
     \item Sinh viên không thuộc danh sách lớp: hệ thống báo lỗi khi nhập điểm.
-    \item Một thành phần điểm chưa có điểm: điểm tổng kết, điểm chữ và điểm hệ 4 để trống trên bảng điểm.
+    \item Một thành phần điểm nhập tay chưa có điểm: điểm tổng kết, điểm chữ và điểm hệ 4 để trống trên bảng điểm. Riêng thành phần điểm bài tập chấm tự động, sinh viên chưa nộp bài nào được tính 0 điểm.
 \end{itemize} \\ \hline
 \end{tabularx}
 \caption{Kịch bản chức năng Quản lý lớp học (tiếp).}
@@ -605,7 +605,7 @@ Như vậy, mô hình chỉ còn hai lớp kết hợp là UserRole và StudentS
 
 \begin{figure}[H]
 \centering
-\includegraphics[max width=\textwidth]{Hinhve/Hinh2_13_bieu_do_lop.png}
+\rotatebox{90}{\includegraphics[width=0.88\textheight,height=0.95\textwidth,keepaspectratio]{Hinhve/Hinh2_13_bieu_do_lop.png}}
 \caption{Biểu đồ lớp thực thể pha phân tích toàn hệ thống.}
 \label{fig:class-diagram}
 \end{figure}
@@ -721,10 +721,15 @@ Các lớp thuộc dịch vụ trợ lý AI gồm Cuộc hội thoại (Conversa
 
 Biểu đồ dưới đây mô tả toàn bộ các lớp thực thể được thiết kế của hệ thống.
 
+Khác với biểu đồ pha phân tích, biểu đồ pha thiết kế ghi rõ kiểu dữ liệu của từng thuộc tính và
+bổ sung các kiểu liệt kê cho những trạng thái rời rạc như trạng thái lớp học, trạng thái bài nộp,
+trạng thái công việc chấm và trạng thái phiên chấm. Mỗi lớp có khoá định danh riêng, nhờ đó mô
+hình chuyển được trực tiếp thành bảng trong cơ sở dữ liệu của từng dịch vụ ở Chương 3.
+
 % Review: 2026-11-16, user feedback: keep the entity-class diagram distinct from the system architecture figure.
 \begin{figure}[H]
 \centering
-\includegraphics[max width=\textwidth]{Hinhve/Hinh2_29_class_diagram_system.png}
+\rotatebox{90}{\includegraphics[width=0.70\textheight,height=0.95\textwidth,keepaspectratio]{Hinhve/Hinh2_29_class_diagram_system.png}}
 \caption{Biểu đồ lớp thực thể thiết kế của hệ thống.}
 \label{fig:he-thong-toan-bo}
 \end{figure}

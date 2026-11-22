@@ -185,6 +185,21 @@ matches student code **or** name (contains, case-insensitive); `meta.total` refl
 filtered roster, so a 100-student class can be narrowed to one student without paging
 through it. The FE debounces the term (350 ms) and resets to page 0 on change.
 
+FE columns: one per configured component, **`EXERCISE` included** (it used to be filtered
+out, so a 10/30/60 class looked like it was missing the assignment score). Header uses the
+translated label plus weight (`Điểm bài tập (30%)`), and the `EXERCISE` cell is read-only
+with a "tự động chấm" tooltip because the value is derived from graded submissions — the
+score drawer shows it as a disabled row for the same reason.
+
+`EXERCISE` is the one component that reads **0** instead of "Không có dữ liệu" when the
+API returns `null`. Since 2026-11-22 the backend no longer returns `null` for "not done":
+an unlinked roster row, a student with no attempt and a failed stepless run all resolve to
+`0.00`, so a class whose manual components are already entered **does** get a total (and an
+`F`, because a 0 sub-score fails the course). `null` now means only "nothing published to
+grade" or "result-service unreachable", and only then is the `total` blank. Manual
+components keep the empty state — a rendered `0` would claim a score nobody entered.
+Review: 2026-11-21 + 2026-11-22, user requests.
+
 ### Step 7 — Archive class (one-way)
 
 ```
@@ -203,13 +218,24 @@ action. The backend does not block score entry on an `ARCHIVED` class, so the FE
 
 ### EXERCISE auto-grading chain
 
-`exercise = avg(score / max_score × 10)` over the student's latest results across the
-class's assignments, computed live via result-service internal API. All three must hold,
-otherwise exercise and total are null:
+Class exercise score = **plain average of the per-assignment scores**, computed live via
+result-service internal API (`ResultService.maxPerPlanAverage`). Two levels:
 
-1. `class_students.student_user_id` is set (CSV column 4 or DB update)
-2. The class has assignments
-3. result-service has results for those (assignment, student) pairs
+1. inside one assignment: `Σ(điểm câu × plan.weight) / Σ(plan.weight)` over that
+   assignment's plans, best attempt per plan (max, not latest), unsubmitted plan = 0
+   but its weight still counts;
+2. across assignments: arithmetic mean, **one assignment one vote**.
+
+Plan weights are relative to their own assignment (4 plans × weight 100 and 1 plan ×
+weight 10 are both legal), so they are never summed across assignments — a 4×100
+assignment scoring 7.25 plus a 1×10 assignment scoring 10.00 reads **8.63**, not 7.32.
+Review: 2026-11-21 (the previous formula pooled every plan weight of every assignment).
+
+The class needs at least one published `GRADED` assignment and result-service must answer;
+otherwise exercise and total stay null. A student who never submitted is **not** a reason for
+a null: an unlinked roster row scores 0 and a missing attempt scores 0.00, so the total is
+still computed. Review: 2026-11-22, user request ("đã nhập điểm thành phần khác nhưng bài tập
+0 do chưa làm thì vẫn phải tính tổng").
 
 ### Error behavior (all steps)
 
@@ -537,13 +563,15 @@ grading — poll until rows appear.
 keeps its own latest result. Every row carries explicit `scope`: `FULL` =
 whole-assignment run (`plan_id` null, supersedes all per-plan latests on write),
 `PLAN` = single-plan run (demotes only its own plan). Assignment exercise score
-= **weight-weighted average of per-plan BEST scores (max over every attempt)**:
-a `PLAN` row contributes its normalized score; a `FULL` row is decomposed into
-per-plan subtotals from its step rows (skipped steps excluded exactly —
+= **weight-weighted average of per-plan BEST scores (max over every attempt)**, scoped to
+that assignment: a `PLAN` row contributes its normalized score; a `FULL` row is
+decomposed into per-plan subtotals from its step rows (skipped steps excluded exactly —
 `step_results.skipped`, 2026-10-10); plan weights come from course-service
 (`GET /api/v1/internal/assignments/{id}/plans`, carried `plan_weight` fallback).
-Unsubmitted plans are ignored (live partial). `course-service`
-`ScoreService.computeExercise` calls `POST /api/v1/internal/results/weighted`.
+Unsubmitted plans count as 0 but keep their weight. The **class** figure is then the plain
+average of these per-assignment scores (one assignment = one vote), so plan weights never
+leak across assignments. `course-service` `ScoreService.computeExercise` calls
+`POST /api/v1/internal/results/weighted`.
 
 ### Error behavior
 
@@ -661,9 +689,11 @@ its raw `studentUserId` with null code/name rather than being hidden.
 An assignment the caller does not own → `404`. A non-lecturer → `403`. No trust
 secret → `401`.
 
-`exerciseScore` uses the **same weight-weighted formula** as the transcript,
-**scoped to this assignment** (the transcript applies it across all class
-assignments — figures agree only when the class has one assignment).
+`exerciseScore` uses the **same two-level formula** as the transcript, **scoped to this
+assignment** — i.e. it is exactly level 1 (weight-weighted over this assignment's plans).
+The transcript then averages these per-assignment figures with one vote per assignment,
+so the class EXERCISE number equals this `exerciseScore` only when the class has a single
+scored assignment.
 
 `results` carries the **attempts that score is made of** — the best attempt per
 plan, not the latest one. A student who scored 10 and then resubmitted a failing

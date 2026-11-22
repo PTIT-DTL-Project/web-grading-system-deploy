@@ -88,7 +88,7 @@ Kết quả nhóm theo sinh viên.
 | Trường | Kiểu | Mô tả |
 |--------|------|-------|
 | `studentUserId` | UUID | ID sinh viên |
-| `exerciseScore` | BigDecimal | Điểm bài tập (công thức weight-weighted) |
+| `exerciseScore` | BigDecimal | Điểm bài tập của bài này (tầng 1: weight-weighted trên các plan của nó) |
 | `results` | `List<ResultResponse>` | Danh sách kết quả từng attempt |
 
 ### 2.5 `ResultResponse` (dto/response)

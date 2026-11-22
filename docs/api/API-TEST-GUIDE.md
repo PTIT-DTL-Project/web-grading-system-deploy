@@ -396,15 +396,19 @@ durationMs }] }]`. `[]` while the submission is queued or grading — poll.
 { "assignmentIds": ["<uuid>", "…"], "studentId": "<uuid>" }
 ```
 
-→ `{ "average": 8.50 }` (or `null` when no results exist — null-safe by design review).
-This is the single weight-weighted exercise-score formula: both the transcript
-(UC-01 Step 6) and the lecturer's grading view (§1.6) read it.
+→ `{ "average": 8.63 }` (or `null` when no results exist — null-safe by design review).
+This is the single exercise-score formula for a **class** (multiple assignments accepted):
+per assignment a plan-weight weighted average, then a plain average across assignments
+(one assignment one vote — plan weights never compare across assignments,
+Review: 2026-11-21). The transcript (UC-01 Step 6) and the lecturer's grading view (§1.6)
+read it.
 
 **GET `/api/v1/internal/results/assignment/{{assignmentId}}?studentUserId=&includeSteps=`**
 (raw) → `[{ studentUserId, exerciseScore, results: [...] }]` — graded rows of one
 assignment grouped per student (the best attempt per plan, i.e. the attempts
 `exerciseScore` is made of; latest rows only when nothing is scorable),
-`exerciseScore` pre-computed by the same formula.
+`exerciseScore` pre-computed by the same formula, **scoped to this assignment** (level 1
+only: plan-weight weighted inside the assignment).
 Only caller: course-service (§1.6), which has already verified ownership.
 
 ### executor-service
