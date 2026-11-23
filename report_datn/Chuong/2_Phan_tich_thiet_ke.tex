@@ -816,6 +816,28 @@ Biểu đồ thiết kế làm rõ cách các thực thể trên được lưu t
 
 \textnormal{AiExplanation} không thuộc chuỗi hội thoại: lớp này gắn với \textnormal{submissionId} và \textnormal{studentId}, lưu bản tổng hợp, chẩn đoán, gợi ý, từ khóa học tập, dữ liệu phân tích từng bước và tên mô hình. Việc tách lớp này cho phép kết quả giải thích được tra cứu lại theo bài nộp mà không trộn với lịch sử chat. Các lớp thực thể được ánh xạ tới những bảng \textnormal{ai\_conversation}, \textnormal{ai\_message}, \textnormal{ai\_run}, \textnormal{ai\_run\_event}, \textnormal{ai\_operation} và các bảng tương ứng trong sơ đồ; những UUID liên kết miền được lưu như mã tham chiếu, không đồng nghĩa dịch vụ truy cập trực tiếp cơ sở dữ liệu của dịch vụ khác.
 
+\subsubsection{Xét quan hệ số lượng giữa các lớp dịch vụ trợ lý AI}
+
+Dựa trên các đầu mối liên kết trong biểu đồ lớp và các cột khóa trong migration Flyway, các quan hệ một - nhiều của dịch vụ được xác định như sau:
+
+\begin{itemize}[leftmargin=*, nosep]
+    \item Một \textnormal{Conversation} có thể có nhiều \textnormal{Message}, \textnormal{Run}, \textnormal{Task}, \textnormal{ConversationSummary} và \textnormal{StoredToolResult}; mỗi bản ghi trong các nhóm này thuộc về đúng một hội thoại thông qua \textnormal{conversationId}.
+    \item Một \textnormal{Run} có thể phát sinh nhiều \textnormal{RunEvent}, \textnormal{ToolExecution} và \textnormal{StoredToolResult}; mỗi sự kiện, lần gọi công cụ hoặc kết quả đã lưu thuộc về một lần chạy. Một \textnormal{Run} cũng có thể gắn với nhiều \textnormal{PendingAction}; khóa \textnormal{runId} của hành động chờ được phép để trống.
+    \item Một \textnormal{Task} có thể có nhiều \textnormal{Operation} và \textnormal{PendingAction}. \textnormal{taskId} ở hai lớp này có thể để trống, nên đây là liên kết không bắt buộc; một thao tác hoặc hành động chờ, nếu có khóa liên kết, chỉ trỏ tới một tác vụ.
+    \item \textnormal{Conversation} có thể chỉ định tối đa một tác vụ đang hoạt động qua \textnormal{activeTaskId}; hội thoại vẫn có thể lưu nhiều tác vụ lịch sử. \textnormal{ConversationSummary.throughMessageId}, \textnormal{Message.runId} và \textnormal{Run.parentRunId} ghi nhận các mốc hoặc lần chạy liên quan nhưng không được khai báo thành khóa ngoại trong migration.
+    \item Ở ranh giới giữa các dịch vụ, một bài nộp có thể có nhiều \textnormal{AiExplanation} theo danh mục; chỉ mục duy nhất trên \textnormal{(submissionId, category)} bảo đảm mỗi danh mục chỉ có tối đa một bản ghi chưa xóa. \textnormal{submissionId} và \textnormal{studentId} là mã tham chiếu do dịch vụ trợ lý AI lưu, không phải quan hệ khóa ngoại tới cơ sở dữ liệu của dịch vụ khác.
+\end{itemize}
+
+Mô hình không có quan hệ nhiều - nhiều giữa các thực thể AI. Trường \textnormal{ownerId}, \textnormal{studentId} và các thông tin người gọi lưu định danh hoặc phạm vi quyền; chúng không tạo liên kết thực thể tới lớp \textnormal{User} trong dịch vụ này.
+
+\subsubsection{Bổ sung quan hệ đối tượng giữa các lớp dịch vụ trợ lý AI}
+
+Các quan hệ thành phần (composition) trong biểu đồ gồm \textnormal{Conversation} với \textnormal{Message}, \textnormal{Run}, \textnormal{Task}, \textnormal{ConversationSummary} và \textnormal{StoredToolResult}; \textnormal{Run} với \textnormal{RunEvent}, \textnormal{ToolExecution}, \textnormal{PendingAction} và \textnormal{StoredToolResult}; cùng \textnormal{Task} với \textnormal{PendingAction}. Các bản ghi này thuộc vòng đời của đối tượng cha: migration đặt khóa ngoại \textnormal{ON DELETE CASCADE}, vì vậy khi hội thoại, lần chạy hoặc tác vụ bị xóa thì dữ liệu con tương ứng cũng bị xóa.
+
+Quan hệ giữa \textnormal{Task} và \textnormal{Operation} là aggregation thay vì composition. Khóa \textnormal{taskId} của thao tác có thể để trống và migration đặt \textnormal{ON DELETE SET NULL}; thao tác cùng payload, khóa chống lặp và trạng thái xử lý vẫn được lưu lại nếu tác vụ bị xóa. \textnormal{AiExplanation} chỉ liên kết logic với bài nộp ở service kết quả, nên vòng đời của lớp này không được ràng buộc bằng thao tác xóa cascade giữa hai cơ sở dữ liệu.
+
+Trong mã Java, các khóa liên kết trên được ánh xạ thành trường UUID đơn, không dùng quan hệ đối tượng JPA như \textnormal{@OneToMany} hoặc \textnormal{@ManyToOne}. Do đó, bội số và vòng đời tham chiếu được thể hiện qua biểu đồ thiết kế cùng các khóa ngoại do Flyway tạo; những liên kết không có khóa ngoại là tham chiếu logic do service kiểm soát. Cách triển khai này giữ quyền sở hữu dữ liệu trong phạm vi AI service và không tạo phụ thuộc trực tiếp vào các bảng thuộc service khác.
+
 \subsection{Thiết kế cơ sở dữ liệu theo dịch vụ}
 
 Sau khi phân rã hệ thống thành các miền chức năng, mỗi miền được thiết kế thành một dịch vụ độc lập với cơ sở dữ liệu riêng. Mỗi dịch vụ quản lý độc lập các bảng thuộc miền nghiệp vụ của mình, không truy cập trực tiếp cơ sở dữ liệu của dịch vụ khác.
