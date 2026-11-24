@@ -71,13 +71,15 @@ Spring Boot là một framework ứng dụng dựa trên nền tảng Java, cung
 \subsection{Spring AI và mô hình ngôn ngữ lớn}
 \label{section:1.3.3}
 
-Mô hình ngôn ngữ lớn (Large Language Model - LLM) là mô hình học máy được huấn luyện trên tập dữ liệu văn bản quy mô lớn để hiểu yêu cầu và sinh nội dung bằng ngôn ngữ tự nhiên. Khi tích hợp vào ứng dụng, mô hình nhận chỉ dẫn hệ thống, câu hỏi của người dùng và ngữ cảnh nghiệp vụ; đầu ra có thể là văn bản hoặc dữ liệu theo cấu trúc. Kết quả sinh cần được xem là nội dung do mô hình đề xuất, vì vậy ứng dụng phải kiểm tra định dạng và quyền thực hiện trước khi dùng kết quả đó.
+Mô hình ngôn ngữ lớn (Large Language Model - LLM) là mô hình học sâu (deep learning) được huấn luyện trên khối lượng văn bản khổng lồ, sở hữu năng lực hiểu ngữ cảnh, suy luận logic và tạo sinh văn bản tự nhiên theo chỉ dẫn (prompt). Khi được tích hợp vào kiến trúc phần mềm hiện đại, tương tác với LLM xoay quanh bốn cơ chế kỹ thuật cốt lõi:
+\begin{itemize}
+    \item Kỹ thuật chỉ dẫn và quản lý ngữ cảnh (Prompt Engineering): định hình hành vi và phạm vi xử lý của mô hình thông qua chỉ dẫn hệ thống (system prompt), câu hỏi của người dùng (user prompt) và thông tin ngữ cảnh nghiệp vụ được đưa vào không gian suy luận.
+    \item Cơ chế gọi công cụ (tool calling): cho phép mô hình mở rộng khả năng bằng cách đề xuất thực thi các chức năng bên ngoài thông qua việc sinh dữ liệu có cấu trúc chứa tên hàm và tham số đầu vào. Mã ứng dụng giữ vai trò điều phối, kiểm tra phân quyền, thực thi hàm và trả kết quả để mô hình tổng hợp phản hồi hoàn chỉnh.
+    \item Quản lý bộ nhớ hội thoại (conversation memory): lưu vết và tái sử dụng lịch sử các lượt tương tác dựa trên định danh phiên làm việc, duy trì tính liên tục và ngữ cảnh trao đổi xuyên suốt giữa người dùng và mô hình.
+    \item Định dạng đầu ra có cấu trúc (structured outputs): cơ chế ràng buộc mô hình sinh dữ liệu tuân thủ chặt chẽ theo một lược đồ cấu trúc định trước (chẳng hạn định dạng JSON), phục vụ việc bóc tách và tích hợp tự động vào luồng dữ liệu của hệ thống.
+\end{itemize}
 
-Spring AI là lớp tích hợp mô hình AI vào ứng dụng Spring. API \textnormal{ChatModel} cung cấp giao diện gọi mô hình, còn \textnormal{ChatClient} hỗ trợ tạo yêu cầu hội thoại, cấu hình nội dung đầu vào và nhận kết quả văn bản hoặc cấu trúc. Spring AI cũng chuẩn hóa các khái niệm như bộ nhớ hội thoại và gọi công cụ (tool calling), qua đó giảm sự phụ thuộc trực tiếp của nghiệp vụ vào giao thức riêng của một nhà cung cấp~\cite{springaidocs}.
-
-Trong cơ chế gọi công cụ, ứng dụng mô tả cho mô hình tên, mục đích và tham số của các chức năng được phép sử dụng. Mô hình chỉ có thể đề xuất một lần gọi công cụ; mã ứng dụng mới là thành phần thực thi chức năng đó, kiểm tra quyền và gửi kết quả lại cho mô hình để tạo câu trả lời. Vì vậy, quyền công cụ phải được giới hạn theo vai trò người dùng và các thao tác làm thay đổi dữ liệu cần có bước kiểm soát phù hợp. Bộ nhớ hội thoại lưu các lượt trao đổi gắn với một định danh hội thoại để những yêu cầu sau có thể sử dụng ngữ cảnh trước đó.
-
-Trong dịch vụ trợ lý AI của đề tài, Spring AI kết nối tới một API tương thích OpenAI. Dịch vụ dùng mô hình ngôn ngữ cho hai nhiệm vụ riêng: hội thoại có thể gọi công cụ nghiệp vụ, còn giải thích kết quả chấm yêu cầu đầu ra dạng JSON để chuyển thành DTO và lưu trữ. Hai luồng chia sẻ lớp tích hợp mô hình nhưng có cấu hình và cách xử lý đầu ra riêng; nội dung giải thích được tạo từ kết quả chấm và thông tin bài tập thay vì chỉ dựa trên câu hỏi tự do.
+Spring AI là khung tích hợp của hệ sinh thái Spring nhằm trừu tượng hóa và đơn giản hóa việc tương tác với các mô hình trí tuệ nhân tạo~\cite{springaidocs}. Spring AI cung cấp giao diện lập trình cấp cao và thống nhất, chuẩn hóa các khái niệm như quản lý prompt, tích hợp công cụ, xử lý đầu ra có cấu trúc và quản lý bộ nhớ hội thoại. Nhờ đó, ứng dụng có thể kết nối linh hoạt tới nhiều nhà cung cấp mô hình AI khác nhau (thông qua các chuẩn giao tiếp phổ biến như API tương thích OpenAI) mà không làm ràng buộc chặt chẽ logic nghiệp vụ vào giao thức riêng biệt của một nhà cung cấp cụ thể.
 
 \subsection{Spring Cloud OpenFeign}
 \label{section:1.3.4}
