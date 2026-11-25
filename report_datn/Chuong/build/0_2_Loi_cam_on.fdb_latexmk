@@ -1,15 +1,15 @@
 # Fdb version 4
-["bibtex Chuong/build/0_2_Loi_cam_on"] 1795536416.97117 "Chuong/build/0_2_Loi_cam_on.aux" "Chuong/build/0_2_Loi_cam_on.bbl" "Chuong/build/0_2_Loi_cam_on" 1795537522.91274 0
+["bibtex Chuong/build/0_2_Loi_cam_on"] 1795536416.97117 "Chuong/build/0_2_Loi_cam_on.aux" "Chuong/build/0_2_Loi_cam_on.bbl" "Chuong/build/0_2_Loi_cam_on" 1795574740.77014 0
   "./Danh_sach_tai_lieu_tham_khao.bib" 1794187350.80214 8294 825c713b5beb05d0b5d3dce12709ff5d ""
   "/usr/share/texmf-dist/bibtex/bst/biblatex/biblatex.bst" 1775415801 65510 9a2a51799b543ff279b8ea2dd91ec499 ""
-  "Chuong/build/0_2_Loi_cam_on-blx.bib" 1795537521.21625 343 eecd58be191eac03682f8fda492bb690 "pdflatex"
-  "Chuong/build/0_2_Loi_cam_on.aux" 1795537521.17625 616 12dfef4952ae965c6cd301c67d80b977 "pdflatex"
+  "Chuong/build/0_2_Loi_cam_on-blx.bib" 1795574740.09073 343 eecd58be191eac03682f8fda492bb690 "pdflatex"
+  "Chuong/build/0_2_Loi_cam_on.aux" 1795574740.07992 616 12dfef4952ae965c6cd301c67d80b977 "pdflatex"
   (generated)
   "Chuong/build/0_2_Loi_cam_on.bbl"
   "Chuong/build/0_2_Loi_cam_on.blg"
   (rewritten before read)
-["pdflatex"] 1795537515.02081 "/home/duongvct/Documents/workspace/PTIT/web-grading-system-deploy/report_datn/Chuong/0_2_Loi_cam_on.tex" "Chuong/build/0_2_Loi_cam_on.pdf" "0_2_Loi_cam_on" 1795537522.91376 0
-  "/home/duongvct/Documents/workspace/PTIT/web-grading-system-deploy/report_datn/Chuong/0_2_Loi_cam_on.tex" 1795537514.59105 6370 e33c152776cd1306393eab3e40068747 ""
+["pdflatex"] 1795574735.94723 "/home/duongvct/Documents/workspace/PTIT/web-grading-system-deploy/report_datn/Chuong/0_2_Loi_cam_on.tex" "Chuong/build/0_2_Loi_cam_on.pdf" "0_2_Loi_cam_on" 1795574740.77051 0
+  "/home/duongvct/Documents/workspace/PTIT/web-grading-system-deploy/report_datn/Chuong/0_2_Loi_cam_on.tex" 1795574735.43816 7238 204452732e4a8d465cc82a03dcc7b28f ""
   "/usr/share/texmf-dist/fonts/enc/dvips/vntex/t5.enc" 1775415801 7824 21ade6c3c7fd67cb4ace8dbc91c53118 ""
   "/usr/share/texmf-dist/fonts/map/fontname/texfonts.map" 1775415801 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/share/texmf-dist/fonts/tfm/public/cm/cmr12.tfm" 1775415801 1288 655e228510b4c2a1abe905c368440826 ""
@@ -168,12 +168,12 @@
   "/usr/share/texmf-dist/web2c/texmf.cnf" 1775415801 43569 fd570f2fa160877d211e859f687312ba ""
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1793029401 5418909 d48fb256e573d3b961fb0e6b9b49cec7 ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1793029325 2426823 c30a68a27286e8b4880a6f6a14e666ae ""
-  "Chuong/0_2_Loi_cam_on.tex" 1795537514.59105 6370 e33c152776cd1306393eab3e40068747 ""
+  "Chuong/0_2_Loi_cam_on.tex" 1795574735.43816 7238 204452732e4a8d465cc82a03dcc7b28f ""
   "Chuong/build/../../BTL.tex" 1795537520.04522 12279 b8f8cebc90c16ee0588daa8602f2f065 ""
-  "Chuong/build/0_2_Loi_cam_on.aux" 1795537521.17625 616 12dfef4952ae965c6cd301c67d80b977 "pdflatex"
+  "Chuong/build/0_2_Loi_cam_on.aux" 1795574740.07992 616 12dfef4952ae965c6cd301c67d80b977 "pdflatex"
   "Chuong/build/0_2_Loi_cam_on.bbl" 1795536417.29927 520 47390d0fec917a8062f60a58a9b6d248 "bibtex Chuong/build/0_2_Loi_cam_on"
-  "Chuong/build/0_2_Loi_cam_on.out" 1795537520.48323 0 d41d8cd98f00b204e9800998ecf8427e "pdflatex"
-  "Chuong/build/0_2_Loi_cam_on.run.xml" 1795537521.22325 2727 70aa6752ef425b4cde8450982a1ce1b0 "pdflatex"
+  "Chuong/build/0_2_Loi_cam_on.out" 1795574739.86472 0 d41d8cd98f00b204e9800998ecf8427e "pdflatex"
+  "Chuong/build/0_2_Loi_cam_on.run.xml" 1795574740.09326 2727 70aa6752ef425b4cde8450982a1ce1b0 "pdflatex"
   "Chuong/build/lstlisting" 0 -1 0 ""
   "Tu_viet_tat.tex" 1794187350.83914 4034 5a79193b55b4e2db3168374b0a9dbd36 ""
   "lstlisting" 0 -1 0 ""

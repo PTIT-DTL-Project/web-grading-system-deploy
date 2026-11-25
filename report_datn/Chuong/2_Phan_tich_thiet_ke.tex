@@ -537,10 +537,11 @@ Xác định quan hệ số lượng giữa các lớp dựa trên số lượng
     \item Một công việc chấm có nhiều nhật ký, nhưng mỗi nhật ký chỉ thuộc về đúng một công việc chấm. Vì vậy quan hệ giữa GradingJob và GradingLog là 1 - n.
     \item Một bài nộp có thể sinh ra nhiều kết quả chấm, bao gồm kết quả theo từng câu và kết quả toàn bài, nhưng mỗi kết quả chỉ thuộc về đúng một bài nộp. Vì vậy quan hệ giữa Submission và Result là 1 - n.
     \item Một kết quả chấm có nhiều kết quả bước, nhưng mỗi kết quả bước chỉ thuộc về đúng một kết quả chấm. Vì vậy quan hệ giữa Result và StepResult là 1 - n.
-    \item Một bài nộp có thể có nhiều giải thích của trợ lý AI theo các danh mục khác nhau, nhưng trong mỗi danh mục chỉ có tối đa một giải thích đang hiệu lực. Vì vậy quan hệ tổng quát giữa Submission và AiExplanation là 1 - n, còn theo từng danh mục là 1 - 0..1.
 \end{itemize}
 
-Bên cạnh các quan hệ 1 - n, hệ thống còn có các quan hệ n - n cần được tách thành các quan hệ 1 - n thông qua lớp trung gian. Các quan hệ n - n được xác định như sau:
+Ngoài các quan hệ 1 - n, hệ thống còn một quan hệ 1 - 1 giữa Submission và AiExplanation: mỗi bài nộp có đúng một giải thích của trợ lý AI đang hiệu lực và mỗi giải thích chỉ thuộc về đúng một bài nộp. Hệ thống chỉ dùng một danh mục phân tích toàn bài cho mỗi bài nộp, nên mỗi bài nộp chỉ sinh ra một giải thích; khi sinh lại, bản ghi cũ được đánh dấu xoá mềm để nhường chỗ cho bản mới chứ không tạo thêm một quan hệ mới. Ràng buộc duy nhất trên cặp (bài nộp, danh mục) áp dụng cho các bản ghi chưa bị xoá mềm bảo đảm điều này ở mức cơ sở dữ liệu.
+
+Bên cạnh các quan hệ 1 - n và 1 - 1, hệ thống còn có các quan hệ n - n cần được tách thành các quan hệ 1 - n thông qua lớp trung gian. Các quan hệ n - n được xác định như sau:
 
 \begin{itemize}[leftmargin=*, nosep]
     \item Một người dùng có thể giữ nhiều vai trò và một vai trò có thể được gán cho nhiều người dùng, do đó quan hệ giữa User và Role là n - n.
@@ -571,7 +572,7 @@ Các quan hệ thành phần trong hệ thống gồm:
     \item TestPlan và TestStep là quan hệ thành phần vì bước chấm chỉ tồn tại trong một câu.
     \item Assignment và Submission là quan hệ thành phần vì bài nộp chỉ tồn tại trong phạm vi một bài tập.
     \item Submission và Result là quan hệ thành phần vì kết quả chấm chỉ tồn tại khi có bài nộp tương ứng.
-    \item Submission và AiExplanation là quan hệ thành phần vì giải thích của trợ lý AI gắn với một bài nộp cụ thể.
+    \item Submission và AiExplanation là quan hệ thành phần 1 - 1 vì mỗi giải thích của trợ lý AI được sinh ra cho đúng một bài nộp, không còn ý nghĩa khi bài nộp bị xóa, và mỗi bài nộp chỉ có một giải thích hiệu lực; bản ghi của lần sinh lại trước đó chỉ bị xóa mềm.
     \item GradingJob và GradingSaga là quan hệ thành phần vì phiên chấm thuộc một công việc chấm.
     \item GradingSaga và GradingSagaStep là quan hệ thành phần vì bước chấm thuộc một phiên chấm.
     \item GradingJob và GradingLog là quan hệ thành phần vì nhật ký chấm thuộc một công việc chấm.
@@ -581,14 +582,14 @@ Các quan hệ thành phần trong hệ thống gồm:
 Quan hệ aggregation trong hệ thống gồm:
 
 \begin{itemize}[leftmargin=*, nosep]
+    \item User và CourseClass là quan hệ aggregation vì lớp học là bộ phận do giảng viên sở hữu và quản lý, nhưng lớp học vẫn tồn tại độc lập, không bị xóa theo khi giảng viên ngừng tham gia hệ thống.
     \item CourseClass và ClassStudent là quan hệ aggregation vì sinh viên thuộc một lớp học nhưng không phải là thành phần bị xóa theo lớp. Thông tin sinh viên vẫn có ý nghĩa độc lập với lớp học.
+    \item ClassStudent và Submission là quan hệ aggregation vì bài nộp gắn với một sinh viên trong lớp, nhưng bản ghi sinh viên vẫn tồn tại độc lập khi bài nộp bị xóa hoặc được nộp lại.
 \end{itemize}
 
 Các quan hệ liên kết trong hệ thống gồm:
 
 \begin{itemize}[leftmargin=*, nosep]
-    \item User và CourseClass là quan hệ liên kết vì giảng viên sở hữu lớp học nhưng không phải là thành phần của lớp.
-    \item ClassStudent và Submission là quan hệ liên kết vì bài nộp gắn với sinh viên nhưng không phải là thành phần của sinh viên.
     \item Submission và GradingJob là quan hệ liên kết 1 - 1 vì công việc chấm là bản ghi xử lý riêng, không phải thành phần của bài nộp.
 \end{itemize}
 
@@ -599,13 +600,11 @@ Hai lớp kết hợp trong mô hình gồm:
     \item StudentScore là lớp kết hợp giữa ClassStudent và ScoreComponent, dùng để biểu diễn quan hệ n - n kèm điểm của sinh viên.
 \end{itemize}
 
-Như vậy, mô hình chỉ còn hai lớp kết hợp là UserRole và StudentScore. ClassStudent là lớp thường vì có định danh riêng và các thuộc tính mô tả sinh viên. Submission cũng là lớp thường vì có định danh riêng, có nhiều bản ghi trên một cặp Assignment-ClassStudent và có thuộc tính tệp nộp, trạng thái chấm, cờ latest.
-
 \subsubsection{Biểu đồ lớp thực thể pha phân tích toàn hệ thống }
 
 \begin{figure}[H]
 \centering
-\rotatebox{90}{\includegraphics[width=0.88\textheight,height=0.95\textwidth,keepaspectratio]{Hinhve/Hinh2_13_bieu_do_lop.png}}
+\rotatebox{90}{\includegraphics[width=0.88\textheight,height=0.95\textwidth,keepaspectratio]{Hinhve/Hinh2_13_bieu_do_lop.jpg}}
 \caption{Biểu đồ lớp thực thể pha phân tích toàn hệ thống.}
 \label{fig:class-diagram}
 \end{figure}

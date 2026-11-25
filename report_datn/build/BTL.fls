@@ -1,7 +1,7 @@
 PWD /home/duongvct/Documents/workspace/PTIT/web-grading-system-deploy/report_datn
 INPUT /usr/share/texmf-dist/web2c/texmf.cnf
 INPUT /var/lib/texmf/web2c/pdftex/pdflatex.fmt
-INPUT /home/duongvct/Documents/workspace/PTIT/web-grading-system-deploy/report_datn/BTL.tex
+INPUT BTL.tex
 OUTPUT build/BTL.log
 INPUT /usr/share/texmf-dist/tex/latex/base/report.cls
 INPUT /usr/share/texmf-dist/tex/latex/base/report.cls
@@ -541,11 +541,11 @@ INPUT ./Hinhve/student-ai-assistant-uc.jpg
 INPUT Hinhve/student-ai-assistant-uc.jpg
 INPUT ./Hinhve/student-ai-assistant-uc.jpg
 INPUT ./Hinhve/student-ai-assistant-uc.jpg
-INPUT ./Hinhve/Hinh2_13_bieu_do_lop.png
-INPUT ./Hinhve/Hinh2_13_bieu_do_lop.png
-INPUT Hinhve/Hinh2_13_bieu_do_lop.png
-INPUT ./Hinhve/Hinh2_13_bieu_do_lop.png
-INPUT ./Hinhve/Hinh2_13_bieu_do_lop.png
+INPUT ./Hinhve/Hinh2_13_bieu_do_lop.jpg
+INPUT ./Hinhve/Hinh2_13_bieu_do_lop.jpg
+INPUT Hinhve/Hinh2_13_bieu_do_lop.jpg
+INPUT ./Hinhve/Hinh2_13_bieu_do_lop.jpg
+INPUT ./Hinhve/Hinh2_13_bieu_do_lop.jpg
 INPUT ./Hinhve/Hinh2_14_class_auth.png
 INPUT ./Hinhve/Hinh2_14_class_auth.png
 INPUT Hinhve/Hinh2_14_class_auth.png

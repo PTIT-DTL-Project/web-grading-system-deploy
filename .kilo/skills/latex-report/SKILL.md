@@ -497,7 +497,15 @@ normal class with its own identity and `studentCode`, `studentName`,
 one Assignment-ClassStudent pair can have many submissions (`latest`
 marks the current one), so the pair is not unique. Draw `Submission` as
 the normal intermediate class between `Assignment` and `ClassStudent`,
-with `Assignment - Submission` as composition. Do not model
+with `Assignment - Submission` as composition. Aggregation is used for
+`User - CourseClass`, `CourseClass - ClassStudent` and
+`ClassStudent - Submission` (hollow diamond: the part survives when the
+whole goes away); `Submission - AiExplanation` is composition 1 - 1
+(one active explanation per submission: the service always writes the
+single `FULL_ANALYSIS` category and soft-deletes the previous row on
+regeneration, so no second relation is created); only
+`Submission - GradingJob` is a plain 1 - 1 association. Keep Bước 5 in
+that order (composition, aggregation, association). Do not model
 `ManualScore`; manual scores are represented through `StudentScore` and
 `ScoreComponent`.
 
