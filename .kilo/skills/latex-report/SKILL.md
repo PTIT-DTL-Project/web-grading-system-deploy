@@ -299,7 +299,7 @@ relations live inside the exported diagram images.
 Class diagram design: `Biểu đồ lớp thiết kế chi tiết toàn hệ thống` is
 placed immediately before `\subsection{Biểu đồ lớp chi tiết từng dịch vụ}`
 in chapter 2. Caption: `Biểu đồ lớp thiết kế toàn hệ thống.`, label
-`fig:class-system`, image `Hinhve/Hinh2_29_class_diagram_system.png`
+`fig:class-system`, image `Hinhve/Hinh2_29_class_diagram_system.jpg`
 with `\includegraphics[width=\textwidth]`. Each service-specific class
 diagram follows with its own `\subsubsection{Biểu đồ lớp chi tiết dịch
 vụ <Tên>}`, `\includegraphics[width=<width>\textwidth]{Hinhve/Hinh2_XX_...}`,
@@ -522,15 +522,16 @@ Two whole-system exports exist and must not be swapped:
 
 | Phase | Source (Visual Paradigm) | Report asset | Label |
 |---|---|---|---|
-| Analysis (2.1.4d) | `class-diagram/ptich/class-diagram-ptich.jpg` | `Hinhve/Hinh2_13_bieu_do_lop.png` | `fig:class-diagram` |
-| Design (2.2.1) | `class-diagram/design/design-system-class-diagram.jpg` | `Hinhve/Hinh2_29_class_diagram_system.png` | `fig:he-thong-toan-bo` |
+| Analysis (2.1.4d) | `class-diagram/ptich/class-diagram-ptich.jpg` | `Hinhve/Hinh2_13_bieu_do_lop.jpg` | `fig:class-diagram` |
+| Design (2.2.1) | `class-diagram/design/design-system-class-diagram.jpg` | `Hinhve/Hinh2_29_class_diagram_system.jpg` | `fig:he-thong-toan-bo` |
 
 Tell them apart by content, not by filename: the analysis export has no
 type annotations and no `id` attributes, the design export writes
 `-name : string`, `-id : UUID`, ... and carries `«enumeration»` boxes for
 statuses (`SubmissionStatus`, `GradingJobStatus`, `RunStatus`, ...).
-Duplicate with `magick <src>.jpg <dst>.png` (2024-11: 1997x1018 and
-2402x1093) and verify the PNG keeps the source dimensions.
+Copy the export as-is with its `.jpg` extension (2026-11: 1997x1018 and
+2403x1093); the report includes the `.jpg` directly, so do not convert to
+PNG and do not keep both files for the same figure.
 
 Both are wider than 2:1, so an upright `width=\textwidth` shrinks the class
 text to unreadable size; rotate them like the sequence diagrams with
