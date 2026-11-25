@@ -505,6 +505,7 @@ Kịch bản ngoại lệ &
 \end{table}
 
 \subsection{Biểu đồ lớp toàn hệ thống}
+\label{sec:system-class-diagram}
 
 \subsubsection{Xác định các lớp của hệ thống}
 
@@ -517,6 +518,8 @@ Người dùng (User), Vai trò (Role), Liên kết người dùng - vai trò (U
 Hai lớp Người dùng (User) và Vai trò (Role) biểu diễn tác nhân và quyền truy cập của hệ thống; lớp UserRole biểu diễn liên kết nhiều-nhiều giữa hai lớp này.
 
 Trong mô hình toàn hệ thống, kết quả thực thi từng bước và kết quả chấm từng bước được mô hình hóa chung thành lớp StepResult; bản ghi thực thi riêng của dịch vụ thực thi được trình bày ở mục \ref{sec:class-design-services}.
+
+Biểu đồ toàn hệ thống biểu diễn \textnormal{AiExplanation} như lớp nghiệp vụ kết nối với kết quả bài nộp. Ở mức chi tiết của dịch vụ trợ lý AI, lớp này được bổ sung các thực thể hội thoại và điều phối tác nhân gồm \textnormal{Conversation}, \textnormal{Message}, \textnormal{ConversationSummary}, \textnormal{Task}, \textnormal{Run}, \textnormal{RunEvent}, \textnormal{Operation}, \textnormal{PendingAction}, \textnormal{ToolExecution} và \textnormal{StoredToolResult}; các thực thể này được thể hiện đầy đủ ở Hình~\ref{fig:class-ai-service}. Các quan hệ dưới đây mở rộng phân tích của mô hình toàn hệ thống cho miền dữ liệu chi tiết này.
 
 \subsubsection{Xét quan hệ số lượng giữa các lớp}
 
@@ -538,6 +541,10 @@ Xác định quan hệ số lượng giữa các lớp dựa trên số lượng
     \item Một bài nộp có thể sinh ra nhiều kết quả chấm, bao gồm kết quả theo từng câu và kết quả toàn bài, nhưng mỗi kết quả chỉ thuộc về đúng một bài nộp. Vì vậy quan hệ giữa Submission và Result là 1 - n.
     \item Một kết quả chấm có nhiều kết quả bước, nhưng mỗi kết quả bước chỉ thuộc về đúng một kết quả chấm. Vì vậy quan hệ giữa Result và StepResult là 1 - n.
     \item Một bài nộp có thể có nhiều giải thích của trợ lý AI theo các danh mục khác nhau, nhưng trong mỗi danh mục chỉ có tối đa một giải thích đang hiệu lực. Vì vậy quan hệ tổng quát giữa Submission và AiExplanation là 1 - n, còn theo từng danh mục là 1 - 0..1.
+    \item Trong miền trợ lý AI, một Conversation có nhiều Message, Run, Task, ConversationSummary và StoredToolResult; mỗi bản ghi thuộc về một Conversation.
+    \item Một Run có nhiều RunEvent, ToolExecution và StoredToolResult; Run cũng có thể gắn với nhiều PendingAction. Mỗi sự kiện, lần gọi công cụ và kết quả đã lưu thuộc một Run; runId của PendingAction có thể để trống.
+    \item Một Task có thể liên kết với nhiều Operation và PendingAction. Các khóa taskId tương ứng được phép để trống; nếu có giá trị thì mỗi Operation hoặc PendingAction chỉ gắn với một Task.
+    \item Một Conversation có thể chỉ định tối đa một Task hiện hành qua activeTaskId, đồng thời lưu nhiều Task lịch sử. ConversationSummary.throughMessageId, Message.runId và Run.parentRunId ghi lại tham chiếu logic tới Message hoặc Run liên quan.
 \end{itemize}
 
 Bên cạnh các quan hệ 1 - n, hệ thống còn có các quan hệ n - n cần được tách thành các quan hệ 1 - n thông qua lớp trung gian. Các quan hệ n - n được xác định như sau:
@@ -547,6 +554,8 @@ Bên cạnh các quan hệ 1 - n, hệ thống còn có các quan hệ n - n c�
     \item Một sinh viên trong lớp có điểm ở nhiều thành phần điểm và một thành phần điểm áp dụng cho nhiều sinh viên, do đó quan hệ giữa ClassStudent và ScoreComponent là n - n.
     \item Một bài tập được giao cho nhiều sinh viên và một sinh viên nhận nhiều bài tập, do đó quan hệ giữa Assignment và ClassStudent là n - n. Quan hệ này được biểu diễn thông qua lớp Submission.
 \end{itemize}
+
+Trong các thực thể của dịch vụ trợ lý AI không có quan hệ nhiều - nhiều. Các trường ownerId, studentId, callerEmail và callerRoles lưu định danh hoặc phạm vi quyền của người gọi, không tạo quan hệ thực thể với User trong cơ sở dữ liệu AI service.
 
 Việc tách các quan hệ n - n được thực hiện bằng cách xác định một lớp trung gian sao cho mỗi phía của quan hệ ban đầu có quan hệ 1 - n với lớp trung gian. Sau đó, cần kiểm tra xem lớp trung gian có thỏa mãn điều kiện của lớp kết hợp hay không.
 
@@ -571,17 +580,18 @@ Các quan hệ thành phần trong hệ thống gồm:
     \item TestPlan và TestStep là quan hệ thành phần vì bước chấm chỉ tồn tại trong một câu.
     \item Assignment và Submission là quan hệ thành phần vì bài nộp chỉ tồn tại trong phạm vi một bài tập.
     \item Submission và Result là quan hệ thành phần vì kết quả chấm chỉ tồn tại khi có bài nộp tương ứng.
-    \item Submission và AiExplanation là quan hệ thành phần vì giải thích của trợ lý AI gắn với một bài nộp cụ thể.
     \item GradingJob và GradingSaga là quan hệ thành phần vì phiên chấm thuộc một công việc chấm.
     \item GradingSaga và GradingSagaStep là quan hệ thành phần vì bước chấm thuộc một phiên chấm.
     \item GradingJob và GradingLog là quan hệ thành phần vì nhật ký chấm thuộc một công việc chấm.
     \item Result và StepResult là quan hệ thành phần vì kết quả bước thuộc một kết quả chấm.
+    \item Trong dịch vụ trợ lý AI, Conversation là thành phần sở hữu các Message, Run, Task, ConversationSummary và StoredToolResult; Run sở hữu các RunEvent, ToolExecution, PendingAction và StoredToolResult; Task sở hữu các PendingAction. Các khóa ngoại trong migration dùng ON DELETE CASCADE cho những quan hệ này.
 \end{itemize}
 
 Quan hệ aggregation trong hệ thống gồm:
 
 \begin{itemize}[leftmargin=*, nosep]
     \item CourseClass và ClassStudent là quan hệ aggregation vì sinh viên thuộc một lớp học nhưng không phải là thành phần bị xóa theo lớp. Thông tin sinh viên vẫn có ý nghĩa độc lập với lớp học.
+    \item Task và Operation là quan hệ aggregation: taskId có thể để trống và khóa ngoại dùng ON DELETE SET NULL. Khi Task bị xóa, Operation vẫn được lưu để giữ payload, khóa chống thực thi lặp và trạng thái xử lý.
 \end{itemize}
 
 Các quan hệ liên kết trong hệ thống gồm:
@@ -590,6 +600,7 @@ Các quan hệ liên kết trong hệ thống gồm:
     \item User và CourseClass là quan hệ liên kết vì giảng viên sở hữu lớp học nhưng không phải là thành phần của lớp.
     \item ClassStudent và Submission là quan hệ liên kết vì bài nộp gắn với sinh viên nhưng không phải là thành phần của sinh viên.
     \item Submission và GradingJob là quan hệ liên kết 1 - 1 vì công việc chấm là bản ghi xử lý riêng, không phải thành phần của bài nộp.
+    \item AiExplanation liên kết logic với Submission và Student qua submissionId, studentId nhưng không có khóa ngoại tới cơ sở dữ liệu của service khác. Các trường Conversation.activeTaskId, Message.runId, ConversationSummary.throughMessageId và Run.parentRunId cũng là tham chiếu UUID không được khai báo thành khóa ngoại trong migration.
 \end{itemize}
 
 Hai lớp kết hợp trong mô hình gồm:
@@ -599,7 +610,7 @@ Hai lớp kết hợp trong mô hình gồm:
     \item StudentScore là lớp kết hợp giữa ClassStudent và ScoreComponent, dùng để biểu diễn quan hệ n - n kèm điểm của sinh viên.
 \end{itemize}
 
-Như vậy, mô hình chỉ còn hai lớp kết hợp là UserRole và StudentScore. ClassStudent là lớp thường vì có định danh riêng và các thuộc tính mô tả sinh viên. Submission cũng là lớp thường vì có định danh riêng, có nhiều bản ghi trên một cặp Assignment-ClassStudent và có thuộc tính tệp nộp, trạng thái chấm, cờ latest.
+Như vậy, mô hình lớp kết hợp toàn hệ thống gồm UserRole và StudentScore. ClassStudent là lớp thường vì có định danh riêng và các thuộc tính mô tả sinh viên. Submission cũng là lớp thường vì có định danh riêng, có nhiều bản ghi trên một cặp Assignment-ClassStudent và có thuộc tính tệp nộp, trạng thái chấm, cờ latest. Miền trợ lý AI không bổ sung lớp kết hợp; các liên kết nội bộ của miền này là một - nhiều hoặc tham chiếu một UUID.
 
 \subsubsection{Biểu đồ lớp thực thể pha phân tích toàn hệ thống }
 
@@ -1083,46 +1094,26 @@ Hình~\ref{fig:ai-assistant-architecture} mô tả kiến trúc bên trong dịc
 
 Người dùng gửi yêu cầu từ giao diện web qua API Gateway. Gateway xác thực JWT, kiểm tra vai trò và chuyển tiếp thông tin người dùng trong các header tin cậy; bộ lọc của dịch vụ kiểm tra thông tin này trước khi chuyển yêu cầu tới các controller. Với chức năng trò chuyện, \textnormal{ConversationService} quản lý hội thoại và tạo phiên chạy ở trạng thái chờ. \textnormal{RunWorker} xử lý phiên ở nền, cập nhật trạng thái \textnormal{Run}; \textnormal{SseBroadcaster} phát sự kiện tiến độ để giao diện theo dõi và có thể truy vấn lại trạng thái khi cần. Trước mỗi lượt suy luận, \textnormal{AgentOrchestrator} phối hợp \textnormal{ContextBuilder}, \textnormal{ContextPreflight} và \textnormal{GuardChecker} để chuẩn bị, kiểm tra ngữ cảnh, sau đó điều phối \textnormal{AgentRuntime}.
 
-Agent trao đổi với mô hình qua \textnormal{LlmClient} và API tương thích OpenAI; cấu hình hiện dùng mô hình \textnormal{deepseek-v4-flash}. Khi cần dữ liệu nghiệp vụ, agent chọn công cụ phù hợp; \textnormal{ToolExecutor} kiểm tra quyền rồi gọi các dịch vụ Quản lý lớp học, Nộp bài hoặc Kết quả chấm qua REST. Với thao tác nhạy cảm, dịch vụ ghi nhận \textnormal{Operation}/\textnormal{PendingAction}, chuyển phiên sang trạng thái chờ xác nhận và chỉ tiếp tục khi người dùng phản hồi.
+Agent trao đổi với mô hình qua \textnormal{LlmClient} và API tương thích OpenAI; tên mô hình và nhà cung cấp được cấu hình bên ngoài mã nguồn. Khi cần dữ liệu nghiệp vụ, agent chọn công cụ phù hợp; \textnormal{ToolExecutor} kiểm tra quyền rồi gọi các dịch vụ Quản lý lớp học, Nộp bài hoặc Kết quả chấm qua REST. Với thao tác nhạy cảm, dịch vụ ghi nhận \textnormal{Operation}/\textnormal{PendingAction}, chuyển phiên sang trạng thái chờ xác nhận và chỉ tiếp tục khi người dùng phản hồi.
 
 Luồng giải thích kết quả đi qua \textnormal{AiExplanationController} và \textnormal{AiExplanationService}. Dịch vụ lấy thông tin bài nộp, điểm và kết quả từng bước từ các dịch vụ liên quan, tạo prompt yêu cầu đầu ra JSON bằng \textnormal{PromptBuilder}, gọi mô hình, kiểm tra kết quả rồi lưu giải thích hợp lệ để tái sử dụng. Các hội thoại, phiên chạy, sự kiện, lần gọi công cụ, thao tác đang chờ và giải thích được lưu trong PostgreSQL riêng của dịch vụ qua Spring Data JPA; dịch vụ không truy cập trực tiếp cơ sở dữ liệu của các dịch vụ khác.
 
-\subsubsection{Phân chia các nhóm thực thể nghiệp vụ}
+\subsubsection{Tổng quan luồng}
 
-Về mặt nghiệp vụ, các thực thể trong dịch vụ trợ lý AI được phân định thành ba nhóm chức năng chính cùng một thực thể độc lập phục vụ giải thích kết quả:
-\begin{itemize}[leftmargin=*, nosep]
-    \item Nhóm hội thoại: gồm \textnormal{Conversation} và \textnormal{Message} biểu diễn cuộc hội thoại cùng các lượt phát biểu tuần tự; \textnormal{ConversationSummary} lưu phần tóm tắt theo hội thoại và vai trò người dùng nhằm rút gọn ngữ cảnh dài khi gọi mô hình.
-    \item Nhóm xử lý yêu cầu: gồm \textnormal{Task}, \textnormal{Run} và \textnormal{RunEvent}. Trong đó, tác vụ giữ mục tiêu hội thoại, phiên chạy ghi nhận việc xử lý một yêu cầu, còn các sự kiện lưu diễn biến tuần tự để giao diện người dùng theo dõi tiến trình.
-    \item Nhóm công cụ: gồm \textnormal{ToolExecution}, \textnormal{Operation}, \textnormal{PendingAction} và \textnormal{StoredToolResult}, lần lượt ghi nhận lần gọi công cụ, thao tác nghiệp vụ có trạng thái, yêu cầu chờ người dùng xác nhận và kết quả công cụ được lưu trữ.
-    \item Thực thể \textnormal{AiExplanation}: là dữ liệu riêng gắn với bài nộp của sinh viên, phục vụ phân tích và giải thích chi tiết kết quả chấm mà không phụ thuộc vào lịch sử trò chuyện.
-\end{itemize}
+Luồng trò chuyện bắt đầu khi client gửi nội dung tới API tạo tin nhắn. \textnormal{ChatController} chuyển yêu cầu cho \textnormal{ConversationService}, nơi kiểm tra quyền sở hữu hội thoại và mã yêu cầu chống gửi lặp, lưu tin nhắn người dùng cùng một \textnormal{Run} ở trạng thái \textnormal{QUEUED}. API trả về mã phiên chạy để client không phải chờ mô hình xử lý xong. Sau khi giao dịch tạo dữ liệu hoàn tất, \textnormal{RunWorker} tiếp nhận phiên chạy ở nền và gọi bộ điều phối tác nhân.
 
-Cách phân định này phân tách rõ ràng trách nhiệm giữa nội dung trao đổi, trạng thái thực thi và dữ liệu giải thích, bảo đảm tính độc lập dữ liệu và khả năng khôi phục trạng thái khi gặp sự cố.
+Trong quá trình xử lý, \textnormal{AgentOrchestrator} xây dựng ngữ cảnh hội thoại, kiểm tra điều kiện trước khi gọi mô hình, chọn công cụ phù hợp với vai trò người dùng và điều phối các lượt gọi mô hình/công cụ. Công cụ truy vấn dữ liệu lấy thông tin từ các dịch vụ nghiệp vụ qua API. Nếu yêu cầu làm thay đổi dữ liệu, dịch vụ tạo \textnormal{Operation} và \textnormal{PendingAction}; phiên chạy đợi xác nhận của người dùng trước khi tiếp tục hoặc kết thúc. Kết quả cuối cùng được lưu vào hội thoại.
 
-\subsubsection{Quan hệ số lượng và quan hệ đối tượng giữa các thực thể}
-
-Dựa trên cấu trúc biểu đồ thiết kế và các ràng buộc toàn vẹn dữ liệu, các quan hệ số lượng (bội số) trong dịch vụ được xác định như sau:
-\begin{itemize}[leftmargin=*, nosep]
-    \item Một \textnormal{Conversation} có thể liên kết với nhiều \textnormal{Message}, \textnormal{Run}, \textnormal{Task}, \textnormal{ConversationSummary} và \textnormal{StoredToolResult}; mỗi bản ghi trong các nhóm này thuộc về duy nhất một hội thoại thông qua \textnormal{conversationId}.
-    \item Một \textnormal{Run} có thể phát sinh nhiều \textnormal{RunEvent}, \textnormal{ToolExecution} và \textnormal{StoredToolResult}; mỗi sự kiện, lần gọi công cụ hoặc kết quả đã lưu đều gắn liền với một phiên chạy cụ thể. Ngoài ra, một \textnormal{Run} có thể liên kết với nhiều \textnormal{PendingAction}.
-    \item Một \textnormal{Task} có thể chứa nhiều \textnormal{Operation} và \textnormal{PendingAction}. Khóa \textnormal{taskId} ở hai thực thể này có thể để trống khi hành động không gắn với tác vụ cụ thể nào.
-    \item Ở phạm vi liên dịch vụ, một bài nộp có thể có nhiều \textnormal{AiExplanation} tương ứng với các danh mục giải thích khác nhau; chỉ mục duy nhất trên cặp \textnormal{(submissionId, category)} bảo đảm mỗi danh mục chỉ có tối đa một bản ghi đang hiệu lực.
-\end{itemize}
-
-Về quan hệ đối tượng và vòng đời dữ liệu:
-\begin{itemize}[leftmargin=*, nosep]
-    \item Quan hệ thành phần (composition): áp dụng giữa \textnormal{Conversation} với các thực thể con (\textnormal{Message}, \textnormal{Run}, \textnormal{Task}, \textnormal{ConversationSummary}), giữa \textnormal{Run} với \textnormal{RunEvent}, \textnormal{ToolExecution}, \textnormal{PendingAction}, và giữa \textnormal{Task} với \textnormal{PendingAction}. Các bản ghi con phụ thuộc hoàn toàn vào vòng đời của đối tượng cha và bị xóa tự động (ràng buộc \textnormal{ON DELETE CASCADE}) khi đối tượng cha bị xóa.
-    \item Quan hệ tập hợp (aggregation): áp dụng giữa \textnormal{Task} và \textnormal{Operation}. Khi tác vụ bị xóa, khóa liên kết \textnormal{taskId} trong \textnormal{Operation} được đặt về rỗng (\textnormal{ON DELETE SET NULL}); bản ghi thao tác cùng tham số và trạng thái xử lý vẫn được lưu giữ độc lập để phục vụ kiểm toán và chống lặp.
-    \item Tham chiếu logic qua định danh: thực thể \textnormal{AiExplanation} chỉ liên kết logic với bài nộp thông qua mã \textnormal{submissionId} và \textnormal{studentId}. Dịch vụ không tạo ràng buộc khóa ngoại cứng tới cơ sở dữ liệu của dịch vụ khác, tuân thủ nguyên tắc độc lập dữ liệu trong kiến trúc vi dịch vụ.
-\end{itemize}
+Trong lúc Run được xử lý, client đăng ký luồng Server-Sent Events (SSE) để nhận trạng thái và các sự kiện tiến độ; client cũng có thể yêu cầu phát lại sự kiện từ số thứ tự đã nhận gần nhất nếu kết nối bị gián đoạn. Luồng giải thích kết quả được gọi riêng qua \textnormal{AiExplanationController} và \textnormal{AiExplanationService}: dịch vụ kiểm tra quyền truy cập bài nộp, lấy dữ liệu điểm và kết quả từng bước cùng thông tin bài tập từ các dịch vụ liên quan, rồi dùng \textnormal{PromptBuilder} và client mô hình để tạo đầu ra có cấu trúc. Kết quả được kiểm tra trước khi lưu để tái sử dụng; khi dữ liệu đầu vào hoặc phản hồi mô hình không đáp ứng điều kiện, dịch vụ có thể trả về kết quả dự phòng mà không lưu thành bản giải thích hợp lệ.
 
 \subsubsection{Quản lý trạng thái và lưu vết xử lý}
 
-Để xử lý các tương tác thời gian thực với mô hình ngôn ngữ lớn mà không làm nghẽn tài nguyên hệ thống, dịch vụ Trợ lý AI áp dụng các cơ chế quản lý trạng thái sau:
+Để quản lý các yêu cầu chạy nền và cho phép khôi phục tiến trình khi client mất kết nối, dịch vụ Trợ lý AI lưu trạng thái của phiên chạy, thao tác nghiệp vụ và từng sự kiện vào cơ sở dữ liệu:
 \begin{itemize}[leftmargin=*, nosep]
-    \item Quản lý vòng đời phiên chạy: thực thể \textnormal{Run} quản lý trạng thái xử lý thông qua kiểu liệt kê \textnormal{RunStatus}, bao gồm các trạng thái \textnormal{QUEUED} (chờ xử lý), \textnormal{RUNNING} (đang xử lý), \textnormal{REQUIRES\_ACTION} (chờ người dùng xác nhận), \textnormal{SUCCEEDED} (hoàn thành) và \textnormal{FAILED} (thất bại).
-    \item Truyền phát sự kiện tuần tự: các sự kiện phát sinh trong phiên chạy được lưu vào \textnormal{RunEvent} với số thứ tự tăng dần (\textnormal{sequenceNo}), cho phép truyền phát dữ liệu theo thời gian thực về phía giao diện qua giao thức Server-Sent Events (SSE) và hỗ trợ khôi phục luồng sự kiện khi kết nối mạng bị gián đoạn.
-    \item Kiểm soát an toàn và chống thực thi lặp: các thao tác làm thay đổi dữ liệu được bao đóng trong \textnormal{Operation} với khóa chống lặp (\textnormal{idempotencyKey}) và trạng thái thực thi rõ ràng. Đối với các hành động nhạy cảm, hệ thống sử dụng \textnormal{PendingAction} để tạm dừng quy trình và chờ người dùng xác nhận trên giao diện trước khi mô hình tiếp tục suy luận.
+    \item Vòng đời \textnormal{Run} được biểu diễn bằng \textnormal{RunStatus} với các trạng thái \textnormal{QUEUED}, \textnormal{RUNNING}, \textnormal{WAITING\_USER}, \textnormal{WAITING\_APPROVAL}, \textnormal{SUCCEEDED}, \textnormal{FAILED}, \textnormal{CANCELLED} và \textnormal{LIMIT\_REACHED}. Trạng thái chờ phân biệt việc agent cần thêm thông tin với việc cần người dùng phê duyệt thao tác; các trạng thái kết thúc ghi nhận hoàn thành, lỗi, hủy hoặc chạm giới hạn xử lý.
+    \item Mỗi diễn biến được lưu thành một \textnormal{RunEvent} có số \textnormal{sequence} tăng dần trong phạm vi phiên chạy. Dịch vụ cấp số thứ tự nguyên tử, áp dụng ràng buộc duy nhất trên cặp \textnormal{(runId, sequence)} và phát sự kiện sau khi giao dịch ghi dữ liệu hoàn tất. Vì vậy SSE có thể gửi sự kiện mới và phát lại các sự kiện sau số thứ tự cuối client đã nhận.
+    \item \textnormal{Operation} lưu trạng thái thao tác gồm \textnormal{PENDING}, \textnormal{IN\_PROGRESS}, \textnormal{SUCCEEDED}, \textnormal{FAILED} và \textnormal{RECONCILING}, cùng khóa \textnormal{idempotencyKey} để hạn chế thực thi lặp. \textnormal{PendingAction} lưu yêu cầu chờ phản hồi/phê duyệt và cho phép tạm dừng Run; khi người dùng phản hồi, điều phối viên tiếp tục hoặc kết thúc luồng theo kết quả xác nhận.
+    \item Trước khi lưu và phát dữ liệu sự kiện, dịch vụ loại bỏ hoặc che các giá trị nhạy cảm như token, mật khẩu, khóa API và thông tin xác thực. Việc lưu bền vững trạng thái và sự kiện giúp truy vấn lại tiến trình sau khi kết nối SSE bị ngắt.
 \end{itemize}
 
 \end{document}
