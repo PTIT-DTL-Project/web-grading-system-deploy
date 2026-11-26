@@ -21,10 +21,21 @@ Thư mục lưu trữ: `docs/api/docs/<service>/<controller-name>.md`
 - [x] `assignment-service.md` — **AssignmentService** (tạo/sửa/publish, bất biến class_id, map request↔entity↔response, ảnh hưởng publish tới điểm EXERCISE)
 - [x] `assignment-grading-service.md` — **AssignmentGradingService** (màn chấm của giảng viên: owner check, gọi result/submission service, làm giàu roster, tổng hợp sinh viên chưa nộp, phân trang)
 
-### executor-service (2 controller + 1 service quan trọng)
+### executor-service (2 controller + 27 lớp tầng service)
 - [x] `dry-run-controller.md` — DryRunController (chấm thử, không side effect)
 - [x] `reset-grading-job-controller.md` — ResetGradingJobController + ResetGradingJobService (reset job, chạy lại chấm điểm)
 - [x] `grading-orchestrator.md` — GradingOrchestrator (luồng chấm điểm FETCHING→BUILDING→RUNNING→DONE/FAILED, công thức điểm, biến thay thế, auto_inject_headers, DB sandbox, dry-run)
+- [x] Tầng service — một file mỗi class, gom theo package:
+  `step/` → `step-executor.md`, `step-registry.md`, `step-context.md`, `http-step-executor.md`,
+  `db-query-executor.md`, `db-schema-check-executor.md`, `db-migration-executor.md`,
+  `db-step-results.md`;
+  `db/` → `db-dialect.md`, `db-dialect-registry.md`, `db-connection-helper.md`,
+  `db-sandbox-service.md`, `mysql-dialect.md`, `postgres-dialect.md`;
+  `scoring/` → `assertion-engine.md`, `evidence-redactor.md`, `score-calculator.md`,
+  `variable-context.md`;
+  `docker/` → `docker-compose-patcher.md`, `docker-compose-runner.md`, `stale-job-reaper.md`;
+  `infra/` → `artifact-service.md`, `http-log-service.md`, `port-allocator.md`;
+  `grading/` → `saga-tracker.md`, `reset-grading-job-service.md` (GradingOrchestrator đã có file riêng ở trên).
 
 ### result-service (2 controller + 2 service)
 - [x] `result-controller.md` — ResultController (xem kết quả theo submission, xem kết quả bài tập của mình)

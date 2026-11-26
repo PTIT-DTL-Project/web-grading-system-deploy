@@ -473,6 +473,24 @@ belong to Chapter 2 (analysis/design). Generic pattern terms
 (sinh viên/bài nộp) may stay in rationale sentences. Figures showing
 project actors move with their paragraphs to Chapter 2.
 
+## Mục 1.6 Lưu trữ đối tượng (Chương 1)
+
+Mục này so sánh ba tầng lựa chọn, mỗi tầng một khối lập luận riêng:
+(1) object storage so với filesystem của server ứng dụng (3 lý do,
+đã có sẵn); (2) object storage so với file storage server (NFS/FTP)
+gồm 4 điểm enumerate + Bảng `tab:object-vs-file-storage` (booktabs,
+caption dưới, label ở mục lý thuyết được phép); (3) RustFS so với
+MinIO và Ceph trong itemize. Lập luận MinIO phải dẫn
+`minioadminui` (release breaking 2025-05-24 gỡ admin UI khỏi
+Community Edition) và nói giấy phép Apache 2.0 vs AGPL — kiểm chứng
+trước khi sửa. Các thuật ngữ `File storage`, `NFS`, `FTP`, `Ceph`,
+`Apache 2.0`, `AGPL` đã có dòng trong danh mục; khi thêm thuật ngữ
+mới vào mục này, khai báo luôn trong `0_5_Danh_muc_viet_tat.tex`.
+Danh mục longtable dài 4 trang (xvi–xix) sau lần bổ sung này; khi
+thêm dòng, kiểm tra trang cuối không bị một dòng mồ côi (chỉ 1-2
+dòng tràn sang trang mới là xấu, trang cuối 60% đầy là chấp nhận
+được).
+
 ## Whole-system analysis model matches the exported diagram
 
 Chapter 2's whole-system class diagram (2.1.4) uses one class per

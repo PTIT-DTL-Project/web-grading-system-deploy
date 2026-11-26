@@ -1,7 +1,7 @@
 PWD /home/duongvct/Documents/workspace/PTIT/web-grading-system-deploy/report_datn
 INPUT /usr/share/texmf-dist/web2c/texmf.cnf
 INPUT /var/lib/texmf/web2c/pdftex/pdflatex.fmt
-INPUT BTL.tex
+INPUT /home/duongvct/Documents/workspace/PTIT/web-grading-system-deploy/report_datn/BTL.tex
 OUTPUT build/BTL.log
 INPUT /usr/share/texmf-dist/tex/latex/base/report.cls
 INPUT /usr/share/texmf-dist/tex/latex/base/report.cls

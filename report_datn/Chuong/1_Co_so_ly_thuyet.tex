@@ -136,6 +136,35 @@ Việc sử dụng một máy chủ lưu trữ đối tượng chuyên dụng (o
     \item Object storage cung cấp cơ chế sao lưu, nhân bản và truy cập qua giao thức chuẩn (S3) mà filesystem truyền thống không có, giúp hệ thống đáng tin cậy hơn và dễ phục hồi dữ liệu.
 \end{enumerate}
 
+Ngoài filesystem của server ứng dụng, một phương án hạ tầng khác thường được nhắc tới là dựng riêng một file storage server: máy chủ chia sẻ hoặc truyền tệp qua giao thức mạng truyền thống như NFS hoặc FTP. Cách này cũng tách việc lưu trữ khỏi dịch vụ ứng dụng, nhưng khác object storage ở những điểm quyết định:
+\begin{enumerate}
+    \item Truy cập: file storage server phục vụ dữ liệu theo cấu trúc cây thư mục và thường phải mount volume hoặc dùng client riêng cho từng giao thức; object storage phục vụ qua HTTP REST chuẩn S3, mọi dịch vụ chỉ cần địa chỉ endpoint và cặp khóa truy cập là gọi được bằng SDK có sẵn.
+    \item Mở rộng: file storage server mở rộng chủ yếu theo chiều dọc (nâng ổ đĩa, nâng máy chủ) và khó chia sẻ giữa nhiều máy; object storage mở rộng theo chiều ngang bằng cách thêm node.
+    \item Bảo mật truy cập: phân quyền trên file storage server gắn với thư mục và tài khoản hệ thống; object storage quản quyền theo bucket, bucket policy và hỗ trợ sẵn presigned URL với thời hạn tự hết hạn.
+    \item Tích hợp sự kiện: object storage phát webhook khi đối tượng được tạo hoặc xóa, còn file storage server không có cơ chế này.
+\end{enumerate}
+
+Bảng~\ref{tab:object-vs-file-storage} tóm tắt sự khác biệt giữa hai phương án.
+
+\begin{table}[ht]
+\centering
+\begin{tabularx}{\textwidth}{@{}p{3.4cm}XX@{}}
+\toprule
+Tiêu chí & Object storage & File storage server \\
+\midrule
+Truy cập & HTTP REST chuẩn S3 qua SDK & NFS hoặc FTP, cần mount hoặc client riêng \\
+Cấu trúc dữ liệu & Đối tượng kèm metadata, không gian tên phẳng & Cây thư mục của hệ thống tệp \\
+Mở rộng & Thêm node theo chiều ngang & Nâng cấp máy chủ theo chiều dọc \\
+Phân quyền & Bucket policy và presigned URL có thời hạn & Quyền thư mục và tài khoản hệ thống \\
+Thông báo sự kiện & Webhook khi đối tượng thay đổi & Không có sẵn \\
+\bottomrule
+\end{tabularx}
+\caption{So sánh object storage và file storage server.}
+\label{tab:object-vs-file-storage}
+\end{table}
+
+Cả bốn điểm trên đều nằm đúng nơi quy trình nộp và chấm bài cần: tải lên trực tiếp bằng presigned URL, phân quyền theo bucket và webhook báo hoàn tất để khởi động chấm. Vì vậy hệ thống chọn object storage thay vì file storage server.
+
 \subsection{RustFS và presigned URL}
 \label{section:1.6.2}
 
@@ -148,6 +177,12 @@ Tiêu chí lựa chọn RustFS gồm:
     \item Hiệu năng cao nhờ được viết bằng Rust.
     \item Mã nguồn mở, phù hợp với định hướng của đồ án~\cite{rustfsgithub}.
 \end{enumerate}
+
+Việc chọn RustFS cũng được cân nhắc với các lựa chọn thay thế phổ biến:
+\begin{itemize}
+    \item So với MinIO: MinIO là hệ thống lưu trữ đối tượng tương thích S3 phổ biến nhất và cũng là nguồn cảm hứng trực tiếp cho giao diện của RustFS. Tuy nhiên, từ phiên bản phát hành tháng 5 năm 2025, bản Community Edition của MinIO bị gỡ phần lớn tính năng quản trị trên giao diện web như quản lý người dùng và phân quyền bucket, các tính năng này chỉ còn trong bản thương mại~\cite{minioadminui}; giấy phép của MinIO cũng là AGPL, đặt thêm ràng buộc khi cung cấp phần mềm dưới dạng dịch vụ. RustFS dùng giấy phép Apache 2.0 ít ràng buộc hơn và giữ đầy đủ tính năng quản trị trong bản mã nguồn mở, phù hợp với một đồ án tự vận hành trên cụm riêng.
+    \item So với Ceph: Ceph là nền tảng lưu trữ phân tán đầy đủ tính năng nhưng nặng về tài nguyên và phức tạp trong vận hành, vượt quá nhu cầu của một cụm k3s một node. RustFS đóng gói thành một file thực thi duy nhất, nhẹ, và vẫn đáp ứng các nhóm API S3 mà hệ thống dùng: quản lý bucket, upload đa phần (multipart), presigned URL và thông báo sự kiện.
+\end{itemize}
 
 Một cơ chế quan trọng được áp dụng là presigned URL: server tạo một đường dẫn truy cập tạm thời (kèm chữ ký) cho phép sinh viên upload/download trực tiếp bài nộp vào object storage mà không cần đi qua server ứng dụng~\cite{awss3docs}. Cơ chế này giúp:
 \begin{itemize}
