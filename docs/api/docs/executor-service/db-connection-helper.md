@@ -81,3 +81,48 @@ nhưng không cần mở connection.
 - `DbDialectRegistry` — xem `db-dialect-registry.md`.
 - Ba executor DB — xem `db-query-executor.md`, `db-schema-check-executor.md`, `db-migration-executor.md`.
 - `DbStepResults.message` phân biệt `DbConnectionException`/`DbStepTimeoutException` với lỗi SQL thường.
+
+---
+
+## Chi tiết từng hàm
+
+### `DbConnectionHelper(...)` (constructor)
+
+Nhận `DbDialectRegistry`; hằng số lớp: `CONNECT_RETRIES = 5`, `CONNECT_RETRY_MS = 1000`,
+`LOGIN_TIMEOUT_SECONDS = 5`.
+
+### `DbDialect resolve(String key)`
+
+Uỷ quyền thẳng cho `dialectRegistry.resolve(key)`; dùng cho `DbSchemaCheckExecutor` khi cần
+SQL của dialect mà không mở connection. Không cache thêm.
+
+### `<T> T withConnection(JsonNode config, Integer hostPort, int timeoutMs, ConnectionAction<T> action)`
+
+| Khía cạnh | Nội dung |
+|---|---|
+| Input | `config` cấp bước (có block `connection`), `hostPort` đã cấp cho DB, budget bước, lambda thao tác |
+| Output | giá trị `action` trả về |
+| Ném | `SQLException` (action lỗi), `DbConnectionException` (hết 5 lần thử), `DbStepTimeoutException` (hết budget) |
+
+Trình tự:
+
+1. Đọc `db_type` (mặc định `postgres`), `database`, `username`, `password` từ `config.connection`.
+2. `dialect.jdbcUrl(hostPort, database)` — dialect tự `requireSafeDatabase(database)`.
+3. Ghi nhớ `DriverManager.getLoginTimeout()`, đặt 5 giây; khôi phục trong `finally` để
+   không rò cấu hình toàn JVM sang job khác.
+4. Vòng tối đa 5 lần: trước mỗi lần kiểm tra `now - start > timeoutMs` → `DbStepTimeoutException`
+   (budget cạn thì báo timeout, **không** báo "sai db_type" gây nhiễu).
+   - `getConnection` thành công → thoát vòng.
+   - `SQLException` → lưu `last`; nếu còn lượt **và** `elapsed + 1000 <= timeoutMs` thì log
+     warn rồi `Thread.sleep(1000)`; interrupt → set interrupt, ném `SQLException`.
+5. Sau vòng, `conn == null` → `DbConnectionException` kèm prefix/suffix dialect và message
+   lỗi cuối — người đọc biết ngay nên kiểm tra `connection.db_type` hay DB chưa lên.
+6. `action.apply(conn)` trong try, `conn.close()` trong `finally` — kể cả action ném, kết nối
+   vẫn đóng.
+
+### `interface ConnectionAction<T>`
+
+`@FunctionalInterface` với `T apply(Connection conn) throws SQLException` — cho phép lambda
+làm việc với `Connection` mà vẫn khai báo checked exception, nhờ đó helper giữ được
+`throws SQLException` và caller (`DbQueryExecutor`, `DbMigrationExecutor`, `DbSandboxService`)
+đóng gói thành lỗi bước.

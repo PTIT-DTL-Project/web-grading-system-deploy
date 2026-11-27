@@ -345,3 +345,10 @@ is the only grading trigger. The FE already ships that upload UI
 step-by-step flow, edge cases, and links to neighbours. `GradingOrchestrator` has its own
 `grading-orchestrator.md`. The list is indexed in `docs/api/docs/PLAN.md`; when a service
 class gains/loses a method or changes behaviour, update its file in the same task.
+
+Each file must carry a per-function section (`## Chi tiết từng hàm`, or an appendix
+inventory for very large classes) that explains *every* function —
+including private helpers and record methods — with purpose, input/output, step-by-step
+behaviour and failure path. `http-step-executor.md` is the reference for depth (11 functions,
+one subsection each); `grading-orchestrator.md` uses a full inventory table plus pointers
+because of its size.

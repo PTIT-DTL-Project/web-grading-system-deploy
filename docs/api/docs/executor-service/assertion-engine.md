@@ -109,3 +109,124 @@ tham chiếu biến đã extract (ví dụ `${submission_id}`). Các kind khác 
 - `HttpStepExecutor` gọi `evaluateHttp`, gộp detail vào `GradingStepResult`.
 - `EvidenceRedactor` che `expected/actual` trước khi lưu/gửi.
 - `VariableContext.substitute` cấp biến cho `field_equals`/`json_path_equals`.
+
+---
+
+## Chi tiết từng hàm
+
+### `List<AssertionDetail> evaluateHttp(int actualStatus, String actualBody, JsonNode config, VariableContext vars)`
+
+| Khía cạnh | Nội dung |
+|---|---|
+| Input | status thực, body thực (có thể null), config bước, context biến |
+| Output | danh sách `AssertionDetail` theo thứ tự: `expected_status` trước, rồi `assertions[]` |
+| Config null | trả list rỗng (coi như không có assertion) |
+
+1. Nếu `config.expected_status` có giá trị → tạo detail `status` so bằng; message
+   `STATUS_MATCHED` hoặc `Expected status X but got Y`.
+2. Không có `assertions` hoặc không phải array → trả list hiện tại (chỉ có status).
+3. Với từng phần tử `assertions[]`: đọc `kind`, `switch` sang hàm kiểm tương ứng; `kind` lạ →
+   detail `passed = false` với `UNKNOWN_ASSERTION_KIND_PREFIX + kind` (không ném).
+
+`evaluateHttp` **không** tự quyết định bước pass/fail — `HttpStepExecutor` kiểm
+`allMatch(passed)`; nhờ vậy bước có 0 assertion vẫn `PASSED` khi request chạy được.
+
+### `checkStatus(assertion, actualStatus)`
+
+Đọc `equals` (int), so bằng với status thực; detail `kind = status`, expected/actual là số.
+
+### `checkContains(assertion, actualBody)`
+
+Đọc `text`, kiểm `actualBody != null && actualBody.contains(text)` — so chuỗi con thô,
+không parse JSON, phân biệt hoa thường. Body null → fail.
+
+### `checkJsonPath(assertion, actualBody)`
+
+1. `path`; `shouldExist = !has(exists) || exists == true` (mặc định true).
+2. `JsonPath.parse(actualBody != null ? body : "{}").read(path)`.
+3. `exists = result != null && (!(result instanceof List) || list không rỗng)` — mảng rỗng bị
+   coi là không tồn tại.
+4. `passed = exists == shouldExist`; detail `expected = path`, `actual = result`.
+5. Ngoại lệ JsonPath: `passed = !shouldExist` (path hỏng + kỳ vọng không tồn tại → pass),
+   message `JSON_PATH_CORRECTLY_NOT_FOUND` hoặc lỗi.
+
+### `checkBodyEquals(assertion, actualBody)`
+
+So **cấu trúc JSON đầy đủ** bằng Gson: parse `assertion.json` và body (body null →
+`null` JSON), so `JsonElement.equals` (thứ tự key không quan trọng với object nhưng mảng
+phải cùng thứ tự). Parse lỗi → detail fail, message `BODY_EQUALS_PARSE_ERROR_PREFIX`.
+
+### `checkBodyStructure(assertion, actualBody)`
+
+Parse hai phía rồi `GsonStructureComparator.sameStructure(expected, actual)` — chỉ so hình
+dạng (kiểu node, tập key, độ dài mảng), bỏ qua giá trị. Dùng khi chỉ cần "đúng schema".
+
+### `checkFieldEquals(assertion, actualBody, vars)`
+
+1. `path`, `expected = vars.substitute(assertion.equals)` (biến được thay trong giá trị kỳ
+   vọng).
+2. Đọc field; so qua `fieldEquals` (null → fail; Number → `BigDecimal.compareTo`, nên
+   `1.0 == 1`; còn lại so chuỗi chính xác nên `"00123" != "123"`).
+3. Ngoại lệ JsonPath → fail với `JSON_PATH_ERROR_PREFIX`.
+
+### `checkArrayLength(assertion, actualBody)`
+
+Đọc mảng tại `path`, tính độ dài qua `arrayLength`, so bằng với `equals` (int). Không phải
+mảng: `arrayLength` trả 1 cho scalar, 0 cho null.
+
+### `checkContainsItem(assertion, actualBody)`
+
+Đọc mảng tại `path`, `containsItem` so `String.valueOf(item)` với `equals` — so chuỗi, nên
+`{"id":1}` cần `equals` đúng dạng chuỗi. Scalar được coi là list 1 phần tử.
+
+### `checkJsonPathEquals(assertion, actualBody, vars)`
+
+Như `checkFieldEquals` nhưng `kind = json_path_equals`; dùng khi giảng viên muốn nêu rõ
+đang so JsonPath (khác biệt chủ yếu ở nhãn hiển thị).
+
+### `checkGreaterThan(assertion, actualBody)` / `checkLessThan(...)`
+
+1. `expected = new BigDecimal(assertion.value)` — không substitute biến (khác
+   `field_equals`).
+2. Giá trị tại `path` không phải `Number` → fail với message "value is not a number".
+3. So `BigDecimal.compareTo` với `> 0` (hoặc `< 0`). `expected` không parse được → nhánh
+   catch, fail với `JSON_PATH_ERROR_PREFIX`.
+
+### `checkMatchesRegex(assertion, actualBody)`
+
+Đọc `pattern`, lấy chuỗi tại `path` (`null` → `""`), `actualStr.matches(pattern)` —
+**khớp toàn chuỗi**, không phải `find()`; muốn khớp một phần phải viết `.*pattern.*`.
+
+### `checkAnyOf(assertion, actualBody, vars)`
+
+1. `assertions` con rỗng/không phải array → fail "no sub-assertions configured".
+2. Duyệt từng sub, `switch` như `evaluateHttp`; `status` con dùng `actualStatus = 0` vì
+   không có status thật trong ngữ cảnh này (ghi rõ trong chú thích mã).
+3. Sub đầu tiên pass → trả `passed = true`, message `ANY_OF_MATCHED` (không chạy tiếp).
+4. Không sub nào pass → fail "none of the sub-assertions passed".
+5. `any_of` **không** lồng `any_of` (không có case) — sub `any_of` rơi vào default → fail.
+
+### `private int arrayLength(Object result)`
+
+`null` → 0; `List` → `size()`; `Object[]` → `length`; còn lại → 1.
+
+### `private boolean containsItem(Object result, String expected)`
+
+`null` → false; `List` → duyệt, so `expected.equals(String.valueOf(item))`; scalar → so
+chuỗi trực tiếp.
+
+### `private boolean fieldEquals(String expected, Object actual)`
+
+| Kiểu actual | Cách so |
+|---|---|
+| null | luôn `false` (field thiếu hoặc JSON null không bao giờ khớp) |
+| `Number` | `new BigDecimal(expected).compareTo(new BigDecimal(actual)) == 0`; parse lỗi → `false` |
+| khác | `expected.equals(String.valueOf(actual))` |
+
+Chủ ý: `1.0` khớp `1` (số), nhưng `"00123"` không khớp `"123"` (chuỗi). Review 2026-09-20,
+Pullfrog PR #16.
+
+### `private static String safeMessage(Exception e)`
+
+`getMessage()` nếu có, ngược lại `toString()`. Tránh NPE khi dựng message lỗi từ exception
+không có message.

@@ -71,3 +71,41 @@ trong `finally` sau khi container dừng.
 - `DockerComposePatcher` dùng cổng để ghi đè `ports:` trong compose.
 - `DockerComposeRunner.boot` nhận cổng đã cấp.
 - Xem thêm: `docker-compose-patcher.md`, `docker-compose-runner.md`.
+
+---
+
+## Chi tiết từng hàm
+
+### `synchronized int claim()`
+
+| Khía cạnh | Nội dung |
+|---|---|
+| Output | port host trong `[20000, 30000]` đã đánh dấu và bind thử được |
+| Lỗi | `IllegalStateException(NO_FREE_PORTS_PREFIX + "20000-30000")` khi cạn |
+
+1. `startIdx = random.nextInt(1001)` — không luôn trả 20000 (tránh hot port, giảm đụng
+   container sót).
+2. `idx = used.nextClearBit(startIdx)`; vượt cuối dải → quay về `nextClearBit(0)` (wrap).
+3. Lặp khi `idx` còn trong dải:
+   - `port = 20000 + idx`; `used.set(idx)` **trước** khi thử bind.
+   - `isBindable(port)` → trả port.
+   - Không bind được (container sót giữ port) → giữ nguyên bit đã set (không bao giờ cấp lại
+     trong đời JVM) và sang `nextClearBit(idx + 1)`.
+4. Hết dải → ném; các bit đã thử vẫn set, lần gọi sau tiếp tục từ trạng thái đó.
+
+### `private static boolean isBindable(int port)`
+
+`new ServerSocket()`, `setReuseAddress(false)`, `bind(0.0.0.0:port)`; bind được → `true`,
+`IOException` → `false`. Bind thử trong netns của pod phản ánh đúng việc Docker sẽ publish
+port đó.
+
+### `synchronized int claimDbPort()`
+
+Gọi thẳng `claim()` — app và DB dùng chung một `BitSet` nên không thể trùng port. Tách hàm
+chỉ để ý định rõ ở nơi gọi.
+
+### `synchronized void release(int port)`
+
+Ngoài dải → bỏ qua; trong dải → `used.clear(port - 20000)`. Chỉ nên gọi cho port do chính
+allocator cấp; gọi cho port đang bị tiến trình ngoài giữ sẽ khiến lần `claim` sau thử lại
+và thất bại (rồi đánh dấu lại) — không nguy hiểm nhưng tốn một lần bind.

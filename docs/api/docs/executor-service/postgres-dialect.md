@@ -98,3 +98,59 @@ Review 2026-09-26, Pullfrog PR #17 (F3).
 | Tên bảng/cột hoa thường | PG fold về lowercase; config phải viết thường |
 
 Xem thêm: `db-dialect.md`, `db-dialect-registry.md`, `mysql-dialect.md`.
+
+---
+
+## Chi tiết từng hàm
+
+### `Set<String> keys()`
+
+`Set.of("postgres")` — không nhận alias `postgresql`; plan khai `postgresql` sẽ bị registry
+báo lỗi kèm danh sách hợp lệ.
+
+### `int defaultPort()`
+
+`5432`, port trong container.
+
+### `String jdbcUrl(int hostPort, String database)`
+
+`requireSafeDatabase(database)` rồi `jdbc:postgresql://localhost:<port>/<database>` — không
+thêm tham số URL; schema luôn `public` (mọi SQL catalog đều lọc `table_schema = 'public'`).
+
+### `String tableExistsSql()`
+
+`SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name = ?`.
+
+### `String columnExistsSql()`
+
+`SELECT data_type FROM information_schema.columns ...` — PostgreSQL chỉ trả tên kiểu dài
+(`character varying`), **không** kèm độ dài; `sameType` lo phần quy đổi.
+
+### `String primaryKeySql()`
+
+Join `table_constraints` + `key_column_usage` theo `constraint_name` và `table_schema`, lọc
+`constraint_type = 'PRIMARY KEY'`, `table_schema = 'public'`; trả `COUNT(*)`.
+
+### `String indexExistsSql()`
+
+`SELECT COUNT(*) FROM pg_indexes WHERE schemaname = 'public' AND tablename = ? AND indexname = ?`.
+
+### `boolean sameType(String expected, String actual)`
+
+`null` ở một trong hai → `false`; ngược lại so `normalize(expected).equals(normalize(actual))`.
+
+### `private static String normalize(String type)`
+
+Trim + lowercase, bỏ phần trong ngoặc (`varchar(50)` → `varchar` — catalog PostgreSQL không
+bao giờ trả độ dài nên giảng viên hay viết kèm), rồi map tên dài về alias:
+
+| PostgreSQL trả | Chuẩn hoá |
+|---|---|
+| `character varying` | `varchar` |
+| `timestamp with time zone` | `timestamptz` |
+| `timestamp without time zone` | `timestamp` |
+| `double precision` | `float8` |
+| `bool` | `boolean` |
+| `int` | `integer` |
+| `character` | `char` |
+| `time without time zone` / `time with time zone` | `time` / `timetz` |

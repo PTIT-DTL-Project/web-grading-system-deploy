@@ -70,3 +70,40 @@ thật sự nên cần tiền tố để phân biệt trong log.
 - Được gọi ở cuối mỗi executor DB, kể cả nhánh lỗi.
 - Ba executor: `db-query-executor.md`, `db-schema-check-executor.md`, `db-migration-executor.md`.
 - `DbConnectionHelper` ném hai exception đặc biệt — xem `db-connection-helper.md`.
+
+---
+
+## Chi tiết từng hàm
+
+### `DbStepResults()` — private
+
+Chặn khởi tạo; lớp tiện ích package-private, chỉ ba executor DB dùng.
+
+### `static GradingStepResult buildResult(ObjectMapper mapper, StepContext ctx, String stepType, StepResultStatus status, List<AssertionDetail> details, String err, long startedMs)`
+
+| Khía cạnh | Nội dung |
+|---|---|
+| Input | mapper, context bước, type, trạng thái, assertion, lỗi (null nếu không), mốc bắt đầu |
+| Output | `GradingStepResult` đầy đủ nhưng **không** có request/response HTTP |
+
+1. Serialize `details` → JSON; rỗng → `null` (không phải `"[]"`).
+2. Lỗi serialize → log warn kèm `stepId`, gán `null` (không nuốt im lặng — review
+   2026-09-26).
+3. `now = OffsetDateTime.now()`; `durationMs = now - startedMs`.
+4. Build: job/plan/step, `stepOrder`, `stepName`, `stepType`, `status`, `assertionResult`,
+   `errorMessage`, `durationMs`, `startedAt = ofInstant(startedMs, systemDefault)`,
+   `completedAt = now`.
+
+`startedAt` dựng từ epoch millis chứ không lấy `OffsetDateTime.now()` lúc gọi, nên thời
+lượng và mốc bắt đầu nhất quán kể cả khi hàm được gọi sau khi bước đã chạy xong.
+
+### `static String message(SQLException e)`
+
+| Loại exception | Message trả về |
+|---|---|
+| `DbConnectionException` | nguyên văn (đã có gợi ý dialect) |
+| `DbStepTimeoutException` | nguyên văn (`SQL_TIMEOUT_ERROR` + budget) |
+| `SQLException` khác | `SQL_EXECUTION_ERROR` + message gốc |
+
+Quy tắc này để sinh viên đọc được "kết nối sai engine" và "hết thời gian" mà không bị
+tiền tố "SQL execution failed" làm nhiễu, còn lỗi câu lệnh thật thì được đánh dấu rõ.

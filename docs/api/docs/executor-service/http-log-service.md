@@ -72,3 +72,51 @@ A3): `kept/input-chars-at-this-stage`; ở đây mẫu số là độ dài thô 
 - Ghi bởi `HttpStepExecutor` — xem `http-step-executor.md`.
 - `EvidenceRedactor` che dữ liệu trong `GradingStepResult`; `HttpLogService` che dữ liệu
   trong bảng `http_logs`. Hai lớp bổ sung nhau, không thay thế nhau.
+
+---
+
+## Chi tiết từng hàm
+
+### `void save(HttpLog httpLog)`
+
+`httpLogRepository.save` trong try/catch; lỗi DB chỉ log warn `Could not save http log`.
+Log HTTP là bằng chứng phụ — mất một dòng không được phép làm hỏng bước chấm.
+
+### `String headersToJson(Map<String, ? extends Collection<String>> headers)`
+
+| Khía cạnh | Nội dung |
+|---|---|
+| Input | headers (nhiều giá trị mỗi tên) |
+| Output | JSON object hoặc `null` nếu rỗng sau lọc |
+
+1. So tên header lowercase với `SENSITIVE_HEADERS` (`authorization`, `cookie`, `set-cookie`,
+   `proxy-authorization`, `x-api-key`, `x-gateway-secret`).
+2. Không nhạy cảm → gộp giá trị bằng `", "`.
+3. Rỗng → `null` (cột JSON null thay vì `{}`).
+
+Header lạ (ví dụ `x-auth-token`) **không** bị che — đây là log operator, không phải bằng
+chứng gửi sinh viên.
+
+### `String sanitizeUrl(String url)`
+
+Regex `([?&](x-amz-...|signature)=)[^&\s"']*` thay bằng `$1REDACTED` — che chữ ký
+presigned URL (RustFS/S3) trước khi lưu; `null` → `null`.
+
+### `boolean isFileContentType(String contentType)`
+
+Bỏ phần sau `;`, trim, lowercase; `true` với `multipart/*`, `application/octet-stream`,
+`image/*`, `video/*`, `audio/*`, `application/zip`, `application/pdf`. Dùng để quyết định
+không lưu body nhị phân vào cột text.
+
+### `String truncate(byte[] bytes)`
+
+| Khía cạnh | Nội dung |
+|---|---|
+| Input | body thô |
+| Output | chuỗi UTF-8, tối đa 20.000 ký tự + marker, hoặc `null` |
+
+1. null/rỗng → `null` (phân biệt "không có body" với "body rỗng").
+2. Giải mã UTF-8, rồi **che chữ ký presigned** trong body bằng cùng regex của `sanitizeUrl`
+   (link presigned có thể nằm trong JSON response).
+3. Dài hơn 20.000 → cắt + `"...(truncated 20000/<độ dài>)"`; marker dùng chung với
+   result-service (phase A3), mẫu số là độ dài **sau** khi che.

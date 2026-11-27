@@ -75,3 +75,67 @@ biệt này chỉ mở khi giảng viên khai `boolean`, nhờ đó `bit` vs `bi
 | DB `mariadb` | Dùng cùng SQL/driver; `DATABASE()` hoạt động tương đương |
 
 Xem thêm: `db-dialect.md`, `db-dialect-registry.md`, `postgres-dialect.md`.
+
+---
+
+## Chi tiết từng hàm
+
+### `Set<String> keys()`
+
+Trả `Set.of("mysql", "mariadb")` — một dialect phục vụ cả hai tên; registry gắn cả hai khoá
+vào cùng instance.
+
+### `int defaultPort()`
+
+`3306`, port trong container khi config không khai `db_port`.
+
+### `String jdbcUrl(int hostPort, String database)`
+
+1. `DbDialect.requireSafeDatabase(database)` — chặn injection qua tên DB.
+2. Trả `jdbc:mysql://localhost:<port>/<database>?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC`.
+
+`allowPublicKeyRetrieval=true` là bắt buộc với `mysql:8`: server mặc định
+`caching_sha2_password`, client tắt SSL không lấy được public key thì mọi kết nối fail auth.
+`serverTimezone=UTC` tránh lệch múi giờ khi chấm `timestamp`.
+
+### `String tableExistsSql()`
+
+`SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?`
+— tham số 1 là tên bảng; `> 0` nghĩa là tồn tại. Dùng `DATABASE()` để không phụ thuộc schema
+cứng.
+
+### `String columnExistsSql()`
+
+`SELECT column_type FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?`
+— trả kiểu kèm độ dài (`varchar(255)`, `tinyint(1)`) để phân biệt boolean với số; không có
+dòng = cột không tồn tại.
+
+### `String primaryKeySql()`
+
+Join `table_constraints` với `key_column_usage` theo `constraint_schema` + `constraint_name`
+(MySQL không đảm bảo `constraint_name` duy nhất toàn server, phải kèm schema), lọc
+`constraint_type = 'PRIMARY KEY'` và `kcu.column_name = ?`; `> 0` nghĩa là cột thuộc PK.
+
+### `String indexExistsSql()`
+
+`SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?`.
+
+### `boolean sameType(String expected, String actual)`
+
+| Khía cạnh | Nội dung |
+|---|---|
+| Input | kiểu giảng viên khai, kiểu `column_type` đọc được (null → `false`) |
+| Output | khớp sau chuẩn hoá |
+
+1. Nếu `normalize(expected) == "boolean"`: chấp nhận `normalize(actual) == boolean` **hoặc**
+   `actual` đúng bằng `bit(1)` (cách viết boolean hiếm gặp của MySQL) — nhờ vậy
+   `boolean` khớp `bit(1)` mà `bit` vẫn khớp `bit(1)`.
+2. Ngược lại so `normalize(expected) == normalize(actual)`.
+
+### `private static String normalize(String type)`
+
+1. Trim + lowercase.
+2. `tinyint(1)` (tiền tố) → `boolean` — vì `BOOL`/`BOOLEAN` được MySQL lưu thành
+   `tinyint(1)`.
+3. Cắt phần trong ngoặc (`varchar(255)` → `varchar`) vì display width không thuộc kiểu.
+4. Map `bool`/`boolean` → `boolean`, `int`/`integer` → `integer`, còn lại giữ nguyên.

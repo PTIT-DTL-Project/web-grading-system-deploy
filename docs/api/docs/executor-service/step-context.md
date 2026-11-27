@@ -63,3 +63,34 @@ object chia sẻ có thể thay đổi bên trong (xem tài liệu `variable-con
 - Tạo: `GradingOrchestrator` (khi lặp bước).
 - Dùng: các executor trong `step/impl/`.
 - Liên quan: `variable-context.md`, `step-executor.md`, `step-registry.md`.
+
+---
+
+## Chi tiết từng hàm
+
+### `StepContext(UUID, UUID, UUID, Integer, String, JsonNode, VariableContext, Integer)`
+
+Gán 8 field final; không validate (caller là orchestrator đã đảm bảo không null cho
+job/plan/step). `stepOrder` có thể null với plan cũ, `timeoutMs` null nghĩa là "dùng mặc
+định của executor".
+
+Vì sao là class thường chứ không phải record: record sinh `equals/hashCode/toString` theo
+identity — không nơi nào dùng, và `toString` sẽ in cả config (có thể chứa secret).
+
+### 8 getter `getJobId()`, `getPlanId()`, `getStepId()`, `getStepOrder()`, `getStepName()`,
+`getConfig()`, `getVariableContext()`, `getTimeoutMs()`
+
+Mỗi getter trả thẳng field, không copy. `getConfig()` trả `JsonNode` gốc — executor
+**không được** `set` vào đó; muốn sửa thì dùng `withConfig(...)` để tạo context mới. Đây là
+lý do `executeDataLoop` không mutate config dùng chung.
+
+### `StepContext withConfig(JsonNode config)`
+
+| Khía cạnh | Nội dung |
+|---|---|
+| Input | config mới (đã thay biến của một dòng `data[]`) |
+| Output | `StepContext` mới, chia sẻ nguyên `variableContext` |
+
+Copy 7 field còn lại, chỉ thay `config`. Nhờ chia sẻ `VariableContext`, biến trích ở vòng
+lặp trước đọc được ở vòng sau, và biến trích cuối cùng vẫn nằm trong context gốc mà
+orchestrator đang giữ.

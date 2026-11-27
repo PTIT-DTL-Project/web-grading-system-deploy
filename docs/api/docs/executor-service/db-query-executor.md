@@ -69,3 +69,41 @@ orchestrator đặt sau khi boot container.
 | `hostPort` null | `DbConnectionException` → `ERROR` |
 
 Xem thêm: `db-connection-helper.md`, `db-step-results.md`, `assertion-engine.md`.
+
+---
+
+## Chi tiết từng hàm
+
+### `String type()`
+
+`Constant.DbStep.TYPE_QUERY` (`DB_QUERY`).
+
+### `GradingStepResult execute(StepContext ctx)`
+
+| Khía cạnh | Nội dung |
+|---|---|
+| Input | `config.query` (có thể chứa `${var}`), `config.expected`, `config.timeout_ms` |
+| Output | `PASSED` / `FAILED` (assertion) / `ERROR` (SQL) |
+| Biến đọc | `DB_PORT` do orchestrator đặt sau khi DB container lên |
+
+1. `query` = substitute biến trên `config.query` (mặc định `""`).
+2. `hostPort = (Integer) vars.get(DB_PORT)`; `timeoutMs` = config → `ctx.timeoutMs` → 30.000;
+   `timeoutSeconds = ceil(ms/1000)`.
+3. `withConnection(config, hostPort, timeoutMs, action)`.
+4. Trong action: `Statement.setQueryTimeout(timeoutSeconds)`; chạy `executeQuery`; đọc
+   `ResultSetMetaData` lấy **column label** theo thứ tự; đếm số dòng bằng `while(rs.next())`.
+5. `expected` (nếu là object):
+   - `row_count`: so bằng số, tạo assertion `row_count`.
+   - `columns`: so **danh sách theo thứ tự**, lowercase hai vế, độ dài phải bằng nhau;
+     assertion `columns` (expected/actual là list gốc để hiển thị).
+6. Không khai `expected` object → `details` rỗng → `PASSED` (chỉ cần query chạy được).
+7. `SQLException` → `DbStepResults.buildResult(ERROR, details, message(e))`; **không** ném.
+8. Cuối: `allMatch(passed)` → `PASSED`/`FAILED`, `err = null`.
+
+Lưu ý: chỉ đếm dòng và kiểm cột, **không** trả dữ liệu — muốn kiểm giá trị phải dùng
+assertion trong câu SQL (`WHERE ...`) hoặc bước `DB_MIGRATION` + `HTTP_REQUEST`.
+
+### `private static AssertionDetail assertion(String kind, Object expected, Object actual, boolean passed, String message)`
+
+Factory builder cho `AssertionDetail`; giữ `expected`/`actual` dạng `Object` để chứa cả số
+lẫn list, message do caller soạn sẵn (không i18n).

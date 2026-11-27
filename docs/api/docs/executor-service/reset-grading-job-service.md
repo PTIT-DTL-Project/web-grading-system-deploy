@@ -80,3 +80,36 @@ bài nộp. Nó không chạy lại job — chỉ dọn trạng thái để pipe
 - Sau khi reset, job được đẩy lại qua `StaleJobReaper` (job `PENDING` quá hạn) hoặc qua
   lời gọi `GradingOrchestrator.gradeAsync` từ controller.
 - Xem thêm: `stale-job-reaper.md`, `grading-orchestrator.md`.
+
+---
+
+## Chi tiết từng hàm
+
+### `ResetResult reset(UUID submissionId)` — `@Transactional`
+
+| Khía cạnh | Nội dung |
+|---|---|
+| Input | id submission |
+| Output | `ResetResult(success, message, jobId, job)` |
+| Transaction | một khối: xoá step results + saga steps + reset saga + reset job |
+
+1. `findBySubmissionId`; rỗng → log warn `RESET_NOT_FOUND_PREFIX`, trả
+   `(false, "No grading job found for submission", null, null)`.
+2. Job đang `DONE` → log warn `RESET_FAILED_PREFIX`, trả `(false, "Job is already DONE, current
+   status: ...", jobId, job)` — không cho chấm lại bài đã có điểm.
+3. `deleteByJobId(jobId)` xoá toàn bộ `grading_step_results` của job.
+4. Với từng `GradingSaga` của job: `deleteBySagaId(sagaId)` rồi log; sau vòng lặp
+   `sagaRepository.resetByJobId(jobId, STARTED)` (một câu UPDATE, không load lại entity).
+5. Reset job: `status = PENDING`, `errorMessage = null`, `startedAt = null`, `completedAt = null`,
+   `retryCount = retryCount + 1` (lần chấm lại có chủ đích được tính là một lượt, để reaper
+   không re-enqueue vô hạn khi job hỏng lặp lại), save.
+6. Log `RESET_PREFIX` + `RESET_SUCCESS_PREFIX`; trả `(true, "Job reset to PENDING", jobId, job)`.
+
+Vì `@Transactional`, lỗi giữa chừng (ví dụ xoá step results xong nhưng save job lỗi) rollback
+toàn bộ — DB không ở trạng thái nửa vời. Sau khi trả về, controller tự đẩy job PENDING vào
+hàng đợi chấm (xem `reset-grading-job-controller.md`).
+
+### `record ResetResult(boolean success, String message, UUID jobId, GradingJob job)`
+
+`job` có thể null (không tìm thấy); controller dùng `success`/`message` để trả HTTP, `jobId`
+để log/trace. Accessor do record sinh.

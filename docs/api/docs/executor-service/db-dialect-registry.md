@@ -61,3 +61,35 @@ DbConnectionHelper / executor bước DB
 ```
 
 Xem thêm: `db-dialect.md`, `mysql-dialect.md`, `postgres-dialect.md`.
+
+---
+
+## Chi tiết từng hàm
+
+### `DbDialectRegistry(List<DbDialect> dialects)`
+
+| Khía cạnh | Nội dung |
+|---|---|
+| Input | toàn bộ bean `DbDialect` |
+| Output | map `key → dialect` |
+| Lỗi | `IllegalStateException` khi hai dialect cùng một key |
+
+1. Với mỗi dialect, duyệt `keys()`, `put(key.toLowerCase(Locale.ROOT), dialect)` vào
+   `HashMap` tạm.
+2. Khoá trùng → `IllegalStateException` nêu cả hai lớp; fail-fast vì chọn nhầm dialect sẽ
+   chạy sai SQL.
+3. `Map.copyOf(map)` — bất biến sau khởi động.
+4. Lấy `defaultDialect = byKey.get(DEFAULT_DB_TYPE)`; thiếu → `IllegalStateException`
+   (lỗi wiring: mọi config không khai `db_type` sẽ NPE về sau).
+
+### `DbDialect resolve(String key)`
+
+| Khía cạnh | Nội dung |
+|---|---|
+| Input | `connection.db_type` (có thể null/blank/rác) |
+| Output | dialect khớp, hoặc dialect `postgres` khi input rỗng |
+| Lỗi | `IllegalArgumentException` khi key không rỗng mà không dialect nào nhận |
+
+Chuẩn hoá `key.toLowerCase(Locale.ROOT).trim()`; rỗng → fallback `postgres` (plan cũ không
+khai `db_type` vẫn chấm được). Không rỗng mà lạ → ném kèm danh sách key hợp lệ để sửa
+config ngay.

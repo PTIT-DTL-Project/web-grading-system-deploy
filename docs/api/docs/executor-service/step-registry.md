@@ -66,3 +66,30 @@ HttpStepExecutor
   không sửa registry.
 - Map bất biến nên an toàn khi nhiều thread chấm song song (thực tế pool chấm là 1 thread,
   nhưng registry vẫn không phải điểm tranh chấp).
+
+---
+
+## Chi tiết từng hàm
+
+### `StepRegistry(List<StepExecutor> executors)` (constructor)
+
+| Khía cạnh | Nội dung |
+|---|---|
+| Input | Spring inject toàn bộ bean `StepExecutor` (kể cả `@Component` của module khác) |
+| Output | map `type → executor`, không cho null |
+
+Thu `Collectors.toUnmodifiableMap(StepExecutor::type, identity, merge)`; hàm merge chỉ
+chạy khi trùng khoá và ném `IllegalStateException` nêu **cả hai tên lớp** — fail-fast lúc
+khởi động, thay vì để plan chọn nhầm executor lúc chấm. Map bất biến nên không ai thêm/bớt
+executor sau khi khởi động.
+
+### `StepExecutor of(String type)`
+
+| Khía cạnh | Nội dung |
+|---|---|
+| Input | `type` lấy từ `plan.steps[].type` trong DB |
+| Output | executor tương ứng |
+| Lỗi | `IllegalArgumentException` = `Constant.Message.UNKNOWN_STEP_TYPE` + type |
+
+Tra cứu O(1), không cache cục bộ. Thông điệp lỗi chỉ nêu type sai (không liệt kê danh sách
+hợp lệ) — khi cần, xem log khởi động hoặc `StepExecutor` implementations trong mã nguồn.

@@ -73,3 +73,42 @@ GradingOrchestrator
 
 `ResetGradingJobService` xoá `grading_saga_steps` và reset saga về `STARTED` — xem
 `reset-grading-job-service.md`.
+
+---
+
+## Chi tiết từng hàm
+
+### `UUID begin(UUID jobId)`
+
+Tạo `GradingSaga(jobId)` và trả id; mọi `Exception` → log warn `Saga begin failed`, trả
+`null`. Orchestrator truyền `null` này tiếp và mọi hàm sau tự bỏ qua — tracking là
+best-effort, không bao giờ chặn chấm điểm.
+
+### `UUID step(UUID sagaId, String name, UUID planId, UUID stepId)`
+
+| Khía cạnh | Nội dung |
+|---|---|
+| Input | saga id, tên bước, plan/step id |
+| Output | id dòng `GradingSagaStep` hoặc `null` |
+
+1. `sagaId == null` → `null` (saga chưa tạo được).
+2. `currentStep(sagaId, name)` — cập nhật `GradingSaga.currentStep` để UI thấy bước đang chạy.
+3. Lưu `GradingSagaStep(sagaId, stepName, planId, stepId)`; lỗi → warn, `null`.
+
+Chưa set `status`/`startedAt` — mặc định entity lo; `finishStep` mới đóng dòng.
+
+### `void finishStep(UUID stepRowId, SagaStepStatus status, String error)`
+
+`stepRowId == null` → return. Tìm dòng; không thấy → return (có thể bị reset xoá). Gán
+`status`, `errorMessage`, `completedAt = now`, save; lỗi → warn. Không BAO GIỜ ném.
+
+### `void finish(UUID sagaId, SagaStatus status)`
+
+`sagaId == null` → return. Tìm saga; gán `status` + `completedAt`, save; lỗi → warn. Được
+gọi ở cả nhánh thành công và thất bại của orchestrator, nên saga luôn có trạng thái cuối
+(trừ khi DB chết).
+
+### `private void currentStep(UUID sagaId, String name)`
+
+Tìm saga, set `currentStep = name`, save; null → bỏ qua; lỗi → warn. Tách riêng để `step()`
+vẫn tạo được dòng con dù cập nhật saga cha thất bại.

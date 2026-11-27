@@ -70,3 +70,41 @@ MariaDB "SQL statements Causing an Implicit Commit").
 | Connection lỗi | `DbConnectionException` → `ERROR` với gợi ý dialect |
 
 Xem thêm: `db-connection-helper.md`, `db-step-results.md`, `db-query-executor.md`.
+
+---
+
+## Chi tiết từng hàm
+
+### `String type()`
+
+`Constant.DbStep.TYPE_MIGRATION` (`DB_MIGRATION`).
+
+### `GradingStepResult execute(StepContext ctx)`
+
+| Khía cạnh | Nội dung |
+|---|---|
+| Input | `config.statements[]` (chuỗi SQL, có thể chứa `${var}`), `config.timeout_ms` |
+| Output | `PASSED` khi mọi câu chạy xong và commit; `ERROR` khi bất kỳ câu nào lỗi |
+| Assertion | không có — bước này chỉ thi hành migration, không kiểm kết quả |
+
+1. `deadline = now + timeoutMs` (config → `ctx.timeoutMs` → 30.000) — **một** hạn chung cho
+   toàn bộ danh sách, không phải mỗi câu.
+2. `withConnection(...)`: `setAutoCommit(false)` để gói tất cả trong một transaction.
+3. Với từng `stmt` trong `config.statements`:
+   - `remaining = deadline - now`; `<= 0` → `DbStepTimeoutException` (message
+     `SQL_TIMEOUT_ERROR + timeoutMs`).
+   - `PreparedStatement` với SQL đã substitute biến.
+   - `setQueryTimeout(max(1, ceil(remaining/1000)))` — câu sau chỉ còn ít thời gian hơn câu
+     trước, không được vượt budget.
+   - `executeUpdate()` (không dùng `execute()` để SQL trả ResultSet bị từ chối rõ ràng).
+4. Commit; `SQLException` → `rollback()` rồi ném lại; `finally` luôn `setAutoCommit(true)`.
+5. Ngoài `withConnection`: `SQLException` → `ERROR` + `DbStepResults.message(e)`; thành công →
+   `PASSED`.
+
+### Giới hạn đã biết
+
+PostgreSQL: DDL transactional nên rollback thật sự hoàn nguyên. MySQL/MariaDB: DDL
+(`CREATE/ALTER/DROP TABLE`, `CREATE/DROP INDEX`, `TRUNCATE`) gây implicit commit — rollback
+không hoàn nguyên được, schema có thể đã migrate một phần dù bước báo `ERROR` (MySQL
+§15.3.3). `commit`/`rollback` không bị chặn bởi budget; lock wait lúc commit do server giới
+hạn (`innodb_lock_wait_timeout`).

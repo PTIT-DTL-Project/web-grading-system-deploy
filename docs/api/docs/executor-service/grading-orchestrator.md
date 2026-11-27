@@ -356,3 +356,48 @@ FE hiển thị điểm cho lecturer/sinh viên
 ---
 
 *Tài liệu này là phần của bộ dokument chi tiết luồng API theo plan mode, nằm trong thư mục `docs/api/docs/executor-service/`. Các controller/service khác sẽ được viết tiếp theo theo cùng mẫu.*
+---
+
+## Phụ lục: chi tiết từng hàm
+
+Bảng dưới liệt kê **mọi** hàm của lớp; các mục đã phân tích ở phần trên được trỏ về tiểu mục
+tương ứng thay vì lặp lại.
+
+| Hàm | Vai trò | Chi tiết |
+|---|---|---|
+| `GradingOrchestrator(...)` (2 constructor) | Inject toàn bộ repository/client/service; bản có `Tracer` cho tracing, bản còn lại truyền `tracer = null` | §1 |
+| `gradeAsync(jobId, submissionId, assignmentId, studentId, planId, rustfsPath, traceId)` | `@Async("gradingTaskExecutor")`; gọi `grade`, nuốt lỗi **trước khi** job bắt đầu (chỉ log warn) để không có exception mồ côi trong pool 1 luồng | §2 |
+| `grade(...)` | Load job theo id (không thấy → log + return), mở span `service.GradingOrchestrator.grade` rồi `doGrade` | §2 |
+| `doGrade(job, ...)` | Pipeline chính: `FETCHING` (patch submission, tạo saga, tải config/plan/artifact) → `BUILDING` (cấp port, vá compose, boot) → `RUNNING` (`runSteps`) → `DONE`/`FAILED` | §3 |
+| `dryRun(DryRunRequest)` | Chấm thử đồng bộ: sort plan theo `sequenceOrder`, `scanDbRequirements`, tải zip mẫu, boot compose, `dryRunSteps`; **không** ghi step result, không POST result-service, không patch submission | §7 |
+| `dryRunSteps(plans, appPort, dbPort, executionTimeoutMs)` | Bản sao `runSteps` không side effect: tạo `VariableContext` với `APP_PORT`/`DB_PORT`/id giả `dry-run`, chạy từng bước, gom `DryRunStepReport`, tôn trọng deadline chung | §7 |
+| `parseExtractedVariables(String)` | Parse JSON `extractedVariables` thành `Map`; null/blank/parse lỗi → `Map.of()` | §4 |
+| `scanDbRequirements(plans)` | Quét bước `DB_*` đầu tiên, đọc `connection` (service, `db_port` container, `db_type`, database); validate port 1–65535; bước sau khác connection → log warn và bỏ qua; trả `DbRequirements` | §3.2 |
+| `runSteps(job, submissionId, assignmentId, studentId, planId, sagaId, plans, appPort, dbPort, executionTimeoutMs, dbReq)` | Chạy từng plan theo `sequenceOrder`: skip plan đã `DONE`, reset DB sandbox khi plan có bước DB, gọi `runStep`/`skipStep`, cộng điểm bằng `ScoreCalculator`, ghi `grading_step_results`, dựng `summary`/`items`, gọi `postResult` | §4 |
+| `skipStep(job, plan, step, sagaId, outcomes, items)` | Đánh dấu bước `SKIPPED` (do bước `required` trước fail): saga step `SKIPPED`, ghi result row, thêm `StepScore(false, true, weight)` | §4.4 |
+| `runStep(job, plan, step, config, vars)` | Tra `stepRegistry.of(type)`; type lạ → result `FAILED`; gọi `executor.execute(new StepContext(...))` rồi lưu; mọi exception → `persist(ERROR)` | §4.3 |
+| `autoInjectExtracts(steps)` | Thêm `extract` còn thiếu: phase 1 map biến → bước nguồn từ các `extract` sẵn có, phase 2 duyệt ngược, tìm `${var}` đang dùng mà chưa có nguồn rồi chèn extract từ response của bước gần nhất | §5 |
+| `collectVarRefs(config, varPattern, vars)` | Quét `config.toString()` bằng `\$\{([^}]+)}`, gom tên biến — dùng bởi `autoInjectExtracts` | §5 |
+| `findFirstDbConfig(plan)` | Trả block `connection` của bước `DB_*` đầu tiên; không có/không parse được → null | §3.2 |
+| `injectPlanHeaders(config, injectedHeaders, vars)` | Merge `auto_inject_headers` cấp plan vào `headers` của bước HTTP: deep copy, header đã có **không** bị ghi đè, template substitute bằng `vars` | §5.3 |
+| `harvestAutoInjectHeaders(config, injectedHeaders)` | Sau khi bước chạy, gom `auto_inject_headers` khai trong config bước vào map cấp plan cho các bước sau | §5.3 |
+| `persist(job, plan, step, status, errorMessage)` | Tạo và lưu `GradingStepResult` tối thiểu (không request/response) với `startedAt = completedAt = now` — dùng cho `FAILED`/`ERROR`/`SKIPPED` không có executor | §4.4 |
+| `fail(job, submissionId, assignmentId, studentId, planId, sagaId, planWeight, reason)` | Job `FAILED` + `errorMessage` + `completedAt`; log DB; saga `FAILED`; `postResult` với điểm 0 và danh sách rỗng; patch submission sang trạng thái lỗi | §3.5 |
+| `postResult(job, submissionId, assignmentId, studentId, planId, plans, score, summary, items, status)` | Build `CreateResultRequest` (kèm `planWeight = weightOf(...)`, `maxScore = MAX_SCORE`) và POST result-service; retry 3 lần, backoff 2s/4s; lỗi 4xx (trừ 408/429) coi là validation → **không** retry | §4.6 |
+| `isValidationError(Exception)` | `FeignException` với status 400–499 và khác 408/429 → true | §4.6 |
+| `patchSubmission(submissionId, status)` | Gọi submission-service đổi status (`step_grading`/`step_done`/`step_failed`); lỗi chỉ log warn — chấm điểm không phụ thuộc service này | §3.1 |
+| `writeLog(jobId, submissionId, level, message)` | Ghi `grading_logs` với `step = grading`; lỗi chỉ warn | §3.1 |
+| `stepItem(plan, step, result, passed, skipped, errorMessage)` | Map một bước sang `StepResultItem` gửi result-service: weight mặc định 1, `score = weight` nếu pass; mọi chuỗi bằng chứng đi qua `truncateForStudent` (redact **trước** rồi cắt 20.000) hoặc `EvidenceRedactor.redact` cho URL | §4.5 |
+| `truncateForStudent(String)` | null → null; `EvidenceRedactor.redact` trên body **nguyên vẹn** rồi cắt 20.000 + marker `...(truncated 20000/N)`; cắt trước sẽ làm hỏng JSON và vô hiệu hoá che key | §4.5 |
+| `joinFailedVerdicts(assertionJson)` | Parse mảng assertion, chỉ lấy mục `passed = false`, ghép `"kind: expected X, got Y"` (hoặc message), tối đa 5 mục rồi `; …(N more)`; mỗi vế redact + cắt 500 ký tự; lỗi/không có → null | §4.5 |
+| `capVerdictText(String)` | Cắt một vế verdict đã redact ở 500 ký tự + marker | §4.5 |
+| `buildSummary(outcomes, items, score)` | `"Passed p/r steps (x%), Score: s/10"` + `. Failed: ...` cho các bước `passed = false` (message lỗi hoặc "assertion failed") | §4.5 |
+| `weightOf(plans, planId)` | Trọng số plan theo id; planId null/không thấy → 1 | §4.5 |
+| `nz(Integer, long)` / `nz(Integer, int)` | Null-coalescing cho `weight`/`retryCount`/`timeout` | §4.4 |
+| `safeMessage(Exception)` | `getMessage()` hoặc `toString()` — tránh NPE khi dựng message | — |
+| `cleanupWorkDir(Path)` | `Files.walk` sắp xếp giảm dần rồi xoá từng entry; lỗi từng file chỉ warn, không ném | §3.6 |
+| `record DbRequirements(boolean present, String dbService, Integer dbContainerPort, String dbType, String database, String parseError)` | Kết quả quét DB của assignment; `none()` = không có bước DB; `sameConnection(a, b)` so service/engine/port để phát hiện cấu hình xung đột | §3.2 |
+
+Điểm cần nhớ khi sửa lớp này: `doGrade` giữ **toàn bộ** side effect (DB, HTTP, port, workdir); các
+hàm `persist`/`stepItem`/`truncateForStudent` là biên tin cậy duy nhất giữa bằng chứng thô và
+dữ liệu gửi sinh viên, nên mọi thay đổi định dạng bằng chứng phải đi qua chúng.

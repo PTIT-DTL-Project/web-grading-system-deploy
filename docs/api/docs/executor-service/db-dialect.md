@@ -87,3 +87,63 @@ DbQueryExecutor / DbSchemaCheckExecutor / DbMigrationExecutor
 | Hai dialect cùng `keys()` | `DbDialectRegistry` constructor | Lỗi khởi động (trùng khoá) |
 
 Xem thêm: `db-dialect-registry.md`, `mysql-dialect.md`, `postgres-dialect.md`.
+
+---
+
+## Chi tiết từng hàm
+
+Mỗi hàm là một điểm mở rộng: thêm engine = thêm `@Component implements DbDialect`, không
+sửa executor nào.
+
+### `Set<String> keys()`
+
+Tập khoá lowercase mà dialect nhận (`mysql`, `mariadb`; `postgres`, `postgresql`…).
+`DbDialectRegistry` duyệt mọi dialect, gắn từng khoá vào map; trùng khoá giữa hai dialect →
+`IllegalStateException` lúc khởi động.
+
+### `int defaultPort()`
+
+Port DB lắng nghe **trong container** khi config thiếu `db_port` (PostgreSQL 5432, MySQL
+3306). Dùng để dựng `ports` trong compose và để `DbStepResults` biết cổng chờ.
+
+### `String jdbcUrl(int hostPort, String database)`
+
+URL JDBC trỏ `localhost:hostPort` (cùng pod, host network). Bắt buộc gọi
+`requireSafeDatabase(database)` trước khi nối chuỗi. MySQL thêm
+`?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC`; PostgreSQL không thêm
+ tham số, schema cố định `public`.
+
+### `static void requireSafeDatabase(String database)`
+
+| Khía cạnh | Nội dung |
+|---|---|
+| Input | tên DB từ config |
+| Lỗi | `IllegalArgumentException` khi null/blank hoặc không khớp `[A-Za-z0-9_$]+` |
+
+Chặn injection qua JDBC URL: `?`, `&`, `#`, `/`, `:` trong tên DB sẽ chèn thêm thuộc tính
+kết nối. Review 2026-09-26 (Pullfrog PR #17, F4).
+
+### `String tableExistsSql()`
+
+Query một giá trị, tham số `(table_name)`, trả `COUNT(*)`; `> 0` nghĩa là bảng tồn tại.
+
+### `String columnExistsSql()`
+
+Tham số `(table_name, column_name)`; trả descriptor kiểu của dialect — PostgreSQL trả
+`data_type` (không kèm độ dài), MySQL trả `column_type` (giữ `tinyint(1)`, `varchar(255)`).
+Không có dòng = cột không tồn tại; một query phục vụ cả tồn tại lẫn kiểu nên check có
+`data_type` không cần round-trip thứ hai.
+
+### `String primaryKeySql()`
+
+Tham số `(table_name, column_name)`, trả `COUNT(*)`; `> 0` nghĩa là cột thuộc khoá chính.
+
+### `String indexExistsSql()`
+
+Tham số `(table_name, index_name)`, trả `COUNT(*)`; `> 0` nghĩa là index tồn tại.
+
+### `boolean sameType(String expected, String actual)`
+
+So sánh kiểu sau chuẩn hoá, không phân biệt hoa thường — PostgreSQL gọi `character varying`,
+MySQL gọi `varchar`. `expected` null/rỗng → dialect trả `false` (check khai thiếu `data_type`
+sẽ fail thay vì pass mù).

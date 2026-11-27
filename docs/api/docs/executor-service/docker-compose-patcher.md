@@ -106,3 +106,82 @@ mất. Trả `EffectiveCompose`.
 - `PortAllocator` cấp `appPort`/`dbPort` trước khi gọi patcher.
 - `DockerComposeRunner` nhận `EffectiveCompose` để boot.
 - Hằng số: `Constant.DockerCompose`, `Constant.Strategy`, `Constant.Message`.
+
+---
+
+## Chi tiết từng hàm
+
+### `DockerComposePatcher()` — private
+
+Lớp `final` toàn `static`, không trạng thái; chặn khởi tạo để không ai `new`.
+
+### `record EffectiveCompose(String serviceName, int containerPort, Path composeFile)`
+
+Kết quả trả về cho `DockerComposeRunner.boot`: tên service app, port **trong container** mà
+app lắng nghe, và đường dẫn file compose đã ghi (có thể là `docker-compose.yaml` nếu file
+`.yml` không tồn tại).
+
+### `static EffectiveCompose writeEffectiveCompose(Path workDir, String gradingStrategy, String template, int appPort, int dockerComposePort, Double maxCpu, Integer maxMemoryMb, String dbService, Integer dbPort, Integer dbContainerPort)`
+
+| Khía cạnh | Nội dung |
+|---|---|
+| Input | thư mục giải nén, chiến lược (`LECTURER_DOCKER_COMPOSE` hay không), template, port cấp cho app, port cấu hình, giới hạn CPU/RAM, service/port DB |
+| Output | `EffectiveCompose` |
+| Lỗi | `IllegalStateException` khi thiếu template/file/services/`services` sai kiểu, hoặc compose chứa chỉ thị nguy hiểm |
+
+1. Xác định file đích `workDir/docker-compose.yml`.
+2. Nếu chiến lược là `LECTURER_DOCKER_COMPOSE`: template rỗng → ném `NO_COMPOSE_TEMPLATE`;
+   ngược lại ghi template thành file (bỏ qua compose sinh viên nộp).
+3. Nếu không: đòi `docker-compose.yml` là file thường; thiếu thì thử
+   `docker-compose.yaml`; thiếu cả hai → `NO_COMPOSE_FILE`.
+4. `load(composeFile)` → map YAML; `servicesOf` → map services (rỗng → `NO_SERVICES`).
+5. `identifyAppService(services)` → tên service app.
+6. `resolveContainerPort(services, appService, dockerComposePort)` → port trong container.
+7. Với **mọi** service: `rejectUnsafe(name, service)` rồi `applyLimits(service, maxCpu,
+   maxMemoryMb)`.
+8. Nếu có `dbService` + `dbPort` + `dbContainerPort > 0`: thêm `"dbPort:dbContainerPort"`
+   vào **cuối** danh sách `ports` của service DB (tạo list nếu chưa có, không thay thế port
+   sẵn có). Service DB không tồn tại → chỉ log warn, DB steps sẽ fail kết nối với lỗi rõ.
+9. Ghi đè `ports` của service app bằng đúng một entry `"appPort:containerPort"` — thay thế
+   hoàn toàn để không lộ port sinh viên tự khai.
+10. Ghi lại YAML (SnakeYAML `dump`) rồi trả `EffectiveCompose`.
+
+### `private static int resolveContainerPort(Map<String,Object> services, String appService, int dockerComposePort)`
+
+1. Service app không tồn tại → `dockerComposePort > 0 ? dockerComposePort : 8080`.
+2. Duyệt `ports`: lấy entry dạng chuỗi, cắt sau dấu `:` **cuối** (`"20000:8080"` → `8080`),
+   parse int; entry hỏng thì thử entry kế.
+3. Không tìm được → `dockerComposePort > 0 ? dockerComposePort : 8080`.
+
+Vì sao đọc từ compose trước: nếu config nói 20000 nhưng app nghe 8080 trong container,
+Testcontainers chờ đúng port không được expose và boot timeout (sự cố 2026-11-06).
+
+### `private static Map<String,Object> load(Path composeFile)`
+
+`new Yaml().load(in)`; kết quả không phải `Map` (YAML rỗng, list) → `NO_TOP_LEVEL`.
+
+### `private static Map<String,Object> servicesOf(Map<String,Object> compose)`
+
+`compose["services"]` không phải `Map` → `NO_SERVICES_SECTION`; ngược lại trả map (có thể
+rỗng — caller kiểm tra tiếp).
+
+### `private static String identifyAppService(Map<String,Object> services)`
+
+1. Duyệt theo thứ tự YAML; bỏ qua service có tên chứa `db`, `database`, `postgres`, `mysql`,
+   `mongo`, `redis`, `kafka`, `zipkin` (không phân biệt hoa thường).
+2. Chọn service đầu tiên còn lại **và** có `ports` khác null.
+3. Không có → trả service đầu tiên trong map (kể cả là DB) — compose tối giản vẫn boot được,
+   nhưng có thể chọn sai nếu sinh viên đặt tên lạ.
+
+### `private static void rejectUnsafe(String name, Map<String,Object> service)`
+
+- `privileged: true` → `IllegalStateException(PRIVILEGED_MODE_PREFIX + name)`.
+- Bất kỳ volume nào chứa chuỗi `/var/run/docker.sock` → `MOUNTS_DOCKER_SOCK_PREFIX + name`.
+
+Chạy cho **mọi** service, kể cả DB — sinh viên không thể leo thang qua DinD socket.
+
+### `private static void applyLimits(Map<String,Object> service, Double maxCpu, Integer maxMemoryMb)`
+
+Dựng `limits` từ `maxCpu > 0` (ghi `cpus` dạng chuỗi) và `maxMemoryMb > 0` (ghi
+`"<mb>M"`). Không có giới hạn nào → không sửa service. Có → lấy/tạo `deploy`, rồi đặt
+`deploy.resources.limits = limits` (ghi đè limits cũ, giữ nguyên `reservations` nếu có).

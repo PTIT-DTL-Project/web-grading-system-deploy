@@ -97,3 +97,59 @@ Cố ý: độ sâu bám theo input hữu hạn; input bệnh lý sẽ fail-clos
 | Lỗi bất kỳ trong quá trình | `"***"` |
 
 Xem thêm: `http-log-service.md` (che log HTTP), `http-step-executor.md` (nơi gọi).
+
+---
+
+## Chi tiết từng hàm
+
+### `static String redact(String input)`
+
+| Khía cạnh | Nội dung |
+|---|---|
+| Input | chuỗi bằng chứng bất kỳ (body, verdict, biến đã trích) |
+| Output | chuỗi đã che |
+| Fail-closed | mọi `Throwable` → `"***"` |
+
+1. `null`/blank → trả nguyên (không biến field rỗng thành mask — hàm được gọi cho cả phía
+   không có dữ liệu).
+2. `redactJsonAware(input)`; lỗi bất kỳ → `"***"` to, không rò rỉ, không im lặng.
+
+### `private static String redactJsonAware(String input)`
+
+1. `MAPPER.readTree(input)`; không parse được (không phải JSON) → `sweep(input)`.
+2. Parse được → `maskNode(tree, dirty)` (đệ quy che key nhạy cảm + chuỗi lồng là JSON).
+3. `dirty` → serialize lại; **không dirty** → trả `input` nguyên byte (passthrough khi sạch).
+4. Cuối cùng luôn `sweep` để bắt token dạng free-text.
+
+### `private static void maskNode(JsonNode node, boolean[] dirty)`
+
+Với `ObjectNode`: snapshot `properties()` trước khi `set` (Jackson 3 ném nếu sửa lúc đang
+duyệt). Mỗi entry:
+
+| Trường hợp | Hành vi |
+|---|---|
+| key lowercase thuộc `SECRET_KEYS` | thay bằng `"***"`, `dirty = true` |
+| value là textual và là JSON | `maskNestedString`; khác null → thay, `dirty = true` |
+| còn lại | đệ quy `maskNode(value)` |
+
+Với `ArrayNode`: duyệt index; object/array → đệ quy; textual là JSON → `maskNestedString`
+và `set(i, ...)`.
+
+`SECRET_KEYS` so **khớp chính xác** sau lowercase (không so chuỗi con) để không che oan
+field như `tokens`; các dạng free-text (`Bearer …`, `key=value`, JDBC) do `sweep` lo.
+
+### `private static String maskNestedString(JsonNode node)`
+
+Chỉ xử lý textual bắt đầu bằng `{` hoặc `[`; parse lại; nếu `maskNode` làm thay đổi → trả
+chuỗi JSON mới, ngược lại `null` (caller giữ nguyên byte gốc). Cần thiết vì verdict body bị
+escape nằm trong chuỗi nên regex không nhìn xuyên qua được.
+
+### `private static String sweep(String text)`
+
+Ba lớp thay thế, theo thứ tự:
+
+1. `\b(Bearer|Basic)\s+[A-Za-z0-9\-._~+/=]+` → `$1 ***`.
+2. `(?i)(password|passwd|secret|token)\s*[:=]\s*[^\s&]+` → `$1=***` (dừng ở `&` để không
+   ăn tham số phía sau).
+3. `(://[^:/\s]+:)[^/\s]*(@)` → `$1***$2` (giữ user, che password JDBC; password chứa
+   `/` là giới hạn đã biết).

@@ -77,3 +77,35 @@ ACTIVE = [PENDING, FETCHING, BUILDING]
 
 Đây là lưới an toàn phía executor-service; phía submission-service vẫn có thể phát lại sự
 kiện Kafka nếu message bị lỗi, nhưng reaper xử lý trường hợp message đã mất.
+
+---
+
+## Chi tiết từng hàm
+
+### `void reap()` — `@Scheduled(fixedDelayString = "${executor.reaper.interval-ms:300000}")`
+
+| Khía cạnh | Nội dung |
+|---|---|
+| Input | `ExecutorProperties.reaper().staleAfterMinutes()` (mặc định 30), `.maxAttempts()` (mặc định 3) |
+| Output | không; side effect: `gradeAsync` + tăng `retryCount` |
+
+1. `cutoff = now - staleAfterMinutes`.
+2. `findByStatusIn(ACTIVE)` với `ACTIVE = [PENDING, FETCHING, BUILDING]`.
+3. Lọc `isStale(job, cutoff)` và `retryCount < maxAttempts` — job đã cạn lượt cần người xử
+   lý, reaper không đụng.
+4. Với từng job: `gradeAsync(jobId, submissionId, assignmentId, studentId, planId,
+   rustfsPath, Constant.Reaper.TRACE_ID)`.
+   - `TaskRejectedException` (pool bão hoà, queue 10 đầy) → log warn, `continue` **không**
+     tăng `retryCount`: job vẫn còn nguyên lượt cho vòng sau.
+5. Thành công → `retryCount + 1`, save, log `REENQUEUE_PREFIX`.
+
+Vì sao loại `RUNNING`: re-enqueue một job đang chạy sẽ chấm hai lần; không có lease/heartbeat
+thì không phân biệt được worker sống với pod đã chết, nên job chết giữa `RUNNING` phải reset
+thủ công (`ResetGradingJobService`).
+
+### `private static boolean isStale(GradingJob job, OffsetDateTime cutoff)`
+
+`start = startedAt != null ? startedAt : createdAt`; trả `start != null && start.isBefore(cutoff)`.
+Ưu tiên `startedAt` để job đã bắt đầu (FETCHING/BUILDING) không bị coi là mới chỉ vì
+`createdAt` cũ; job chưa có `startedAt` dùng `createdAt`. Cả hai null → không bao giờ stale
+(an toàn: bỏ qua thay vì chấm lại bừa).

@@ -78,3 +78,40 @@ không được phép che lỗi gốc.
 - `PortAllocator` cấp cổng host trước khi boot để tránh trùng.
 - `GradingOrchestrator` gọi `boot(...)` rồi dùng `host:port` cho các bước HTTP.
 - Xem thêm: `docker-compose-patcher.md`, `port-allocator.md`, `grading-orchestrator.md`.
+
+---
+
+## Chi tiết từng hàm
+
+### `record RunningCompose(ComposeContainer compose, String host, int port) implements AutoCloseable`
+
+Giữ container đang chạy + địa chỉ app để executor HTTP gọi. `close()` uỷ quyền
+`stopQuietly(compose)` — dùng try-with-resources trong orchestrator để dọn container kể cả
+khi bước/assertion ném.
+
+### `RunningCompose boot(DockerComposePatcher.EffectiveCompose effective, long startupTimeoutMs)`
+
+| Khía cạnh | Nội dung |
+|---|---|
+| Input | compose đã vá, budget khởi động (ms) |
+| Output | `RunningCompose` với host/port thật do Testcontainers trả |
+| Lỗi | ném lại `RuntimeException` gốc sau khi đã dọn container |
+
+1. `new ComposeContainer(new DockerImageName("docker:25.0.5"), file)` — image chỉ chứa
+   docker CLI; daemon là DinD qua `DOCKER_HOST`.
+2. `.withExposedService(service, containerPort, Wait.forHttp("/")
+   .forStatusCodeMatching(s -> s < 500).withStartupTimeout(startupTimeoutMs * 2))` — app
+   được coi là lên khi `GET /` trả bất kỳ status < 500; 4xx/5xx vẫn là "đã lên".
+3. `.withBuild(true)` — luôn build lại image từ Dockerfile sinh viên.
+4. `.withStartupTimeout(startupTimeoutMs)` — hạn cho toàn bộ compose.
+5. `compose.start()`; `RuntimeException` → `stopQuietly(compose)` rồi ném lại, vì boot fail
+   vẫn để lại container giữ port (Ryuk bị tắt) và job sau trong pod sẽ chết với
+   "port is already allocated" (sự cố 2026-10-29).
+6. `getServiceHost/getServicePort` theo `containerPort`; log `Grading container up: ...`;
+   trả `RunningCompose`.
+
+### `private static void stopQuietly(ComposeContainer compose)`
+
+`compose.stop()` trong try/catch `Exception`; lỗi chỉ log warn
+`COMPOSE_STOP_FAILED` + message. Không bao giờ ném — dùng ở cả `close()` và nhánh boot lỗi,
+nên một container hỏng không được phép che lỗi gốc.

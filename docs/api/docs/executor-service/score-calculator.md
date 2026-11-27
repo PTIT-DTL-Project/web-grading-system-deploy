@@ -72,3 +72,39 @@ plan về 0 khi job `FAILED`.
 Công thức này phải khớp cách result-service tổng hợp `planSubtotals()`: kết quả plan gửi
 sang result-service đã là điểm cuối của plan, result-service chỉ nhân trọng số plan và
 cộng lại. Vì vậy đổi công thức ở đây bắt buộc rà lại `ResultService` bên result-service.
+
+---
+
+## Chi tiết từng hàm
+
+### `ScoreCalculator()` — private
+
+Chặn khởi tạo: lớp tiện ích toàn `static`, không giữ trạng thái.
+
+### `BigDecimal score(List<StepScore> steps, BigDecimal maxScore)`
+
+| Khía cạnh | Nội dung |
+|---|---|
+| Input | danh sách kết quả bước; `maxScore` (10 với HTTP plan, `MAX_SCORE` với plan khác) |
+| Output | `BigDecimal` scale 2, `HALF_UP` |
+| Lỗi | `steps`/`maxScore` null → NPE (caller luôn truyền list, không null) |
+
+1. Duyệt `steps`: `totalWeight += weight` cho **mọi** bước, kể cả `SKIPPED`.
+2. Chỉ cộng `passedWeight` khi `!skipped && passed`.
+3. `totalWeight == 0` → `0.00` (plan không có bước; tránh chia 0).
+4. `maxScore × passedWeight ÷ totalWeight`, scale 2, `HALF_UP`.
+
+Hệ quả nghiệp vụ: bước `SKIPPED` (bị lan truyền sau bước `required` fail) giữ trọng số ở
+mẫu số nhưng đóng góp 0 — điểm bị kéo xuống, khớp cách result-service cộng điểm plan.
+Đổi từ "loại cả hai vế" ngày 2026-11-06 theo yêu cầu sản phẩm.
+
+### `record StepScore(boolean passed, boolean skipped, int weight)`
+
+| Thành phần | Ý nghĩa |
+|---|---|
+| `passed` | Bước đạt assertion (bỏ qua nếu `skipped`) |
+| `skipped` | Bước bị bỏ do lan truyền `required` fail |
+| `weight` | Trọng số cấu hình, orchestrator mặc định 1 khi null |
+
+Accessor `passed()`, `skipped()`, `weight()` do record sinh; không có setter nên không thể
+sửa sau khi đưa vào danh sách tính điểm.

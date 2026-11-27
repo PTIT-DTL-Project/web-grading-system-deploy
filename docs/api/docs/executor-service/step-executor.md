@@ -92,3 +92,35 @@ GradingStepResult (lưu DB + đẩy sang result-service)
 | `step_type` không có executor | `StepRegistry.of` | `IllegalArgumentException` (message `UNKNOWN_STEP_TYPE + type`) |
 | Hai executor cùng `type()` | `StepRegistry` constructor | `IllegalStateException`, ứng dụng dừng khởi động |
 | Executor ném exception | `execute` | Bước bị đánh `ERROR`, job có thể `FAILED` tuỳ orchestrator |
+
+---
+
+## Chi tiết từng hàm
+
+### `String type()`
+
+Trả về chuỗi định danh loại bước (`HTTP_REQUEST`, `DB_QUERY`, …). Hợp đồng: duy nhất
+trong toàn bộ bean `StepExecutor`, không đổi giá trị giữa các phiên bản vì plan đã lưu
+trong DB tham chiếu đúng chuỗi này. `StepRegistry` gọi hàm này lúc khởi động để dựng map;
+trùng khoá → `IllegalStateException`, ứng dụng không lên.
+
+### `GradingStepResult execute(StepContext ctx)`
+
+| Khía cạnh | Nội dung |
+|---|---|
+| Input | `ctx` bất biến: job/plan/step id, `stepOrder`, `stepName`, `config` (JsonNode), `variableContext`, `timeoutMs` |
+| Output | luôn khác null; lỗi nghiệp vụ → `status = FAILED`, lỗi hạ tầng → `ERROR` |
+| Side effect được phép | đọc/ghi `variableContext`, ghi `http_logs`, gửi HTTP tới app sinh viên, chạy SQL sandbox |
+| Side effect bị cấm | đổi trạng thái `GradingJob`, nộp kết quả cho result-service — orchestrator giữ độc quyền |
+
+Trình tự chuẩn một implementation:
+
+1. Đọc `ctx.getConfig()` (đã merge default ở orchestrator), `ctx.getVariableContext()`.
+2. Thực hiện hành vi (gọi HTTP / chạy SQL / so schema).
+3. Sinh `GradingStepResult` đầy đủ bằng chứng: request/response, assertion, biến trích,
+   `durationMs`, `startedAt`, `completedAt`.
+4. Trả kết quả — **không** ném ngoại lệ ra orchestrator; chỉ ném khi lỗi lập trình thật
+   (`IllegalStateException` do config hỏng cấu trúc) để job `FAILED` kèm stack trace.
+
+`score`/`weight` không nằm trong kết quả: orchestrator tự tính từ `status` + `weight`
+trong config bước.
