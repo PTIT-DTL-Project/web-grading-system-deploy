@@ -540,11 +540,11 @@ Xác định quan hệ số lượng giữa các lớp dựa trên số lượng
     \item Một công việc chấm có nhiều nhật ký, nhưng mỗi nhật ký chỉ thuộc về đúng một công việc chấm. Vì vậy quan hệ giữa GradingJob và GradingLog là 1 - n.
     \item Một bài nộp có thể sinh ra nhiều kết quả chấm, bao gồm kết quả theo từng câu và kết quả toàn bài, nhưng mỗi kết quả chỉ thuộc về đúng một bài nộp. Vì vậy quan hệ giữa Submission và Result là 1 - n.
     \item Một kết quả chấm có nhiều kết quả bước, nhưng mỗi kết quả bước chỉ thuộc về đúng một kết quả chấm. Vì vậy quan hệ giữa Result và StepResult là 1 - n.
-    \item Một bài nộp có thể có nhiều bản giải thích của trợ lý AI theo các danh mục khác nhau, nhưng mỗi bản giải thích chỉ thuộc về một bài nộp. Vì vậy quan hệ giữa Submission và AiExplanation là 1 - n; xét riêng từng danh mục, mỗi bài nộp có thể chưa có hoặc có tối đa một bản giải thích đang hiệu lực.
-    \item Một Conversation có nhiều Message, Run, Task, ConversationSummary và StoredToolResult; mỗi bản ghi chỉ thuộc về một Conversation. Vì vậy mỗi quan hệ giữa Conversation với các lớp này là 1 - n.
-    \item Một Run có nhiều RunEvent, ToolExecution và StoredToolResult; mỗi bản ghi chỉ thuộc về một Run. Một Run cũng có thể liên quan đến nhiều PendingAction, nhưng PendingAction có thể không gắn với Run nào.
-    \item Một Task có thể liên kết với nhiều Operation và PendingAction; mỗi Operation hoặc PendingAction có thể không thuộc về Task nào, nhưng nếu có liên kết thì chỉ gắn với một Task.
-    \item Một Conversation có thể có nhiều Task nhưng chỉ có tối đa một Task hiện hành. ConversationSummary ghi nhận Message cuối cùng được đưa vào bản tóm tắt, Message có thể gắn với Run tương ứng, còn một Run có thể được tiếp nối từ một Run trước đó.
+    \item Một bài nộp có thể có nhiều bản giải thích của trợ lý AI theo các danh mục khác nhau; trong mỗi danh mục, bài nộp có thể chưa có hoặc có một bản giải thích đang có hiệu lực. Do đó, quan hệ tổng quát giữa bài nộp và các bản giải thích là một - nhiều.
+    \item Một cuộc hội thoại có thể lưu nhiều tin nhắn, phiên xử lý, tác vụ, bản tóm tắt và kết quả công cụ đã lưu; mỗi bản ghi này gắn với đúng một cuộc hội thoại.
+    \item Một phiên xử lý có thể có nhiều sự kiện, lần gọi công cụ và kết quả công cụ đã lưu; mỗi bản ghi này gắn với đúng một phiên xử lý. Phiên xử lý cũng có thể liên quan đến nhiều yêu cầu chờ phản hồi; một yêu cầu chờ phản hồi có thể chưa được gắn với phiên xử lý nào.
+    \item Một tác vụ có thể liên kết với nhiều thao tác và yêu cầu chờ xử lý. Mỗi thao tác hoặc yêu cầu chờ xử lý có thể chưa được gắn với tác vụ nào; nếu được gắn thì chỉ thuộc về một tác vụ.
+    \item Một cuộc hội thoại có thể lưu nhiều tác vụ nhưng chỉ có tối đa một tác vụ hiện hành. Bản tóm tắt ghi nhận tin nhắn cuối cùng được tóm tắt; tin nhắn có thể gắn với phiên xử lý liên quan; phiên xử lý có thể ghi nhận phiên xử lý cha.
 \end{itemize}
 
 Bên cạnh các quan hệ 1 - n, hệ thống còn có các quan hệ n - n cần được tách thành các quan hệ 1 - n thông qua lớp trung gian. Các quan hệ n - n được xác định như sau:
