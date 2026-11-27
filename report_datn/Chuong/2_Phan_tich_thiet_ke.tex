@@ -540,11 +540,11 @@ Xác định quan hệ số lượng giữa các lớp dựa trên số lượng
     \item Một công việc chấm có nhiều nhật ký, nhưng mỗi nhật ký chỉ thuộc về đúng một công việc chấm. Vì vậy quan hệ giữa GradingJob và GradingLog là 1 - n.
     \item Một bài nộp có thể sinh ra nhiều kết quả chấm, bao gồm kết quả theo từng câu và kết quả toàn bài, nhưng mỗi kết quả chỉ thuộc về đúng một bài nộp. Vì vậy quan hệ giữa Submission và Result là 1 - n.
     \item Một kết quả chấm có nhiều kết quả bước, nhưng mỗi kết quả bước chỉ thuộc về đúng một kết quả chấm. Vì vậy quan hệ giữa Result và StepResult là 1 - n.
-    \item Một bài nộp có thể có nhiều bản giải thích của trợ lý AI theo các danh mục khác nhau; trong mỗi danh mục, bài nộp có thể chưa có hoặc có một bản giải thích đang có hiệu lực. Do đó, quan hệ tổng quát giữa bài nộp và các bản giải thích là một - nhiều.
-    \item Một cuộc hội thoại có thể lưu nhiều tin nhắn, phiên xử lý, tác vụ, bản tóm tắt và kết quả công cụ đã lưu; mỗi bản ghi này gắn với đúng một cuộc hội thoại.
-    \item Một phiên xử lý có thể có nhiều sự kiện, lần gọi công cụ và kết quả công cụ đã lưu; mỗi bản ghi này gắn với đúng một phiên xử lý. Phiên xử lý cũng có thể liên quan đến nhiều yêu cầu chờ phản hồi; một yêu cầu chờ phản hồi có thể chưa được gắn với phiên xử lý nào.
-    \item Một tác vụ có thể liên kết với nhiều thao tác và yêu cầu chờ xử lý. Mỗi thao tác hoặc yêu cầu chờ xử lý có thể chưa được gắn với tác vụ nào; nếu được gắn thì chỉ thuộc về một tác vụ.
-    \item Một cuộc hội thoại có thể lưu nhiều tác vụ nhưng chỉ có tối đa một tác vụ hiện hành. Bản tóm tắt ghi nhận tin nhắn cuối cùng được tóm tắt; tin nhắn có thể gắn với phiên xử lý liên quan; phiên xử lý có thể ghi nhận phiên xử lý cha.
+    \item Một bài nộp có thể có nhiều bản giải thích của trợ lý AI theo các danh mục khác nhau, nhưng mỗi bản giải thích chỉ thuộc về một bài nộp. Vì vậy quan hệ giữa Submission và AiExplanation là 1 - n; xét riêng từng danh mục, mỗi bài nộp có thể chưa có hoặc có tối đa một bản giải thích đang hiệu lực.
+    \item Một Conversation có nhiều Message, Run, Task, ConversationSummary và StoredToolResult; mỗi bản ghi chỉ thuộc về một Conversation. Vì vậy mỗi quan hệ giữa Conversation với các lớp này là 1 - n.
+    \item Một Run có nhiều RunEvent, ToolExecution và StoredToolResult; mỗi bản ghi chỉ thuộc về một Run. Một Run cũng có thể liên quan đến nhiều PendingAction, nhưng PendingAction có thể không gắn với Run nào.
+    \item Một Task có thể liên kết với nhiều Operation và PendingAction; mỗi Operation hoặc PendingAction có thể không thuộc về Task nào, nhưng nếu có liên kết thì chỉ gắn với một Task.
+    \item Một Conversation có thể có nhiều Task nhưng chỉ có tối đa một Task hiện hành. ConversationSummary ghi nhận Message cuối cùng được đưa vào bản tóm tắt, Message có thể gắn với Run tương ứng, còn một Run có thể được tiếp nối từ một Run trước đó.
 \end{itemize}
 
 Bên cạnh các quan hệ 1 - n, hệ thống còn có các quan hệ n - n cần được tách thành các quan hệ 1 - n thông qua lớp trung gian. Các quan hệ n - n được xác định như sau:
@@ -554,8 +554,6 @@ Bên cạnh các quan hệ 1 - n, hệ thống còn có các quan hệ n - n c�
     \item Một sinh viên trong lớp có điểm ở nhiều thành phần điểm và một thành phần điểm áp dụng cho nhiều sinh viên, do đó quan hệ giữa ClassStudent và ScoreComponent là n - n.
     \item Một bài tập được giao cho nhiều sinh viên và một sinh viên nhận nhiều bài tập, do đó quan hệ giữa Assignment và ClassStudent là n - n. Quan hệ này được biểu diễn thông qua lớp Submission.
 \end{itemize}
-
-Trong các thực thể của dịch vụ trợ lý AI không có quan hệ nhiều - nhiều. Các trường ownerId, studentId, callerEmail và callerRoles lưu định danh hoặc phạm vi quyền của người gọi, không tạo quan hệ thực thể với User trong cơ sở dữ liệu AI service.
 
 Việc tách các quan hệ n - n được thực hiện bằng cách xác định một lớp trung gian sao cho mỗi phía của quan hệ ban đầu có quan hệ 1 - n với lớp trung gian. Sau đó, cần kiểm tra xem lớp trung gian có thỏa mãn điều kiện của lớp kết hợp hay không.
 
@@ -584,14 +582,16 @@ Các quan hệ thành phần trong hệ thống gồm:
     \item GradingSaga và GradingSagaStep là quan hệ thành phần vì bước chấm thuộc một phiên chấm.
     \item GradingJob và GradingLog là quan hệ thành phần vì nhật ký chấm thuộc một công việc chấm.
     \item Result và StepResult là quan hệ thành phần vì kết quả bước thuộc một kết quả chấm.
-    \item Trong dịch vụ trợ lý AI, Conversation là thành phần sở hữu các Message, Run, Task, ConversationSummary và StoredToolResult; Run sở hữu các RunEvent, ToolExecution, PendingAction và StoredToolResult; Task sở hữu các PendingAction. Các khóa ngoại trong migration dùng ON DELETE CASCADE cho những quan hệ này.
+    \item Các quan hệ giữa Conversation với Message, Run, Task, ConversationSummary và StoredToolResult đều là quan hệ thành phần vì những đối tượng này chỉ tồn tại trong phạm vi cuộc hội thoại tương ứng.
+    \item Các quan hệ giữa Run với RunEvent, ToolExecution, PendingAction và StoredToolResult đều là quan hệ thành phần vì các đối tượng này được tạo ra trong quá trình thực thi Run và chỉ có ý nghĩa trong phạm vi Run tương ứng.
+    \item Task và PendingAction là quan hệ thành phần vì hành động đang chờ xử lý thuộc về Task tương ứng.
 \end{itemize}
 
 Quan hệ aggregation trong hệ thống gồm:
 
 \begin{itemize}[leftmargin=*, nosep]
     \item CourseClass và ClassStudent là quan hệ aggregation vì sinh viên thuộc một lớp học nhưng không phải là thành phần bị xóa theo lớp. Thông tin sinh viên vẫn có ý nghĩa độc lập với lớp học.
-    \item Tác vụ và thao tác có quan hệ kết tập vì thao tác gắn với một tác vụ nhưng không phải là thành phần bị xóa cùng tác vụ. Thông tin thao tác vẫn có ý nghĩa độc lập để lưu nội dung yêu cầu, ngăn thực hiện lặp và theo dõi trạng thái xử lý.
+    \item Task và Operation là quan hệ aggregation vì Operation gắn với Task nhưng không phải là thành phần bị xóa cùng Task. Operation vẫn có ý nghĩa độc lập để lưu nội dung yêu cầu, ngăn thực hiện lặp và theo dõi trạng thái xử lý.
 \end{itemize}
 
 Các quan hệ liên kết trong hệ thống gồm:
@@ -600,7 +600,8 @@ Các quan hệ liên kết trong hệ thống gồm:
     \item User và CourseClass là quan hệ liên kết vì giảng viên sở hữu lớp học nhưng không phải là thành phần của lớp.
     \item ClassStudent và Submission là quan hệ liên kết vì bài nộp gắn với sinh viên nhưng không phải là thành phần của sinh viên.
     \item Submission và GradingJob là quan hệ liên kết 1 - 1 vì công việc chấm là bản ghi xử lý riêng, không phải thành phần của bài nộp.
-    \item AiExplanation liên kết logic với Submission và Student qua submissionId, studentId nhưng không có khóa ngoại tới cơ sở dữ liệu của service khác. Các trường Conversation.activeTaskId, Message.runId, ConversationSummary.throughMessageId và Run.parentRunId cũng là tham chiếu UUID không được khai báo thành khóa ngoại trong migration.
+    \item AiExplanation và Submission là quan hệ liên kết vì phần giải thích được tạo dựa trên kết quả của bài nộp; AiExplanation cũng gắn với Student đã nộp bài.
+    \item Conversation và Task là quan hệ liên kết vì một cuộc hội thoại có thể có tối đa một Task hiện hành. Message có thể gắn với Run tương ứng, ConversationSummary ghi nhận Message cuối cùng được tóm tắt, còn một Run có thể tiếp nối từ một Run trước đó.
 \end{itemize}
 
 Hai lớp kết hợp trong mô hình gồm:
@@ -610,7 +611,7 @@ Hai lớp kết hợp trong mô hình gồm:
     \item StudentScore là lớp kết hợp giữa ClassStudent và ScoreComponent, dùng để biểu diễn quan hệ n - n kèm điểm của sinh viên.
 \end{itemize}
 
-Như vậy, mô hình lớp kết hợp toàn hệ thống gồm UserRole và StudentScore. ClassStudent là lớp thường vì có định danh riêng và các thuộc tính mô tả sinh viên. Submission cũng là lớp thường vì có định danh riêng, có nhiều bản ghi trên một cặp Assignment-ClassStudent và có thuộc tính tệp nộp, trạng thái chấm, cờ latest. Miền trợ lý AI không bổ sung lớp kết hợp; các liên kết nội bộ của miền này là một - nhiều hoặc tham chiếu một UUID.
+Như vậy, mô hình lớp kết hợp toàn hệ thống gồm UserRole và StudentScore. ClassStudent là lớp thường vì có định danh riêng và các thuộc tính mô tả sinh viên. Submission cũng là lớp thường vì có định danh riêng, có nhiều bản ghi trên một cặp Assignment-ClassStudent và có thuộc tính tệp nộp, trạng thái chấm, cờ latest. Miền trợ lý AI không bổ sung lớp kết hợp vì các quan hệ giữa Conversation, Message, Run, Task, ConversationSummary, StoredToolResult, RunEvent, ToolExecution và PendingAction đã được biểu diễn bằng quan hệ thành phần hoặc quan hệ liên kết, không phải quan hệ nhiều - nhiều cần lớp trung gian.
 
 \subsubsection{Biểu đồ lớp thực thể pha phân tích toàn hệ thống }
 
