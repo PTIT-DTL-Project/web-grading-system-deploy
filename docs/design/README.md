@@ -16,6 +16,7 @@ Bộ tài liệu thiết kế versioned của hệ thống. Mỗi thay đổi l�
 | [design-db-v1.0.md](design-db-v1.0.md) | v1.0 | Current | 2026-08-16 | Schema DB cho từng service |
 | [execute-plan-v1.0.md](execute-plan-v1.0.md) | v1.0 | Current | 2026-08-16 | Cách thực thi grading thật từ nộp bài đến ra điểm |
 | [grading-assertion-engine-test-plan.md](grading-assertion-engine-test-plan.md) | v1.0 | Current | 2026-09-16 | Tất cả assertion types, test plan thực tế với API calls chi tiết |
+| [backend-concepts-va-system-design.md](backend-concepts-va-system-design.md) | v1.0 | Current | 2026-11-23 | Ôn tập phản biện: sync/async, polling/push, layer của request, proxy, idempotency, microservices, circuit breaker, orchestration, HA/scalability, subnet, storage |
 
 ## Mối quan hệ
 

@@ -3,6 +3,9 @@
 > Mục đích: giải thích các khái niệm K8s, Helm, ArgoCD, Cloudflare, RustFS
 > và cách chúng kết nối với nhau trong folder `deploy/` của project này.
 
+> Tài liệu **triển khai cụ thể** của đồ án (từng file, từng tham số, runbook,
+> bộ câu hỏi thuyết trình) nằm ở [`deploy/README.md`](deploy/README.md).
+
 ---
 
 ## Mục lục

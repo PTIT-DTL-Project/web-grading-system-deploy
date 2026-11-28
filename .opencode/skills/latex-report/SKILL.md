@@ -299,7 +299,7 @@ relations live inside the exported diagram images.
 Class diagram design: `Biểu đồ lớp thiết kế chi tiết toàn hệ thống` is
 placed immediately before `\subsection{Biểu đồ lớp chi tiết từng dịch vụ}`
 in chapter 2. Caption: `Biểu đồ lớp thiết kế toàn hệ thống.`, label
-`fig:class-system`, image `Hinhve/Hinh2_29_class_diagram_system.png`
+`fig:class-system`, image `Hinhve/Hinh2_29_class_diagram_system.jpg`
 with `\includegraphics[width=\textwidth]`. Each service-specific class
 diagram follows with its own `\subsubsection{Biểu đồ lớp chi tiết dịch
 vụ <Tên>}`, `\includegraphics[width=<width>\textwidth]{Hinhve/Hinh2_XX_...}`,
@@ -473,6 +473,24 @@ belong to Chapter 2 (analysis/design). Generic pattern terms
 (sinh viên/bài nộp) may stay in rationale sentences. Figures showing
 project actors move with their paragraphs to Chapter 2.
 
+## Mục 1.6 Lưu trữ đối tượng (Chương 1)
+
+Mục này so sánh ba tầng lựa chọn, mỗi tầng một khối lập luận riêng:
+(1) object storage so với filesystem của server ứng dụng (3 lý do,
+đã có sẵn); (2) object storage so với file storage server (NFS/FTP)
+gồm 4 điểm enumerate + Bảng `tab:object-vs-file-storage` (booktabs,
+caption dưới, label ở mục lý thuyết được phép); (3) RustFS so với
+MinIO và Ceph trong itemize. Lập luận MinIO phải dẫn
+`minioadminui` (release breaking 2025-05-24 gỡ admin UI khỏi
+Community Edition) và nói giấy phép Apache 2.0 vs AGPL — kiểm chứng
+trước khi sửa. Các thuật ngữ `File storage`, `NFS`, `FTP`, `Ceph`,
+`Apache 2.0`, `AGPL` đã có dòng trong danh mục; khi thêm thuật ngữ
+mới vào mục này, khai báo luôn trong `0_5_Danh_muc_viet_tat.tex`.
+Danh mục longtable dài 4 trang (xvi–xix) sau lần bổ sung này; khi
+thêm dòng, kiểm tra trang cuối không bị một dòng mồ côi (chỉ 1-2
+dòng tràn sang trang mới là xấu, trang cuối 60% đầy là chấp nhận
+được).
+
 ## Whole-system analysis model matches the exported diagram
 
 Chapter 2's whole-system class diagram (2.1.4) uses one class per
@@ -497,7 +515,15 @@ normal class with its own identity and `studentCode`, `studentName`,
 one Assignment-ClassStudent pair can have many submissions (`latest`
 marks the current one), so the pair is not unique. Draw `Submission` as
 the normal intermediate class between `Assignment` and `ClassStudent`,
-with `Assignment - Submission` as composition. Do not model
+with `Assignment - Submission` as composition. Aggregation is used for
+`User - CourseClass`, `CourseClass - ClassStudent` and
+`ClassStudent - Submission` (hollow diamond: the part survives when the
+whole goes away); `Submission - AiExplanation` is composition 1 - 1
+(one active explanation per submission: the service always writes the
+single `FULL_ANALYSIS` category and soft-deletes the previous row on
+regeneration, so no second relation is created); only
+`Submission - GradingJob` is a plain 1 - 1 association. Keep Bước 5 in
+that order (composition, aggregation, association). Do not model
 `ManualScore`; manual scores are represented through `StudentScore` and
 `ScoreComponent`.
 
@@ -514,15 +540,16 @@ Two whole-system exports exist and must not be swapped:
 
 | Phase | Source (Visual Paradigm) | Report asset | Label |
 |---|---|---|---|
-| Analysis (2.1.4d) | `class-diagram/ptich/class-diagram-ptich.jpg` | `Hinhve/Hinh2_13_bieu_do_lop.png` | `fig:class-diagram` |
-| Design (2.2.1) | `class-diagram/design/design-system-class-diagram.jpg` | `Hinhve/Hinh2_29_class_diagram_system.png` | `fig:he-thong-toan-bo` |
+| Analysis (2.1.4d) | `class-diagram/ptich/class-diagram-ptich.jpg` | `Hinhve/Hinh2_13_bieu_do_lop.jpg` | `fig:class-diagram` |
+| Design (2.2.1) | `class-diagram/design/design-system-class-diagram.jpg` | `Hinhve/Hinh2_29_class_diagram_system.jpg` | `fig:he-thong-toan-bo` |
 
 Tell them apart by content, not by filename: the analysis export has no
 type annotations and no `id` attributes, the design export writes
 `-name : string`, `-id : UUID`, ... and carries `«enumeration»` boxes for
 statuses (`SubmissionStatus`, `GradingJobStatus`, `RunStatus`, ...).
-Duplicate with `magick <src>.jpg <dst>.png` (2024-11: 1997x1018 and
-2402x1093) and verify the PNG keeps the source dimensions.
+Copy the export as-is with its `.jpg` extension (2026-11: 1997x1018 and
+2403x1093); the report includes the `.jpg` directly, so do not convert to
+PNG and do not keep both files for the same figure.
 
 Both are wider than 2:1, so an upright `width=\textwidth` shrinks the class
 text to unreadable size; rotate them like the sequence diagrams with

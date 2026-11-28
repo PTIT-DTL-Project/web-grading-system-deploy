@@ -519,8 +519,6 @@ Hai lớp Người dùng (User) và Vai trò (Role) biểu diễn tác nhân và
 
 Trong mô hình toàn hệ thống, kết quả thực thi từng bước và kết quả chấm từng bước được mô hình hóa chung thành lớp StepResult; bản ghi thực thi riêng của dịch vụ thực thi được trình bày ở mục \ref{sec:class-design-services}.
 
-Biểu đồ toàn hệ thống biểu diễn \textnormal{AiExplanation} như lớp nghiệp vụ kết nối với kết quả bài nộp. Ở mức chi tiết của dịch vụ trợ lý AI, lớp này được bổ sung các thực thể hội thoại và điều phối tác nhân gồm \textnormal{Conversation}, \textnormal{Message}, \textnormal{ConversationSummary}, \textnormal{Task}, \textnormal{Run}, \textnormal{RunEvent}, \textnormal{Operation}, \textnormal{PendingAction}, \textnormal{ToolExecution} và \textnormal{StoredToolResult}; các thực thể này được thể hiện đầy đủ ở Hình~\ref{fig:class-ai-service}. Các quan hệ dưới đây mở rộng phân tích của mô hình toàn hệ thống cho miền dữ liệu chi tiết này.
-
 \subsubsection{Xét quan hệ số lượng giữa các lớp}
 
 Xác định quan hệ số lượng giữa các lớp dựa trên số lượng đối tượng có thể tham gia quan hệ ở mỗi phía. Với quan hệ 1 - n, một đối tượng ở phía 1 có thể liên kết với nhiều đối tượng ở phía n, nhưng mỗi đối tượng ở phía n chỉ liên kết với đúng một đối tượng ở phía 1. Các quan hệ 1 - n trong hệ thống được xác định như sau:
@@ -540,14 +538,14 @@ Xác định quan hệ số lượng giữa các lớp dựa trên số lượng
     \item Một công việc chấm có nhiều nhật ký, nhưng mỗi nhật ký chỉ thuộc về đúng một công việc chấm. Vì vậy quan hệ giữa GradingJob và GradingLog là 1 - n.
     \item Một bài nộp có thể sinh ra nhiều kết quả chấm, bao gồm kết quả theo từng câu và kết quả toàn bài, nhưng mỗi kết quả chỉ thuộc về đúng một bài nộp. Vì vậy quan hệ giữa Submission và Result là 1 - n.
     \item Một kết quả chấm có nhiều kết quả bước, nhưng mỗi kết quả bước chỉ thuộc về đúng một kết quả chấm. Vì vậy quan hệ giữa Result và StepResult là 1 - n.
-    \item Một bài nộp có thể có nhiều bản giải thích của trợ lý AI theo các danh mục khác nhau; trong mỗi danh mục, bài nộp có thể chưa có hoặc có một bản giải thích đang có hiệu lực. Do đó, quan hệ tổng quát giữa bài nộp và các bản giải thích là một - nhiều.
+    \item Một bài nộp chỉ có thể có 1 bản giải thích của trợ lý AI theo các danh mục khác nhau; trong mỗi danh mục, bài nộp có thể chưa có hoặc có một bản giải thích đang có hiệu lực. Do đó, quan hệ tổng quát giữa bài nộp và bản giải thích là một - một.
     \item Một cuộc hội thoại có thể lưu nhiều tin nhắn, phiên xử lý, tác vụ, bản tóm tắt và kết quả công cụ đã lưu; mỗi bản ghi này gắn với đúng một cuộc hội thoại.
     \item Một phiên xử lý có thể có nhiều sự kiện, lần gọi công cụ và kết quả công cụ đã lưu; mỗi bản ghi này gắn với đúng một phiên xử lý. Phiên xử lý cũng có thể liên quan đến nhiều yêu cầu chờ phản hồi; một yêu cầu chờ phản hồi có thể chưa được gắn với phiên xử lý nào.
     \item Một tác vụ có thể liên kết với nhiều thao tác và yêu cầu chờ xử lý. Mỗi thao tác hoặc yêu cầu chờ xử lý có thể chưa được gắn với tác vụ nào; nếu được gắn thì chỉ thuộc về một tác vụ.
     \item Một cuộc hội thoại có thể lưu nhiều tác vụ nhưng chỉ có tối đa một tác vụ hiện hành. Bản tóm tắt ghi nhận tin nhắn cuối cùng được tóm tắt; tin nhắn có thể gắn với phiên xử lý liên quan; phiên xử lý có thể ghi nhận phiên xử lý cha.
 \end{itemize}
 
-Bên cạnh các quan hệ 1 - n, hệ thống còn có các quan hệ n - n cần được tách thành các quan hệ 1 - n thông qua lớp trung gian. Các quan hệ n - n được xác định như sau:
+Bên cạnh các quan hệ 1 - n và 1-1, hệ thống còn có các quan hệ n - n cần được tách thành các quan hệ 1 - n thông qua lớp trung gian. Các quan hệ n - n được xác định như sau:
 
 \begin{itemize}[leftmargin=*, nosep]
     \item Một người dùng có thể giữ nhiều vai trò và một vai trò có thể được gán cho nhiều người dùng, do đó quan hệ giữa User và Role là n - n.
@@ -578,6 +576,7 @@ Các quan hệ thành phần trong hệ thống gồm:
     \item TestPlan và TestStep là quan hệ thành phần vì bước chấm chỉ tồn tại trong một câu.
     \item Assignment và Submission là quan hệ thành phần vì bài nộp chỉ tồn tại trong phạm vi một bài tập.
     \item Submission và Result là quan hệ thành phần vì kết quả chấm chỉ tồn tại khi có bài nộp tương ứng.
+    \item Submission và AiExplanation là quan hệ thành phần 1 - 1 vì mỗi giải thích của trợ lý AI được sinh ra cho đúng một bài nộp, không còn ý nghĩa khi bài nộp bị xóa, và mỗi bài nộp chỉ có một giải thích hiệu lực; bản ghi của lần sinh lại trước đó chỉ bị xóa mềm.
     \item GradingJob và GradingSaga là quan hệ thành phần vì phiên chấm thuộc một công việc chấm.
     \item GradingSaga và GradingSagaStep là quan hệ thành phần vì bước chấm thuộc một phiên chấm.
     \item GradingJob và GradingLog là quan hệ thành phần vì nhật ký chấm thuộc một công việc chấm.
@@ -590,15 +589,15 @@ Các quan hệ thành phần trong hệ thống gồm:
 Quan hệ aggregation trong hệ thống gồm:
 
 \begin{itemize}[leftmargin=*, nosep]
+    \item User và CourseClass là quan hệ aggregation vì lớp học là bộ phận do giảng viên sở hữu và quản lý, nhưng lớp học vẫn tồn tại độc lập, không bị xóa theo khi giảng viên ngừng tham gia hệ thống.
     \item CourseClass và ClassStudent là quan hệ aggregation vì sinh viên thuộc một lớp học nhưng không phải là thành phần bị xóa theo lớp. Thông tin sinh viên vẫn có ý nghĩa độc lập với lớp học.
+    \item ClassStudent và Submission là quan hệ aggregation vì bài nộp gắn với một sinh viên trong lớp, nhưng bản ghi sinh viên vẫn tồn tại độc lập khi bài nộp bị xóa hoặc được nộp lại.
     \item Task và Operation là quan hệ aggregation vì Operation gắn với Task nhưng không phải là thành phần bị xóa cùng Task. Operation vẫn có ý nghĩa độc lập để lưu nội dung yêu cầu, ngăn thực hiện lặp và theo dõi trạng thái xử lý.
 \end{itemize}
 
 Các quan hệ liên kết trong hệ thống gồm:
 
 \begin{itemize}[leftmargin=*, nosep]
-    \item User và CourseClass là quan hệ liên kết vì giảng viên sở hữu lớp học nhưng không phải là thành phần của lớp.
-    \item ClassStudent và Submission là quan hệ liên kết vì bài nộp gắn với sinh viên nhưng không phải là thành phần của sinh viên.
     \item Submission và GradingJob là quan hệ liên kết 1 - 1 vì công việc chấm là bản ghi xử lý riêng, không phải thành phần của bài nộp.
     \item AiExplanation và Submission là quan hệ liên kết vì phần giải thích được tạo dựa trên kết quả của bài nộp; AiExplanation cũng gắn với Student đã nộp bài.
     \item Conversation và Task là quan hệ liên kết vì một cuộc hội thoại có thể có tối đa một Task hiện hành. Message có thể gắn với Run tương ứng, ConversationSummary ghi nhận Message cuối cùng được tóm tắt, còn một Run có thể tiếp nối từ một Run trước đó.
@@ -611,13 +610,11 @@ Hai lớp kết hợp trong mô hình gồm:
     \item StudentScore là lớp kết hợp giữa ClassStudent và ScoreComponent, dùng để biểu diễn quan hệ n - n kèm điểm của sinh viên.
 \end{itemize}
 
-Như vậy, mô hình lớp kết hợp toàn hệ thống gồm UserRole và StudentScore. ClassStudent là lớp thường vì có định danh riêng và các thuộc tính mô tả sinh viên. Submission cũng là lớp thường vì có định danh riêng, có nhiều bản ghi trên một cặp Assignment-ClassStudent và có thuộc tính tệp nộp, trạng thái chấm, cờ latest. Miền trợ lý AI không bổ sung lớp kết hợp vì các quan hệ giữa Conversation, Message, Run, Task, ConversationSummary, StoredToolResult, RunEvent, ToolExecution và PendingAction đã được biểu diễn bằng quan hệ thành phần hoặc quan hệ liên kết, không phải quan hệ nhiều - nhiều cần lớp trung gian.
-
 \subsubsection{Biểu đồ lớp thực thể pha phân tích toàn hệ thống }
 
 \begin{figure}[H]
 \centering
-\rotatebox{90}{\includegraphics[width=0.88\textheight,height=0.95\textwidth,keepaspectratio]{Hinhve/Hinh2_13_bieu_do_lop.png}}
+\rotatebox{90}{\includegraphics[width=0.88\textheight,height=0.95\textwidth,keepaspectratio]{Hinhve/Hinh2_13_bieu_do_lop.jpg}}
 \caption{Biểu đồ lớp thực thể pha phân tích toàn hệ thống.}
 \label{fig:class-diagram}
 \end{figure}
@@ -741,7 +738,7 @@ hình chuyển được trực tiếp thành bảng trong cơ sở dữ liệu c
 % Review: 2026-11-16, user feedback: keep the entity-class diagram distinct from the system architecture figure.
 \begin{figure}[H]
 \centering
-\rotatebox{90}{\includegraphics[width=0.70\textheight,height=0.95\textwidth,keepaspectratio]{Hinhve/Hinh2_29_class_diagram_system.png}}
+\rotatebox{90}{\includegraphics[width=0.70\textheight,height=0.95\textwidth,keepaspectratio]{Hinhve/Hinh2_29_class_diagram_system.jpg}}
 \caption{Biểu đồ lớp thực thể thiết kế của hệ thống.}
 \label{fig:he-thong-toan-bo}
 \end{figure}

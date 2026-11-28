@@ -237,3 +237,26 @@ needed (adding `management.endpoint.health.probes.enabled: true` only makes it
 explicit). The `startupProbe` (periodSeconds 10, `failureThreshold: 30` ≈ 5 min)
 gives the cold JVM its own budget, so the old guessed `initialDelaySeconds:
 30/60` are unnecessary.
+
+## 7. Deploy documentation lives in docs/deploy/
+
+Every deploy-side change (charts/values, Ingress hosts, ArgoCD apps, infra
+manifests under `deploy/`, secrets/secret keys, resource limits) must update the
+matching file in `docs/deploy/` in the same task:
+
+- `README.md` — index + 60-second architecture picture
+- `01-kien-truc-tong-the.md` — namespaces, workloads, requests/limits budget, request flows
+- `02-danh-muc-file.md` — file-by-file purpose/deps/idempotency for `deploy/`, root scripts, `config-services/`
+- `03-helm-chart-va-tham-so.md` — every values key and env var with effect + failure mode
+- `04-gitops-argocd.md` — Application fields, sync/health states, CI timeline, rollback
+- `05-ingress-va-cloudflare.md` — host→service table, Traefik entrypoints, tunnel, CORS, HTTP-code diagnosis
+- `06-ha-tang-dung-chung.md` — Neon, Keycloak, RustFS, Aiven Kafka/Kafka UI, Prometheus/Grafana/Tempo parameters
+- `07-secrets-va-bien-moi-truong.md` — secret inventory, env matrix per service, rotation procedures
+- `08-van-hanh-va-xu-ly-su-co.md` — install/verify/rollback/scale runbook + troubleshooting
+- `09-thuyet-trinh-va-hoi-dap.md` — report/presentation outline, numbers to quote, Q&A
+
+Rules: quote only values present in manifests (never estimate resources); keep
+the `requests` vs `limits` distinction explicit; never paste secret values or the
+Cloudflare tunnel token into any doc; state limits of the design (1 node, no HA,
+RustFS not ArgoCD-managed, Keycloak `start-dev`) instead of implying production
+readiness.

@@ -110,6 +110,7 @@ kubectl apply -f generated/
 - **[src-services/README.md](./src-services/README.md)** - Source code repository documentation
 - **[config-services/README.md](./config-services/README.md)** - Config repository documentation
 - **[deploy/argocd-apps/README.md](./deploy/argocd-apps/README.md)** - ArgoCD setup guide
+- **[docs/deploy/README.md](./docs/deploy/README.md)** - Bộ tài liệu triển khai k3s chi tiết (kiến trúc, từng file, từng tham số, runbook, Q&A thuyết trình)
 
 ## 🎮 Lifecycle Management Scripts
 

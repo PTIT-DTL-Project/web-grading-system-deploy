@@ -127,8 +127,7 @@
     \strng{fullhash}{FRT1}
     \field{labelnamesource}{author}
     \field{labeltitlesource}{title}
-    \field{title}{Architectural Styles and the Design of Network-based Software
-  Architectures}
+    \field{title}{Architectural Styles and the Design of Network-based Software Architectures}
     \verb{url}
     \verb https://www.ics.uci.edu/~fielding/pubs/dissertation/top.htm
     \endverb
@@ -294,6 +293,25 @@
     \field{title}{RustFS Source Code Repository}
     \verb{url}
     \verb https://github.com/rustfs/rustfs
+    \endverb
+    \field{year}{2025}
+  \endentry
+
+  \entry{minioadminui}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=M}{%
+         family={{MinIO}},
+         familyi={M\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{M3}
+    \strng{fullhash}{M3}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{MinIO Breaking Release {RELEASE.2025-05-24T17-08-30Z}}
+    \verb{url}
+    \verb https://github.com/minio/minio/releases/tag/RELEASE.2025-05-24T17-08-
+    \verb 30Z
     \endverb
     \field{year}{2025}
   \endentry

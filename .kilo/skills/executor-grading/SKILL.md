@@ -312,15 +312,18 @@ Contract a mock must satisfy:
   — the Dockerfile builds with `mvn` from the builder image, so they are dead weight.
 - The graded service = first service in YAML order with `ports` whose name is not
   db/database/postgres/mysql/mongo/redis/kafka/zipkin. Its published port is **replaced**
-  by `{allocated}:{containerPort}` where `containerPort = assignments.docker_compose_port`
-  (else 8080), so the app must listen on that port AND serve `GET /` with status < 500:
+  by `{allocated}:{containerPort}`, where `containerPort` is read from the compose `ports`
+  entry (`"host:container"` → container), falling back to `assignments.docker_compose_port`
+  then 8080 — never trust the assignment alone, or Testcontainers waits on a port the app
+  never exposes. The app must listen on that port AND serve `GET /` with status < 500:
   that is the Testcontainers boot wait, and it runs before any step.
 - A wrong-but-valid HTTP response is the way to make a step FAIL. A 4xx/5xx never raises —
   it just fails the status assertion — whereas a crash/app-down is an infra failure: score
   0 but no step rows, so the AI explanation has nothing to analyse.
 - `contains` is a raw substring test on the response body. To fail it the value must
   genuinely be absent; wrapping it in an envelope or renaming the field still passes.
-- Score is `10 × passedWeight/ranWeight`; `SKIPPED` leaves both sides. A failed `required`
+- Score is `10 × passedWeight/totalWeight`; a `SKIPPED` step keeps its weight in the
+  denominator with 0 passed, so it drags the score down (changed 2026-11-06). A failed `required`
   step stops only the REST OF ITS OWN PLAN, so sibling plans still run and still score.
 
 Existing profiles: `book-app` 10/10 · `book-app-fail-full` 0/10 (POST answers 200 not 201,
@@ -334,3 +337,18 @@ gateway injects `X-User-Id` from the JWT — a client-sent one is stripped, so a
 token is required) then PUT the zip to the presigned RustFS URL; the ObjectCreated webhook
 is the only grading trigger. The FE already ships that upload UI
 (`SubmitAssignmentModal.tsx`).
+## 13. Service-layer docs
+
+`docs/api/docs/executor-service/` keeps one `.md` per class under
+`service/` (kebab-case filename, e.g. `service/db/DbSandboxService` →
+`db-sandbox-service.md`). Each file covers: purpose, dependencies, every public method,
+step-by-step flow, edge cases, and links to neighbours. `GradingOrchestrator` has its own
+`grading-orchestrator.md`. The list is indexed in `docs/api/docs/PLAN.md`; when a service
+class gains/loses a method or changes behaviour, update its file in the same task.
+
+Each file must carry a per-function section (`## Chi tiết từng hàm`, or an appendix
+inventory for very large classes) that explains *every* function —
+including private helpers and record methods — with purpose, input/output, step-by-step
+behaviour and failure path. `http-step-executor.md` is the reference for depth (11 functions,
+one subsection each); `grading-orchestrator.md` uses a full inventory table plus pointers
+because of its size.
