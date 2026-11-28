@@ -68,18 +68,31 @@ Java là ngôn ngữ lập trình hướng đối tượng, mạnh và phổ bi�
 
 Spring Boot là một framework ứng dụng dựa trên nền tảng Java, cung cấp cơ chế tự động cấu hình (auto-configuration), nhúng server web (Tomcat) và các starter - tập hợp các phụ thuộc được cấu hình sẵn cho từng tính năng~\cite{springbootdocs}. Spring Boot giúp giảm tối đa khối lượng cấu hình thủ công, cho phép nhà phát triển tập trung vào nghiệp vụ kinh doanh. Trong hệ thống, mỗi vi dịch vụ được xây dựng bằng Spring Boot, đảm bảo tính nhất quán và dễ bảo trì cho toàn bộ hệ thống.
 
-\subsection{Spring Cloud OpenFeign}
+\subsection{Spring AI và mô hình ngôn ngữ lớn}
 \label{section:1.3.3}
+
+Mô hình ngôn ngữ lớn (Large Language Model - LLM) là mô hình học sâu (deep learning) được huấn luyện trên khối lượng văn bản khổng lồ, sở hữu năng lực hiểu ngữ cảnh, suy luận logic và tạo sinh văn bản tự nhiên theo chỉ dẫn (prompt). Khi được tích hợp vào kiến trúc phần mềm hiện đại, tương tác với LLM xoay quanh bốn cơ chế kỹ thuật cốt lõi:
+\begin{itemize}
+    \item Kỹ thuật chỉ dẫn và quản lý ngữ cảnh (Prompt Engineering): định hình hành vi và phạm vi xử lý của mô hình thông qua chỉ dẫn hệ thống (system prompt), câu hỏi của người dùng (user prompt) và thông tin ngữ cảnh nghiệp vụ được đưa vào không gian suy luận.
+    \item Cơ chế gọi công cụ (tool calling): cho phép mô hình mở rộng khả năng bằng cách đề xuất thực thi các chức năng bên ngoài thông qua việc sinh dữ liệu có cấu trúc chứa tên hàm và tham số đầu vào. Mã ứng dụng giữ vai trò điều phối, kiểm tra phân quyền, thực thi hàm và trả kết quả để mô hình tổng hợp phản hồi hoàn chỉnh.
+    \item Quản lý bộ nhớ hội thoại (conversation memory): lưu vết và tái sử dụng lịch sử các lượt tương tác dựa trên định danh phiên làm việc, duy trì tính liên tục và ngữ cảnh trao đổi xuyên suốt giữa người dùng và mô hình.
+    \item Định dạng đầu ra có cấu trúc (structured outputs): cơ chế ràng buộc mô hình sinh dữ liệu tuân thủ chặt chẽ theo một lược đồ cấu trúc định trước (chẳng hạn định dạng JSON), phục vụ việc bóc tách và tích hợp tự động vào luồng dữ liệu của hệ thống.
+\end{itemize}
+
+Spring AI là khung tích hợp của hệ sinh thái Spring nhằm trừu tượng hóa và đơn giản hóa việc tương tác với các mô hình trí tuệ nhân tạo~\cite{springaidocs}. Spring AI cung cấp giao diện lập trình cấp cao và thống nhất, chuẩn hóa các khái niệm như quản lý prompt, tích hợp công cụ, xử lý đầu ra có cấu trúc và quản lý bộ nhớ hội thoại. Nhờ đó, ứng dụng có thể kết nối linh hoạt tới nhiều nhà cung cấp mô hình AI khác nhau (thông qua các chuẩn giao tiếp phổ biến như API tương thích OpenAI) mà không làm ràng buộc chặt chẽ logic nghiệp vụ vào giao thức riêng biệt của một nhà cung cấp cụ thể.
+
+\subsection{Spring Cloud OpenFeign}
+\label{section:1.3.4}
 
 Spring Cloud OpenFeign là một thư viện cho phép định nghĩa các client HTTP theo cách khai báo (declarative). Thay vì viết code HTTP thủ công, nhà phát triển chỉ cần định nghĩa một interface với các phương thức tương ứng với các endpoint cần gọi, và OpenFeign tự động tạo phần triển khai để thực hiện gọi HTTP~\cite{openfeigndocs}. Trong hệ thống, OpenFeign được sử dụng để các vi dịch vụ nội bộ gọi nhau một cách đơn giản và nhất quán.
 
 \subsection{Xác thực với Spring Security và OAuth2}
-\label{section:1.3.4}
+\label{section:1.3.5}
 
 Spring Security là module bảo mật của Spring, cung cấp cơ chế xác thực (authentication) và phân quyền (authorization) mạnh mẽ. Kết hợp với OAuth2 - giao thức ủy quyền mở - Spring Boot cung cấp cơ chế OAuth2 Resource Server, cho phép xác thực JWT (JSON Web Token) nhận được từ máy chủ xác thực (Keycloak) mà không cần duy trì trạng thái session phía server~\cite{springsecuritydocs}.
 
 \subsection{RESTful API}
-\label{section:1.3.5}
+\label{section:1.3.6}
 
 REST (Representational State Transfer) là một kiểu kiến trúc cho các hệ thống phân tán, dựa trên các nguyên tắc: tài nguyên (resource) được xác định bằng URI, các thao tác thực hiện qua các phương thức HTTP (GET, POST, PUT, DELETE), và truyền thông không trạng thái (stateless)~\cite{fielding2000rest}. Toàn bộ giao diện của hệ thống đều được xây dựng theo REST, giúp client dễ dàng tương tác và tích hợp.
 
@@ -330,6 +343,6 @@ Tempo là hệ thống lưu trữ và truy vấn traces (tracing). Tempo nhận 
 \section{Kết luận chương}
 \label{section:1.11}
 
-Chương này đã trình bày các cơ sở lý thuyết và công nghệ được lựa chọn: kiến trúc vi dịch vụ với mẫu DB-per-service; nền tảng Java cùng Spring Boot; lưu trữ quan hệ với ORM; trao đổi tin nhắn bất đồng bộ qua Kafka; lưu trữ đối tượng tương thích S3; đóng gói và điều phối bằng Docker và Kubernetes; quản lý danh tính với OAuth 2.0, OIDC và PKCE; và giao diện React. Các công nghệ được chọn đều là giải pháp mã nguồn mở, ổn định, có cộng đồng hỗ trợ lớn.
+Chương này đã trình bày các cơ sở lý thuyết và công nghệ được lựa chọn: kiến trúc vi dịch vụ với mẫu DB-per-service; nền tảng Java cùng Spring Boot và Spring AI; lưu trữ quan hệ với ORM; trao đổi tin nhắn bất đồng bộ qua Kafka; lưu trữ đối tượng tương thích S3; đóng gói và điều phối bằng Docker và Kubernetes; quản lý danh tính với OAuth 2.0, OIDC và PKCE; và giao diện React. Các công nghệ được chọn đều là giải pháp mã nguồn mở, ổn định, có cộng đồng hỗ trợ lớn.
 
 \end{document}

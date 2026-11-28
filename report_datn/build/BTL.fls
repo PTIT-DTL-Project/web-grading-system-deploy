@@ -224,8 +224,6 @@ INPUT /usr/share/texmf-dist/tex/generic/ltxcmds/ltxcmds.sty
 INPUT /usr/share/texmf-dist/tex/generic/ltxcmds/ltxcmds.sty
 INPUT /usr/share/texmf-dist/tex/latex/kvsetkeys/kvsetkeys.sty
 INPUT /usr/share/texmf-dist/tex/latex/kvsetkeys/kvsetkeys.sty
-INPUT /usr/share/texmf-dist/tex/latex/koma-script/tocbasic.sty
-INPUT /usr/share/texmf-dist/tex/latex/koma-script/tocbasic.sty
 INPUT /usr/share/texmf-dist/tex/latex/blindtext/blindtext.sty
 INPUT /usr/share/texmf-dist/tex/latex/blindtext/blindtext.sty
 INPUT /usr/share/texmf-dist/tex/latex/biblatex/biblatex.sty
@@ -656,11 +654,11 @@ INPUT ./Hinhve/Hinh2_27_seq_xem_diem_ca_nhan.png
 INPUT Hinhve/Hinh2_27_seq_xem_diem_ca_nhan.png
 INPUT ./Hinhve/Hinh2_27_seq_xem_diem_ca_nhan.png
 INPUT ./Hinhve/Hinh2_27_seq_xem_diem_ca_nhan.png
-INPUT ./Hinhve/Hinh2_37_seq_tro_chuyen_ai.png
-INPUT ./Hinhve/Hinh2_37_seq_tro_chuyen_ai.png
-INPUT Hinhve/Hinh2_37_seq_tro_chuyen_ai.png
-INPUT ./Hinhve/Hinh2_37_seq_tro_chuyen_ai.png
-INPUT ./Hinhve/Hinh2_37_seq_tro_chuyen_ai.png
+INPUT ./Hinhve/user-chat-ai-assistant-sequence.jpg
+INPUT ./Hinhve/user-chat-ai-assistant-sequence.jpg
+INPUT Hinhve/user-chat-ai-assistant-sequence.jpg
+INPUT ./Hinhve/user-chat-ai-assistant-sequence.jpg
+INPUT ./Hinhve/user-chat-ai-assistant-sequence.jpg
 INPUT ./Hinhve/Hinh2_31_kien_truc_tong_the.png
 INPUT ./Hinhve/Hinh2_31_kien_truc_tong_the.png
 INPUT Hinhve/Hinh2_31_kien_truc_tong_the.png
@@ -674,6 +672,11 @@ INPUT ./Hinhve/executor-service-architecture.png
 INPUT /usr/share/texmf-dist/fonts/tfm/vntex/urwvn/utmri8v.tfm
 INPUT /usr/share/texmf-dist/fonts/tfm/vntex/urwvn/utmr8v.tfm
 INPUT /usr/share/texmf-dist/fonts/tfm/vntex/urwvn/utmr8v.tfm
+INPUT ./Hinhve/kien_truc_ai_assistant_service_v2.png
+INPUT ./Hinhve/kien_truc_ai_assistant_service_v2.png
+INPUT Hinhve/kien_truc_ai_assistant_service_v2.png
+INPUT ./Hinhve/kien_truc_ai_assistant_service_v2.png
+INPUT ./Hinhve/kien_truc_ai_assistant_service_v2.png
 INPUT ./Chuong/3_Trien_khai_danh_gia.tex
 INPUT ./Chuong/3_Trien_khai_danh_gia.tex
 INPUT Chuong/3_Trien_khai_danh_gia.tex

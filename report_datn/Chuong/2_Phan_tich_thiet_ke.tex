@@ -505,6 +505,7 @@ Kịch bản ngoại lệ &
 \end{table}
 
 \subsection{Biểu đồ lớp toàn hệ thống}
+\label{sec:system-class-diagram}
 
 \subsubsection{Xác định các lớp của hệ thống}
 
@@ -512,11 +513,8 @@ Kịch bản ngoại lệ &
 
 Loại bỏ các danh từ nằm ngoài phạm vi mục đích của hệ thống, các danh từ trùng lặp và các danh từ chỉ là thuộc tính của lớp khác, ta thu được các lớp thực thể sau:
 
-Người dùng (User), Vai trò (Role), Liên kết người dùng - vai trò (UserRole), Lớp học (CourseClass), Sinh viên thuộc lớp (ClassStudent), Bài tập (Assignment), Câu (TestPlan), Bước chấm (TestStep), Thành phần điểm (ScoreComponent), Điểm thành phần (StudentScore), Bài nộp (Submission), Công việc chấm (GradingJob), Phiên chấm (GradingSaga), Bước của phiên chấm (GradingSagaStep), Nhật ký chấm (GradingLog), Kết quả chấm (Result), Kết quả từng bước (StepResult), Giải thích của trợ lý AI (AiExplanation).
+Người dùng (User), Vai trò (Role), Liên kết người dùng - vai trò (UserRole), Lớp học (CourseClass), Sinh viên thuộc lớp (ClassStudent), Bài tập (Assignment), Câu (TestPlan), Bước chấm (TestStep), Thành phần điểm (ScoreComponent), Điểm thành phần (StudentScore), Bài nộp (Submission), Công việc chấm (GradingJob), Phiên chấm (GradingSaga), Bước của phiên chấm (GradingSagaStep), Nhật ký chấm (GradingLog), Kết quả chấm (Result), Kết quả từng bước (StepResult), Giải thích của trợ lý AI (AiExplanation), Cuộc hội thoại (Conversation), Tin nhắn (Message), Tóm tắt hội thoại (ConversationSummary), Tác vụ (Task), Thao tác (Operation), Phiên chạy (Run), Sự kiện chạy (RunEvent), Lần thực thi công cụ (ToolExecution), Hành động chờ người dùng (PendingAction), Kết quả công cụ đã lưu (StoredToolResult).
 
-Hai lớp Người dùng (User) và Vai trò (Role) biểu diễn tác nhân và quyền truy cập của hệ thống; lớp UserRole biểu diễn liên kết nhiều-nhiều giữa hai lớp này.
-
-Trong mô hình toàn hệ thống, kết quả thực thi từng bước và kết quả chấm từng bước được mô hình hóa chung thành lớp StepResult; bản ghi thực thi riêng của dịch vụ thực thi được trình bày ở mục \ref{sec:class-design-services}.
 
 \subsubsection{Xét quan hệ số lượng giữa các lớp}
 
@@ -537,11 +535,14 @@ Xác định quan hệ số lượng giữa các lớp dựa trên số lượng
     \item Một công việc chấm có nhiều nhật ký, nhưng mỗi nhật ký chỉ thuộc về đúng một công việc chấm. Vì vậy quan hệ giữa GradingJob và GradingLog là 1 - n.
     \item Một bài nộp có thể sinh ra nhiều kết quả chấm, bao gồm kết quả theo từng câu và kết quả toàn bài, nhưng mỗi kết quả chỉ thuộc về đúng một bài nộp. Vì vậy quan hệ giữa Submission và Result là 1 - n.
     \item Một kết quả chấm có nhiều kết quả bước, nhưng mỗi kết quả bước chỉ thuộc về đúng một kết quả chấm. Vì vậy quan hệ giữa Result và StepResult là 1 - n.
+    \item Một bài nộp chỉ có thể có 1 bản giải thích của trợ lý AI theo các danh mục khác nhau; trong mỗi danh mục, bài nộp có thể chưa có hoặc có một bản giải thích đang có hiệu lực. Do đó, quan hệ tổng quát giữa bài nộp và bản giải thích là một - một.
+    \item Một cuộc hội thoại có thể lưu nhiều tin nhắn, phiên xử lý, tác vụ, bản tóm tắt và kết quả công cụ đã lưu; mỗi bản ghi này gắn với đúng một cuộc hội thoại.
+    \item Một phiên xử lý có thể có nhiều sự kiện, lần gọi công cụ và kết quả công cụ đã lưu; mỗi bản ghi này gắn với đúng một phiên xử lý. Phiên xử lý cũng có thể liên quan đến nhiều yêu cầu chờ phản hồi; một yêu cầu chờ phản hồi có thể chưa được gắn với phiên xử lý nào.
+    \item Một tác vụ có thể liên kết với nhiều thao tác và yêu cầu chờ xử lý. Mỗi thao tác hoặc yêu cầu chờ xử lý có thể chưa được gắn với tác vụ nào; nếu được gắn thì chỉ thuộc về một tác vụ.
+    \item Một cuộc hội thoại có thể lưu nhiều tác vụ nhưng chỉ có tối đa một tác vụ hiện hành. Bản tóm tắt ghi nhận tin nhắn cuối cùng được tóm tắt; tin nhắn có thể gắn với phiên xử lý liên quan; phiên xử lý có thể ghi nhận phiên xử lý cha.
 \end{itemize}
 
-Ngoài các quan hệ 1 - n, hệ thống còn một quan hệ 1 - 1 giữa Submission và AiExplanation: mỗi bài nộp có đúng một giải thích của trợ lý AI đang hiệu lực và mỗi giải thích chỉ thuộc về đúng một bài nộp. Hệ thống chỉ dùng một danh mục phân tích toàn bài cho mỗi bài nộp, nên mỗi bài nộp chỉ sinh ra một giải thích; khi sinh lại, bản ghi cũ được đánh dấu xoá mềm để nhường chỗ cho bản mới chứ không tạo thêm một quan hệ mới. Ràng buộc duy nhất trên cặp (bài nộp, danh mục) áp dụng cho các bản ghi chưa bị xoá mềm bảo đảm điều này ở mức cơ sở dữ liệu.
-
-Bên cạnh các quan hệ 1 - n và 1 - 1, hệ thống còn có các quan hệ n - n cần được tách thành các quan hệ 1 - n thông qua lớp trung gian. Các quan hệ n - n được xác định như sau:
+Bên cạnh các quan hệ 1 - n và 1-1, hệ thống còn có các quan hệ n - n cần được tách thành các quan hệ 1 - n thông qua lớp trung gian. Các quan hệ n - n được xác định như sau:
 
 \begin{itemize}[leftmargin=*, nosep]
     \item Một người dùng có thể giữ nhiều vai trò và một vai trò có thể được gán cho nhiều người dùng, do đó quan hệ giữa User và Role là n - n.
@@ -577,6 +578,9 @@ Các quan hệ thành phần trong hệ thống gồm:
     \item GradingSaga và GradingSagaStep là quan hệ thành phần vì bước chấm thuộc một phiên chấm.
     \item GradingJob và GradingLog là quan hệ thành phần vì nhật ký chấm thuộc một công việc chấm.
     \item Result và StepResult là quan hệ thành phần vì kết quả bước thuộc một kết quả chấm.
+    \item Các quan hệ giữa Conversation với Message, Run, Task, ConversationSummary và StoredToolResult đều là quan hệ thành phần vì những đối tượng này chỉ tồn tại trong phạm vi cuộc hội thoại tương ứng.
+    \item Các quan hệ giữa Run với RunEvent, ToolExecution, PendingAction và StoredToolResult đều là quan hệ thành phần vì các đối tượng này được tạo ra trong quá trình thực thi Run và chỉ có ý nghĩa trong phạm vi Run tương ứng.
+    \item Task và PendingAction là quan hệ thành phần vì hành động đang chờ xử lý thuộc về Task tương ứng.
 \end{itemize}
 
 Quan hệ aggregation trong hệ thống gồm:
@@ -585,12 +589,15 @@ Quan hệ aggregation trong hệ thống gồm:
     \item User và CourseClass là quan hệ aggregation vì lớp học là bộ phận do giảng viên sở hữu và quản lý, nhưng lớp học vẫn tồn tại độc lập, không bị xóa theo khi giảng viên ngừng tham gia hệ thống.
     \item CourseClass và ClassStudent là quan hệ aggregation vì sinh viên thuộc một lớp học nhưng không phải là thành phần bị xóa theo lớp. Thông tin sinh viên vẫn có ý nghĩa độc lập với lớp học.
     \item ClassStudent và Submission là quan hệ aggregation vì bài nộp gắn với một sinh viên trong lớp, nhưng bản ghi sinh viên vẫn tồn tại độc lập khi bài nộp bị xóa hoặc được nộp lại.
+    \item Task và Operation là quan hệ aggregation vì Operation gắn với Task nhưng không phải là thành phần bị xóa cùng Task. Operation vẫn có ý nghĩa độc lập để lưu nội dung yêu cầu, ngăn thực hiện lặp và theo dõi trạng thái xử lý.
 \end{itemize}
 
 Các quan hệ liên kết trong hệ thống gồm:
 
 \begin{itemize}[leftmargin=*, nosep]
     \item Submission và GradingJob là quan hệ liên kết 1 - 1 vì công việc chấm là bản ghi xử lý riêng, không phải thành phần của bài nộp.
+    \item AiExplanation và Submission là quan hệ liên kết vì phần giải thích được tạo dựa trên kết quả của bài nộp; AiExplanation cũng gắn với Student đã nộp bài.
+    \item Conversation và Task là quan hệ liên kết vì một cuộc hội thoại có thể có tối đa một Task hiện hành. Message có thể gắn với Run tương ứng, ConversationSummary ghi nhận Message cuối cùng được tóm tắt, còn một Run có thể tiếp nối từ một Run trước đó.
 \end{itemize}
 
 Hai lớp kết hợp trong mô hình gồm:
@@ -919,11 +926,11 @@ Hình \ref{fig:seq-xem-diem-ca-nhan} mô tả luồng xử lý khi sinh viên xe
 
 \subsubsection{Trò chuyện với trợ lý AI}
 
-Hình \ref{fig:seq-tro-chuyen-ai} mô tả luồng xử lý khi người dùng trò chuyện với trợ lý AI: yêu cầu được gửi tới dịch vụ Trợ lý AI và lưu lại trong hội thoại, quá trình xử lý có thể gọi công cụ nội bộ để lấy dữ liệu, kết quả được trả về theo dòng sự kiện và hiển thị dần trên giao diện.
+Hình \ref{fig:seq-tro-chuyen-ai} mô tả luồng xử lý khi người dùng trò chuyện với trợ lý AI.
 
 \begin{figure}[H]
 \centering
-\includegraphics[max width=\textwidth]{Hinhve/Hinh2_37_seq_tro_chuyen_ai.png}
+\includegraphics[max width=\textwidth]{Hinhve/user-chat-ai-assistant-sequence.jpg}
 \caption{Sơ đồ tuần tự chức năng Trò chuyện với trợ lý AI.}
 \label{fig:seq-tro-chuyen-ai}
 \end{figure}
@@ -1063,5 +1070,45 @@ Trong đó các bước \textnormal{SKIPPED} không tính vào tử số và m�
 
 
 Chi tiết cấu hình từng trường ở cấp bài tập, câu, bước, điều kiện kiểm tra, biến trích xuất, cấu hình dịch vụ Thực thi chấm và công thức tính điểm xem ở Phụ lục \ref{phu-luc:chapter}.
+
+\subsection{Thiết kế dịch vụ trợ lý AI}
+\label{sec:design-ai-service}
+
+Bên cạnh quy trình chấm bài tự động, dịch vụ Trợ lý AI là thành phần nghiệp vụ hỗ trợ sinh viên giải thích kết quả và tương tác hỏi đáp thông minh theo ngữ cảnh môn học. Dịch vụ được thiết kế với kiến trúc hướng tác nhân (agentic architecture), tích hợp mô hình ngôn ngữ lớn và quản lý trạng thái xử lý bất đồng bộ.
+
+\subsubsection{Kiến trúc dịch vụ Trợ lý AI}
+
+Hình~\ref{fig:ai-assistant-architecture} mô tả kiến trúc bên trong dịch vụ Trợ lý AI và các hệ thống mà dịch vụ tích hợp. Kiến trúc được chia thành các nhóm API và bảo mật, nghiệp vụ hội thoại, điều phối tác nhân, công cụ tích hợp, xử lý bất đồng bộ và lưu trữ dữ liệu.
+
+\begin{figure}[H]
+\centering
+\includegraphics[max width=\textwidth]{Hinhve/kien_truc_ai_assistant_service_v2.png}
+\caption{Kiến trúc dịch vụ Trợ lý AI (ai-assistant-service).}
+\label{fig:ai-assistant-architecture}
+\end{figure}
+
+Người dùng gửi yêu cầu từ giao diện web qua API Gateway. Gateway xác thực JWT, kiểm tra vai trò và chuyển tiếp thông tin người dùng trong các header tin cậy; bộ lọc của dịch vụ kiểm tra thông tin này trước khi chuyển yêu cầu tới các controller. Với chức năng trò chuyện, \textnormal{ConversationService} quản lý hội thoại và tạo phiên chạy ở trạng thái chờ. \textnormal{RunWorker} xử lý phiên ở nền, cập nhật trạng thái \textnormal{Run}; \textnormal{SseBroadcaster} phát sự kiện tiến độ để giao diện theo dõi và có thể truy vấn lại trạng thái khi cần. Trước mỗi lượt suy luận, \textnormal{AgentOrchestrator} phối hợp \textnormal{ContextBuilder}, \textnormal{ContextPreflight} và \textnormal{GuardChecker} để chuẩn bị, kiểm tra ngữ cảnh, sau đó điều phối \textnormal{AgentRuntime}.
+
+Agent trao đổi với mô hình qua \textnormal{LlmClient} và API tương thích OpenAI; tên mô hình và nhà cung cấp được cấu hình bên ngoài mã nguồn. Khi cần dữ liệu nghiệp vụ, agent chọn công cụ phù hợp; \textnormal{ToolExecutor} kiểm tra quyền rồi gọi các dịch vụ Quản lý lớp học, Nộp bài hoặc Kết quả chấm qua REST. Với thao tác nhạy cảm, dịch vụ ghi nhận \textnormal{Operation}/\textnormal{PendingAction}, chuyển phiên sang trạng thái chờ xác nhận và chỉ tiếp tục khi người dùng phản hồi.
+
+Luồng giải thích kết quả đi qua \textnormal{AiExplanationController} và \textnormal{AiExplanationService}. Dịch vụ lấy thông tin bài nộp, điểm và kết quả từng bước từ các dịch vụ liên quan, tạo prompt yêu cầu đầu ra JSON bằng \textnormal{PromptBuilder}, gọi mô hình, kiểm tra kết quả rồi lưu giải thích hợp lệ để tái sử dụng. Các hội thoại, phiên chạy, sự kiện, lần gọi công cụ, thao tác đang chờ và giải thích được lưu trong PostgreSQL riêng của dịch vụ qua Spring Data JPA; dịch vụ không truy cập trực tiếp cơ sở dữ liệu của các dịch vụ khác.
+
+\subsubsection{Tổng quan luồng}
+
+Luồng trò chuyện bắt đầu khi client gửi nội dung tới API tạo tin nhắn. \textnormal{ChatController} chuyển yêu cầu cho \textnormal{ConversationService}, nơi kiểm tra quyền sở hữu hội thoại và mã yêu cầu chống gửi lặp, lưu tin nhắn người dùng cùng một \textnormal{Run} ở trạng thái \textnormal{QUEUED}. API trả về mã phiên chạy để client không phải chờ mô hình xử lý xong. Sau khi giao dịch tạo dữ liệu hoàn tất, \textnormal{RunWorker} tiếp nhận phiên chạy ở nền và gọi bộ điều phối tác nhân.
+
+Trong quá trình xử lý, \textnormal{AgentOrchestrator} xây dựng ngữ cảnh hội thoại, kiểm tra điều kiện trước khi gọi mô hình, chọn công cụ phù hợp với vai trò người dùng và điều phối các lượt gọi mô hình/công cụ. Công cụ truy vấn dữ liệu lấy thông tin từ các dịch vụ nghiệp vụ qua API. Nếu yêu cầu làm thay đổi dữ liệu, dịch vụ tạo \textnormal{Operation} và \textnormal{PendingAction}; phiên chạy đợi xác nhận của người dùng trước khi tiếp tục hoặc kết thúc. Kết quả cuối cùng được lưu vào hội thoại.
+
+Trong lúc Run được xử lý, client đăng ký luồng Server-Sent Events (SSE) để nhận trạng thái và các sự kiện tiến độ; client cũng có thể yêu cầu phát lại sự kiện từ số thứ tự đã nhận gần nhất nếu kết nối bị gián đoạn. Luồng giải thích kết quả được gọi riêng qua \textnormal{AiExplanationController} và \textnormal{AiExplanationService}: dịch vụ kiểm tra quyền truy cập bài nộp, lấy dữ liệu điểm và kết quả từng bước cùng thông tin bài tập từ các dịch vụ liên quan, rồi dùng \textnormal{PromptBuilder} và client mô hình để tạo đầu ra có cấu trúc. Kết quả được kiểm tra trước khi lưu để tái sử dụng; khi dữ liệu đầu vào hoặc phản hồi mô hình không đáp ứng điều kiện, dịch vụ có thể trả về kết quả dự phòng mà không lưu thành bản giải thích hợp lệ.
+
+\subsubsection{Quản lý trạng thái và lưu vết xử lý}
+
+Để quản lý các yêu cầu chạy nền và cho phép khôi phục tiến trình khi client mất kết nối, dịch vụ Trợ lý AI lưu trạng thái của phiên chạy, thao tác nghiệp vụ và từng sự kiện vào cơ sở dữ liệu:
+\begin{itemize}[leftmargin=*, nosep]
+    \item Vòng đời \textnormal{Run} được biểu diễn bằng \textnormal{RunStatus} với các trạng thái \textnormal{QUEUED}, \textnormal{RUNNING}, \textnormal{WAITING\_USER}, \textnormal{WAITING\_APPROVAL}, \textnormal{SUCCEEDED}, \textnormal{FAILED}, \textnormal{CANCELLED} và \textnormal{LIMIT\_REACHED}. Trạng thái chờ phân biệt việc agent cần thêm thông tin với việc cần người dùng phê duyệt thao tác; các trạng thái kết thúc ghi nhận hoàn thành, lỗi, hủy hoặc chạm giới hạn xử lý.
+    \item Mỗi diễn biến được lưu thành một \textnormal{RunEvent} có số \textnormal{sequence} tăng dần trong phạm vi phiên chạy. Dịch vụ cấp số thứ tự nguyên tử, áp dụng ràng buộc duy nhất trên cặp \textnormal{(runId, sequence)} và phát sự kiện sau khi giao dịch ghi dữ liệu hoàn tất. Vì vậy SSE có thể gửi sự kiện mới và phát lại các sự kiện sau số thứ tự cuối client đã nhận.
+    \item \textnormal{Operation} lưu trạng thái thao tác gồm \textnormal{PENDING}, \textnormal{IN\_PROGRESS}, \textnormal{SUCCEEDED}, \textnormal{FAILED} và \textnormal{RECONCILING}, cùng khóa \textnormal{idempotencyKey} để hạn chế thực thi lặp. \textnormal{PendingAction} lưu yêu cầu chờ phản hồi/phê duyệt và cho phép tạm dừng Run; khi người dùng phản hồi, điều phối viên tiếp tục hoặc kết thúc luồng theo kết quả xác nhận.
+    \item Trước khi lưu và phát dữ liệu sự kiện, dịch vụ loại bỏ hoặc che các giá trị nhạy cảm như token, mật khẩu, khóa API và thông tin xác thực. Việc lưu bền vững trạng thái và sự kiện giúp truy vấn lại tiến trình sau khi kết nối SSE bị ngắt.
+\end{itemize}
 
 \end{document}
