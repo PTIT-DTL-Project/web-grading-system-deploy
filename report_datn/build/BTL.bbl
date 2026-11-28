@@ -77,6 +77,24 @@
     \field{year}{2024}
   \endentry
 
+  \entry{springaidocs}{online}{}{}
+    \name{author}{1}{}{%
+      {{hash=V}{%
+         family={{VMware}},
+         familyi={V\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{V2}
+    \strng{fullhash}{V2}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{title}{Spring AI Reference Documentation}
+    \verb{url}
+    \verb https://docs.spring.io/spring-ai/reference/
+    \endverb
+    \field{year}{2026}
+  \endentry
+
   \entry{openfeigndocs}{online}{}{}
     \name{author}{1}{}{%
       {{hash=V}{%

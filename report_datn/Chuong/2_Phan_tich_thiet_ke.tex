@@ -513,11 +513,8 @@ Kịch bản ngoại lệ &
 
 Loại bỏ các danh từ nằm ngoài phạm vi mục đích của hệ thống, các danh từ trùng lặp và các danh từ chỉ là thuộc tính của lớp khác, ta thu được các lớp thực thể sau:
 
-Người dùng (User), Vai trò (Role), Liên kết người dùng - vai trò (UserRole), Lớp học (CourseClass), Sinh viên thuộc lớp (ClassStudent), Bài tập (Assignment), Câu (TestPlan), Bước chấm (TestStep), Thành phần điểm (ScoreComponent), Điểm thành phần (StudentScore), Bài nộp (Submission), Công việc chấm (GradingJob), Phiên chấm (GradingSaga), Bước của phiên chấm (GradingSagaStep), Nhật ký chấm (GradingLog), Kết quả chấm (Result), Kết quả từng bước (StepResult), Giải thích của trợ lý AI (AiExplanation).
+Người dùng (User), Vai trò (Role), Liên kết người dùng - vai trò (UserRole), Lớp học (CourseClass), Sinh viên thuộc lớp (ClassStudent), Bài tập (Assignment), Câu (TestPlan), Bước chấm (TestStep), Thành phần điểm (ScoreComponent), Điểm thành phần (StudentScore), Bài nộp (Submission), Công việc chấm (GradingJob), Phiên chấm (GradingSaga), Bước của phiên chấm (GradingSagaStep), Nhật ký chấm (GradingLog), Kết quả chấm (Result), Kết quả từng bước (StepResult), Giải thích của trợ lý AI (AiExplanation), Cuộc hội thoại (Conversation), Tin nhắn (Message), Tóm tắt hội thoại (ConversationSummary), Tác vụ (Task), Thao tác (Operation), Phiên chạy (Run), Sự kiện chạy (RunEvent), Lần thực thi công cụ (ToolExecution), Hành động chờ người dùng (PendingAction), Kết quả công cụ đã lưu (StoredToolResult).
 
-Hai lớp Người dùng (User) và Vai trò (Role) biểu diễn tác nhân và quyền truy cập của hệ thống; lớp UserRole biểu diễn liên kết nhiều-nhiều giữa hai lớp này.
-
-Trong mô hình toàn hệ thống, kết quả thực thi từng bước và kết quả chấm từng bước được mô hình hóa chung thành lớp StepResult; bản ghi thực thi riêng của dịch vụ thực thi được trình bày ở mục \ref{sec:class-design-services}.
 
 \subsubsection{Xét quan hệ số lượng giữa các lớp}
 
@@ -933,7 +930,7 @@ Hình \ref{fig:seq-tro-chuyen-ai} mô tả luồng xử lý khi người dùng t
 
 \begin{figure}[H]
 \centering
-\rotatebox{90}{\includegraphics[width=0.92\textheight,height=0.95\textwidth,keepaspectratio]{Hinhve/user-chat-ai-assistant-sequence.jpg}}
+\includegraphics[max width=\textwidth]{Hinhve/user-chat-ai-assistant-sequence.jpg}
 \caption{Sơ đồ tuần tự chức năng Trò chuyện với trợ lý AI.}
 \label{fig:seq-tro-chuyen-ai}
 \end{figure}
